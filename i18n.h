@@ -63,6 +63,8 @@ enum StrId : uint8_t {
   // combate
   S_BTL_WILD, S_BTL_SUPER, S_BTL_WEAK, S_BTL_IMMUNE, S_BTL_WON, S_BTL_LOST, S_BTL_RAN,
   S_BTL_NEWDEX, S_BTL_LEARNED, S_BTL_TIRED,
+  // borrar la partida (boton del Knomi)
+  S_RESET_Q, S_RESET_GO, S_RESET_KEEP,
   STR_COUNT
 };
 

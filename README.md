@@ -65,8 +65,9 @@ While **awake**, per minute:
 - 🍬 **Candy:** +10 FOOD, +12 JOY, but **+12 weight** (fattening).
 - ⚽ **Play / minigame:** +JOY, −ENE; the minigame trains **SPEED** and burns weight.
 - ⚔️ **Wild battles:** turn-based, Gen-1 style. Everyone knows TACKLE and learns a type move
-  at **level 10**. A win gives **STRENGTH +6** and adds the species to the Pokédex; a loss
-  gives +2 and never hurts for good. Each fight costs 12 energy; below 15, or asleep, it refuses.
+  at **level 10**. A win gives **STRENGTH +6**, costs 12 energy and adds the species to the Pokédex. A loss
+  gives +2 and drops energy to 5, so it must **sleep** before fighting again (below 15 energy, or
+  asleep, it refuses). Leave it exhausted for over 10 minutes and it counts as a care slip-up.
 - 🫧 **Bath:** clears poops, HYG → 100.
 - 👆 **Pet it:** +5 JOY + bond.
 - 🌙 **Sleep:** rest — ENE **+6/min**, needs drain ~**4× slower** with floors
@@ -142,8 +143,8 @@ SPEED ← minigame, DEFENSE ← 12 h of unbroken good care).
 The game also runs on the **BIGTREETECH Knomi V2** (GC9A01 240x240, CST816S touch, no SD, audio,
 RTC or battery). Build flag `BOARD_KNOMI_V2`; `tools/knomi_flash.sh` compiles and flashes the
 firmware plus the sprites, packed into flash (`tools/pack_flash.py`). The clock comes from NTP using
-the Wi-Fi the Knomi already has saved. The BOOT button starts a wild battle (tap) or toggles the
-screen (hold).
+the Wi-Fi the Knomi already has saved. The BOOT button starts a wild battle (tap), toggles the screen
+(hold 1-3 s), or asks whether to erase the game (hold 10 s).
 
 ## Libraries (Arduino IDE / arduino-cli)
 

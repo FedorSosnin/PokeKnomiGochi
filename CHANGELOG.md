@@ -11,7 +11,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 - **Wild battles replace the training bag:** turn-based, with the Gen-1 damage formula and type
   chart (one type per species). TACKLE from the start, a type move at level 10. Winning trains
   STRENGTH and registers the rival in the Pokédex. The rules live in `battle.h`, with tests.
-- **BTT Knomi V2 support** (`BOARD_KNOMI_V2`): 240x240 panel, sprites in flash, NTP clock, BOOT button.
+- **BTT Knomi V2 support** (`BOARD_KNOMI_V2`): 240x240 panel, sprites in flash, NTP clock, BOOT button (tap: battle, hold 1-3 s: screen, hold 10 s: erase the game, after confirming).
 
 ## [1.18] - 2026-10-27
 

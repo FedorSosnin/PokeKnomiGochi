@@ -429,19 +429,40 @@ TEST(train, el_combate_anuncia_lo_que_de_verdad_sube) {
   CHECK_EQ(p.battleResult(true, 16, nullptr), (uint8_t)0);
 }
 
-TEST(train, el_combate_cansa_y_quema_peso) {
+TEST(train, ganar_cansa_y_quema_peso) {
   Pet p;
   makePet(p, 4);
   p.weight = 40;
   p.energy = 80;
   p.fullness = 80;
-  p.battleResult(false, 16, nullptr);
+  p.battleResult(true, 16, nullptr);
   CHECK_EQ(p.energy, (uint8_t)(80 - BTL_ENERGY_COST));
   CHECK_EQ(p.fullness, (uint8_t)75);
   CHECK_EQ(p.weight, (uint8_t)35);
   p.energy = 3;  // el suelo protege de dejarlo a cero
-  p.battleResult(false, 16, nullptr);
+  p.battleResult(true, 16, nullptr);
   CHECK_EQ(p.energy, (uint8_t)3);
+}
+
+TEST(train, perder_agota_y_obliga_a_dormir) {
+  Pet p;
+  makePet(p, 4);
+  p.energy = 90;
+  p.battleResult(false, 16, nullptr);
+  CHECK_EQ(p.energy, (uint8_t)BTL_LOSS_ENERGY);
+  CHECK(p.energy < BTL_MIN_ENERGY);  // no puede volver a pelear asi
+}
+
+TEST(train, perder_no_es_descuido_pero_ignorarlo_si) {
+  Pet p;
+  makePet(p, 4);
+  p.fullness = p.joy = p.hygiene = 90;
+  p.battleResult(false, 16, nullptr);
+  uint8_t before = p.careMistakes;
+  advance(p, BTL_LOSS_GRACE_MIN - 2);
+  CHECK_MSG(p.careMistakes == before, "margen para acostarlo");
+  advance(p, 5);
+  CHECK_MSG(p.careMistakes == before + 1, "ignorar al agotado si cuenta");
 }
 
 TEST(train, ganar_registra_al_rival_y_perder_no) {

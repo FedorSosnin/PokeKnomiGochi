@@ -494,7 +494,13 @@ uint8_t Pet::battleResult(bool won, int16_t wildDex, bool *newInDex) {
   uint16_t v = (uint16_t)trAtk + (won ? BTL_WIN_TRAIN : BTL_LOSS_TRAIN);
   trAtk = v > 100 ? 100 : (uint8_t)v;
   uint8_t gain = trAtk - antes;
-  energy = dropTo(energy, BTL_ENERGY_COST, 5);
+  if (won) {
+    energy = dropTo(energy, BTL_ENERGY_COST, 5);
+  } else {
+    if (energy > BTL_LOSS_ENERGY) energy = BTL_LOSS_ENERGY;
+    // la derrota no es un descuido por si sola; ignorar al agotado despues, si
+    if (mistakeCooldown < BTL_LOSS_GRACE_MIN) mistakeCooldown = BTL_LOSS_GRACE_MIN;
+  }
   fullness = dropTo(fullness, 5, 5);
   int burn = (int)weight - 5;  // el ejercicio quema peso
   weight = burn > 0 ? burn : 0;

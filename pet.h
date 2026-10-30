@@ -11,6 +11,8 @@
 #define BTL_WIN_TRAIN 6      // FUE por combate ganado
 #define BTL_LOSS_TRAIN 2     // y por perdido: tambien se aprende
 #define BTL_ENERGY_COST 12
+#define BTL_LOSS_ENERGY 5    // perder deja agotado: hay que dormir para volver a pelear
+#define BTL_LOSS_GRACE_MIN 10  // minutos para acostarlo antes de que cuente como descuido
 #define BTL_MIN_ENERGY 15    // por debajo no quiere pelear
 #define EAT_ANIM_MS 2500UL
 #define HEART_MS 1500UL

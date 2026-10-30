@@ -186,7 +186,10 @@ uint8_t dimStage = 0;        // 0 despierto, 1 atenuado (90s), 2 casi apagado (5
 bool swallowGesture = false; // el toque que despierta no acciona nada
 uint32_t holdStart = 0;     // pulsacion larga sobre el bicho
 uint32_t confirmUntil = 0;  // dialogo "soltar?" activo hasta este millis
-uint8_t choiceKind = 0;     // dialogo de decision: 0 ninguno, 1 evolucion, 2 despedida
+#ifdef BOARD_KNOMI_V2
+uint32_t gBtnSimUntil = 0;  // pulsacion simulada del boton fisico (consola serie)
+#endif
+uint8_t choiceKind = 0;     // dialogo de decision: 0 ninguno, 1 evolucion, 2 despedida, 3 borrar partida
 uint32_t choiceUntil = 0;   // se cierra solo a este millis
 int16_t tX0, tY0, tXl, tYl; // gesto en curso (inicio y ultima posicion)
 uint32_t tStart = 0;
@@ -488,6 +491,10 @@ void handleSerial() {
     gTouchIrq = true;
     Serial.println("DONE");
     return;
+  } else if (line.startsWith("BTN ")) {  // pulsacion simulada del boton fisico: "BTN ms"
+    gBtnSimUntil = millis() + line.substring(4).toInt();
+    Serial.println("DONE");
+    return;
   } else if (line == "PERF") {  // coste del volcado al panel
     uint32_t t0 = micros();
     for (int i = 0; i < 10; i++) gfx->flush();
@@ -786,6 +793,10 @@ void onTap(int16_t x, int16_t y) {
     } else if (choiceKind == 2) {          // despedida
       if (b1) pet.startFarewell();
       else if (b2) pet.declineFarewell();
+    } else if (choiceKind == 3 && b1) {    // borrar la partida (boton del Knomi)
+      pet.factoryReset();
+      delay(100);
+      ESP.restart();
     }
     choiceKind = 0;
     return;
@@ -1398,17 +1409,15 @@ void stepGame() {
 // ---------- saco de entrenamiento (entrena la fuerza) ----------
 
 #ifdef BOARD_KNOMI_V2
-// Boton BOOT del Knomi (GPIO0, activo en bajo): toque = rival salvaje, mantener = pantalla.
+// Boton BOOT del Knomi (GPIO0, activo en bajo): toque = rival salvaje, 1-3 s = pantalla,
+// 10 s = preguntar si borrar la partida.
 // La linea DTR del CH340 tambien mueve este pin al abrir el puerto serie, de ahi la espera
 // tras arrancar. Mantenerlo pulsado durante un reset sigue entrando en modo de grabacion.
-#define KNOMI_BTN_HOLD_MS 800
+#define KNOMI_BTN_HOLD_MS 800      // soltar a partir de aqui: pantalla
+#define KNOMI_BTN_HOLD_MAX_MS 3000 // soltar mas tarde no hace nada: se ha arrepentido
+#define KNOMI_BTN_RESET_MS 10000   // mantenido hasta aqui: pregunta si borrar la partida
 
-void knomiButtonEvent(bool hold) {
-  if (hold) {
-    screenOff = !screenOff;
-    if (!screenOff) wakeUI();
-    return;
-  }
+void knomiButtonTap() {
   bool wasAsleep = screenOff || dimStage > 0;
   screenOff = false;
   wakeUI();
@@ -1417,21 +1426,43 @@ void knomiButtonEvent(bool hold) {
   startBattle();
 }
 
+// el dialogo se dibuja en la pantalla principal: cierra lo que este abierto por encima
+void knomiAskReset() {
+  if (pet.awaitingStarter() || pet.ceremony) return;  // nada que borrar, o despedida en curso
+  if (battleOpen) closeBattle();
+  if (galleryOpen) { galleryOpen = false; galleryPmd.unload(); }
+  gameOpen = cardOpen = kbOpen = clockOpen = false;
+  confirmUntil = 0;
+  screenOff = false;
+  wakeUI();
+  sfxPlay(SFX_DENY);
+  choiceKind = 3;
+  choiceUntil = millis() + 12000;
+}
+
 void handleKnomiButton(uint32_t now) {
   static uint32_t downAt = 0;
-  static bool down = false, held = false;
+  static bool down = false, resetAsked = false;
   if (now < 3000) return;
-  bool pressed = digitalRead(KNOMI_BTN_PIN) == LOW;
+  bool pressed = digitalRead(KNOMI_BTN_PIN) == LOW || timeLeft(gBtnSimUntil) > 0;
   if (pressed && !down) {
     down = true;
-    held = false;
+    resetAsked = false;
     downAt = now;
-  } else if (pressed && !held && now - downAt >= KNOMI_BTN_HOLD_MS) {
-    held = true;
-    knomiButtonEvent(true);
+  } else if (pressed && !resetAsked && now - downAt >= KNOMI_BTN_RESET_MS) {
+    resetAsked = true;
+    knomiAskReset();
   } else if (!pressed && down) {
     down = false;
-    if (!held && now - downAt >= 30) knomiButtonEvent(false);  // 30 ms: antirrebote
+    uint32_t held = now - downAt;
+    if (held < 30 || resetAsked) return;  // 30 ms: antirrebote
+    if (held < KNOMI_BTN_HOLD_MS) {
+      knomiButtonTap();
+    } else if (held < KNOMI_BTN_HOLD_MAX_MS) {
+      screenOff = !screenOff;
+      if (!screenOff) wakeUI();
+      Serial.printf("boton: pantalla %s\n", screenOff ? "apagada" : "encendida");
+    }
   }
 }
 #endif
@@ -2523,6 +2554,9 @@ void drawChoiceDialog() {
   if (choiceKind == 1) {  // evolucion
     q = T(S_EVO_Q); o1 = T(S_EVO_TAP); o2 = T(S_EVO_KEEP);
     c1 = UI_BAR_BAD; t1 = UI_WHITE; c2 = UI_TRACK; t2 = UI_INK;
+  } else if (choiceKind == 3) {  // borrar la partida
+    q = T(S_RESET_Q); o1 = T(S_RESET_GO); o2 = T(S_RESET_KEEP);
+    c1 = UI_BAR_BAD; t1 = UI_WHITE; c2 = UI_BAR_OK; t2 = UI_WHITE;
   } else {                // despedida
     q = T(S_FAR_Q); o1 = T(S_FAR_GO); o2 = T(S_FAR_STAY);
     c1 = UI_BAR_WARN; t1 = UI_INK; c2 = UI_BAR_OK; t2 = UI_WHITE;
