@@ -1,5 +1,16 @@
 #include "audio.h"
 #include "pin_config.h"
+
+#ifdef BOARD_KNOMI_V2
+// El Knomi V2 no tiene codec ni altavoz: el juego llama igual y no suena nada.
+void audioBegin() {}
+void sfxPlay(uint8_t) {}
+void audioSetEnabled(bool) {}
+bool audioEnabled() { return false; }
+void audioSetSleeping(bool) {}
+bool audioBusy() { return false; }
+void audioSetIdle(bool) {}
+#else
 #include <Arduino.h>
 #include <Wire.h>
 #include <ESP_I2S.h>
@@ -218,3 +229,5 @@ void audioSetIdle(bool idle) {
   gIdle = idle;
   updateAmplifierPower();  // tambien cuando vence el mantenimiento de un aviso
 }
+
+#endif  // BOARD_KNOMI_V2

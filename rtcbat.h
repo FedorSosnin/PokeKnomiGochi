@@ -5,6 +5,10 @@
 bool rtcBegin();
 uint32_t rtcEpoch();             // segundos unix; 0 si el RTC no es valido
 void rtcSetEpoch(uint32_t e);
+#ifdef BOARD_KNOMI_V2
+bool clockPoll();                // sondear en el loop; true justo al ponerse en hora por NTP
+bool clockWasSeed();             // la ultima sincronizacion partia de la semilla: no hay ausencia que aplicar
+#endif
 
 // PMU AXP2101: estado de la bateria
 bool batBegin();

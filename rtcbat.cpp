@@ -1,6 +1,127 @@
-#include "batcurve.h"
 #include "rtcbat.h"
 #include "pin_config.h"  // define XPOWERS_CHIP_AXP2101
+
+#ifdef BOARD_KNOMI_V2
+// Sin RTC ni PMU. La hora es un reloj por software que se pone en hora por NTP con la wifi
+// que el Knomi ya tenia guardada en la NVS (WiFi.begin() sin credenciales), asi que el
+// firmware no maneja la contrasena. Sin red, setup() siembra con la ultima hora guardada.
+#include <WiFi.h>
+#include <esp_sntp.h>
+#include <esp_wifi.h>
+#include <time.h>
+
+// Nueva York; el juego usa la hora LOCAL como epoch (ver openClock), no hay zonas horarias
+#ifndef KNOMI_TZ
+#define KNOMI_TZ "EST5EDT,M3.2.0,M11.1.0"
+#endif
+#define WIFI_TIMEOUT_MS 30000UL
+#define NTP_RESYNC_MS (24UL * 3600UL * 1000UL)
+#define NTP_RETRY_MS (10UL * 60UL * 1000UL)
+
+static uint32_t baseEpoch = 0, baseMs = 0;
+
+bool rtcBegin() { return true; }
+uint32_t rtcEpoch() { return baseEpoch ? baseEpoch + (millis() - baseMs) / 1000 : 0; }
+void rtcSetEpoch(uint32_t e) { baseEpoch = e; baseMs = millis(); }
+
+// Si el reloj aun venia de la semilla fija de setup(), el salto a la hora de red no mide ninguna
+// ausencia: aplicarlo envejeceria a la mascota hasta el tope de 2 semanas.
+#define CLOCK_REAL_MIN 1790000000UL  // septiembre de 2026, muy por encima de la semilla
+static bool wasSeed = false;
+bool clockWasSeed() { return wasSeed; }
+
+// segundos desde 1970 de una fecha civil, sin pasar por la zona horaria (dias de Hinnant)
+static uint32_t civilEpoch(const struct tm &t) {
+  int y = t.tm_year + 1900, m = t.tm_mon + 1;
+  y -= m <= 2;
+  int era = y / 400;
+  unsigned yoe = y - era * 400, doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + t.tm_mday - 1;
+  unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  uint32_t days = era * 146097 + (int)doe - 719468;
+  return days * 86400UL + t.tm_hour * 3600UL + t.tm_min * 60UL + t.tm_sec;
+}
+
+// Maquina de estados sin bloqueos: conecta, espera NTP, apaga la wifi y repite cada 24 h.
+bool clockPoll() {
+  enum { IDLE, CONNECTING, WAIT_NTP };
+  static uint8_t st = IDLE;
+  static uint32_t t0 = 0, lastTry = 0, wait = 0;
+  static bool first = true;
+  uint32_t now = millis();
+  switch (st) {
+    case IDLE:
+      if (!first && now - lastTry < wait) return false;
+      first = false;
+      lastTry = t0 = now;
+      WiFi.mode(WIFI_STA);
+      {
+        static bool hooked = false;
+        if (!hooked) {
+          hooked = true;
+          WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t i) {
+            Serial.printf("wifi: desconectado, motivo %u\n", i.wifi_sta_disconnected.reason);
+          }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+        }
+        // lo guardado por el firmware anterior, pasado de nuevo para limpiar canal/BSSID viejos
+        wifi_config_t cfg = {};
+        esp_wifi_get_config(WIFI_IF_STA, &cfg);
+        if (cfg.sta.ssid[0]) WiFi.begin((const char *)cfg.sta.ssid, (const char *)cfg.sta.password);
+        else WiFi.begin();
+      }
+      st = CONNECTING;
+      return false;
+    case CONNECTING:
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("wifi ok, ip=%s\n", WiFi.localIP().toString().c_str());
+        configTzTime(KNOMI_TZ, "pool.ntp.org", "time.google.com");
+        t0 = now;
+        st = WAIT_NTP;
+      } else if (now - t0 > WIFI_TIMEOUT_MS) {
+        wifi_config_t cfg = {};
+        esp_wifi_get_config(WIFI_IF_STA, &cfg);
+        Serial.printf("wifi: sin conexion (estado %d, ssid guardado '%s', clave de %u caracteres), sigue con el reloj interno\n",
+                      (int)WiFi.status(), (const char *)cfg.sta.ssid, (unsigned)strlen((const char *)cfg.sta.password));
+        WiFi.mode(WIFI_OFF);
+        wait = NTP_RETRY_MS;
+        st = IDLE;
+      }
+      return false;
+    case WAIT_NTP: {
+      bool synced = sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED || time(nullptr) > 1700000000;
+      if (!synced && now - t0 < WIFI_TIMEOUT_MS) return false;
+      struct tm tmv;
+      time_t tt = time(nullptr);
+      bool ok = synced && localtime_r(&tt, &tmv);
+      if (ok) {
+        wasSeed = rtcEpoch() < CLOCK_REAL_MIN;
+        rtcSetEpoch(civilEpoch(tmv));
+        Serial.printf("NTP ok, hora local %02d:%02d\n", tmv.tm_hour, tmv.tm_min);
+      } else Serial.println("NTP: sin respuesta");
+      WiFi.mode(WIFI_OFF);
+      wait = ok ? NTP_RESYNC_MS : NTP_RETRY_MS;
+      st = IDLE;
+      return ok;
+    }
+  }
+  return false;
+}
+
+bool batBegin() { return false; }
+void pmuEnablePanel() {}
+void batSetPollMs(uint32_t) {}
+int batPercent() { return -1; }
+bool batCharging() { return false; }
+int batMillivolts() { return 0; }
+bool batShouldShutdown() { return false; }
+void batPowerOff() {}
+bool usbPresent() { return true; }
+bool usbPresentNow() { return true; }
+void pwrSetup() {}
+bool pwrShortPressed() { return false; }
+
+#else
+
+#include "batcurve.h"
 #include <Wire.h>
 #include <time.h>
 #include <SensorPCF85063.hpp>
@@ -120,3 +241,5 @@ bool pwrShortPressed() {
   if (hit) pmu.clearIrqStatus();
   return hit;
 }
+
+#endif  // BOARD_KNOMI_V2

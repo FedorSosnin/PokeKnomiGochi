@@ -1,7 +1,11 @@
 #include "sdmon.h"
 #include "pin_config.h"
+#ifdef BOARD_KNOMI_V2
+#include "flashpak.h"
+#else
 #include <FS.h>
 #include <SD_MMC.h>
+#endif
 
 bool sdReady = false;
 bool sdDirty = false;
@@ -140,6 +144,13 @@ const uint8_t *SdThumbs::get(int16_t dex) const {
   return data + off;
 }
 
+#ifdef BOARD_KNOMI_V2
+bool sdBegin() {
+  sdReady = PAK.begin();
+  Serial.println(sdReady ? "sprites en flash ok" : "sin sprites en flash (particion ffat vacia)");
+  return sdReady;
+}
+#else
 bool sdBegin() {
   SD_MMC.setPins(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
   sdReady = SD_MMC.begin("/sdcard", true /* modo 1-bit */, true /* formatea si no monta */);
@@ -151,6 +162,8 @@ bool sdBegin() {
   }
   return sdReady;
 }
+
+#endif  // BOARD_KNOMI_V2
 
 bool SdMon::load(uint8_t dexNum, bool shiny) {
   unload();
@@ -231,6 +244,9 @@ void SdMon::unload() {
 // Usar con tools/send_sd.py
 // ---------------------------------------------------------------------------
 
+#ifdef BOARD_KNOMI_V2
+bool sdSerialCommand(const String &) { return false; }  // sprites grabados con esptool
+#else
 bool sdSerialCommand(const String &line) {
   if (line.startsWith("PUT ")) {
     int sp = line.lastIndexOf(' ');
@@ -298,3 +314,4 @@ bool sdSerialCommand(const String &line) {
   }
   return false;
 }
+#endif  // BOARD_KNOMI_V2

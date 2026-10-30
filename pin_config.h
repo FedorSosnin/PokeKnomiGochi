@@ -1,5 +1,31 @@
 #pragma once
 
+#ifdef BOARD_KNOMI_V2
+
+// BIGTREETECH Knomi V2 (ESP32-S3R8, 16 MB de flash). Pines del firmware oficial de BTT
+// (rama firmware, src/pinout_knomi_v2.h). Sin SD, audio, RTC ni bateria.
+
+// El juego sigue dibujando en un lienzo logico de 466x466; ScaledCanvas lo reduce al panel.
+#define LCD_WIDTH 466
+#define LCD_HEIGHT 466
+#define PANEL_SIZE 240
+
+// Pantalla GC9A01 240x240 por SPI, retroiluminacion AW9346 de un hilo
+#define LCD_MOSI 14
+#define LCD_SCLK 18
+#define LCD_CS 20
+#define LCD_DC 19
+#define LCD_RESET 21
+#define LCD_BL 12
+
+// Tactil CST816S por I2C
+#define IIC_SDA 2
+#define IIC_SCL 1
+#define TP_INT 17
+#define TP_RESET 16
+
+#else  // Waveshare ESP32-S3-Touch-AMOLED-1.75
+
 // Pines oficiales de la Waveshare ESP32-S3-Touch-AMOLED-1.75
 // Fuente: github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75 (libraries/Mylibrary/pin_config.h)
 
@@ -37,3 +63,5 @@
 #define SDMMC_CMD 1
 #define SDMMC_DATA 3
 #define SDMMC_CS 41
+
+#endif  // BOARD_KNOMI_V2

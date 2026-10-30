@@ -12,7 +12,11 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "Arduino_GFX_Library.h"
+#ifdef BOARD_KNOMI_V2
+#include "knomi_hal.h"
+#else
 #include "TouchDrvCSTXXX.hpp"
+#endif
 #include <U8g2lib.h>  // fuentes CJK (japones); ver applyLangFont()
 #include <esp_sleep.h>
 #include <driver/gpio.h>
@@ -31,6 +35,13 @@
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
 #define FW_VERSION "1.18"
 
+#ifdef BOARD_KNOMI_V2
+Arduino_DataBus *bus = new Arduino_ESP32SPI(LCD_DC, LCD_CS, LCD_SCLK, LCD_MOSI, GFX_NOT_DEFINED);
+KnomiPanel *panel = new KnomiPanel(bus, LCD_RESET, 0 /*rotation*/, true /*IPS*/, PANEL_SIZE, PANEL_SIZE);
+ScaledCanvas *gfx = new ScaledCanvas(panel);
+
+KnomiTouch touch;
+#else
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
   LCD_CS, LCD_SCLK, LCD_SDIO0, LCD_SDIO1, LCD_SDIO2, LCD_SDIO3);
 Arduino_CO5300 *panel = new Arduino_CO5300(
@@ -39,10 +50,15 @@ Arduino_CO5300 *panel = new Arduino_CO5300(
 Arduino_Canvas *gfx = new Arduino_Canvas(LCD_WIDTH, LCD_HEIGHT, panel);
 
 TouchDrvCST92xx touch;
+#endif
 // fuente CJK activa: de momento siempre false, la carga llegara con el
 // soporte de japones/coreano/chino (ver PR #13)
 bool gCjkFont = false;
+#ifdef BOARD_KNOMI_V2
+#define TOUCH_ADDR 0x15  // CST816S
+#else
 #define TOUCH_ADDR 0x5A  // CST9217
+#endif
 Pet pet;
 
 // sprite animado de la SD para la especie actual (si existe el archivo)
@@ -176,7 +192,9 @@ void setup() {
   // CRITICO: sin esto, Serial.print BLOQUEA el juego cuando no hay un
   // monitor serie abierto en el host (el bufer TX del USB CDC se llena
   // y nadie lo vacia) -> con timeout 0 los mensajes se descartan
+#ifndef BOARD_KNOMI_V2  // el Knomi saca el serie por un CH340 (UART0): nunca bloquea
   Serial.setTxTimeoutMs(0);
+#endif
   Serial.printf("TamaPoke fw v%s\n", FW_VERSION);
   loadLang();  // idioma guardado (ES por defecto)
   Wire.begin(IIC_SDA, IIC_SCL);
@@ -200,7 +218,7 @@ void setup() {
   touch.setPins(TP_RESET, TP_INT);
   bool touchOk = false;
   for (int i = 0; i < 3 && !touchOk; i++) {  // a veces falla al primer intento
-    touchOk = touch.begin(Wire, 0x5A, IIC_SDA, IIC_SCL);
+    touchOk = touch.begin(Wire, TOUCH_ADDR, IIC_SDA, IIC_SCL);
     if (!touchOk) delay(150);
   }
   if (!touchOk) Serial.println("CST9217 no detectado");
@@ -317,6 +335,13 @@ void loop() {
   if (pet.savePending() && (screenOff || dimStage >= 1 || pet.sleeping)) {
     pet.flushSave();
   }
+
+#ifdef BOARD_KNOMI_V2
+  if (clockPoll()) {  // aplica el tiempo apagado en cuanto hay hora de red
+    if (clockWasSeed()) pet.setClock(rtcEpoch());
+    else pet.syncClock(rtcEpoch());
+  }
+#endif
 
   // anota la hora real cada 30 s (se persiste en cada save del juego)
   static uint32_t lastClock = 0;
@@ -439,6 +464,33 @@ void handleSerial() {
   if (line.length() == 0) return;
   if (sdSerialCommand(line)) return;
 
+#ifdef BOARD_KNOMI_V2
+  if (line == "SHOT") {  // captura del panel: "SHOT 240 240\n" + RGB565 little endian
+    Serial.printf("SHOT %d %d\n", PANEL_SIZE, PANEL_SIZE);
+    Serial.write((uint8_t *)gfx->panelBuffer(), PANEL_SIZE * PANEL_SIZE * 2);
+    Serial.println("DONE");
+    return;
+  } else if (line.startsWith("TAP ")) {  // toque simulado en coordenadas logicas (466): "TAP x y [ms]"
+    int a = line.indexOf(' '), b = line.indexOf(' ', a + 1), c = line.indexOf(' ', b + 1);
+    touch.inject(line.substring(a + 1, b).toInt(), line.substring(b + 1, c).toInt(), c > 0 ? line.substring(c + 1).toInt() : 120);
+    gTouchIrq = true;
+    Serial.println("DONE");
+    return;
+  } else if (line == "PERF") {  // coste del volcado al panel
+    uint32_t t0 = micros();
+    for (int i = 0; i < 10; i++) gfx->flush();
+    Serial.printf("flush=%lu us\n", (unsigned long)((micros() - t0) / 10));
+    Serial.println("DONE");
+    return;
+  } else if (line == "I2C") {
+    for (uint8_t a = 1; a < 127; a++) {
+      Wire.beginTransmission(a);
+      if (Wire.endTransmission() == 0) Serial.printf("i2c 0x%02X\n", a);
+    }
+    Serial.println("DONE");
+    return;
+  }
+#endif
   if (line == "HATCH") {
     pet.eggTap(); pet.eggTap(); pet.eggTap();
     Serial.println("DONE");
