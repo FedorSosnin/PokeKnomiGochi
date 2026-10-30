@@ -42,7 +42,7 @@ static const ExpectedFmt EXPECTED[] = {
   { S_POKEDEX_FMT,     "%u" },
   { S_NAME_FMT,        "%s,%s,%u" },
   { S_RELEASE_FMT,     "%s" },
-  { S_HITS_FMT,        "%u" },
+  { S_WINS_FMT,        "%u" },
   { S_STR_GAIN_FMT,    "%u" },
   { S_RECORD_FMT,      "%u" },
   { S_SCORE_FMT,       "%u" },
@@ -57,6 +57,9 @@ static const ExpectedFmt EXPECTED[] = {
   { S_MISTAKES_FMT,    "%u" },
   { S_FAREWELL_BTN,    "%s" },
   { S_RUNAWAY_BTN,     "%s" },
+  { S_BTL_WILD,        "%s" },
+  { S_BTL_LOST,        "%s" },
+  { S_BTL_LEARNED,     "%s" },
 };
 static const int NUM_EXPECTED = (int)(sizeof(EXPECTED) / sizeof(EXPECTED[0]));
 

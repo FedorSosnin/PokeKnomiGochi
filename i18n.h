@@ -29,7 +29,7 @@ enum StrId : uint8_t {
   // dialogo soltar
   S_RELEASE_FMT, S_YES, S_NO,
   // minijuego y saco
-  S_HITS_FMT, S_STR_GAIN_FMT, S_NEW_RECORD, S_RECORD_FMT, S_HIT_FAST,
+  S_WINS_FMT, S_STR_GAIN_FMT, S_NEW_RECORD, S_RECORD_FMT, S_BTL_RUN,
   S_SCORE_FMT, S_GREAT_JOY, S_PLUS_JOY,
   // reloj / ajustes
   S_SET_TIME, S_HOUR, S_MIN, S_CLOCK_CANCEL, S_LANG_LABEL,
@@ -39,7 +39,7 @@ enum StrId : uint8_t {
   S_STREAK_FMT, S_VIN, S_BERRY_UNK, S_BERRY_RED, S_BERRY_BLUE, S_BERRY_GREEN,
   S_INFO_FMT, S_RENAME_HINT,
   // ficha: combate
-  S_BATTLE, S_STAT_ATK, S_STAT_DEF, S_STAT_SPE, S_STAT_WGT, S_TRAIN_STR,
+  S_BATTLE, S_STAT_ATK, S_STAT_DEF, S_STAT_SPE, S_STAT_WGT, S_BTL_START,
   // ficha: medallas
   S_MEDALS_FMT, S_BACK,
   // teclado y galeria
@@ -60,6 +60,9 @@ enum StrId : uint8_t {
   S_EVO_Q, S_EVO_KEEP, S_FAR_Q, S_FAR_GO, S_FAR_STAY,
   S_CHOOSE_STARTER,  // titulo de la eleccion del inicial (primera vez)
   S_NO_SPRITES, S_LOAD_SPRITES,  // aviso cuando falta el sprite en la SD
+  // combate
+  S_BTL_WILD, S_BTL_SUPER, S_BTL_WEAK, S_BTL_IMMUNE, S_BTL_WON, S_BTL_LOST, S_BTL_RAN,
+  S_BTL_NEWDEX, S_BTL_LEARNED, S_BTL_TIRED,
   STR_COUNT
 };
 

@@ -16,13 +16,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Nv.%u",
     "Soltar a %s?", "SI", "NO",
-    "%u GOLPES", "FUERZA +%u", "NUEVO RECORD!", "RECORD: %u", "APORREA RAPIDO!",
+    "VICTORIAS: %u", "FUERZA +%u", "NUEVO RECORD!", "RECORD: %u", "HUIR",
     "PUNTOS: %u", "Qu\202 felicidad!", "+felicidad",
     "AJUSTAR HORA", "HORA", "MIN", "desliza arriba: cancelar", "Idioma",
     "MEDALLA!", "GENIAL!", "RACHA %u DIAS!",
     "RACHA %u  rec %u", "VIN", "BAYA ???", "BAYA ROJA", "BAYA AZUL", "BAYA VERDE",
     "%s   EDAD %lud", "toca el nombre: renombrar",
-    "COMBATE", "FUE", "DEF", "VEL", "PES", "ENTRENAR FUERZA",
+    "COMBATE", "FUE", "DEF", "VEL", "PES", "COMBATIR!",
     "MEDALLAS %d/%d", "toca: volver",
     "NOMBRE:", "toca para volver",
     "COM", "FEL", "ENE", "LIM",
@@ -35,6 +35,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Evolucionar?", "Mantener forma", "Despedirse?", "Despedirse", "Quedaros juntos",
     "Elige tu inicial",
     "Sin sprites", "C\240rgalos en la SD",
+    "%s salvaje!", "Muy eficaz!", "Poco eficaz...", "No le afecta!", "HAS GANADO!", "%s se debilit\242...", "Has escapado", "Nuevo en POKEDEX!", "Aprendi\242 %s!", "Muy cansado!",
   },
   // ---------------- EN ----------------
   {
@@ -45,13 +46,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Lv.%u",
     "Release %s?", "YES", "NO",
-    "%u HITS", "STR +%u", "NEW RECORD!", "BEST: %u", "HIT FAST!",
+    "WINS: %u", "STR +%u", "NEW RECORD!", "BEST: %u", "RUN",
     "SCORE: %u", "So much fun!", "+happiness",
     "SET TIME", "HOUR", "MIN", "swipe up: cancel", "Lang",
     "MEDAL!", "AWESOME!", "%u DAY STREAK!",
     "STREAK %u  best %u", "BOND", "BERRY ???", "RED BERRY", "BLUE BERRY", "GREEN BERRY",
     "%s   AGE %lud", "tap name: rename",
-    "BATTLE", "ATK", "DEF", "SPD", "WGT", "TRAIN STRENGTH",
+    "BATTLE", "ATK", "DEF", "SPD", "WGT", "FIGHT!",
     "MEDALS %d/%d", "tap: back",
     "NAME:", "tap to go back",
     "FOOD", "JOY", "ENE", "HYG",
@@ -64,6 +65,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Evolve?", "Keep form", "Say goodbye?", "Goodbye", "Stay together",
     "Choose your starter",
     "No sprites", "Load them onto the SD",
+    "Wild %s!", "Super effective!", "Not very effective", "No effect!", "YOU WON!", "%s fainted...", "Got away safely", "New in POKEDEX!", "Learned %s!", "Too tired!",
   },
   // ---------------- FR ----------------
   {
@@ -74,13 +76,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Niv.%u",
     "Rel\203cher %s?", "OUI", "NON",
-    "%u COUPS", "FORCE +%u", "NOUVEAU RECORD!", "RECORD: %u", "FRAPPE VITE!",
+    "VICTOIRES: %u", "FORCE +%u", "NOUVEAU RECORD!", "RECORD: %u", "FUITE",
     "SCORE: %u", "Trop bien!", "+bonheur",
     "R\220GLER L'HEURE", "HEURE", "MIN", "glisse haut: annuler", "Langue",
     "M\220DAILLE!", "SUPER!", "S\220RIE %u JOURS!",
     "S\220RIE %u  rec %u", "LIEN", "BAIE ???", "BAIE ROUGE", "BAIE BLEUE", "BAIE VERTE",
     "%s   AGE %lud", "touche le nom: renommer",
-    "COMBAT", "ATQ", "DEF", "VIT", "PDS", "ENTRAINER FORCE",
+    "COMBAT", "ATQ", "DEF", "VIT", "PDS", "COMBAT!",
     "M\220DAILLES %d/%d", "touche: retour",
     "NOM:", "touche pour revenir",
     "NOUR", "JOIE", "ENE", "HYG",
@@ -93,6 +95,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "\220voluer?", "Garder forme", "Dire adieu?", "Adieu", "Rester ensemble",
     "Choisis ton starter",
     "Pas de sprites", "Charge-les sur la SD",
+    "%s sauvage!", "Super efficace!", "Pas tr\212s efficace", "Sans effet!", "VICTOIRE!", "%s est K.O.", "Fuite r\202ussie", "Nouveau POKEDEX!", "Apprend %s!", "Trop fatigu\202!",
   },
   // ---------------- DE ----------------
   // El aleman si lleva dieresis: la fuente 5x7 del firmware es una tabla CP437
@@ -108,13 +111,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Lv.%u",
     "%s freilassen?", "JA", "NEIN",
-    "%u TREFFER", "KRAFT +%u", "NEUER REKORD!", "REKORD: %u", "SCHNELL HAUEN!",
+    "SIEGE: %u", "KRAFT +%u", "NEUER REKORD!", "REKORD: %u", "FLUCHT",
     "PUNKTE: %u", "Wie sch\224n!", "+Freude",
     "ZEIT STELLEN", "STD", "MIN", "hoch wischen: Abbruch", "Sprache",
     "MEDAILLE!", "TOLL!", "%u TAGE SERIE!",
     "SERIE %u  rek %u", "BND", "BEERE ???", "ROTE BEERE", "BLAUE BEERE", "GR\232NE BEERE",
     "%s   ALTER %lud", "Name tippen: umbenennen",
-    "KAMPF", "ANG", "VER", "INI", "GEW", "KRAFT TRAINIEREN",
+    "KAMPF", "ANG", "VER", "INI", "GEW", "KAMPF!",
     "MEDAILLEN %d/%d", "tippen: zur\201ck",
     "NAME:", "tippen: zur\201ck",
     "ESS", "FRO", "ENE", "HYG",
@@ -127,6 +130,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Entwickeln?", "Form behalten", "Abschied?", "Leb wohl", "Zusammen bleiben",
     "W\204hle deinen Starter",
     "Keine Sprites", "Auf die SD laden",
+    "Wildes %s!", "Sehr effektiv!", "Nicht sehr effektiv", "Keine Wirkung!", "GEWONNEN!", "%s ist K.O.", "Entkommen!", "Neu im POKEDEX!", "Lernt %s!", "Zu m\201de!",
   },
   // ---------------- IT ----------------
   {
@@ -137,13 +141,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Lv.%u",
     "Liberare %s?", "SI", "NO",
-    "%u COLPI", "FORZA +%u", "NUOVO RECORD!", "RECORD: %u", "COLPISCI VELOCE!",
+    "VITTORIE: %u", "FORZA +%u", "NUOVO RECORD!", "RECORD: %u", "FUGA",
     "PUNTI: %u", "Che gioia!", "+felicit\205",
     "IMPOSTA ORA", "ORA", "MIN", "scorri su: annulla", "Lingua",
     "MEDAGLIA!", "GRANDE!", "SERIE %u GIORNI!",
     "SERIE %u  rec %u", "LEG", "BACCA ???", "BACCA ROSSA", "BACCA BLU", "BACCA VERDE",
     "%s   ETA %lud", "tocca il nome: rinomina",
-    "LOTTA", "ATT", "DIF", "VEL", "PES", "ALLENA FORZA",
+    "LOTTA", "ATT", "DIF", "VEL", "PES", "LOTTA!",
     "MEDAGLIE %d/%d", "tocca: indietro",
     "NOME:", "tocca per tornare",
     "CIB", "GIO", "ENE", "IGI",
@@ -156,6 +160,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Evolvere?", "Mantieni forma", "Salutare?", "Addio", "Restare insieme",
     "Scegli l'iniziale",
     "Senza sprite", "Caricali sulla SD",
+    "%s selvatico!", "Superefficace!", "Non molto efficace", "Nessun effetto!", "HAI VINTO!", "%s \212 esausto...", "Fuga riuscita", "Nuovo nel POKEDEX!", "Impara %s!", "Troppo stanco!",
   },
   // ---------------- PT ----------------
   {
@@ -166,13 +171,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Niv.%u",
     "Soltar %s?", "SIM", "NAO",
-    "%u GOLPES", "FOR\200A +%u", "NOVO RECORDE!", "RECORDE: %u", "BATA RAPIDO!",
+    "VITORIAS: %u", "FOR\200A +%u", "NOVO RECORDE!", "RECORDE: %u", "FUGIR",
     "PONTOS: %u", "Que alegria!", "+alegria",
     "AJUSTAR HORA", "HORA", "MIN", "deslize cima: cancelar", "Idioma",
     "MEDALHA!", "OTIMO!", "%u DIAS SEGUIDOS!",
     "SEQ %u  rec %u", "LA\200O", "BAGA ???", "BAGA VERMELHA", "BAGA AZUL", "BAGA VERDE",
     "%s   IDADE %lud", "toque no nome: renomear",
-    "COMBATE", "ATQ", "DEF", "VEL", "PES", "TREINAR FOR\200A",
+    "COMBATE", "ATQ", "DEF", "VEL", "PES", "LUTAR!",
     "MEDALHAS %d/%d", "toque: voltar",
     "NOME:", "toque para voltar",
     "COM", "ALE", "ENE", "HIG",
@@ -185,6 +190,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Evoluir?", "Manter forma", "Despedir?", "Adeus", "Ficar juntos",
     "Escolhe o inicial",
     "Sem sprites", "Carrega-os no SD",
+    "%s selvagem!", "Super eficaz!", "Pouco eficaz...", "Sem efeito!", "VENCESTE!", "%s desmaiou...", "Fugiste!", "Novo na POKEDEX!", "Aprendeu %s!", "Muito cansado!",
   },
   // ---------------- JA ----------------
   {
@@ -200,7 +206,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 
     "%s とおわかれ？", "はい", "いいえ",
 
-    "わざ %u", "ちから +%u", "しんきろく！", "きろく: %u", "れんだ！",
+    "しょうり: %u", "ちから +%u", "しんきろく！", "きろく: %u", "にげる",
 
     "スコア: %u", "たのしい！", "+ごきげん",
 
@@ -212,7 +218,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 
     "%s   %luにち", "なまえをタッチ: へんこう",
 
-    "バトル", "こうげき", "ぼうぎょ", "すばやさ", "たいじゅう", "ちからトレーニング",
+    "バトル", "こうげき", "ぼうぎょ", "すばやさ", "たいじゅう", "たたかう!",
 
     "メダル %d/%d", "タッチ: もどる",
 
@@ -237,6 +243,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "さいしょのポケモンをえらぶ",
 
     "スプライトなし", "SDにいれてください",
+    "やせいの%s!", "こうかばつぐん!", "いまひとつ...", "こうかなし!", "かった!", "%sはたおれた", "にげられた", "ずかんにとうろく!", "%sをおぼえた!", "つかれている!",
   },
   // ---------------- KO ----------------
   // Los especificadores van en el MISMO ORDEN que en la fila inglesa aunque
@@ -252,13 +259,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "도감 %u/151",
     "%s%s Lv.%u",
     "%s 놓아줄까요?", "예", "아니오",
-    "%u회 명중", "힘 +%u", "신기록!", "최고: %u", "빠르게!",
+    "승리: %u", "힘 +%u", "신기록!", "최고: %u", "도망",
     "점수: %u", "정말 즐거워요!", "+행복",
     "시간 설정", "시", "분", "위로 스와이프: 취소", "언어",
     "메달!", "최고예요!", "%u일 연속!",
     "연속 %u  최고 %u", "유대감", "열매 ???", "빨간 열매", "파란 열매", "초록 열매",
     "%s   나이 %lud", "이름 탭: 이름변경",
-    "배틀", "공격", "방어", "속도", "무게", "힘 훈련",
+    "배틀", "공격", "방어", "속도", "무게", "배틀!",
     "메달 %d/%d", "탭: 뒤로",
     "이름:", "탭하면 뒤로",
     "포만", "기분", "기력", "청결",
@@ -271,6 +278,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "진화할까요?", "형태 유지", "작별할까요?", "작별", "계속 함께",
     "스타터를 선택하세요",
     "스프라이트 없음", "SD 카드에 넣어주세요",
+    "야생 %s!", "효과가 굉장했다!", "효과가 별로다", "효과 없음!", "승리!", "%s 쓰러짐", "도망쳤다", "도감 등록!", "%s 배움!", "너무 지쳤다!",
   },
 };
 

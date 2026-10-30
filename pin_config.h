@@ -24,6 +24,9 @@
 #define TP_INT 17
 #define TP_RESET 16
 
+// Boton BOOT
+#define KNOMI_BTN_PIN 0
+
 #else  // Waveshare ESP32-S3-Touch-AMOLED-1.75
 
 // Pines oficiales de la Waveshare ESP32-S3-Touch-AMOLED-1.75

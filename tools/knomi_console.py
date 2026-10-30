@@ -3,6 +3,7 @@
 ejecuta todos los pasos en orden:
 
   knomi_console.py "wait 40" "cmd STATS" "shot a.png" "cmd TAP 233 400" "wait 1" "shot b.png"
+  knomi_console.py "tapuntil 120 365 combate: gana" "shot fin.png"   toca hasta ver ese texto
 """
 import glob
 import struct
@@ -58,6 +59,7 @@ def shot(s, path):
     s.timeout = 15
     raw = s.read(need)
     s.timeout = 0.2
+    s.read_until(b'DONE', 8)  # cierre de la captura: que no lo lea el comando siguiente
     if len(raw) != need:
         print(f'captura corta: {len(raw)} de {need}')
         return
@@ -65,6 +67,21 @@ def shot(s, path):
     img.putdata([((c >> 8) & 0xF8, (c >> 3) & 0xFC, (c << 3) & 0xF8) for c in struct.unpack(f'<{w * h}H', raw)])
     img.resize((w * 2, h * 2), Image.NEAREST).save(path)
     print('ok', path, flush=True)
+
+
+def tap_until(s, x, y, text):
+    end = time.time() + 120
+    last = 0
+    while time.time() < end:
+        if time.time() - last > 1:
+            s.write(f'TAP {x} {y}\n'.encode())
+            last = time.time()
+        line = s.readline().decode('utf8', 'replace').rstrip()
+        if line and line != 'DONE':
+            print(line, flush=True)
+        if text in line:
+            return
+    print('(no aparecio)', text)
 
 
 def main():
@@ -77,6 +94,9 @@ def main():
             cmd(s, arg)
         elif verb == 'shot':
             shot(s, arg)
+        elif verb == 'tapuntil':
+            x, y, text = arg.split(' ', 2)
+            tap_until(s, x, y, text)
 
 
 if __name__ == '__main__':

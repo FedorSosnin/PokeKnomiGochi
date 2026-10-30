@@ -8,6 +8,10 @@
 // Minutos de juego por nivel. Con 60, CHARMANDER evoluciona a las ~16 h
 // de juego con cuidado perfecto. Baja a 1 para ver evoluciones al momento.
 #define MINUTES_PER_LEVEL 60
+#define BTL_WIN_TRAIN 6      // FUE por combate ganado
+#define BTL_LOSS_TRAIN 2     // y por perdido: tambien se aprende
+#define BTL_ENERGY_COST 12
+#define BTL_MIN_ENERGY 15    // por debajo no quiere pelear
 #define EAT_ANIM_MS 2500UL
 #define HEART_MS 1500UL
 #define EVOLVE_ANIM_MS 5200UL              // animacion de evolucion (mas larga = mas epica)
@@ -77,7 +81,8 @@ public:
   uint16_t newMedal = 0;   // recien conseguida(s), para celebrar
   uint16_t lastMilestone = 0;  // hito de racha ya celebrado
   uint16_t gameHi = 0;     // record del minijuego (del jugador)
-  uint16_t strHi = 0;      // record de golpes al saco
+  uint16_t battleWins = 0; // combates ganados por este individuo
+  uint8_t movesSeen = 1;   // ataques ya anunciados (para avisar del nuevo una sola vez)
 
   void begin();                 // carga estado de NVS (o crea el primer huevo)
   void update(uint32_t nowMs);  // llamar en cada loop()
@@ -90,7 +95,9 @@ public:
     return !isEgg() && (speciesId % 3) == color;  // gusto oculto por especie
   }
   void playResult(uint8_t score);  // recompensa del minijuego (entrena VEL)
-  uint8_t trainStrength(uint16_t hits);  // saco de entrenamiento (entrena FUE)
+  // combate: entrena FUE, cansa y, si gana, registra al rival. Devuelve la subida de FUE.
+  uint8_t battleResult(bool won, int16_t wildDex, bool *newInDex);
+  int16_t pickWildSpecies(uint8_t lvl);  // rival: sesgo hacia lo que falta en la pokedex
 
   // stats de combate: base real de gen 1 x genes + nivel + entrenamiento
   uint16_t atkStat() const;

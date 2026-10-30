@@ -26,12 +26,12 @@ Running on hardware. Implemented: the 151 + shinies animated from microSD, full
 life cycle (egg by rarity → evolution → farewell/release/runaway, each gated
 behind a decision dialog), bred-Pokédex with gallery, battle stats (genes +
 training), retention hooks (streak / bond / medals / name), biome + real-time
-backgrounds, ball minigame, training bag, animated bath, RTC with offline
+backgrounds, ball minigame, turn-based wild battles, animated bath, RTC with offline
 progression, battery (AXP2101) and PWR button, anti-burn-in dimming,
 **sound (ES8311)**, **8 UI languages (English default)**, **starter choice on
 first run**, and a one-click **web installer**.
 
-Pending: wild encounters / battle (designed, not implemented), 3D case, soak
+Pending: 3D case, soak
 test. See **Roadmap**.
 
 ## Game manual (the actual numbers)
@@ -64,7 +64,9 @@ While **awake**, per minute:
   → +35 FOOD, +10 JOY, ♥, bond, and it gets revealed.
 - 🍬 **Candy:** +10 FOOD, +12 JOY, but **+12 weight** (fattening).
 - ⚽ **Play / minigame:** +JOY, −ENE; the minigame trains **SPEED** and burns weight.
-- 🥊 **Training bag:** trains **STRENGTH** (~4 hits = 1 pt, cap +18/session), tires it.
+- ⚔️ **Wild battles:** turn-based, Gen-1 style. Everyone knows TACKLE and learns a type move
+  at **level 10**. A win gives **STRENGTH +6** and adds the species to the Pokédex; a loss
+  gives +2 and never hurts for good. Each fight costs 12 energy; below 15, or asleep, it refuses.
 - 🫧 **Bath:** clears poops, HYG → 100.
 - 👆 **Pet it:** +5 JOY + bond.
 - 🌙 **Sleep:** rest — ENE **+6/min**, needs drain ~**4× slower** with floors
@@ -118,8 +120,8 @@ After any ending, a **new egg** appears.
 - **Pokédex:** raising a species registers it; **151 + shinies** to complete.
 
 ### Battle stats
-ATK / DEF / SPD = real **Gen-1 base** × genes + level + training (STRENGTH ← bag,
-SPEED ← minigame, DEFENSE ← 12 h of unbroken good care). *(Battles: on the roadmap.)*
+ATK / DEF / SPD = real **Gen-1 base** × genes + level + training (STRENGTH ← battles,
+SPEED ← minigame, DEFENSE ← 12 h of unbroken good care).
 
 ## Hardware
 
@@ -134,6 +136,14 @@ SPEED ← minigame, DEFENSE ← 12 h of unbroken good care). *(Battles: on the r
   microSD slot, **ES8311** audio codec (→ amplifier → external speaker on the
   MX1.25 connector)
 - Pins taken from the [official Waveshare repo](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75) (see `pin_config.h`)
+
+## BTT Knomi V2
+
+The game also runs on the **BIGTREETECH Knomi V2** (GC9A01 240x240, CST816S touch, no SD, audio,
+RTC or battery). Build flag `BOARD_KNOMI_V2`; `tools/knomi_flash.sh` compiles and flashes the
+firmware plus the sprites, packed into flash (`tools/pack_flash.py`). The clock comes from NTP using
+the Wi-Fi the Knomi already has saved. The BOOT button starts a wild battle (tap) or toggles the
+screen (hold).
 
 ## Libraries (Arduino IDE / arduino-cli)
 
@@ -209,7 +219,7 @@ If one bottoms out it counts as a *slip-up*.
 - Horizontal swipe = open the **Pokédex / gallery**.
 - Vertical swipe up = open the **stat card** (4 pages: Profile / Battle / Medals /
   Progress; swipe between them; tap the name on Profile to rename; on Battle the
-  "Train strength" button opens the bag).
+  "Fight!" button starts a wild battle).
 - Swipe down = **set the clock** and pick the **language** + sound on/off.
 - Long press (3 s) on the creature = **release** dialog.
 
@@ -267,7 +277,7 @@ Each creature has ATK/DEF/SPD = real gen-1 base × **genes** (90–110 %, rolled
 hatch) + level + **training**:
 - SPEED ← the minigame
 - DEFENSE ← sustained good care (12 h with no slip-ups)
-- STRENGTH ← the training bag (whacking)
+- STRENGTH ← wild battles
 
 Shown on the Battle page of the stat card. The (hidden) weight goes up with candy
 and burns off with training.
@@ -368,9 +378,7 @@ To test fast: lower `PET_TICK_MS`, `MINUTES_PER_LEVEL` and `FAREWELL_AGE_MIN` in
 
 ## Roadmap
 
-- **Wild encounters / battle** — designed (see project memory): resolution by
-  ATK/DEF/SPD with PMD Attack/Hurt animations, trainer rank as endgame. Style
-  still to pick (auto / timing / turn-based).
+- **Battles, next steps:** trainer rank as endgame, more moves per species.
 - **Soak test** 24–48 h (instrumentation ready: `HEALTH` command/heartbeat).
 
 *(Done: 3D-printed case [published on MakerWorld](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi); repo public with the browser installer + one-click sprite bundle.)*

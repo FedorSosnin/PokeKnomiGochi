@@ -411,46 +411,81 @@ TEST(stats, el_huevo_no_tiene_stats) {
   CHECK_EQ(p.speStat(), (uint16_t)0);
 }
 
-TEST(train, saco_da_un_punto_cada_4_golpes_con_tope) {
+TEST(train, ganar_entrena_mas_que_perder) {
   Pet p;
   makePet(p, 4);
-  CHECK_EQ(p.trainStrength(0), (uint8_t)0);
-  CHECK_EQ(p.trainStrength(40), (uint8_t)10);
-  CHECK_EQ(p.trAtk, (uint8_t)10);
-  CHECK_MSG(p.trainStrength(1000) == 18, "tope de 18 por sesion");
-  CHECK_EQ(p.strHi, (uint16_t)1000);
+  CHECK_EQ(p.battleResult(true, 16, nullptr), (uint8_t)BTL_WIN_TRAIN);
+  CHECK_EQ(p.battleResult(false, 16, nullptr), (uint8_t)BTL_LOSS_TRAIN);
+  CHECK_EQ(p.trAtk, (uint8_t)(BTL_WIN_TRAIN + BTL_LOSS_TRAIN));
+  CHECK_EQ(p.battleWins, (uint16_t)1);
 }
 
-// Arreglado al portar la bateria: trainStrength() devolvia la subida teorica
-TEST(train, el_saco_anuncia_lo_que_de_verdad_sube) {
+TEST(train, el_combate_anuncia_lo_que_de_verdad_sube) {
   Pet p;
   makePet(p, 4);
-  p.trAtk = 95;
-  uint8_t before = p.trAtk;
-  uint8_t gain = p.trainStrength(72);  // 72/4 = 18, pero solo caben 5
-  CHECK_EQ(gain, (uint8_t)(p.trAtk - before));
-}
-
-TEST(train, entrenamiento_topa_en_100) {
-  Pet p;
-  makePet(p, 4);
-  for (int i = 0; i < 20; i++) p.trainStrength(80);
+  p.trAtk = 98;
+  CHECK_EQ(p.battleResult(true, 16, nullptr), (uint8_t)2);
   CHECK_EQ(p.trAtk, (uint8_t)100);
+  CHECK_EQ(p.battleResult(true, 16, nullptr), (uint8_t)0);
 }
 
-TEST(train, el_saco_cansa_y_quema_peso) {
+TEST(train, el_combate_cansa_y_quema_peso) {
   Pet p;
   makePet(p, 4);
   p.weight = 40;
   p.energy = 80;
   p.fullness = 80;
-  p.trainStrength(30);
-  CHECK_EQ(p.energy, (uint8_t)68);
+  p.battleResult(false, 16, nullptr);
+  CHECK_EQ(p.energy, (uint8_t)(80 - BTL_ENERGY_COST));
   CHECK_EQ(p.fullness, (uint8_t)75);
-  CHECK_EQ(p.weight, (uint8_t)30);
+  CHECK_EQ(p.weight, (uint8_t)35);
   p.energy = 3;  // el suelo protege de dejarlo a cero
-  p.trainStrength(30);
+  p.battleResult(false, 16, nullptr);
   CHECK_EQ(p.energy, (uint8_t)3);
+}
+
+TEST(train, ganar_registra_al_rival_y_perder_no) {
+  Pet p;
+  makePet(p, 4);
+  bool isNew = true;
+  p.battleResult(false, 25, &isNew);
+  CHECK(!isNew);
+  CHECK(!p.isRegistered(25));
+  p.battleResult(true, 25, &isNew);
+  CHECK(isNew);
+  CHECK(p.isRegistered(25));
+  p.battleResult(true, 25, &isNew);
+  CHECK_MSG(!isNew, "solo es nuevo la primera vez");
+}
+
+TEST(train, una_mascota_shiny_no_registra_rivales_como_shiny) {
+  Pet p;
+  makePet(p, 4);
+  p.shiny = true;
+  p.battleResult(true, 25, nullptr);
+  CHECK(p.isRegistered(25));
+  CHECK(!p.isShinyRegistered(25));
+}
+
+TEST(train, el_rival_respeta_niveles_de_evolucion_y_legendarios) {
+  Pet p;
+  makePet(p, 4);
+  for (int i = 0; i < 2000; i++) {
+    int16_t d = p.pickWildSpecies(5);
+    CHECK(d >= 1 && d <= 151);
+    CHECK_MSG(DEX_TBL[d].rarity != R_LEGENDARIO, "legendario a nivel 5");
+    CHECK_MSG(d != 3 && d != 6 && d != 9, "forma final a nivel 5");
+  }
+}
+
+TEST(train, el_rival_prefiere_lo_que_falta_en_la_pokedex) {
+  Pet p;
+  makePet(p, 4);
+  for (int16_t d = 1; d <= 75; d++) p.battleResult(true, d, nullptr);
+  int fresh = 0;
+  for (int i = 0; i < 1000; i++)
+    if (!p.isRegistered(p.pickWildSpecies(50))) fresh++;
+  CHECK_MSG(fresh > 600, "al menos el 70% busca especies nuevas");
 }
 
 TEST(play, minijuego_entrena_velocidad_y_guarda_record) {

@@ -1,4 +1,5 @@
 #include "pet.h"
+#include "battle.h"
 #include "dex.h"
 #include "audio.h"
 
@@ -392,6 +393,8 @@ void Pet::hatch() {
   geneDef = 90 + random(21);
   geneSpe = 90 + random(21);
   trAtk = trDef = trSpe = 0;
+  battleWins = 0;
+  movesSeen = 1;
   berryKnown = false;
   bond = 0;          // vinculo, medallas y nombre son del individuo
   bondToday = 0;
@@ -483,27 +486,55 @@ void Pet::playResult(uint8_t score) {
   save();
 }
 
-// saco de entrenamiento: los golpes entrenan la fuerza. Devuelve la subida.
-uint8_t Pet::trainStrength(uint16_t hits) {
+// combate: ganar entrena mas que perder, y perder nunca hace dano permanente
+uint8_t Pet::battleResult(bool won, int16_t wildDex, bool *newInDex) {
+  if (newInDex) *newInDex = false;
   if (ceremony != CER_NONE || isEgg()) return 0;
-  uint8_t gain = hits / 4;          // ~4 golpes = 1 punto de entrenamiento
-  if (gain > 18) gain = 18;         // tope por sesion: la FUE se forja a fuego lento
   uint8_t antes = trAtk;
-  uint16_t v = (uint16_t)trAtk + gain;
+  uint16_t v = (uint16_t)trAtk + (won ? BTL_WIN_TRAIN : BTL_LOSS_TRAIN);
   trAtk = v > 100 ? 100 : (uint8_t)v;
-  gain = trAtk - antes;             // lo que de verdad entro: al topar en 100 la
-                                    // pantalla anunciaba +18 aunque cupieran menos
-  energy = dropTo(energy, 12, 5);   // cansa
+  uint8_t gain = trAtk - antes;
+  energy = dropTo(energy, BTL_ENERGY_COST, 5);
   fullness = dropTo(fullness, 5, 5);
-  int burn = (int)weight - hits / 3;  // tambien quema peso
+  int burn = (int)weight - 5;  // el ejercicio quema peso
   weight = burn > 0 ? burn : 0;
-  joy = clamp100(joy + 6);
-  if (hits >= 20) heartUntil = millis() + HEART_MS;
-  if (hits > strHi) strHi = hits;   // record de golpes
+  if (won) {
+    if (battleWins < 65535) battleWins++;
+    joy = clamp100(joy + 10);
+    heartUntil = millis() + HEART_MS;
+    // directo al bit normal: registerSpecies() marcaria el shiny si la mascota lo es
+    if (wildDex >= 1 && wildDex <= 151 && !isRegistered(wildDex)) {
+      dexReg[(wildDex - 1) >> 3] |= (1 << ((wildDex - 1) & 7));
+      if (newInDex) *newInDex = true;
+    }
+  } else {
+    joy = dropTo(joy, 3, 5);
+  }
   addBond(2);
   registerCare();
   save();
   return gain;
+}
+
+int16_t Pet::pickWildSpecies(uint8_t lvl) {
+  // los legendarios son el final de partida, como en los huevos
+  bool legend = registeredCount() >= 25 && lvl >= 40 && random(100) < 3;
+  bool preferNew = random(100) < 70;
+  for (int pass = 0; pass < 3; pass++) {
+    int16_t cand[151];
+    int n = 0;
+    for (int16_t d = 1; d <= 151; d++) {
+      uint8_t r = DEX_TBL[d].rarity;
+      if (legend ? r != R_LEGENDARIO : r == R_LEGENDARIO) continue;
+      if (btlMinLevel(d) > lvl) continue;
+      if (pass == 0 && preferNew && isRegistered(d)) continue;
+      if (pass == 0 && r == R_RARO && random(100) < 60) continue;  // los raros, menos a menudo
+      cand[n++] = d;
+    }
+    if (n > 0) return cand[random(n)];
+    legend = false;
+  }
+  return 16;  // inalcanzable: las formas base siempre son candidatas
 }
 
 void Pet::play() {
@@ -593,7 +624,8 @@ void Pet::save() {
   prefs.putUShort("tmedal", totalMedals);
   prefs.putUShort("mstone", lastMilestone);
   prefs.putUShort("ghi", gameHi);
-  prefs.putUShort("shi", strHi);
+  prefs.putUShort("bwin", battleWins);
+  prefs.putUChar("bmov", movesSeen);
   prefs.putString("nick", nick);
 }
 
@@ -645,7 +677,8 @@ void Pet::load() {
   totalMedals = prefs.getUShort("tmedal", 0);
   lastMilestone = prefs.getUShort("mstone", 0);
   gameHi = prefs.getUShort("ghi", 0);
-  strHi = prefs.getUShort("shi", 0);
+  battleWins = prefs.getUShort("bwin", 0);
+  movesSeen = prefs.getUChar("bmov", 1);
   prefs.getString("nick", nick, sizeof(nick));
   // siembra: la mascota actual cuenta como criada (guardados antiguos)
   if (speciesId >= 1) registerSpecies(speciesId);

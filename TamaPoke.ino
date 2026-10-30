@@ -30,6 +30,7 @@
 #include "audio.h"
 #include "blit.h"
 #include "power.h"
+#include "battle.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
@@ -111,13 +112,18 @@ float hitX, hitY;             // ultimo golpe (anillo de impacto)
 uint32_t hitTime = 0;
 bool gameNewHi = false;
 
-// saco de entrenamiento (entrena la fuerza)
-bool sackOpen = false;
-uint32_t sackUntil = 0, sackOverUntil = 0;
-uint16_t sackHits = 0;
-float sackShake = 0;
-uint8_t sackGain = 0;
-bool sackNewHi = false;
+// combate contra un rival salvaje (entrena la fuerza y llena la pokedex)
+enum BattlePhase : uint8_t { BP_TIRED, BP_INTRO, BP_LEARNED, BP_CHOOSE, BP_ATTACK, BP_HIT, BP_EFFECT, BP_RAN, BP_END };
+bool battleOpen = false;
+BattlePhase bPhase = BP_INTRO;
+uint32_t bPhaseT = 0;
+BtlFighter bMe, bFoe;
+PmdMon wildPmd;
+float bShownMe = 0, bShownFoe = 0;  // vida en pantalla: baja poco a poco hasta la real
+struct { bool mine; uint8_t move; } bTurn[2];
+uint8_t bStep = 0, bLastEff = 2;
+uint8_t bGain = 0;
+bool bWon = false, bNewDex = false;
 
 // las 9 especies con sprite propio en flash (respaldo sin SD): dex -> indice
 int flashIdxForDex(int16_t dex) {
@@ -231,6 +237,9 @@ void setup() {
   pinMode(TP_INT, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(TP_INT), touchIsr, FALLING);
 
+#ifdef BOARD_KNOMI_V2
+  pinMode(KNOMI_BTN_PIN, INPUT_PULLUP);
+#endif
   pet.begin();
   sdBegin();
   thumbs.load();
@@ -316,6 +325,9 @@ void loop() {
       if (!screenOff) wakeUI();
     }
   }
+#ifdef BOARD_KNOMI_V2
+  handleKnomiButton(now);
+#endif
 
   updateBrightness(now);
 
@@ -389,7 +401,7 @@ PowerCtx powerCtx(uint32_t now) {
   c.idleMs = idleSince(now, lastInteract);
   c.screenOff = screenOff;
   c.sleeping = pet.sleeping;
-  c.gameOpen = gameOpen || sackOpen;
+  c.gameOpen = gameOpen || battleOpen;
   c.usb = usbPresent();
   c.charging = batCharging();
   c.batPct = batPercent();
@@ -491,7 +503,13 @@ void handleSerial() {
     return;
   }
 #endif
-  if (line == "HATCH") {
+  if (line == "BATTLE") {
+    startBattle();
+    Serial.println("DONE");
+  } else if (line.startsWith("WILD ")) {  // rival concreto (pruebas)
+    startBattleWith(line.substring(5).toInt());
+    Serial.println("DONE");
+  } else if (line == "HATCH") {
     pet.eggTap(); pet.eggTap(); pet.eggTap();
     Serial.println("DONE");
   } else if (line.startsWith("SPEC ")) {
@@ -622,12 +640,11 @@ void handleTouch() {
   int16_t x, y;
   bool pressed = touch.getPoint(&x, &y, 1) > 0;
 
-  // saco de entrenamiento: cada toque cuenta al instante (aporrear rapido)
-  if (sackOpen) {
+  // combate: responde al toque, sin gestos
+  if (battleOpen) {
     if (pressed && !wasPressed) {
       wakeUI();
-      if (y < 72) sackOpen = false;  // tocar arriba = abandonar
-      else sackTap();
+      battleTap(x, y);
     }
     wasPressed = pressed;
     return;
@@ -669,7 +686,7 @@ void openClock();  // prototipo
 
 void onSwipeV(int dir) {
   if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
-  if (gameOpen || galleryOpen || kbOpen || sackOpen || pet.ceremony) return;
+  if (gameOpen || galleryOpen || kbOpen || battleOpen || pet.ceremony) return;
   if (clockOpen) { clockOpen = false; return; }
   if (cardOpen) {
     if (dir < 0) cardOpen = false;  // arriba cierra la ficha
@@ -749,8 +766,8 @@ void onTap(int16_t x, int16_t y) {
   if (cardOpen) {
     if (cardPage == 0 && y < 84) openKeyboard();  // tocar el nombre = renombrar
     else if (cardPage == 1 && y >= 300 && y <= 340 && x >= 96 && x <= 370) {
-      cardOpen = false;            // boton ENTRENAR FUERZA
-      startSack();
+      cardOpen = false;            // boton de combate
+      startBattle();
     } else {
       cardOpen = false;
     }
@@ -1099,7 +1116,7 @@ void printT(const char *s) {
 // mientras su "clave" no cambie no se repintan ni se vuelcan por QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (galleryOpen || gameOpen || sackOpen) return false;  // la galeria gestiona su propio repintado
+  if (galleryOpen || gameOpen || battleOpen) return false;  // la galeria gestiona su propio repintado
   if (kbOpen || clockOpen) return true;
   return cardOpen && cardPage != 0;  // la pagina 0 tiene el retrato animado
 }
@@ -1121,7 +1138,7 @@ static uint32_t screenKey() {
                         (uint32_t)pet.trAtk, (uint32_t)pet.trDef, (uint32_t)pet.trSpe, (uint32_t)pet.geneAtk,
                         (uint32_t)pet.geneDef, (uint32_t)pet.geneSpe, (uint32_t)pet.careMistakes,
                         (uint32_t)pet.fullness, (uint32_t)pet.joy, (uint32_t)pet.energy, (uint32_t)pet.hygiene,
-                        (uint32_t)pet.berryKnown, (uint32_t)pet.strHi, (uint32_t)gLang })
+                        (uint32_t)pet.berryKnown, (uint32_t)pet.battleWins, (uint32_t)gLang })
       h = mixKey(h, v);
     for (const char *c = pet.nick; *c; c++) h = mixKey(h, (uint8_t)*c);
   }
@@ -1152,8 +1169,8 @@ bool render() {
     renderGame();
     return true;
   }
-  if (sackOpen) {
-    renderSack();
+  if (battleOpen) {
+    renderBattle();
     return true;
   }
   if (kbOpen) {
@@ -1380,100 +1397,315 @@ void stepGame() {
 
 // ---------- saco de entrenamiento (entrena la fuerza) ----------
 
-void startSack() {
-  if (pet.isEgg() || pet.sleeping || pet.ceremony) return;
-  sackOpen = true;
-  sackUntil = millis() + 10000;
-  sackOverUntil = 0;
-  sackHits = 0;
-  sackShake = 0;
-  sackNewHi = false;
-}
+#ifdef BOARD_KNOMI_V2
+// Boton BOOT del Knomi (GPIO0, activo en bajo): toque = rival salvaje, mantener = pantalla.
+// La linea DTR del CH340 tambien mueve este pin al abrir el puerto serie, de ahi la espera
+// tras arrancar. Mantenerlo pulsado durante un reset sigue entrando en modo de grabacion.
+#define KNOMI_BTN_HOLD_MS 800
 
-void sackTap() {
-  if (!timeLeft(sackUntil)) return;  // ya termino el tiempo
-  sackHits++;
-  sackShake = 16;  // sacude el saco
-}
-
-void drawGameScene();  // prototipo (definida mas abajo)
-
-void renderSack() {
-  uint32_t now = millis();
-  drawGameScene();  // fondo del habitat
-  bool night = sceneHour() < 6 || sceneHour() >= 20;
-  uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
-
-  // pantalla de resultado
-  if (sackOverUntil) {
-    if (!timeLeft(sackOverUntil)) { sackOpen = false; return; }
-    char b[20];
-    snprintf(b, sizeof(b), T(S_HITS_FMT), sackHits);
-    gfx->setTextColor(ink);
-    setSize(4);
-    setCur(centerX(b, 4), 150);
-    printT(b);
-    char g[18];
-    snprintf(g, sizeof(g), T(S_STR_GAIN_FMT), sackGain);
-    gfx->setTextColor(UI_BAR_BAD);
-    setSize(3);
-    setCur(centerX(g, 3), 210);
-    printT(g);
-    setSize(2);
-    if (sackNewHi && sackHits > 0) {
-      gfx->setTextColor(UI_BAR_WARN);
-      setCur(centerX(T(S_NEW_RECORD), 2), 256);
-      printT(T(S_NEW_RECORD));
-    } else {
-      char r[18];
-      snprintf(r, sizeof(r), T(S_RECORD_FMT), pet.strHi);
-      gfx->setTextColor(ink);
-      setCur(centerX(r, 2), 256);
-      printT(r);
-    }
-    gfx->flush();
+void knomiButtonEvent(bool hold) {
+  if (hold) {
+    screenOff = !screenOff;
+    if (!screenOff) wakeUI();
     return;
   }
+  bool wasAsleep = screenOff || dimStage > 0;
+  screenOff = false;
+  wakeUI();
+  if (wasAsleep) return;  // a oscuras solo despierta, como la pantalla tactil
+  if (gameOpen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
+  startBattle();
+}
 
-  // se acabaron los 10 s: aplicar entrenamiento
-  if (!timeLeft(sackUntil)) {
-    sackNewHi = (sackHits > pet.strHi);
-    sackGain = pet.trainStrength(sackHits);
-    sfxPlay(sackNewHi ? SFX_MEDAL : SFX_PLAY);
-    sackOverUntil = now + 3500;
-    gfx->flush();
+void handleKnomiButton(uint32_t now) {
+  static uint32_t downAt = 0;
+  static bool down = false, held = false;
+  if (now < 3000) return;
+  bool pressed = digitalRead(KNOMI_BTN_PIN) == LOW;
+  if (pressed && !down) {
+    down = true;
+    held = false;
+    downAt = now;
+  } else if (pressed && !held && now - downAt >= KNOMI_BTN_HOLD_MS) {
+    held = true;
+    knomiButtonEvent(true);
+  } else if (!pressed && down) {
+    down = false;
+    if (!held && now - downAt >= 30) knomiButtonEvent(false);  // 30 ms: antirrebote
+  }
+}
+#endif
+
+// ---------- combate ----------
+// Banda inferior de mensajes y botones; lo que hay por encima es la escena, como en gen 1.
+#define BTL_BAND_Y 336
+#define BTL_FOE_X 330
+#define BTL_FOE_GROUND 186
+#define BTL_ME_X 128
+#define BTL_ME_GROUND 322
+
+void battleSetPhase(BattlePhase p) {
+  bPhase = p;
+  bPhaseT = millis();
+}
+
+void startBattleWith(int16_t dex) {
+  if (pet.isEgg() || pet.ceremony || battleOpen || !pmd.loaded) return;
+  uint8_t lvl = btlCapLevel(pet.level());
+  if (pet.sleeping || pet.energy < BTL_MIN_ENERGY) {
+    battleOpen = true;  // un aviso breve en vez de un boton que no hace nada
+    sfxPlay(SFX_DENY);
+    battleSetPhase(BP_TIRED);
     return;
   }
+  uint8_t foeLvl = btlWildLevel(lvl, random(4));
+  if (dex < 1 || dex > DEX_COUNT) dex = pet.pickWildSpecies(foeLvl);
+  wildPmd.load(dex, false);
+  if (!wildPmd.loaded) return;  // sin sprite no hay rival que ensenar
 
-  // aporreo activo
-  sackShake *= 0.84f;
-  int off = (int)(sackShake * sinf(now * 0.05f));
-  int sx = CX + off, top = 86, sy = 150;
-  gfx->fillRect(CX - 3, 56, 6, top - 56, ink);          // gancho/cuerda
-  gfx->fillRect(sx - 4, top - 30, 8, 34, ink);          // cadena
-  gfx->fillRoundRect(sx - 42, top, 84, 150, 26, C565(0xb5, 0x3a, 0x3a));  // saco
-  gfx->fillRoundRect(sx - 42, top, 84, 22, 18, C565(0x7e, 0x28, 0x28));   // tapa
-  gfx->drawRoundRect(sx - 42, top, 84, 150, 26, ink);
-  gfx->fillRect(sx - 42, top + 70, 84, 4, C565(0x7e, 0x28, 0x28));        // costura
+  const DexEntry &d = DEX_TBL[pet.speciesId];
+  bMe = BtlFighter();
+  bMe.dex = pet.speciesId;
+  bMe.level = lvl;
+  bMe.hp = bMe.maxHp = btlMaxHp(d.bHp, lvl);
+  bMe.atk = btlStat(d.bAtk, pet.geneAtk, lvl, pet.trAtk);
+  bMe.def = btlStat(d.bDef, pet.geneDef, lvl, pet.trDef);
+  bMe.spe = btlStat(d.bSpe, pet.geneSpe, lvl, pet.trSpe);
+  bFoe = btlMakeWild(dex, foeLvl, btlWildGene(random(16)));
+  bShownMe = bMe.hp;
+  bShownFoe = bFoe.hp;
+  bWon = bNewDex = false;
+  bGain = 0;
+  battleOpen = true;
+  battleSetPhase(BP_INTRO);
+  sfxPlay(SFX_PLAY);
+  Serial.printf("combate: rival #%d Nv.%u\n", dex, foeLvl);
+}
 
-  // contador de golpes
-  char buf[8];
-  snprintf(buf, sizeof(buf), "%u", sackHits);
-  gfx->setTextColor(ink);
-  setSize(6);
-  setCur(centerX(buf, 6), 268);
-  printT(buf);
+void startBattle() { startBattleWith(0); }
 
+void closeBattle() {
+  battleOpen = false;
+  wildPmd.unload();
+}
+
+void battleMoveRect(uint8_t i, int &x0, int &x1) {
+  if (btlMoveCount(bMe.level) == 1) { x0 = 116; x1 = 350; return; }
+  x0 = i == 0 ? 62 : 238;
+  x1 = i == 0 ? 228 : 404;
+}
+
+void battleTap(int16_t x, int16_t y) {
+  if (bPhase == BP_END) {
+    if (millis() - bPhaseT > 800) closeBattle();  // tiempo para leer el resultado
+    return;
+  }
+  if (bPhase != BP_CHOOSE) return;
+  if (y >= 392 && x >= 160 && x <= 306) {
+    sfxPlay(SFX_TAP);
+    battleSetPhase(BP_RAN);
+    return;
+  }
+  if (y < 344 || y > 386) return;
+  for (uint8_t i = 0; i < btlMoveCount(bMe.level); i++) {
+    int x0, x1;
+    battleMoveRect(i, x0, x1);
+    if (x < x0 || x > x1) continue;
+    sfxPlay(SFX_TAP);
+    bool first = btlPlayerFirst(bMe.spe, bFoe.spe, random(2));
+    uint8_t foeMove = btlWildMove(bFoe.level, random(100));
+    bTurn[0] = { first, first ? i : foeMove };
+    bTurn[1] = { !first, first ? foeMove : i };
+    bStep = 0;
+    battleSetPhase(BP_ATTACK);
+    return;
+  }
+}
+
+void battleFinish(bool won) {
+  bWon = won;
+  bGain = pet.battleResult(won, bFoe.dex, &bNewDex);
+  sfxPlay(won ? (bNewDex ? SFX_MEDAL : SFX_LEVEL) : SFX_DENY);
+  Serial.printf("combate: gana=%d fuerza+%u nuevo=%d\n", won, bGain, bNewDex);
+  battleSetPhase(BP_END);
+}
+
+// aplica el golpe del turno en curso
+void battleApplyHit() {
+  bool mine = bTurn[bStep].mine;
+  BtlFighter &a = mine ? bMe : bFoe, &t = mine ? bFoe : bMe;
+  uint8_t aType = DEX_TBL[a.dex].type, tType = DEX_TBL[t.dex].type;
+  BtlMove m = btlMove(aType, bTurn[bStep].move);
+  uint16_t dmg = btlDamage(a.level, m, a.atk, t.def, aType, tType, 85 + random(16));
+  bLastEff = btlEffect(m.type, tType);
+  t.hp = dmg >= t.hp ? 0 : t.hp - dmg;
+  if (dmg) sfxPlay(SFX_PLAY);
+}
+
+void battleAfterHit() {
+  if (bFoe.hp == 0) { battleFinish(true); return; }
+  if (bMe.hp == 0) { battleFinish(false); return; }
+  if (++bStep < 2) battleSetPhase(BP_ATTACK);
+  else battleSetPhase(BP_CHOOSE);
+}
+
+void battleStep() {
+  uint32_t t = millis() - bPhaseT;
+  switch (bPhase) {
+    case BP_TIRED: if (t > 1500) closeBattle(); break;
+    case BP_INTRO:
+      if (t > 1800) {
+        uint8_t n = btlMoveCount(bMe.level);
+        if (n > pet.movesSeen) {  // se avisa del ataque nuevo una sola vez
+          pet.movesSeen = n;
+          sfxPlay(SFX_MEDAL);
+          battleSetPhase(BP_LEARNED);
+        } else battleSetPhase(BP_CHOOSE);
+      }
+      break;
+    case BP_LEARNED: if (t > 2000) battleSetPhase(BP_CHOOSE); break;
+    case BP_CHOOSE:  // nadie responde: huye solo para que la pantalla pueda atenuarse
+      if (idleSince(millis(), lastInteract) > 60000) battleSetPhase(BP_RAN);
+      break;
+    case BP_ATTACK:
+      if (t > 800) { battleApplyHit(); battleSetPhase(BP_HIT); }
+      break;
+    case BP_HIT:
+      if (t > 700) {
+        if (bLastEff != 2) battleSetPhase(BP_EFFECT);
+        else battleAfterHit();
+      }
+      break;
+    case BP_EFFECT: if (t > 1000) battleAfterHit(); break;
+    case BP_RAN: if (t > 1200) closeBattle(); break;
+    case BP_END: if (t > 6000) closeBattle(); break;
+  }
+}
+
+void drawBattlePanel(int x, int y, const BtlFighter &f, float shown, bool numbers) {
+  gfx->fillRoundRect(x, y, 178, 62, 10, UI_WHITE);
+  gfx->drawRoundRect(x, y, 178, 62, 10, UI_INK);
+  gfx->setTextColor(UI_INK);
   setSize(2);
-  setCur(centerX(T(S_HIT_FAST), 2), 322);
-  printT(T(S_HIT_FAST));
+  setCur(x + 10, y + 6);
+  printT(dexName(f.dex));
+  float pct = f.maxHp ? shown / f.maxHp : 0;
+  gfx->fillRoundRect(x + 10, y + 28, 158, 10, 4, UI_TRACK);
+  int w = (int)(158 * pct);
+  if (w > 2) gfx->fillRoundRect(x + 10, y + 28, w, 10, 4, pct > 0.5f ? UI_BAR_OK : (pct > 0.2f ? UI_BAR_WARN : UI_BAR_BAD));
+  char b[16];
+  if (numbers) snprintf(b, sizeof(b), "L%u  %u/%u", f.level, (unsigned)(shown + 0.5f), f.maxHp);
+  else snprintf(b, sizeof(b), "L%u", f.level);
+  setCur(x + 10, y + 42);
+  printT(b);
+}
 
-  // barra de tiempo
-  uint32_t left = sackUntil - now;
-  int bw = 280, fw = (int)((uint32_t)bw * left / 10000);
-  gfx->fillRoundRect(CX - bw / 2, 350, bw, 16, 5, UI_TRACK);
-  if (fw > 2) gfx->fillRoundRect(CX - bw / 2, 350, fw, 16, 5, UI_BAR_OK);
+void drawBattleFighter(PmdMon &m, bool mine, int cx, int ground, uint8_t maxS) {
+  uint32_t now = millis(), t = now - bPhaseT;
+  uint8_t act = PMD_IDLE;
+  bool attacking = bPhase == BP_ATTACK && bTurn[bStep].mine == mine;
+  bool hurt = (bPhase == BP_HIT || bPhase == BP_EFFECT) && bTurn[bStep].mine != mine && bLastEff != 0;
+  int x = cx, y = ground;
+  if (attacking) {
+    if (m.has(PMD_ATTACK)) act = PMD_ATTACK;
+    float k = sinf(min(t, 800UL) * 3.14159f / 800.0f);  // embestida hacia el rival
+    x += (int)((mine ? 34 : -34) * k);
+    y += (int)((mine ? -14 : 14) * k);
+  } else if (hurt && bPhase == BP_HIT) {
+    if (m.has(PMD_HURT)) act = PMD_HURT;
+    if ((t / 90) % 2) return;  // parpadeo del golpe
+  }
+  if (bPhase == BP_END && (mine ? bMe.hp : bFoe.hp) == 0) return;  // el derrotado ya no esta
+  drawPmdActM(m, act, x, y, now - bPhaseT, true, false, maxS);
+}
 
+void battleCenterLine(const char *s, int y) {
+  setCur(centerX(s, 2), y);
+  printT(s);
+}
+
+void renderBattle() {
+  if (pet.ceremony) { closeBattle(); return; }  // la despedida manda
+  battleStep();
+  if (!battleOpen) return;
+
+  drawGameScene();
+  bool tired = bPhase == BP_TIRED;
+  if (!tired) {
+    uint8_t bio = DEX_TBL[bFoe.dex].biome;
+    uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
+    if (sceneHour() < 6 || sceneHour() >= 20) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
+    gfx->fillRect(0, 232, 466, BTL_BAND_Y - 232, soil);
+    gfx->fillRoundRect(BTL_FOE_X - 70, BTL_FOE_GROUND - 10, 140, 24, 12, soil);
+    // la vida en pantalla persigue a la real
+    bShownMe += (bMe.hp - bShownMe) * 0.28f;
+    bShownFoe += (bFoe.hp - bShownFoe) * 0.28f;
+    drawBattleFighter(wildPmd, false, BTL_FOE_X, BTL_FOE_GROUND, 3);
+    drawBattleFighter(pmd, true, BTL_ME_X, BTL_ME_GROUND, 4);
+    drawBattlePanel(72, 64, bFoe, bShownFoe, false);
+    drawBattlePanel(226, 256, bMe, bShownMe, true);
+  } else {
+    drawPmdAct(pet.sleeping && pmd.has(PMD_SLEEP) ? PMD_SLEEP : PMD_IDLE, CX, 300, millis(), true, false, 4);
+  }
+
+  gfx->fillRect(0, BTL_BAND_Y, 466, 466 - BTL_BAND_Y, UI_BG_DAY);
+  gfx->fillRect(0, BTL_BAND_Y, 466, 3, UI_INK);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  char b[48];
+  switch (bPhase) {
+    case BP_TIRED: battleCenterLine(T(S_BTL_TIRED), 380); break;
+    case BP_INTRO:
+      snprintf(b, sizeof(b), T(S_BTL_WILD), dexName(bFoe.dex));
+      battleCenterLine(b, 380);
+      break;
+    case BP_LEARNED:
+      snprintf(b, sizeof(b), T(S_BTL_LEARNED), btlMove(DEX_TBL[bMe.dex].type, 1).name);
+      battleCenterLine(b, 380);
+      break;
+    case BP_CHOOSE:
+      for (uint8_t i = 0; i < btlMoveCount(bMe.level); i++) {
+        BtlMove m = btlMove(DEX_TBL[bMe.dex].type, i);
+        int x0, x1;
+        battleMoveRect(i, x0, x1);
+        gfx->fillRoundRect(x0, 346, x1 - x0, 40, 10, TYPE_ACCENT[m.type]);
+        gfx->setTextColor(UI_WHITE);
+        setCur((x0 + x1) / 2 - (int)strlen(m.name) * 6, 359);
+        printT(m.name);
+      }
+      gfx->fillRoundRect(160, 394, 146, 38, 10, UI_TRACK);
+      gfx->setTextColor(UI_INK);
+      battleCenterLine(T(S_BTL_RUN), 406);
+      break;
+    case BP_ATTACK:
+    case BP_HIT: {
+      const BtlFighter &a = bTurn[bStep].mine ? bMe : bFoe;
+      snprintf(b, sizeof(b), "%s: %s!", dexName(a.dex), btlMove(DEX_TBL[a.dex].type, bTurn[bStep].move).name);
+      battleCenterLine(b, 380);
+      break;
+    }
+    case BP_EFFECT:
+      battleCenterLine(T(bLastEff == 0 ? S_BTL_IMMUNE : (bLastEff > 2 ? S_BTL_SUPER : S_BTL_WEAK)), 380);
+      break;
+    case BP_RAN: battleCenterLine(T(S_BTL_RAN), 380); break;
+    case BP_END: {
+      if (bWon) {
+        gfx->setTextColor(UI_BAR_OK);
+        battleCenterLine(T(S_BTL_WON), 352);
+      } else {
+        snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(bMe.dex));
+        battleCenterLine(b, 352);
+      }
+      gfx->setTextColor(UI_BAR_BAD);
+      snprintf(b, sizeof(b), T(S_STR_GAIN_FMT), bGain);
+      battleCenterLine(b, 380);
+      if (bNewDex) {
+        gfx->setTextColor(UI_BAR_WARN);
+        battleCenterLine(T(S_BTL_NEWDEX), 408);
+      }
+      break;
+    }
+  }
   gfx->flush();
 }
 
@@ -1876,12 +2108,17 @@ void renderCardStats() {
   drawCardStat(202, T(S_STAT_SPE), pet.speStat(), 260, UI_BAR_WARN);
   drawCardStat(244, T(S_STAT_WGT), pet.weight, 100, 0xB3C8);
 
-  // boton: saco de entrenamiento de fuerza
+  // boton: combate contra un rival salvaje
   gfx->fillRoundRect(96, 300, 274, 40, 12, UI_BAR_BAD);
   gfx->setTextColor(UI_BG_DAY);
   setSize(2);
-  setCur(centerX(T(S_TRAIN_STR), 2), 311);
-  printT(T(S_TRAIN_STR));
+  setCur(centerX(T(S_BTL_START), 2), 311);
+  printT(T(S_BTL_START));
+  char wins[24];
+  snprintf(wins, sizeof(wins), T(S_WINS_FMT), pet.battleWins);
+  gfx->setTextColor(UI_INK);
+  setCur(centerX(wins, 2), 350);
+  printT(wins);
 }
 
 // pagina 2: medallas con etiqueta descriptiva

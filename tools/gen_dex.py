@@ -47,13 +47,18 @@ def main():
         "  uint16_t accent;      // color RGB565 del tipo para la UI\n"
         "  uint8_t bHp, bAtk, bDef, bSpe;  // base stats reales de gen 1\n"
         "  uint8_t biome;        // 0 pradera 1 playa 2 bosque 3 volcan 4 montana 5 nieve\n"
+        "  uint8_t type;         // TY_* (un solo tipo por especie)\n"
         "};\n\n")
+    types = list(TYPE_ACCENTS)
+    out.append("enum : uint8_t { " + ", ".join(f"TY_{t.upper()}" for t in types) + ", TY_COUNT };\n\n")
+    out.append("static const uint16_t TYPE_ACCENT[TY_COUNT] = { "
+               + ", ".join(f"0x{rgb565(TYPE_ACCENTS[t]):04X}" for t in types) + " };\n\n")
     # formas base = las que no son evolucion de nadie (las ramas de Eevee si lo son)
     evolved = {evo for *_, evo, _lvl in [(d[4], d[5]) for d in DEX] for evo in [_[0] for _ in [(d[4],) for d in DEX]]}
     evolved = {d[4] for d in DEX if d[4]} | {135, 136}
     rarities = []
     out.append("static const DexEntry DEX_TBL[DEX_COUNT + 1] = {\n")
-    out.append('  { "?", 0, 0, 0, 0x2946, 50, 50, 50, 50, 0 },  // 0: sin usar\n')
+    out.append('  { "?", 0, 0, 0, 0x2946, 50, 50, 50, 50, 0, TY_NORMAL },  // 0: sin usar\n')
     for num, slug, display, typ, evo, lvl in DEX:
         acc = rgb565(TYPE_ACCENTS[typ])
         if num in evolved:
@@ -67,7 +72,7 @@ def main():
         rarities.append(rar)
         hp, atk, df, spe = BASE_STATS[num]
         bio = BIOME_OVERRIDE.get(num, TYPE_BIOME[typ])
-        out.append(f'  {{ "{display}", {evo}, {lvl}, {rar}, 0x{acc:04X}, {hp}, {atk}, {df}, {spe}, {bio} }},  // {num} {typ}\n')
+        out.append(f'  {{ "{display}", {evo}, {lvl}, {rar}, 0x{acc:04X}, {hp}, {atk}, {df}, {spe}, {bio}, TY_{typ.upper()} }},  // {num} {typ}\n')
     out.append("};\n\n")
 
     # Solo FR y DE tienen nombre propio en gen 1; ES/IT/PT usan el ingles.
