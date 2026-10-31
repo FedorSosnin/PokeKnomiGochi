@@ -20,6 +20,7 @@ struct PowerCtx {
   bool screenOff;     // apagada con el boton PWR
   bool sleeping;      // el bicho duerme
   bool gameOpen;      // minijuego o saco: la fisica esta afinada a 85 ms por frame
+  bool arcadeOpen = false;  // juego de reflejos con fisica por tiempo: cuanto mas fluido, mejor
   bool usb;           // alimentacion externa
   bool charging;
   int batPct;         // 0-100, -1 si no hay bateria
@@ -57,6 +58,7 @@ inline uint8_t brightnessFor(const PowerCtx &c) {
 // completo y el volcado del lienzo por QSPI, y el panel solo cambia si se redibuja.
 inline uint32_t frameIntervalMs(const PowerCtx &c) {
   if (c.screenOff) return 0;
+  if (c.arcadeOpen) return 40;
   if (c.gameOpen) return 85;  // el juego manda: su fisica esta afinada a este periodo
   uint32_t ms;
   uint8_t stage = dimStageFor(c.idleMs);

@@ -9,7 +9,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 ## [Unreleased]
 
 - **Catching:** winning no longer registers a species; lean to steer a thrown Poké Ball at it.
-- **Games menu:** Tilt Catch (replaces the ball game) and Who's That Pokémon?
+- **Games menu:** Tilt Catch (replaces the ball game), Who's That Pokémon? and PokeRun. Swipe up from the lower half of the screen to quit any game with nothing earned.
+- **PokeRun:** tap to jump rocks and bushes in a forest that keeps getting faster; your best time is saved. The tuning lives in `pokerun.h`, with tests.
 - **Daily visitor:** a Pokémon drops by to hang out, then says goodbye.
 - **Pokédex info:** tap a registered Pokémon for its type, evolution and a fun fact (English only).
 - **Knomi settings page:** swipe left on the clock screen; pick a network and type its password on the device.

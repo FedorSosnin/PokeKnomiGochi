@@ -11,6 +11,12 @@ inline bool catchHit(float ballX, float foeX) {
   return d > -CATCH_RADIUS && d < CATCH_RADIUS;
 }
 
+// salir de un juego: deslizar desde la mitad de abajo hacia arriba
+inline bool swipeUpQuit(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint32_t ms) {
+  int dx = x1 - x0;
+  return y0 >= 233 && y0 - y1 >= 100 && dx > -90 && dx < 90 && ms < 1000;
+}
+
 // tres opciones distintas con la respuesta en la posicion pos. a y b son especies al azar.
 inline void quizChoices(int16_t answer, int16_t a, int16_t b, uint8_t pos, int16_t out[3]) {
   while (a == answer) a = a % 151 + 1;

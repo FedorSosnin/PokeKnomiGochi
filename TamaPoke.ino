@@ -36,6 +36,7 @@
 #include "wifi_setup.h"
 #include "kblayout.h"
 #include "minigames.h"
+#include "pokerun.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
@@ -143,6 +144,11 @@ bool tiltForced = false, tiltAim = false;
 KnomiAccel accel;
 #endif
 uint32_t gameOverUntil = 0;
+// pokerun
+bool runOpen = false, runJump = false, runNewHi = false, runBot = false;
+RunState run;
+uint32_t runLast = 0, runOverT = 0;
+uint8_t runScale = 2;
 float ballX, ballY, ballVX, ballVY, gamePetX, gamePetVX = 0;
 uint32_t gameStartT = 0;
 uint32_t lastGameStep = 0;  // ultima llamada a stepGame(): fisica por tiempo real, no por frame
@@ -452,7 +458,8 @@ PowerCtx powerCtx(uint32_t now) {
   c.idleMs = idleSince(now, lastInteract);
   c.screenOff = screenOff;
   c.sleeping = pet.sleeping;
-  c.gameOpen = gameOpen || battleOpen || quizOpen;
+  c.gameOpen = gameOpen || battleOpen || quizOpen || runOpen;
+  c.arcadeOpen = runOpen;
   c.usb = usbPresent();
   c.charging = batCharging();
   c.batPct = batPercent();
@@ -610,6 +617,12 @@ void handleSerial() {
     tiltForced = v != "off";
     tiltAim = v == "aim";
     tiltOverride = v.toFloat();
+    Serial.println("DONE");
+  } else if (line == "RUN") {
+    startRun();
+    Serial.println("DONE");
+  } else if (line == "RUNBOT" && pet.noSave) {  // juega solo, para ver velocidades altas
+    runBot = !runBot;
     Serial.println("DONE");
   } else if (line == "GAMES") {
     openGamesMenu();
@@ -772,14 +785,29 @@ void handleTouch() {
   }
 #endif
 
-  // combate, quiz y menu de juegos: responden al toque, sin gestos
-  if (battleOpen || quizOpen || gamesMenuOpen) {
-    if (pressed) tXl = x;  // apuntar con el dedo donde no hay acelerometro
+  // juegos: el toque se resuelve al levantar el dedo, para que deslizar arriba salga
+  // sin pulsar nada de paso. Solo el salto de PokeRun va al apoyar: ahi cuenta cada ms.
+  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen) {
+    if (pressed) { tXl = x; tYl = y; }  // tXl: apuntar con el dedo donde no hay acelerometro
     if (pressed && !wasPressed) {
+      tX0 = x;
+      tY0 = y;
+      tStart = millis();
+      swallowGesture = (dimStage > 0) || screenOff;  // si estaba a oscuras, solo despierta
+      screenOff = false;
       wakeUI();
-      if (battleOpen) battleTap(x, y);
-      else if (quizOpen) quizTap(x, y);
-      else gamesMenuTap(x, y);
+      if (runOpen && !swallowGesture) runJump = true;
+    } else if (!pressed && wasPressed) {
+      wakeUI();
+      if (!swallowGesture) {
+        if (swipeUpQuit(tX0, tY0, tXl, tYl, millis() - tStart)) quitGame();
+        else if (abs(tXl - tX0) < 40 && abs(tYl - tY0) < 40) {
+          if (battleOpen) battleTap(tX0, tY0);
+          else if (quizOpen) quizTap(tX0, tY0);
+          else if (gamesMenuOpen) gamesMenuTap(tX0, tY0);
+          else if (runOpen) runTap();
+        }
+      }
     }
     wasPressed = pressed;
     return;
@@ -922,10 +950,6 @@ void onTap(int16_t x, int16_t y) {
     else {
       cardOpen = false;
     }
-    return;
-  }
-  if (gameOpen) {
-    gameTap(x, y);
     return;
   }
   if (choiceKind) {          // dialogo de decision: boton accion (arriba) / mantener (abajo)
@@ -1271,7 +1295,7 @@ void printT(const char *s) {
 // mientras su "clave" no cambie no se repintan ni se vuelcan por QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen) return false;  // la galeria gestiona su propio repintado
+  if (galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || runOpen) return false;  // la galeria gestiona su propio repintado
   if (kbOpen || clockOpen) return true;
   return cardOpen && cardPage != 0;  // la pagina 0 tiene el retrato animado
 }
@@ -1333,6 +1357,10 @@ bool render() {
   }
   if (gameOpen) {
     renderGame();
+    return true;
+  }
+  if (runOpen) {
+    renderRun();
     return true;
   }
   if (battleOpen) {
@@ -1502,9 +1530,14 @@ void respawnBall() {
   ballVY = sp > 18.0f ? 18.0f : sp;
 }
 
-void gameTap(int16_t x, int16_t y) {
-  if (gameOverUntil) return;
-  if (y < 72) gameOpen = false;  // tocar la cabecera = abandonar sin premio
+// deslizar arriba en cualquier juego: fuera al momento y sin premio (el premio se da al
+// terminar la partida, asi que basta con cerrar)
+void quitGame() {
+  sfxPlay(SFX_TAP);
+  if (battleOpen) closeBattle();
+  if (quizOpen) closeQuiz();
+  if (runOpen) closeRun();
+  gameOpen = gamesMenuOpen = false;
 }
 
 // cero de la inclinacion: lo que marque ahora es "recto"
@@ -1574,12 +1607,12 @@ void stepGame() {
 // ---------- menu de juegos ----------
 #define GAMES_ROW_X 83
 #define GAMES_ROW_W 300
-#define GAMES_ROW_H 60
-#define GAMES_ROW_Y 156
+#define GAMES_ROW_H 56
+#define GAMES_ROW_Y 120
 #ifdef BOARD_KNOMI_V2
-#define GAMES_COUNT 2
+#define GAMES_COUNT 3
 #else
-#define GAMES_COUNT 3  // sin boton fisico, el combate vive aqui
+#define GAMES_COUNT 4  // sin boton fisico, el combate vive aqui
 #endif
 
 void openGamesMenu() {
@@ -1595,6 +1628,7 @@ void gamesMenuTap(int16_t x, int16_t y) {
   sfxPlay(SFX_TAP);
   if (row == 0) startGame();
   else if (row == 1) startQuiz();
+  else if (row == 2) startRun();
   else startBattle();
 }
 
@@ -1604,18 +1638,21 @@ void renderGamesMenu() {
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   setSize(3);
-  setCur(centerX(T(S_GAMES), 3), 92);
+  setCur(centerX(T(S_GAMES), 3), 74);
   printT(T(S_GAMES));
-  const char *labels[3] = { T(S_GAME_TILT), T(S_GAME_WHO), T(S_BTL_START) };
-  const uint16_t colors[3] = { TYPE_ACCENT[TY_PLANTA], TYPE_ACCENT[TY_PSIQUICO], UI_BAR_BAD };
+  const char *labels[4] = { T(S_GAME_TILT), T(S_GAME_WHO), T(S_GAME_RUN), T(S_BTL_START) };
+  const uint16_t colors[4] = { TYPE_ACCENT[TY_PLANTA], TYPE_ACCENT[TY_PSIQUICO], TYPE_ACCENT[TY_FUEGO], UI_BAR_BAD };
   setSize(2);
   for (int i = 0; i < GAMES_COUNT; i++) {
     int y = GAMES_ROW_Y + i * (GAMES_ROW_H + 10);
     gfx->fillRoundRect(GAMES_ROW_X, y, GAMES_ROW_W, GAMES_ROW_H, 14, colors[i]);
     gfx->setTextColor(UI_WHITE);
-    setCur(centerX(labels[i], 2), y + 22);
+    setCur(centerX(labels[i], 2), y + 20);
     printT(labels[i]);
   }
+  gfx->setTextColor(UI_INK);
+  setCur(centerX(T(S_SWIPE_QUIT), 2), GAMES_ROW_Y + GAMES_COUNT * (GAMES_ROW_H + 10) + 8);
+  printT(T(S_SWIPE_QUIT));
   gfx->flush();
 }
 
@@ -1655,7 +1692,6 @@ void quizTap(int16_t x, int16_t y) {
     return;
   }
   if (quizPhase != QP_ASK) return;
-  if (y < 72) { closeQuiz(); return; }  // tocar la cabecera = abandonar
   if (y < QUIZ_OPT_Y) return;
   int i = (y - QUIZ_OPT_Y) / (QUIZ_OPT_H + QUIZ_OPT_GAP);
   if (i > 2) return;
@@ -1756,7 +1792,7 @@ void visitTick(uint32_t now) {
   if (visitPhase == VP_NONE) {
     if (now - visitCheckT < 20000) return;
     visitCheckT = now;
-    bool mainScreen = !gameOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !galleryOpen && !cardOpen &&
+    bool mainScreen = !gameOpen && !runOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !galleryOpen && !cardOpen &&
                       !kbOpen && !clockOpen && !choiceKind && !confirmUntil;
     // con la pantalla atenuada no hay nadie mirando: mejor esperar a que alguien vuelva
     if (mainScreen && !screenOff && dimStage == 0 && pet.visitorDueNow()) startVisitWith(0);
@@ -1827,7 +1863,7 @@ void knomiButtonTap() {
   screenOff = false;
   wakeUI();
   if (wasAsleep) return;  // a oscuras solo despierta, como la pantalla tactil
-  if (gameOpen || quizOpen || gamesMenuOpen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
+  if (gameOpen || runOpen || quizOpen || gamesMenuOpen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
   if (visitPhase != VP_NONE) return;  // no se pelea con la visita delante
   startBattle();
 }
@@ -1837,6 +1873,7 @@ void knomiAskReset() {
   if (pet.awaitingStarter() || pet.ceremony) return;  // nada que borrar, o despedida en curso
   if (battleOpen) closeBattle();
   if (quizOpen) closeQuiz();
+  if (runOpen) closeRun();
   gamesMenuOpen = false;
   if (galleryOpen) { galleryOpen = false; galleryPmd.unload(); }
   wifiSetupStop();
@@ -2377,6 +2414,154 @@ void renderGame() {
     printT(T(S_TILT_HINT));
   }
 
+  gfx->flush();
+}
+
+// ---------- pokerun ----------
+void startRun() {
+  if (pet.isEgg() || pet.sleeping || pet.ceremony || !pmd.loaded) { sfxPlay(SFX_DENY); return; }
+  runStart(run, esp_random());
+  runOpen = true;
+  runJump = false;
+  runNewHi = false;
+  runOverT = 0;
+  runLast = millis();
+  uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 90, 90);  // los grandes no deben tapar lo que viene
+  runScale = fit > 3 ? 3 : fit;
+}
+
+void closeRun() { runOpen = false; runBot = false; }
+
+void runTap() {
+  if (runOverT && millis() - runOverT > 800) closeRun();  // tiempo para leer el resultado
+}
+
+// bosque con dos capas de pinos que se mueven mas despacio que el suelo
+void drawForest(float dist, bool night) {
+  uint16_t dark = C565(0x0c, 0x12, 0x24);
+  uint16_t top = C565(0xa8, 0xdc, 0xd8), bot = C565(0xe2, 0xf2, 0xc8);
+  uint16_t farC = C565(0x6f, 0xa8, 0x7c), nearC = C565(0x35, 0x7a, 0x52), trunk = C565(0x5a, 0x40, 0x30);
+  uint16_t grass = C565(0x5c, 0xa8, 0x4c), tuft = C565(0x3f, 0x88, 0x3c), dirt = C565(0x7a, 0x56, 0x3a);
+  if (night) {
+    top = lerp565(top, dark, 13, 16); bot = lerp565(bot, dark, 11, 16);
+    farC = lerp565(farC, dark, 10, 16); nearC = lerp565(nearC, dark, 11, 16); trunk = lerp565(trunk, dark, 10, 16);
+    grass = lerp565(grass, dark, 9, 16); tuft = lerp565(tuft, dark, 9, 16); dirt = lerp565(dirt, dark, 9, 16);
+  }
+  for (int y = 0; y < RUN_GROUND_Y; y += 10)
+    gfx->fillRect(0, y, 466, 10, lerp565(top, bot, y, RUN_GROUND_Y));
+
+  gfx->fillRect(0, 286, 466, RUN_GROUND_Y - 286, farC);
+  for (int x = -((int)(dist * 0.2f) % 92) - 46; x < 520; x += 92) {
+    gfx->fillTriangle(x, 176, x - 34, 250, x + 34, 250, farC);
+    gfx->fillTriangle(x, 212, x - 44, 290, x + 44, 290, farC);
+  }
+  for (int x = -((int)(dist * 0.45f) % 190) - 95; x < 560; x += 190) {
+    gfx->fillRect(x - 9, 270, 18, RUN_GROUND_Y - 270, trunk);
+    gfx->fillTriangle(x, 150, x - 42, 226, x + 42, 226, nearC);
+    gfx->fillTriangle(x, 190, x - 56, 280, x + 56, 280, nearC);
+  }
+
+  gfx->fillRect(0, RUN_GROUND_Y, 466, 14, grass);
+  gfx->fillRect(0, RUN_GROUND_Y + 14, 466, 466 - RUN_GROUND_Y - 14, dirt);
+  for (int x = -((int)dist % 64); x < 480; x += 64) {
+    gfx->fillRect(x, RUN_GROUND_Y - 5, 5, 8, tuft);
+    gfx->fillRect(x + 28, RUN_GROUND_Y + 6, 12, 4, tuft);
+  }
+}
+
+void drawRunRock(int x, int w, int h, bool night) {
+  uint16_t c = night ? C565(0x5c, 0x62, 0x70) : C565(0x8c, 0x8c, 0x90), hi = night ? C565(0x7c, 0x84, 0x92) : C565(0xbc, 0xbc, 0xc0);
+  gfx->fillRoundRect(x, RUN_GROUND_Y - h, w, h + 4, 10, c);
+  gfx->fillRoundRect(x + 6, RUN_GROUND_Y - h + 4, w - 16, 8, 4, hi);
+}
+
+void drawRunObstacle(const RunObstacle &o, bool night) {
+  int x = (int)o.x, w = runObstacleW(o.kind), h = runObstacleH(o.kind);
+  if (o.kind == RUN_BUSH) {
+    uint16_t c = night ? C565(0x1c, 0x5a, 0x34) : C565(0x24, 0x7c, 0x3c), hi = night ? C565(0x2c, 0x74, 0x44) : C565(0x3c, 0xa0, 0x50);
+    gfx->fillCircle(x + 12, RUN_GROUND_Y - 13, 14, c);
+    gfx->fillCircle(x + w - 12, RUN_GROUND_Y - 13, 14, c);
+    gfx->fillCircle(x + w / 2, RUN_GROUND_Y - h + 16, 17, c);
+    gfx->fillRect(x + 6, RUN_GROUND_Y - 14, w - 12, 17, c);
+    gfx->fillCircle(x + w / 2 - 5, RUN_GROUND_Y - h + 12, 6, hi);
+    gfx->fillCircle(x + 11, RUN_GROUND_Y - 16, 3, C565(0xd8, 0x3a, 0x3a));
+    gfx->fillCircle(x + w - 13, RUN_GROUND_Y - 20, 3, C565(0xd8, 0x3a, 0x3a));
+  } else if (o.kind == RUN_DOUBLE) {
+    drawRunRock(x, 36, h, night);
+    drawRunRock(x + w - 36, 36, h, night);
+  } else {
+    drawRunRock(x, w, h, night);
+  }
+}
+
+void renderRun() {
+  if (pet.ceremony || !pmd.loaded) { closeRun(); return; }
+  uint32_t now = millis();
+  if (runOverT && now - runOverT > 4000) { closeRun(); return; }
+
+  if (!run.dead) {
+    bool jump = runJump || (runBot && runBotWantsJump(run));
+    runJump = false;
+    runStep(run, (now - runLast) / 1000.0f, jump);
+    runLast = now;
+    if (run.jumped) sfxPlay(SFX_TAP);
+    if (run.dead) {
+      uint16_t secs = (uint16_t)run.t;
+      runNewHi = secs > pet.runHi;
+      pet.runResult(secs);  // el premio y el record solo al terminar de verdad
+      sfxPlay(runNewHi ? SFX_MEDAL : SFX_DENY);
+      runOverT = millis();
+    }
+  }
+
+  int hh = sceneHour();
+  bool night = hh < 6 || hh >= 20;
+  drawForest(run.dist, night);
+  for (auto &o : run.ob)
+    if (o.on) drawRunObstacle(o, night);
+
+  uint8_t act = PMD_WALKR;
+  if (run.dead) act = PMD_HURT;
+  if (!pmd.has(act)) act = PMD_IDLE;
+  gPmdForceScale = runScale;
+  drawPmdAct(act, RUN_PET_X, RUN_GROUND_Y + 2 - (int)run.h, now, true, false, 3);
+  gPmdForceScale = 0;
+
+  uint16_t ink = night ? UI_WHITE : UI_INK;
+  char b[24];
+  snprintf(b, sizeof(b), "%us", (unsigned)run.t);
+  gfx->setTextColor(ink);
+  if (runOverT) {
+    setSize(5);
+    setCur(centerX(b, 5), 62);
+    printT(b);
+    setSize(2);
+    if (runNewHi) {
+      gfx->setTextColor(UI_BAR_WARN);
+      setCur(centerX(T(S_NEW_RECORD), 2), 112);
+      printT(T(S_NEW_RECORD));
+    } else {
+      snprintf(b, sizeof(b), T(S_RECORD_FMT), pet.runHi);
+      setCur(centerX(b, 2), 112);
+      printT(b);
+    }
+    const char *msg = run.t >= 30 ? T(S_GREAT_JOY) : T(S_PLUS_JOY);
+    gfx->setTextColor(ink);
+    setCur(centerX(msg, 2), 136);
+    printT(msg);
+  } else {
+    setSize(4);
+    setCur(centerX(b, 4), 44);
+    printT(b);
+    setSize(2);
+    snprintf(b, sizeof(b), T(S_REC_FMT), pet.runHi);
+    setCur(centerX(b, 2), 88);
+    printT(b);
+    if (run.t < 3) {
+      setCur(centerX(T(S_TAP_JUMP), 2), 118);
+      printT(T(S_TAP_JUMP));
+    }
+  }
   gfx->flush();
 }
 

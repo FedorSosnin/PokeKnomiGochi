@@ -80,6 +80,8 @@ TEST(power, el_juego_y_la_pantalla_apagada_mandan_sobre_el_resto) {
   CHECK_EQ((int)frameIntervalMs(g), 85);               // la fisica esta afinada a 85 ms
   g.batPct = 5;
   CHECK_EQ((int)frameIntervalMs(g), 85);
+  g.arcadeOpen = true;
+  CHECK_EQ((int)frameIntervalMs(g), 40);               // PokeRun va por tiempo real: mas fluido
   PowerCtx off = ctx(0);
   off.screenOff = true;
   CHECK_EQ((int)frameIntervalMs(off), 0);

@@ -83,6 +83,7 @@ public:
   uint16_t newMedal = 0;   // recien conseguida(s), para celebrar
   uint16_t lastMilestone = 0;  // hito de racha ya celebrado
   uint16_t gameHi = 0;     // record del minijuego (del jugador)
+  uint16_t runHi = 0;      // record de PokeRun, en segundos
   uint16_t battleWins = 0; // combates ganados por este individuo
   uint32_t visitorDay = 0;  // ultimo dia con visita
   uint8_t movesSeen = 1;   // ataques ya anunciados (para avisar del nuevo una sola vez)
@@ -98,6 +99,7 @@ public:
     return !isEgg() && (speciesId % 3) == color;  // gusto oculto por especie
   }
   void playResult(uint8_t score);  // recompensa del minijuego (entrena VEL)
+  void runResult(uint16_t secs);   // PokeRun: igual, cada 4 s cuentan como un punto
   // combate: entrena FUE y cansa. Devuelve la subida de FUE.
   uint8_t battleResult(bool won);
   bool catchWild(int16_t dex);           // captura: registra en la pokedex; true si es nueva
@@ -188,6 +190,7 @@ public:
   void flushSave();
 
 private:
+  void exerciseReward(uint8_t score);
   Preferences prefs;
   uint32_t lastTick = 0;
   uint32_t eatUntil = 0;

@@ -471,8 +471,7 @@ void Pet::feedCandy() {
   save();
 }
 
-void Pet::playResult(uint8_t score) {
-  if (ceremony != CER_NONE || isEgg()) return;
+void Pet::exerciseReward(uint8_t score) {
   uint8_t v = trSpe + score / 5;  // jugar entrena la velocidad
   trSpe = v > 100 ? 100 : v;
   joy = clamp100(joy + 5 + (score > 15 ? 30 : score * 2));
@@ -481,9 +480,21 @@ void Pet::playResult(uint8_t score) {
   int burn = (int)weight - score * 2;  // el ejercicio quema peso
   weight = burn > 0 ? burn : 0;
   if (score >= 5) heartUntil = millis() + HEART_MS;
-  if (score > gameHi) gameHi = score;  // nuevo record
   addBond(2);
   registerCare();
+}
+
+void Pet::playResult(uint8_t score) {
+  if (ceremony != CER_NONE || isEgg()) return;
+  if (score > gameHi) gameHi = score;  // nuevo record
+  exerciseReward(score);
+  save();
+}
+
+void Pet::runResult(uint16_t secs) {
+  if (ceremony != CER_NONE || isEgg()) return;
+  if (secs > runHi) runHi = secs;
+  exerciseReward(secs / 4 > 255 ? 255 : secs / 4);
   save();
 }
 
@@ -661,6 +672,7 @@ void Pet::save() {
   prefs.putUShort("tmedal", totalMedals);
   prefs.putUShort("mstone", lastMilestone);
   prefs.putUShort("ghi", gameHi);
+  prefs.putUShort("rhi", runHi);
   prefs.putUShort("bwin", battleWins);
   prefs.putUChar("bmov", movesSeen);
   prefs.putUInt("vday", visitorDay);
@@ -715,6 +727,7 @@ void Pet::load() {
   totalMedals = prefs.getUShort("tmedal", 0);
   lastMilestone = prefs.getUShort("mstone", 0);
   gameHi = prefs.getUShort("ghi", 0);
+  runHi = prefs.getUShort("rhi", 0);
   battleWins = prefs.getUShort("bwin", 0);
   movesSeen = prefs.getUChar("bmov", 1);
   visitorDay = prefs.getUInt("vday", 0);

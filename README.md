@@ -143,7 +143,7 @@ SPEED ← minigame, DEFENSE ← 12 h of unbroken good care).
 The game also runs on the **BIGTREETECH Knomi V2** (GC9A01 240x240, CST816S touch, no SD, audio,
 RTC or battery). Build flag `BOARD_KNOMI_V2`; `tools/knomi_flash.sh` compiles and flashes the
 firmware plus the sprites, packed into flash (`tools/pack_flash.py`). The clock comes from NTP using
-the Wi-Fi the Knomi already has saved. The Poké Ball button opens a games menu (Tilt Catch and Who's That Pokémon?), and a daily visitor drops by. The BOOT button starts a wild battle (tap), toggles the screen
+the Wi-Fi the Knomi already has saved. The Poké Ball button opens a games menu (Tilt Catch, Who's That Pokémon? and PokeRun; swipe up to quit a game), and a daily visitor drops by. The BOOT button starts a wild battle (tap), toggles the screen
 (hold 1-3 s), or asks whether to erase the game (hold 10 s).
 Swipe left on the clock screen for **Settings**: *Change Wi-Fi* lists nearby networks and opens a keyboard
 for the password. A new network is saved only once it connects, so a failed attempt keeps the old one.

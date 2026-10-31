@@ -982,6 +982,7 @@ TEST(save, el_estado_sobrevive_a_un_reinicio) {
   a.trAtk = 17;
   a.weight = 33;
   a.gameHi = 21;
+  a.runHi = 48;
   a.rename("SPARKY");  // rename persiste todo el estado
 
   Pet b;
@@ -994,6 +995,7 @@ TEST(save, el_estado_sobrevive_a_un_reinicio) {
   CHECK_EQ(b.trAtk, (uint8_t)17);
   CHECK_EQ(b.weight, (uint8_t)33);
   CHECK_EQ(b.gameHi, (uint16_t)21);
+  CHECK_EQ(b.runHi, (uint16_t)48);
   CHECK_STREQ(b.nick, "SPARKY");
   CHECK(b.isRegistered(25));
   CHECK(!b.awaitingStarter());
