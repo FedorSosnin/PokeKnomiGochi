@@ -108,6 +108,7 @@ int16_t wifiKbX = 0, wifiKbY = 0;
 #define KB_H 52
 bool clockOpen = false;       // pantalla de ajuste de hora (deslizar abajo)
 int clockH = 12, clockM = 0;  // hora en edicion
+bool clockEdited = false;      // tocada a mano: no pisarla con la hora de red
 
 // escena de bano: espuma sobre el bicho y limpieza al reventar
 uint32_t bathUntil = 0;
@@ -370,6 +371,7 @@ void loop() {
   if (clockPoll()) {  // aplica el tiempo apagado en cuanto hay hora de red
     if (clockWasSeed()) pet.setClock(rtcEpoch());
     else pet.syncClock(rtcEpoch());
+    if (clockOpen && !clockEdited) clockLoadNow();  // la pantalla de hora abierta tambien se entera
   }
 #endif
 
@@ -779,7 +781,9 @@ void onSwipe(int dir) {
   if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
 #ifdef BOARD_KNOMI_V2
   if (clockOpen && wifiSetupState() == WS_OFF) {  // hora <-> ajustes; izquierda avanza
-    clockPage = dir > 0 ? 0 : 1;
+    uint8_t next = dir > 0 ? 0 : 1;
+    if (next == 0 && clockPage != 0 && !clockEdited) clockLoadNow();  // ha podido sincronizarse en ajustes
+    clockPage = next;
     return;
   }
 #endif
@@ -1979,10 +1983,17 @@ void drawCardStat(int y, const char *label, uint16_t val, uint16_t maxBar, uint1
 // El usuario pone su hora LOCAL a ojo; el firmware la usa tal cual, asi que
 // no hay que gestionar zona horaria. Preserva el dia (no rompe racha/edad).
 
-void openClock() {
-  uint32_t e = pet.lastSeenEpoch ? pet.lastSeenEpoch : rtcEpoch();
+// copia la hora actual al editor. El reloj va primero: lastSeenEpoch solo se anota cada 30 s.
+void clockLoadNow() {
+  uint32_t e = rtcEpoch();
+  if (!e) e = pet.lastSeenEpoch;
   clockH = (e / 3600) % 24;
   clockM = (e / 60) % 60;
+  clockEdited = false;
+}
+
+void openClock() {
+  clockLoadNow();
   clockPage = 0;
   clockOpen = true;
 }
@@ -2298,6 +2309,7 @@ void clockTap(int16_t x, int16_t y) {
   }
 #endif
   if (y >= 190 && y <= 248) {  // fila de botones +/-
+    clockEdited = true;
     if (x >= 104 && x < 162) clockH = (clockH + 23) % 24;
     else if (x >= 170 && x < 228) clockH = (clockH + 1) % 24;
     else if (x >= 252 && x < 310) clockM = (clockM + 59) % 60;
