@@ -124,6 +124,7 @@ uint32_t gamesMenuUntil = 0;
 // quien es ese pokemon
 enum QuizPhase : uint8_t { QP_ASK, QP_REVEAL, QP_END };
 bool quizOpen = false;
+uint8_t gPmdForceScale = 0;  // si no es 0, escala fija para el siguiente sprite
 QuizPhase quizPhase = QP_ASK;
 uint32_t quizT = 0;
 uint8_t quizRound = 0, quizScore = 0;
@@ -1708,8 +1709,9 @@ void renderQuiz() {
   snprintf(b, sizeof(b), "%u/%u", quizRound + 1, QUIZ_ROUNDS);
   setCur(centerX(b, 2), 72);
   printT(b);
-  gfx->fillCircle(CX, 180, 82, UI_BG_DAY);
-  drawPmdActM(quizPmd, PMD_IDLE, CX, 244, reveal ? millis() : 0, true, !reveal, 3);
+  gPmdForceScale = pmdFitScale(quizPmd, PMD_IDLE, 300, 166);
+  drawPmdActM(quizPmd, PMD_IDLE, CX, 262, reveal ? millis() : 0, true, !reveal, 8);
+  gPmdForceScale = 0;
   for (int i = 0; i < 3; i++) {
     int y = QUIZ_OPT_Y + i * (QUIZ_OPT_H + QUIZ_OPT_GAP);
     int inset = i == 2 ? 26 : 0;  // la de abajo, mas estrecha: el circulo se cierra
@@ -3583,6 +3585,25 @@ uint8_t pmdFrameAt(const PmdAct &a, uint32_t t, bool loop) {
 }
 
 // dibuja una accion anclada por la base (centro-x, suelo) y devuelve su escala
+// escala entera para que lo visible del sprite (sin el relleno transparente del lienzo) quepa
+// en maxW x maxH: el alto del lienzo incluye mucho aire y se queda muy por debajo
+uint8_t pmdFitScale(const PmdMon &m, uint8_t actId, int maxW, int maxH) {
+  const PmdAct &a = m.acts[actId];
+  int top = a.h, bottom = -1, left = a.w, right = -1;
+  for (int r = 0; r < a.h; r++)
+    for (int c = 0; c < a.w; c++)
+      if (a.data[r * a.w + c] != 0xFF) {
+        if (r < top) top = r;
+        if (r > bottom) bottom = r;
+        if (c < left) left = c;
+        if (c > right) right = c;
+      }
+  if (bottom < 0) return 2;
+  int sw = maxW / (right - left + 1), sh = maxH / (bottom - top + 1);
+  int fit = sw < sh ? sw : sh;
+  return fit < 2 ? 2 : (fit > 8 ? 8 : fit);
+}
+
 // dibuja una accion de un PmdMon concreto (m); drawPmdAct usa el global pmd
 void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS) {
   const PmdAct &a = m.acts[actId];
@@ -3592,6 +3613,7 @@ void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool
   if (sBase > maxS) sBase = maxS;
   uint8_t s = sBase;
   while (s > 2 && a.h * s > 250) s--;  // acciones con frame grande (ataque)
+  if (gPmdForceScale) s = gPmdForceScale;
   uint8_t fi = pmdFrameAt(a, t, loop);
   const uint8_t *fr = a.data + (uint32_t)fi * a.w * a.h;
   // anclar por los pies (a.base), no por el alto del lienzo: asi las acciones
