@@ -31,6 +31,9 @@
 #include "blit.h"
 #include "power.h"
 #include "battle.h"
+#include "dexfacts.h"
+#include "textwrap.h"
+#include "wifi_setup.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
@@ -93,6 +96,7 @@ bool kbOpen = false;          // teclado para renombrar al bicho
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
 uint8_t cardPage = 0;         // 0 perfil, 1 stats+medallas
+uint8_t clockPage = 0;        // 0 hora, 1 ajustes (solo Knomi)
 bool clockOpen = false;       // pantalla de ajuste de hora (deslizar abajo)
 int clockH = 12, clockM = 0;  // hora en edicion
 
@@ -330,6 +334,8 @@ void loop() {
   }
 #ifdef BOARD_KNOMI_V2
   handleKnomiButton(now);
+  wifiSetupPoll();
+  if (wifiSetupState() != WS_OFF) lastInteract = now;  // que no se apague mientras se configura
 #endif
 
   updateBrightness(now);
@@ -489,6 +495,22 @@ void handleSerial() {
     int a = line.indexOf(' '), b = line.indexOf(' ', a + 1), c = line.indexOf(' ', b + 1);
     touch.inject(line.substring(a + 1, b).toInt(), line.substring(b + 1, c).toInt(), c > 0 ? line.substring(c + 1).toInt() : 120);
     gTouchIrq = true;
+    Serial.println("DONE");
+    return;
+  } else if (line.startsWith("SWIPE ")) {  // gesto simulado: "SWIPE x0 y0 x1 y1"
+    int x0, y0, x1, y1;
+    if (sscanf(line.c_str(), "SWIPE %d %d %d %d", &x0, &y0, &x1, &y1) == 4) {
+      touch.swipe(x0, y0, x1, y1, 240);
+      gTouchIrq = true;
+    }
+    Serial.println("DONE");
+    return;
+  } else if (line == "WIFIINFO") {
+    Serial.printf("wifi: red '%s' estado=%u setup=%u ap='%s'\n", clockWifiSsid(), clockWifiStatus(), wifiSetupState(), wifiSetupApSsid());
+    Serial.println("DONE");
+    return;
+  } else if (line.startsWith("WIFITRY ")) {  // prueba del camino de fallo, con clave inventada
+    wifiSetupTry(line.substring(8).c_str(), "not-the-password");
     Serial.println("DONE");
     return;
   } else if (line.startsWith("BTN ")) {  // pulsacion simulada del boton fisico: "BTN ms"
@@ -694,7 +716,7 @@ void openClock();  // prototipo
 void onSwipeV(int dir) {
   if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
   if (gameOpen || galleryOpen || kbOpen || battleOpen || pet.ceremony) return;
-  if (clockOpen) { clockOpen = false; return; }
+  if (clockOpen) { wifiSetupStop(); clockOpen = false; return; }
   if (cardOpen) {
     if (dir < 0) cardOpen = false;  // arriba cierra la ficha
     return;
@@ -710,6 +732,12 @@ void onSwipeV(int dir) {
 // deslizar: dir +1 = hacia la derecha
 void onSwipe(int dir) {
   if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
+#ifdef BOARD_KNOMI_V2
+  if (clockOpen && wifiSetupState() == WS_OFF) {  // hora <-> ajustes; izquierda avanza
+    clockPage = dir > 0 ? 0 : 1;
+    return;
+  }
+#endif
   if (gameOpen || kbOpen || clockOpen) return;
   if (cardOpen) {  // dentro de la ficha: cambiar entre las 4 paginas
     int p = (int)cardPage + (dir > 0 ? -1 : 1);  // izquierda avanza
@@ -1141,6 +1169,13 @@ static uint32_t screenKey() {
     for (int i = 0; i < nameLen; i++) h = mixKey(h, (uint8_t)nameBuf[i]);
   } else if (clockOpen) {
     h = mixKey(h, clockH * 60 + clockM);
+    h = mixKey(h, clockPage);
+    h = mixKey(h, wifiSetupState());
+    h = mixKey(h, wifiSetupQrSize());
+#ifdef BOARD_KNOMI_V2
+    h = mixKey(h, clockWifiStatus());
+    h = mixKey(h, clockWifiSsid()[0]);
+#endif
     h = mixKey(h, audioEnabled());
     h = mixKey(h, gLang);
   } else if (cardOpen) {
@@ -1431,6 +1466,7 @@ void knomiAskReset() {
   if (pet.awaitingStarter() || pet.ceremony) return;  // nada que borrar, o despedida en curso
   if (battleOpen) closeBattle();
   if (galleryOpen) { galleryOpen = false; galleryPmd.unload(); }
+  wifiSetupStop();
   gameOpen = cardOpen = kbOpen = clockOpen = false;
   confirmUntil = 0;
   screenOff = false;
@@ -1898,6 +1934,7 @@ void openClock() {
   uint32_t e = pet.lastSeenEpoch ? pet.lastSeenEpoch : rtcEpoch();
   clockH = (e / 3600) % 24;
   clockM = (e / 60) % 60;
+  clockPage = 0;
   clockOpen = true;
 }
 
@@ -1925,13 +1962,109 @@ void drawClockBtn(int x, int y, const char *l) {
 #define LANG_PILL_W 96
 static const char *const LANG_CODES[LANG_COUNT] = { "ES", "EN", "FR", "DE", "IT", "PT", "JA", "KO" };
 
+#ifdef BOARD_KNOMI_V2
+// puntos de pagina de la pantalla de hora/ajustes
+void drawClockDots() {
+  gfx->fillCircle(CX - 9, 24, 4, clockPage == 0 ? UI_INK : UI_TRACK);
+  gfx->fillCircle(CX + 9, 24, 4, clockPage == 1 ? UI_INK : UI_TRACK);
+}
+
+void settingsTap(int16_t x, int16_t y) {
+  switch (wifiSetupState()) {
+    case WS_OFF:
+      if (x >= 96 && x <= 370 && y >= 236 && y <= 284) { sfxPlay(SFX_TAP); wifiSetupStart(); }
+      break;
+    case WS_WAIT:
+    case WS_FAIL:
+      if (x >= 150 && x <= 316 && y >= 402) wifiSetupStop();
+      break;
+    default: break;
+  }
+}
+
+void renderSettings() {
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->setTextColor(UI_INK);
+  WifiSetupState ws = wifiSetupState();
+  if (ws == WS_WAIT) {
+    // QR de la red de configuracion; un modulo de 8 px logicos son unos 4 px reales
+    int n = wifiSetupQrSize();
+    if (n) {
+      int cell = 232 / n, side = cell * n, quiet = 2 * cell;
+      int x0 = CX - side / 2, y0 = 56;
+      gfx->fillRect(x0 - quiet, y0 - quiet, side + 2 * quiet, side + 2 * quiet, UI_WHITE);
+      for (int y = 0; y < n; y++)
+        for (int x = 0; x < n; x++)
+          if (wifiSetupQrDark(x, y)) gfx->fillRect(x0 + x * cell, y0 + y * cell, cell, cell, RGB565_BLACK);
+    }
+    setSize(2);
+    setCur(centerX(T(S_WIFI_SCAN), 2), 306);
+    printT(T(S_WIFI_SCAN));
+    setCur(centerX(wifiSetupApSsid(), 2), 330);
+    printT(wifiSetupApSsid());
+    setCur(centerX(wifiSetupApPass(), 2), 352);
+    printT(wifiSetupApPass());
+    setCur(centerX("192.168.4.1", 2), 374);
+    printT("192.168.4.1");
+    gfx->fillRoundRect(150, 400, 166, 36, 10, UI_TRACK);
+    setCur(centerX(T(S_CANCEL), 2), 410);
+    printT(T(S_CANCEL));
+    gfx->flush();
+    return;
+  }
+  if (ws != WS_OFF) {
+    const char *msg = ws == WS_OK ? T(S_WIFI_SAVED) : ws == WS_FAIL ? T(S_WIFI_KEPT) : T(S_WIFI_TRYING);
+    gfx->setTextColor(ws == WS_OK ? UI_BAR_OK : ws == WS_FAIL ? UI_BAR_BAD : UI_INK);
+    setSize(2);
+    setCur(centerX(msg, 2), 224);
+    printT(msg);
+    gfx->flush();
+    return;
+  }
+
+  drawClockDots();
+  setSize(3);
+  setCur(centerX(T(S_SETTINGS), 3), 56);
+  printT(T(S_SETTINGS));
+  setSize(2);
+  setCur(centerX("Wi-Fi", 2), 126);
+  printT("Wi-Fi");
+  const char *ssid = clockWifiSsid();
+  setCur(centerX(ssid[0] ? ssid : "---", 2), 156);
+  printT(ssid[0] ? ssid : "---");
+  uint8_t st = clockWifiStatus();
+  gfx->setTextColor(st == 1 ? UI_BAR_OK : st == 2 ? UI_BAR_BAD : UI_TRACK);
+  const char *stText = st == 1 ? T(S_WIFI_SYNCED) : st == 2 ? T(S_WIFI_NOCONN) : T(S_WIFI_TRYING);
+  setCur(centerX(stText, 2), 186);
+  printT(stText);
+  gfx->fillRoundRect(96, 236, 274, 48, 12, TYPE_ACCENT[TY_AGUA]);
+  gfx->setTextColor(UI_WHITE);
+  setCur(centerX(T(S_WIFI_CHANGE), 2), 252);
+  printT(T(S_WIFI_CHANGE));
+  gfx->setTextColor(UI_TRACK);
+  setCur(centerX(T(S_CLOCK_CANCEL), 2), 410);
+  printT(T(S_CLOCK_CANCEL));
+  gfx->flush();
+}
+#endif
+
 void renderClock() {
+#ifdef BOARD_KNOMI_V2
+  if (clockPage == 1) {
+    renderSettings();
+    return;
+  }
+#endif
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(T(S_SET_TIME), 3), 44);
   printT(T(S_SET_TIME));
+#ifdef BOARD_KNOMI_V2
+  drawClockDots();
+#endif
 
   char t[8];
   snprintf(t, sizeof(t), "%02d:%02d", clockH, clockM);
@@ -1991,6 +2124,12 @@ void renderClock() {
 }
 
 void clockTap(int16_t x, int16_t y) {
+#ifdef BOARD_KNOMI_V2
+  if (clockPage == 1) {
+    settingsTap(x, y);
+    return;
+  }
+#endif
   if (y >= 190 && y <= 248) {  // fila de botones +/-
     if (x >= 104 && x < 162) clockH = (clockH + 23) % 24;
     else if (x >= 170 && x < 228) clockH = (clockH + 1) % 24;
@@ -2354,6 +2493,39 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
   }
 }
 
+// tipo, evolucion y dato curioso de una especie ya encontrada
+void drawDexInfo(int16_t dex) {
+  const DexEntry &d = DEX_TBL[dex];
+  setSize(2);
+  const char *ty = TYPE_NAME[d.type];
+  int w = textW(ty, 2) + 24;
+  gfx->fillRoundRect(CX - w / 2, 246, w, 24, 8, d.accent);
+  gfx->setTextColor(UI_WHITE);
+  setCur(centerX(ty, 2), 251);
+  printT(ty);
+
+  char line[40];
+  gfx->setTextColor(UI_INK);
+  if (d.evolvesTo) {  // la siguiente forma no se revela hasta encontrarla
+    snprintf(line, sizeof(line), "Lv.%u > %s", d.evolveLevel, pet.isRegistered(d.evolvesTo) ? dexName(d.evolvesTo) : "???");
+    setCur(centerX(line, 2), 278);
+    printT(line);
+  } else {
+    setCur(centerX(T(S_FINAL_FORM), 2), 278);
+    printT(T(S_FINAL_FORM));
+  }
+
+  gfx->setTextColor(UI_INK);
+  const char *p = DEX_FACT[dex];
+  for (int y = 304; *p && y <= 376; y += 24) {
+    int skip, n = wrapNext(p, 29, skip);
+    snprintf(line, sizeof(line), "%.*s", n, p);
+    setCur(centerX(line, 2), y);
+    printT(line);
+    p += skip;
+  }
+}
+
 void renderGallery() {
   if (galleryDetail) {  // vista detalle: se redibuja siempre (animada)
     gfx->fillScreen(RGB565_BLACK);
@@ -2371,12 +2543,14 @@ void renderGallery() {
     setSize(gts);
     setCur(centerX(head, gts), gts == 3 ? 56 : 60);
     printT(head);
-    if (galleryPmd.loaded) {
-      // animado y a color si esta registrado; silueta estatica si no (estilo "?")
-      drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, reg ? millis() : 0, true, !reg, 6);
-    } else {
-      const uint8_t *t = thumbs.get(galleryDetail);
-      if (t) drawThumb(t, CX - GAL_CELL, 135, 4, !reg);
+    if (reg) {
+      if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 240, millis(), true, false, 4);
+      else if (const uint8_t *t = thumbs.get(galleryDetail)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
+      drawDexInfo(galleryDetail);
+    } else if (galleryPmd.loaded) {
+      drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, 0, true, true, 6);  // silueta estatica (estilo "?")
+    } else if (const uint8_t *t = thumbs.get(galleryDetail)) {
+      drawThumb(t, CX - GAL_CELL, 135, 4, true);
     }
     gfx->setTextColor(UI_INK);
     setSize(2);

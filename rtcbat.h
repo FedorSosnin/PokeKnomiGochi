@@ -7,6 +7,10 @@ uint32_t rtcEpoch();             // segundos unix; 0 si el RTC no es valido
 void rtcSetEpoch(uint32_t e);
 #ifdef BOARD_KNOMI_V2
 bool clockPoll();                // sondear en el loop; true justo al ponerse en hora por NTP
+const char *clockWifiSsid();      // red guardada, para la pantalla de ajustes
+uint8_t clockWifiStatus();       // 0 sin intentar, 1 hora de red correcta, 2 sin conexion
+void clockSetWifiSsid(const char *s);
+void clockPollPause(bool p);
 bool clockWasSeed();             // la ultima sincronizacion partia de la semilla: no hay ausencia que aplicar
 #endif
 

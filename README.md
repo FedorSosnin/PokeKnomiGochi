@@ -118,7 +118,7 @@ After any ending, a **new egg** appears.
   neglect. Both streak & bond improve egg/shiny odds.
 - **8 medals** (Lv10/25/50, favorite berry found, 7-day streak, max bond, final form,
   "fit" = weight 0 & no slip-ups), per-pet + a global counter.
-- **Pokédex:** raising a species registers it; **151 + shinies** to complete.
+- **Pokédex:** raising a species or beating it registers it; tap a registered one for its type, evolution and a fun fact; **151 + shinies** to complete.
 
 ### Battle stats
 ATK / DEF / SPD = real **Gen-1 base** × genes + level + training (STRENGTH ← battles,
@@ -145,6 +145,8 @@ RTC or battery). Build flag `BOARD_KNOMI_V2`; `tools/knomi_flash.sh` compiles an
 firmware plus the sprites, packed into flash (`tools/pack_flash.py`). The clock comes from NTP using
 the Wi-Fi the Knomi already has saved. The BOOT button starts a wild battle (tap), toggles the screen
 (hold 1-3 s), or asks whether to erase the game (hold 10 s).
+Swipe left on the clock screen for **Settings**: *Change Wi-Fi* opens a temporary network with a QR
+code, and you pick the new one from your phone. If it fails, the old one stays saved.
 
 ## Libraries (Arduino IDE / arduino-cli)
 

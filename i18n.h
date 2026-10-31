@@ -65,6 +65,9 @@ enum StrId : uint8_t {
   S_BTL_NEWDEX, S_BTL_LEARNED, S_BTL_TIRED,
   // borrar la partida (boton del Knomi)
   S_RESET_Q, S_RESET_GO, S_RESET_KEEP,
+  // ajustes y cambio de wifi (Knomi)
+  S_SETTINGS, S_WIFI_CHANGE, S_WIFI_SYNCED, S_WIFI_NOCONN, S_WIFI_SCAN, S_WIFI_TRYING, S_WIFI_SAVED,
+  S_WIFI_KEPT, S_CANCEL,
   STR_COUNT
 };
 

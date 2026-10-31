@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Pokédex info:** tap a registered Pokémon for its type, evolution and a fun fact (English only).
+- **Knomi settings page:** swipe left on the clock screen; change Wi-Fi from your phone through a QR code.
 - **Wild battles replace the training bag:** turn-based, with the Gen-1 damage formula and type
   chart (one type per species). TACKLE from the start, a type move at level 10. Winning trains
   STRENGTH and registers the rival in the Pokédex. The rules live in `battle.h`, with tests.

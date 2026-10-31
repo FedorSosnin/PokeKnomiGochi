@@ -46,13 +46,14 @@ jobs:
       - name: Regenerate dex.h and species.h
         run: |
           python3 tools/gen_dex.py
+          python3 tools/gen_facts.py
           python3 tools/sprites.py emit
 
       # dex.h y species.h llevan "GENERADO - no editar" en su cabecera; esto pilla
       # a quien edite la salida en vez del generador, o se olvide de regenerar
       # tras tocar los datos de origen.
       - name: Fail if regenerating produced a diff
-        run: git diff --exit-code -- dex.h species.h
+        run: git diff --exit-code -- dex.h species.h dexfacts.h
 
   tools-lint:
     name: Lint tools/ (ruff)

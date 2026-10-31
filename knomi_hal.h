@@ -105,11 +105,19 @@ public:
   void setMirrorXY(bool, bool) {}      // el Knomi no va girado (la Waveshare si)
 
   // toque simulado desde la consola serie, en coordenadas logicas
-  void inject(int16_t x, int16_t y, uint32_t ms) { ix = x; iy = y; iUntil = millis() + ms; iOn = true; }
+  void inject(int16_t x, int16_t y, uint32_t ms) { swipe(x, y, x, y, ms); }
+  void swipe(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint32_t ms) {
+    ix = x0; iy = y0; jx = x1; jy = y1; iMs = ms ? ms : 1; iUntil = millis() + iMs; iOn = true;
+  }
 
   uint8_t getPoint(int16_t *x, int16_t *y, uint8_t) {
     if (iOn) {
-      if ((int32_t)(iUntil - millis()) > 0) { *x = ix; *y = iy; return 1; }
+      int32_t left = (int32_t)(iUntil - millis());
+      if (left > 0) {
+        *x = jx - (jx - ix) * left / (int32_t)iMs;
+        *y = jy - (jy - iy) * left / (int32_t)iMs;
+        return 1;
+      }
       iOn = false;
       return 0;
     }
@@ -133,7 +141,7 @@ private:
   TwoWire *wire = nullptr;
   uint8_t addr = 0x15;
   int rstPin = -1;
-  int16_t ix = 0, iy = 0;
-  uint32_t iUntil = 0;
+  int16_t ix = 0, iy = 0, jx = 0, jy = 0;
+  uint32_t iUntil = 0, iMs = 1;
   bool iOn = false;
 };

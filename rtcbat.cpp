@@ -41,12 +41,28 @@ static uint32_t civilEpoch(const struct tm &t) {
   return days * 86400UL + t.tm_hour * 3600UL + t.tm_min * 60UL + t.tm_sec;
 }
 
+enum { CLK_IDLE, CLK_CONNECTING, CLK_WAIT_NTP };
+static uint8_t st = CLK_IDLE;
+static uint32_t t0 = 0, lastTry = 0, wait = 0;
+static bool first = true, paused = false;
+static uint8_t wifiStatus = 0;  // 0 sin intentar, 1 ultima hora de red correcta, 2 sin conexion
+static char savedSsid[33] = "";
+
+const char *clockWifiSsid() { return savedSsid; }
+uint8_t clockWifiStatus() { return wifiStatus; }
+void clockSetWifiSsid(const char *s) { strlcpy(savedSsid, s, sizeof(savedSsid)); wifiStatus = 0; }
+
+// la pantalla de cambio de wifi manda sobre la radio; al terminar se reintenta enseguida
+void clockPollPause(bool p) {
+  paused = p;
+  st = CLK_IDLE;
+  if (!p) first = true;
+}
+
 // Maquina de estados sin bloqueos: conecta, espera NTP, apaga la wifi y repite cada 24 h.
 bool clockPoll() {
-  enum { IDLE, CONNECTING, WAIT_NTP };
-  static uint8_t st = IDLE;
-  static uint32_t t0 = 0, lastTry = 0, wait = 0;
-  static bool first = true;
+  if (paused) return false;
+  enum { IDLE = CLK_IDLE, CONNECTING = CLK_CONNECTING, WAIT_NTP = CLK_WAIT_NTP };
   uint32_t now = millis();
   switch (st) {
     case IDLE:
@@ -65,6 +81,7 @@ bool clockPoll() {
         // lo guardado por el firmware anterior, pasado de nuevo para limpiar canal/BSSID viejos
         wifi_config_t cfg = {};
         esp_wifi_get_config(WIFI_IF_STA, &cfg);
+        strlcpy(savedSsid, (const char *)cfg.sta.ssid, sizeof(savedSsid));
         if (cfg.sta.ssid[0]) WiFi.begin((const char *)cfg.sta.ssid, (const char *)cfg.sta.password);
         else WiFi.begin();
       }
@@ -83,6 +100,7 @@ bool clockPoll() {
                       (int)WiFi.status(), (const char *)cfg.sta.ssid, (unsigned)strlen((const char *)cfg.sta.password));
         WiFi.mode(WIFI_OFF);
         wait = NTP_RETRY_MS;
+        wifiStatus = 2;
         st = IDLE;
       }
       return false;
@@ -99,6 +117,7 @@ bool clockPoll() {
       } else Serial.println("NTP: sin respuesta");
       WiFi.mode(WIFI_OFF);
       wait = ok ? NTP_RESYNC_MS : NTP_RETRY_MS;
+      wifiStatus = ok ? 1 : 2;
       st = IDLE;
       return ok;
     }

@@ -36,6 +36,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Elige tu inicial",
     "Sin sprites", "C\240rgalos en la SD",
     "%s salvaje!", "Muy eficaz!", "Poco eficaz...", "No le afecta!", "HAS GANADO!", "%s se debilit\242...", "Has escapado", "Nuevo en POKEDEX!", "Aprendi\242 %s!", "Muy cansado!", "Empezar de nuevo?", "BORRAR TODO", "SEGUIR",
+    "AJUSTES", "CAMBIAR WI-FI", "Hora sincronizada", "Sin conexi\242n", "Escanea con el m\242vil", "Conectando...", "Guardado!", "Fallo: sigue la anterior", "CANCELAR",
   },
   // ---------------- EN ----------------
   {
@@ -66,6 +67,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Choose your starter",
     "No sprites", "Load them onto the SD",
     "Wild %s!", "Super effective!", "Not very effective", "No effect!", "YOU WON!", "%s fainted...", "Got away safely", "New in POKEDEX!", "Learned %s!", "Too tired!", "Start over?", "ERASE EVERYTHING", "KEEP PLAYING",
+    "SETTINGS", "CHANGE WI-FI", "Time synced", "Can't connect", "Scan with your phone", "Connecting...", "Saved!", "Failed: old one kept", "CANCEL",
   },
   // ---------------- FR ----------------
   {
@@ -96,6 +98,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Choisis ton starter",
     "Pas de sprites", "Charge-les sur la SD",
     "%s sauvage!", "Super efficace!", "Pas tr\212s efficace", "Sans effet!", "VICTOIRE!", "%s est K.O.", "Fuite r\202ussie", "Nouveau POKEDEX!", "Apprend %s!", "Trop fatigu\202!", "Recommencer?", "TOUT EFFACER", "CONTINUER",
+    "REGLAGES", "CHANGER LE WI-FI", "Heure synchronis\202e", "Pas de connexion", "Scanne avec ton mobile", "Connexion...", "Enregistr\202!", "Echec: ancien conserv\202", "ANNULER",
   },
   // ---------------- DE ----------------
   // El aleman si lleva dieresis: la fuente 5x7 del firmware es una tabla CP437
@@ -131,6 +134,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "W\204hle deinen Starter",
     "Keine Sprites", "Auf die SD laden",
     "Wildes %s!", "Sehr effektiv!", "Nicht sehr effektiv", "Keine Wirkung!", "GEWONNEN!", "%s ist K.O.", "Entkommen!", "Neu im POKEDEX!", "Lernt %s!", "Zu m\201de!", "Neu anfangen?", "ALLES LOESCHEN", "WEITERSPIELEN",
+    "EINSTELLUNGEN", "WLAN WECHSELN", "Zeit synchron", "Keine Verbindung", "Mit dem Handy scannen", "Verbinde...", "Gespeichert!", "Fehler: altes bleibt", "ABBRECHEN",
   },
   // ---------------- IT ----------------
   {
@@ -161,6 +165,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Scegli l'iniziale",
     "Senza sprite", "Caricali sulla SD",
     "%s selvatico!", "Superefficace!", "Non molto efficace", "Nessun effetto!", "HAI VINTO!", "%s \212 esausto...", "Fuga riuscita", "Nuovo nel POKEDEX!", "Impara %s!", "Troppo stanco!", "Ricominciare?", "CANCELLA TUTTO", "CONTINUA",
+    "IMPOSTAZIONI", "CAMBIA WI-FI", "Ora sincronizzata", "Nessuna connessione", "Scansiona col telefono", "Connessione...", "Salvato!", "Errore: resta il vecchio", "ANNULLA",
   },
   // ---------------- PT ----------------
   {
@@ -191,6 +196,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Escolhe o inicial",
     "Sem sprites", "Carrega-os no SD",
     "%s selvagem!", "Super eficaz!", "Pouco eficaz...", "Sem efeito!", "VENCESTE!", "%s desmaiou...", "Fugiste!", "Novo na POKEDEX!", "Aprendeu %s!", "Muito cansado!", "Recome\207ar?", "APAGAR TUDO", "CONTINUAR",
+    "DEFINICOES", "MUDAR WI-FI", "Hora sincronizada", "Sem rede", "Usa a camara do telefone", "Ligando...", "Guardado!", "Erro: mantem o antigo", "CANCELAR",
   },
   // ---------------- JA ----------------
   {
@@ -244,6 +250,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 
     "スプライトなし", "SDにいれてください",
     "やせいの%s!", "こうかばつぐん!", "いまひとつ...", "こうかなし!", "かった!", "%sはたおれた", "にげられた", "ずかんにとうろく!", "%sをおぼえた!", "つかれている!", "さいしょから?", "ぜんぶけす", "つづける",
+    "せってい", "WI-FIへんこう", "じこくOK", "せつぞくなし", "スマホでスキャン", "せつぞくちゅう...", "ほぞんした!", "しっぱい:まえのまま", "キャンセル",
   },
   // ---------------- KO ----------------
   // Los especificadores van en el MISMO ORDEN que en la fila inglesa aunque
@@ -279,6 +286,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "스타터를 선택하세요",
     "스프라이트 없음", "SD 카드에 넣어주세요",
     "야생 %s!", "효과가 굉장했다!", "효과가 별로다", "효과 없음!", "승리!", "%s 쓰러짐", "도망쳤다", "도감 등록!", "%s 배움!", "너무 지쳤다!", "처음부터?", "모두 지우기", "계속하기",
+    "설정", "WI-FI 변경", "시간 동기화됨", "연결 안 됨", "휴대폰으로 스캔", "연결 중...", "저장됨!", "실패: 이전 유지", "취소",
   },
 };
 
