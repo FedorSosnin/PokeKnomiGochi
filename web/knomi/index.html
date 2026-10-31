@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PokeKnomiGochi Installer</title>
+<style>
+  :root { --bg:#f2efe1; --ink:#2a2a36; --muted:#66666f; --accent:#d8432e; --line:#d8d2bd; --card:#fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#1b1b25; --ink:#eeeadb; --muted:#a9a7a0; --accent:#ff7a63; --line:#3a3a48; --card:#262633; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 2.5rem 16px 4rem; }
+  h1 { font-size: 2rem; margin: 0 0 .25rem; }
+  .sub { color:var(--muted); margin: 0 0 1.5rem; }
+  .step { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:1.25rem 1.5rem; margin: 1rem 0; }
+  .step h2 { font-size:1.1rem; margin:0 0 .4rem; }
+  ol { margin:.25rem 0; padding-left:1.25rem; }
+  button { font: inherit; font-weight:600; padding:.7rem 1.4rem; border-radius:10px; border:0; background:var(--accent); color:#fff; cursor:pointer; }
+  esp-web-install-button { display:inline-block; margin:.5rem 0; }
+  .warn { border-left:4px solid var(--accent); padding-left:.75rem; }
+  .note { font-size:.9rem; color:var(--muted); }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PokeKnomiGochi</h1>
+  <p class="sub">A Pokémon tamagotchi for the BTT Knomi V2. Install it from your browser, with nothing to set up.</p>
+
+  <div class="step">
+    <h2>1. Plug in your Knomi</h2>
+    <ol>
+      <li>Use Chrome or Edge on a computer. Other browsers can't talk to USB devices.</li>
+      <li>Connect the Knomi V2 with a USB-C data cable. Charge-only cables won't work.</li>
+    </ol>
+  </div>
+
+  <div class="step">
+    <h2>2. Install</h2>
+    <esp-web-install-button manifest="manifest.json">
+      <button slot="activate">Install PokeKnomiGochi</button>
+      <span slot="unsupported">This browser can't flash devices. Use Chrome or Edge on a computer.</span>
+      <span slot="not-allowed">The installer needs an HTTPS page.</span>
+    </esp-web-install-button>
+    <p>Pick the USB serial port when asked, usually named CH340 or wchusbserial. It takes a few minutes, so keep the Knomi plugged in.</p>
+    <p class="warn"><strong>Updating?</strong> Leave <em>Erase device</em> unticked to keep your Pokémon. Ticking it deletes the game and the saved Wi-Fi.</p>
+  </div>
+
+  <div class="step">
+    <h2>3. Play</h2>
+    <p>Choose your starter and tap the egg to hatch it. For the clock, swipe down, then swipe left and tap <em>Change Wi-Fi</em>.</p>
+    <p class="note">This replaces the printer-status firmware on the Knomi. The <a href="https://github.com/FedorSosnin/PokeKnomiGochi#going-back-to-the-stock-firmware">README</a> explains how to go back, and how to fix a port that doesn't show up.</p>
+  </div>
+
+  <p class="note">Based on <a href="https://github.com/socquique/TamaPoke">TamaPoke</a> by Quique Tortosa. Unofficial, non-commercial fan project, not affiliated with Nintendo, Game Freak or The Pokémon Company.</p>
+</div>
+<script type="module" crossorigin="anonymous"
+        integrity="sha384-9XfyvAabgkISlB/Xb3OpshGKpZx0TOt5Mmu78SeiNU3so/p4o2s9m66vy6Utdnom"
+        src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js"></script>
+</body>
+</html>

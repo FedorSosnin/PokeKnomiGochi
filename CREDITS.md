@@ -1,5 +1,7 @@
 # Credits
 
+PokeKnomiGochi is an adaptation of [TamaPoke](https://github.com/socquique/TamaPoke) by Quique Tortosa and its contributors, adding BTT Knomi V2 support, catching, new mini games and a daily visitor. The credits below come from the original project and still apply.
+
 TamaPoke is a **non-commercial, personal-use** project. It does not sell or
 commercially redistribute any copyrighted material. Pokémon and all related
 names, designs and characters are trademarks and © of **Nintendo / Game Freak /
@@ -36,6 +38,7 @@ Huge thanks to that whole community for an enormous amount of work.
 | XPowersLib (AXP2101 PMU) | [Lewis He / lewisxhe](https://github.com/lewisxhe/XPowersLib) |
 | U8g2 (CJK font data only) | [olikraus](https://github.com/olikraus/u8g2) |
 | Board and pinout | [Waveshare ESP32-S3-Touch-AMOLED-1.75](https://www.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75) |
+| Board | [BIGTREETECH Knomi V2](https://github.com/bigtreetech/KNOMI) |
 | Web installer | [ESP Web Tools](https://esphome.github.io/esp-web-tools/) (Nabu Casa) |
 
 TamaPoke's own code (firmware and tools) is original work.

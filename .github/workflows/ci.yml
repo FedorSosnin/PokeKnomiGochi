@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: TamaPoke  # arduino-cli exige que la carpeta se llame como el sketch
 
       - name: Install arduino-cli
         uses: arduino/setup-arduino-cli@v2
@@ -27,11 +29,19 @@ jobs:
       - name: Install libraries
         run: arduino-cli lib install "GFX Library for Arduino" SensorLib XPowersLib U8g2
 
-      - name: Compile
+      - name: Compile for Waveshare
         run: >
           arduino-cli compile --warnings=all
           --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-          .
+          TamaPoke
+
+      - name: Compile for Knomi
+        run: >
+          arduino-cli compile --warnings=all
+          --fqbn "esp32:esp32:esp32s3:CDCOnBoot=default,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
+          --build-property "compiler.cpp.extra_flags=-DBOARD_KNOMI_V2"
+          --build-property "compiler.c.extra_flags=-DBOARD_KNOMI_V2"
+          TamaPoke
 
   generated:
     name: Generated headers up to date
