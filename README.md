@@ -145,8 +145,8 @@ RTC or battery). Build flag `BOARD_KNOMI_V2`; `tools/knomi_flash.sh` compiles an
 firmware plus the sprites, packed into flash (`tools/pack_flash.py`). The clock comes from NTP using
 the Wi-Fi the Knomi already has saved. The BOOT button starts a wild battle (tap), toggles the screen
 (hold 1-3 s), or asks whether to erase the game (hold 10 s).
-Swipe left on the clock screen for **Settings**: *Change Wi-Fi* opens a temporary network with a QR
-code, and you pick the new one from your phone. If it fails, the old one stays saved.
+Swipe left on the clock screen for **Settings**: *Change Wi-Fi* lists nearby networks and opens a keyboard
+for the password. A new network is saved only once it connects, so a failed attempt keeps the old one.
 
 ## Libraries (Arduino IDE / arduino-cli)
 

@@ -1,16 +1,23 @@
 #pragma once
 #include <stdint.h>
-// Cambio de wifi desde el movil: el Knomi abre su propia red con clave aleatoria y sirve una
-// pagina para elegir la nueva. La clave solo pasa por el movil y la NVS.
+// Cambio de wifi en la propia pantalla: busca redes, se elige una y se teclea la clave. La red
+// nueva solo se guarda cuando ha conectado; si falla, sigue guardada la anterior.
 
-enum WifiSetupState : uint8_t { WS_OFF, WS_BOOT, WS_WAIT, WS_TRY, WS_OK, WS_FAIL };
+enum WifiSetupState : uint8_t { WS_OFF, WS_SCAN, WS_LIST, WS_PASS, WS_TRY, WS_OK, WS_FAIL };
 
 void wifiSetupStart();
 void wifiSetupStop();
 void wifiSetupPoll();              // sondear en el loop
 WifiSetupState wifiSetupState();
-const char *wifiSetupApSsid();
-const char *wifiSetupApPass();
-int wifiSetupQrSize();             // modulos por lado; 0 si no hay QR
-bool wifiSetupQrDark(int x, int y);
+int wifiSetupNetCount();
+const char *wifiSetupNet(int i);
+void wifiSetupRescan();
+void wifiSetupPick(int i);         // red abierta: conecta ya; con clave: pasa al teclado
+void wifiSetupBackToList();
+const char *wifiSetupSsid();       // red elegida
+const char *wifiSetupPass();
+void wifiSetupType(char c);
+void wifiSetupDelete();
+bool wifiSetupCanSubmit();
+void wifiSetupSubmit();
 void wifiSetupTry(const char *ssid, const char *pass);  // tambien desde la consola serie

@@ -34,6 +34,7 @@
 #include "dexfacts.h"
 #include "textwrap.h"
 #include "wifi_setup.h"
+#include "kblayout.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
@@ -97,6 +98,12 @@ char nameBuf[12] = "";
 uint8_t nameLen = 0;
 uint8_t cardPage = 0;         // 0 perfil, 1 stats+medallas
 uint8_t clockPage = 0;        // 0 hora, 1 ajustes (solo Knomi)
+uint8_t wifiListPage = 0, wifiKbLayer = 0;
+#define KB_COLS 6
+#define KB_X 40
+#define KB_Y 150
+#define KB_W 64
+#define KB_H 52
 bool clockOpen = false;       // pantalla de ajuste de hora (deslizar abajo)
 int clockH = 12, clockM = 0;  // hora en edicion
 
@@ -478,6 +485,8 @@ void idleWait(PowerCtx c) {
 
 // ---------- consola serie (provision de SD + depuracion) ----------
 
+void openClock();  // prototipo
+
 void handleSerial() {
   if (!Serial.available()) return;
   String line = Serial.readStringUntil('\n');
@@ -505,8 +514,19 @@ void handleSerial() {
     }
     Serial.println("DONE");
     return;
+  } else if (line == "WIFISETUP") {  // abre la configuracion sin pasar por gestos
+    openClock();
+    clockPage = 1;
+    wifiSetupStart();
+    Serial.println("DONE");
+    return;
+  } else if (line == "WIFIEND") {
+    wifiSetupStop();
+    clockOpen = false;
+    Serial.println("DONE");
+    return;
   } else if (line == "WIFIINFO") {
-    Serial.printf("wifi: red '%s' estado=%u setup=%u ap='%s'\n", clockWifiSsid(), clockWifiStatus(), wifiSetupState(), wifiSetupApSsid());
+    Serial.printf("wifi: red '%s' estado=%u setup=%u\n", clockWifiSsid(), clockWifiStatus(), wifiSetupState());
     Serial.println("DONE");
     return;
   } else if (line.startsWith("WIFITRY ")) {  // prueba del camino de fallo, con clave inventada
@@ -716,7 +736,12 @@ void openClock();  // prototipo
 void onSwipeV(int dir) {
   if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
   if (gameOpen || galleryOpen || kbOpen || battleOpen || pet.ceremony) return;
-  if (clockOpen) { wifiSetupStop(); clockOpen = false; return; }
+  if (clockOpen) {
+    if (wifiSetupState() == WS_PASS) return;  // un toque movido no debe tirar la clave escrita
+    wifiSetupStop();
+    clockOpen = false;
+    return;
+  }
   if (cardOpen) {
     if (dir < 0) cardOpen = false;  // arriba cierra la ficha
     return;
@@ -1171,7 +1196,10 @@ static uint32_t screenKey() {
     h = mixKey(h, clockH * 60 + clockM);
     h = mixKey(h, clockPage);
     h = mixKey(h, wifiSetupState());
-    h = mixKey(h, wifiSetupQrSize());
+    h = mixKey(h, wifiListPage);
+    h = mixKey(h, wifiKbLayer);
+    h = mixKey(h, wifiSetupNetCount());
+    for (const char *p = wifiSetupPass(); *p; p++) h = mixKey(h, (uint8_t)*p);
 #ifdef BOARD_KNOMI_V2
     h = mixKey(h, clockWifiStatus());
     h = mixKey(h, clockWifiSsid()[0]);
@@ -1969,16 +1997,131 @@ void drawClockDots() {
   gfx->fillCircle(CX + 9, 24, 4, clockPage == 1 ? UI_INK : UI_TRACK);
 }
 
+#define WIFI_ROWS 5
+#define WIFI_ROW_Y 88
+#define WIFI_ROW_H 48
+
 void settingsTap(int16_t x, int16_t y) {
   switch (wifiSetupState()) {
     case WS_OFF:
-      if (x >= 96 && x <= 370 && y >= 236 && y <= 284) { sfxPlay(SFX_TAP); wifiSetupStart(); }
+      if (x >= 96 && x <= 370 && y >= 236 && y <= 284) {
+        sfxPlay(SFX_TAP);
+        wifiListPage = 0;
+        wifiSetupStart();
+      }
       break;
-    case WS_WAIT:
-    case WS_FAIL:
-      if (x >= 150 && x <= 316 && y >= 402) wifiSetupStop();
+    case WS_LIST: {
+      int pages = (wifiSetupNetCount() + WIFI_ROWS - 1) / WIFI_ROWS;
+      if (y >= WIFI_ROW_Y && y < WIFI_ROW_Y + WIFI_ROWS * WIFI_ROW_H) {
+        sfxPlay(SFX_TAP);
+        wifiKbLayer = 0;
+        wifiSetupPick(wifiListPage * WIFI_ROWS + (y - WIFI_ROW_Y) / WIFI_ROW_H);
+      } else if (y >= 334 && y <= 376) {
+        if (x < 170) { if (wifiListPage > 0) wifiListPage--; }
+        else if (x > 296) { if (wifiListPage + 1 < pages) wifiListPage++; }
+        else { wifiListPage = 0; wifiSetupRescan(); }
+      } else if (y > 376) {
+        wifiSetupStop();
+      }
       break;
+    }
+    case WS_PASS: {
+      if (y < 80) { wifiSetupBackToList(); break; }  // "< red": volver a la lista
+      if (x < KB_X || y < KB_Y) break;
+      int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;
+      if (col >= KB_COLS || row >= 5) break;
+      int i = row * KB_COLS + col;
+      if (i < KB_CHAR_KEYS) {
+        char c = kbLayerChar(wifiKbLayer, i);
+        if (c) wifiSetupType(c);
+      } else if (i == KB_CHAR_KEYS) {
+        wifiKbLayer = (wifiKbLayer + 1) % KB_LAYER_COUNT;
+      } else if (i == KB_CHAR_KEYS + 1) {
+        wifiSetupDelete();
+      } else if (wifiSetupCanSubmit()) {
+        sfxPlay(SFX_TAP);
+        wifiSetupSubmit();
+      } else {
+        sfxPlay(SFX_DENY);  // menos de 8 caracteres
+      }
+      break;
+    }
     default: break;
+  }
+}
+
+void renderWifiList() {
+  setSize(2);
+  gfx->setTextColor(UI_INK);
+  setCur(centerX("Wi-Fi", 2), 56);
+  printT("Wi-Fi");
+  int n = wifiSetupNetCount();
+  int pages = (n + WIFI_ROWS - 1) / WIFI_ROWS;
+  if (pages == 0) pages = 1;
+  if (wifiListPage >= pages) wifiListPage = pages - 1;
+  for (int r = 0; r < WIFI_ROWS; r++) {
+    int idx = wifiListPage * WIFI_ROWS + r;
+    if (idx >= n) break;
+    int y = WIFI_ROW_Y + r * WIFI_ROW_H;
+    gfx->fillRoundRect(62, y, 342, WIFI_ROW_H - 6, 8, UI_WHITE);
+    gfx->drawRoundRect(62, y, 342, WIFI_ROW_H - 6, 8, UI_INK);
+    char line[28];
+    strlcpy(line, wifiSetupNet(idx), sizeof(line));
+    gfx->setTextColor(UI_INK);
+    setCur(centerX(line, 2), y + 13);
+    printT(line);
+  }
+  // paginas y volver a buscar
+  gfx->setTextColor(UI_INK);
+  gfx->fillRoundRect(96, 334, 70, 40, 10, wifiListPage > 0 ? UI_WHITE : UI_BG_DAY);
+  gfx->drawRoundRect(96, 334, 70, 40, 10, UI_INK);
+  setCur(125, 347);
+  printT("<");
+  gfx->fillRoundRect(176, 334, 114, 40, 10, UI_WHITE);
+  gfx->drawRoundRect(176, 334, 114, 40, 10, UI_INK);
+  setCur(centerX("SCAN", 2), 347);
+  printT("SCAN");
+  gfx->fillRoundRect(300, 334, 70, 40, 10, wifiListPage + 1 < pages ? UI_WHITE : UI_BG_DAY);
+  gfx->drawRoundRect(300, 334, 70, 40, 10, UI_INK);
+  setCur(329, 347);
+  printT(">");
+  gfx->fillRoundRect(150, 384, 166, 40, 10, UI_TRACK);
+  setCur(centerX(T(S_CANCEL), 2), 396);
+  printT(T(S_CANCEL));
+}
+
+void renderWifiKeyboard() {
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  char title[28];
+  snprintf(title, sizeof(title), "< %.24s", wifiSetupSsid());
+  setCur(centerX(title, 2), 54);
+  printT(title);
+  gfx->fillRoundRect(58, 84, 350, 40, 8, UI_WHITE);
+  gfx->drawRoundRect(58, 84, 350, 40, 8, UI_INK);
+  // se ve lo escrito: en una pantalla tan pequena, sin verlo es imposible acertar. Solo el final.
+  const char *pass = wifiSetupPass();
+  size_t len = strlen(pass);
+  setCur(68, 98);
+  printT(len ? (len > 27 ? pass + len - 27 : pass) : "_");
+
+  bool ready = wifiSetupCanSubmit();
+  for (int i = 0; i < 30; i++) {
+    int x = KB_X + (i % KB_COLS) * KB_W, y = KB_Y + (i / KB_COLS) * KB_H;
+    char c = i < KB_CHAR_KEYS ? kbLayerChar(wifiKbLayer, i) : 0;
+    if (i < KB_CHAR_KEYS && !c) continue;
+    uint16_t bg = i < KB_CHAR_KEYS ? UI_WHITE : (i == 29 ? (ready ? UI_BAR_OK : UI_TRACK) : UI_BAR_WARN);
+    gfx->fillRoundRect(x, y, KB_W - 6, KB_H - 6, 6, bg);
+    gfx->drawRoundRect(x, y, KB_W - 6, KB_H - 6, 6, UI_INK);
+    gfx->setTextColor(UI_INK);
+    if (i < KB_CHAR_KEYS && c != ' ') {
+      setCur(x + KB_W / 2 - 9, y + KB_H / 2 - 10);
+      printT(c);
+    } else {
+      const char *lab = i < KB_CHAR_KEYS ? "sp" : i == KB_CHAR_KEYS ? KB_LAYER_NEXT[wifiKbLayer] : i == 28 ? "<-" : "OK";
+      setCur(x + (KB_W - 6 - (int)strlen(lab) * 12) / 2, y + KB_H / 2 - 10);
+      printT(lab);
+    }
   }
 }
 
@@ -1987,34 +2130,11 @@ void renderSettings() {
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   WifiSetupState ws = wifiSetupState();
-  if (ws == WS_WAIT) {
-    // QR de la red de configuracion; un modulo de 8 px logicos son unos 4 px reales
-    int n = wifiSetupQrSize();
-    if (n) {
-      int cell = 232 / n, side = cell * n, quiet = 2 * cell;
-      int x0 = CX - side / 2, y0 = 56;
-      gfx->fillRect(x0 - quiet, y0 - quiet, side + 2 * quiet, side + 2 * quiet, UI_WHITE);
-      for (int y = 0; y < n; y++)
-        for (int x = 0; x < n; x++)
-          if (wifiSetupQrDark(x, y)) gfx->fillRect(x0 + x * cell, y0 + y * cell, cell, cell, RGB565_BLACK);
-    }
-    setSize(2);
-    setCur(centerX(T(S_WIFI_SCAN), 2), 306);
-    printT(T(S_WIFI_SCAN));
-    setCur(centerX(wifiSetupApSsid(), 2), 330);
-    printT(wifiSetupApSsid());
-    setCur(centerX(wifiSetupApPass(), 2), 352);
-    printT(wifiSetupApPass());
-    setCur(centerX("192.168.4.1", 2), 374);
-    printT("192.168.4.1");
-    gfx->fillRoundRect(150, 400, 166, 36, 10, UI_TRACK);
-    setCur(centerX(T(S_CANCEL), 2), 410);
-    printT(T(S_CANCEL));
-    gfx->flush();
-    return;
-  }
+  if (ws == WS_LIST) { renderWifiList(); gfx->flush(); return; }
+  if (ws == WS_PASS) { renderWifiKeyboard(); gfx->flush(); return; }
   if (ws != WS_OFF) {
-    const char *msg = ws == WS_OK ? T(S_WIFI_SAVED) : ws == WS_FAIL ? T(S_WIFI_KEPT) : T(S_WIFI_TRYING);
+    const char *msg = ws == WS_SCAN ? T(S_WIFI_SEARCH) : ws == WS_OK ? T(S_WIFI_SAVED)
+                      : ws == WS_FAIL ? T(S_WIFI_KEPT) : T(S_WIFI_TRYING);
     gfx->setTextColor(ws == WS_OK ? UI_BAR_OK : ws == WS_FAIL ? UI_BAR_BAD : UI_INK);
     setSize(2);
     setCur(centerX(msg, 2), 224);
@@ -2404,11 +2524,6 @@ void renderCard() {
 // ---------- teclado para renombrar ----------
 
 static const char KB_KEYS[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.-";  // 28 + DEL + OK = 30
-#define KB_COLS 6
-#define KB_X 40
-#define KB_Y 150
-#define KB_W 64
-#define KB_H 52
 
 void openKeyboard() {
   kbOpen = true;

@@ -3,6 +3,7 @@
 #include "shim/Arduino.h"
 #include "../textwrap.h"
 #include "../wifi_form.h"
+#include "../kblayout.h"
 #include "../dex.h"
 #include "../dexfacts.h"
 #include <string.h>
@@ -51,20 +52,19 @@ TEST(wifi, valida_nombre_y_clave) {
   CHECK(!wifiFormValid("Casa", larga));
 }
 
-TEST(wifi, un_nombre_de_red_hostil_no_entra_en_el_html) {
-  char out[200];
-  htmlEscape("\"><script>alert('x')</script>&", out, sizeof(out));
-  CHECK(strchr(out, '<') == nullptr);
-  CHECK(strchr(out, '>') == nullptr);
-  CHECK(strchr(out, '"') == nullptr);
-  CHECK(strchr(out, '\'') == nullptr);
-  CHECK(strstr(out, "&lt;script&gt;") != nullptr);
+TEST(wifi, el_teclado_cubre_todo_el_ascii_imprimible) {
+  for (int c = 0x20; c <= 0x7E; c++) {
+    bool found = false;
+    for (int l = 0; l < KB_LAYER_COUNT && !found; l++)
+      for (int i = 0; i < KB_CHAR_KEYS && !found; i++) found = kbLayerChar(l, i) == (char)c;
+    CHECK_MSG(found, "falta un caracter en el teclado");
+  }
 }
 
-TEST(wifi, escapar_no_se_sale_del_buffer) {
-  char out[8];
-  size_t n = htmlEscape("<<<<<<<<", out, sizeof(out));
-  CHECK(n < sizeof(out));
-  CHECK_EQ(out[n], 0);
-  CHECK(strcmp(out, "&lt;") == 0);  // sin entidades a medias
+TEST(wifi, ninguna_capa_se_sale_de_sus_teclas) {
+  for (int l = 0; l < KB_LAYER_COUNT; l++) {
+    CHECK((int)strlen(KB_LAYERS[l]) <= KB_CHAR_KEYS);
+    CHECK_EQ((int)kbLayerChar(l, KB_CHAR_KEYS), 0);
+    CHECK_EQ((int)kbLayerChar(l, -1), 0);
+  }
 }
