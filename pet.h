@@ -84,6 +84,7 @@ public:
   uint16_t lastMilestone = 0;  // hito de racha ya celebrado
   uint16_t gameHi = 0;     // record del minijuego (del jugador)
   uint16_t battleWins = 0; // combates ganados por este individuo
+  uint32_t visitorDay = 0;  // ultimo dia con visita
   uint8_t movesSeen = 1;   // ataques ya anunciados (para avisar del nuevo una sola vez)
 
   void begin();                 // carga estado de NVS (o crea el primer huevo)
@@ -97,8 +98,14 @@ public:
     return !isEgg() && (speciesId % 3) == color;  // gusto oculto por especie
   }
   void playResult(uint8_t score);  // recompensa del minijuego (entrena VEL)
-  // combate: entrena FUE, cansa y, si gana, registra al rival. Devuelve la subida de FUE.
-  uint8_t battleResult(bool won, int16_t wildDex, bool *newInDex);
+  // combate: entrena FUE y cansa. Devuelve la subida de FUE.
+  uint8_t battleResult(bool won);
+  bool catchWild(int16_t dex);           // captura: registra en la pokedex; true si es nueva
+  void quizResult(uint8_t correct);      // quien es ese pokemon
+  bool visitorDueNow() const;            // toca visita hoy
+  void visitorArrived();                 // anota el dia: no se repite aunque se reinicie
+  void visitorLeft();                    // la visita alegra
+  bool noSave = false;                   // pruebas en la placa: nada llega a la NVS
   int16_t pickWildSpecies(uint8_t lvl);  // rival: sesgo hacia lo que falta en la pokedex
 
   // stats de combate: base real de gen 1 x genes + nivel + entrenamiento

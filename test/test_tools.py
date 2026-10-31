@@ -209,6 +209,13 @@ class TestBuffersDeTexto(unittest.TestCase):
         'S_INFO_FMT': ('baya',),
         'S_FAREWELL_BTN': ('nombre_o_apodo',),
         'S_RUNAWAY_BTN': ('nombre_o_apodo',),
+        'S_BTL_WILD': ('nombre',),
+        'S_BTL_LOST': ('nombre',),
+        'S_BTL_LEARNED': ('nombre',),
+        'S_ITS_FMT': ('nombre',),
+        'S_CAUGHT_FMT': ('nombre',),
+        'S_FLED_FMT': ('nombre',),
+        'S_VISIT_BYE_FMT': ('nombre',),
     }
     CIFRAS = {'u': 5, 'd': 5, 'lu': 10}
     ESPEC = re.compile(r'%0?\d*(lu|u|d|s)')

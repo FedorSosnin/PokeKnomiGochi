@@ -60,6 +60,10 @@ static const ExpectedFmt EXPECTED[] = {
   { S_BTL_WILD,        "%s" },
   { S_BTL_LOST,        "%s" },
   { S_BTL_LEARNED,     "%s" },
+  { S_ITS_FMT,         "%s" },
+  { S_CAUGHT_FMT,      "%s" },
+  { S_FLED_FMT,        "%s" },
+  { S_VISIT_BYE_FMT,   "%s" },
 };
 static const int NUM_EXPECTED = (int)(sizeof(EXPECTED) / sizeof(EXPECTED[0]));
 

@@ -37,6 +37,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Sin sprites", "C\240rgalos en la SD",
     "%s salvaje!", "Muy eficaz!", "Poco eficaz...", "No le afecta!", "HAS GANADO!", "%s se debilit\242...", "Has escapado", "Nuevo en POKEDEX!", "Aprendi\242 %s!", "Muy cansado!", "Empezar de nuevo?", "BORRAR TODO", "SEGUIR",
     "AJUSTES", "CAMBIAR WI-FI", "Hora sincronizada", "Sin conexi\242n", "Buscando redes...", "Conectando...", "Guardado!", "Fallo: sigue la anterior", "CANCELAR",
+    "JUEGOS", "Inclina y Atrapa", "Qui\202n es?", "Qui\202n es ese Pokemon?", "Es %s!", "Inclina para moverte!", "Toca y apunta inclinando", "%s atrapado!", "Fallo!", "%s escap\242...", "Tienes una visita!", "Adi\242s, %s!",
   },
   // ---------------- EN ----------------
   {
@@ -68,6 +69,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "No sprites", "Load them onto the SD",
     "Wild %s!", "Super effective!", "Not very effective", "No effect!", "YOU WON!", "%s fainted...", "Got away safely", "New in POKEDEX!", "Learned %s!", "Too tired!", "Start over?", "ERASE EVERYTHING", "KEEP PLAYING",
     "SETTINGS", "CHANGE WI-FI", "Time synced", "Can't connect", "Searching...", "Connecting...", "Saved!", "Failed: old one kept", "CANCEL",
+    "GAMES", "Tilt Catch", "Who's That?", "Who's that Pokemon?", "It's %s!", "Lean to move!", "Tap ball, lean to aim", "Caught %s!", "Missed!", "%s got away...", "You have a visitor!", "Goodbye, %s!",
   },
   // ---------------- FR ----------------
   {
@@ -99,6 +101,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pas de sprites", "Charge-les sur la SD",
     "%s sauvage!", "Super efficace!", "Pas tr\212s efficace", "Sans effet!", "VICTOIRE!", "%s est K.O.", "Fuite r\202ussie", "Nouveau POKEDEX!", "Apprend %s!", "Trop fatigu\202!", "Recommencer?", "TOUT EFFACER", "CONTINUER",
     "REGLAGES", "CHANGER LE WI-FI", "Heure synchronis\202e", "Pas de connexion", "Recherche...", "Connexion...", "Enregistr\202!", "Echec: ancien conserv\202", "ANNULER",
+    "JEUX", "Penche et Attrape", "Qui est-ce?", "Quel est ce Pokemon?", "C'est %s!", "Penche pour bouger!", "Touche, penche pour viser", "%s attrap\202!", "Rat\202!", "%s s'enfuit...", "Tu as un visiteur!", "Au revoir, %s!",
   },
   // ---------------- DE ----------------
   // El aleman si lleva dieresis: la fuente 5x7 del firmware es una tabla CP437
@@ -135,6 +138,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Keine Sprites", "Auf die SD laden",
     "Wildes %s!", "Sehr effektiv!", "Nicht sehr effektiv", "Keine Wirkung!", "GEWONNEN!", "%s ist K.O.", "Entkommen!", "Neu im POKEDEX!", "Lernt %s!", "Zu m\201de!", "Neu anfangen?", "ALLES LOESCHEN", "WEITERSPIELEN",
     "EINSTELLUNGEN", "WLAN WECHSELN", "Zeit synchron", "Keine Verbindung", "Suche...", "Verbinde...", "Gespeichert!", "Fehler: altes bleibt", "ABBRECHEN",
+    "SPIELE", "Neigen und Fangen", "Wer ist das?", "Wer ist das Pokemon?", "Es ist %s!", "Neigen zum Bewegen!", "Tippen, neigen zum Zielen", "%s gefangen!", "Daneben!", "%s ist entkommen", "Du hast Besuch!", "Tschuess, %s!",
   },
   // ---------------- IT ----------------
   {
@@ -166,6 +170,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Senza sprite", "Caricali sulla SD",
     "%s selvatico!", "Superefficace!", "Non molto efficace", "Nessun effetto!", "HAI VINTO!", "%s \212 esausto...", "Fuga riuscita", "Nuovo nel POKEDEX!", "Impara %s!", "Troppo stanco!", "Ricominciare?", "CANCELLA TUTTO", "CONTINUA",
     "IMPOSTAZIONI", "CAMBIA WI-FI", "Ora sincronizzata", "Nessuna connessione", "Ricerca...", "Connessione...", "Salvato!", "Errore: resta il vecchio", "ANNULLA",
+    "GIOCHI", "Inclina e Prendi", "Chi \212?", "Chi \212 questo Pokemon?", "E' %s!", "Inclina per muoverti!", "Tocca, inclina per mirare", "%s catturato!", "Mancato!", "%s \212 fuggito", "Hai una visita!", "Ciao, %s!",
   },
   // ---------------- PT ----------------
   {
@@ -197,6 +202,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Sem sprites", "Carrega-os no SD",
     "%s selvagem!", "Super eficaz!", "Pouco eficaz...", "Sem efeito!", "VENCESTE!", "%s desmaiou...", "Fugiste!", "Novo na POKEDEX!", "Aprendeu %s!", "Muito cansado!", "Recome\207ar?", "APAGAR TUDO", "CONTINUAR",
     "DEFINICOES", "MUDAR WI-FI", "Hora sincronizada", "Sem rede", "A procurar...", "Ligando...", "Guardado!", "Erro: mantem o antigo", "CANCELAR",
+    "JOGOS", "Inclina e Apanha", "Quem \202?", "Quem \202 este Pokemon?", "E o %s!", "Inclina para mover!", "Toca e inclina para mirar", "%s apanhado!", "Falhou!", "%s fugiu...", "Tens uma visita!", "Adeus, %s!",
   },
   // ---------------- JA ----------------
   {
@@ -251,6 +257,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "スプライトなし", "SDにいれてください",
     "やせいの%s!", "こうかばつぐん!", "いまひとつ...", "こうかなし!", "かった!", "%sはたおれた", "にげられた", "ずかんにとうろく!", "%sをおぼえた!", "つかれている!", "さいしょから?", "ぜんぶけす", "つづける",
     "せってい", "WI-FIへんこう", "じこくOK", "せつぞくなし", "さがしています...", "せつぞくちゅう...", "ほぞんした!", "しっぱい:まえのまま", "キャンセル",
+    "ゲーム", "かたむけキャッチ", "だれだ?", "このポケモンはだれ?", "%sだ!", "かたむけてうごこう!", "タッチしてかたむける", "%sをつかまえた!", "はずれ!", "%sはにげた", "おきゃくさんだよ!", "またね %s!",
   },
   // ---------------- KO ----------------
   // Los especificadores van en el MISMO ORDEN que en la fila inglesa aunque
@@ -287,6 +294,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "스프라이트 없음", "SD 카드에 넣어주세요",
     "야생 %s!", "효과가 굉장했다!", "효과가 별로다", "효과 없음!", "승리!", "%s 쓰러짐", "도망쳤다", "도감 등록!", "%s 배움!", "너무 지쳤다!", "처음부터?", "모두 지우기", "계속하기",
     "설정", "WI-FI 변경", "시간 동기화됨", "연결 안 됨", "검색 중...", "연결 중...", "저장됨!", "실패: 이전 유지", "취소",
+    "게임", "기울여 잡기", "누구일까?", "이 포켓몬은 누구?", "%s!", "기울여서 움직여요!", "눌러서 기울여 조준", "%s 잡았다!", "빗나감!", "%s 도망감", "손님이 왔어요!", "잘 가, %s!",
   },
 };
 

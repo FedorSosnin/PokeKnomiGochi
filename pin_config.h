@@ -24,6 +24,10 @@
 #define TP_INT 17
 #define TP_RESET 16
 
+// Inclinar: eje del acelerometro paralelo al ancho de la pantalla, y su signo
+#define KNOMI_TILT_AXIS 0
+#define KNOMI_TILT_SIGN 1.0f
+
 // Boton BOOT
 #define KNOMI_BTN_PIN 0
 

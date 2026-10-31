@@ -1,5 +1,6 @@
 #include "pet.h"
 #include "battle.h"
+#include "minigames.h"
 #include "dex.h"
 #include "audio.h"
 
@@ -487,8 +488,7 @@ void Pet::playResult(uint8_t score) {
 }
 
 // combate: ganar entrena mas que perder, y perder nunca hace dano permanente
-uint8_t Pet::battleResult(bool won, int16_t wildDex, bool *newInDex) {
-  if (newInDex) *newInDex = false;
+uint8_t Pet::battleResult(bool won) {
   if (ceremony != CER_NONE || isEgg()) return 0;
   uint8_t antes = trAtk;
   uint16_t v = (uint16_t)trAtk + (won ? BTL_WIN_TRAIN : BTL_LOSS_TRAIN);
@@ -508,11 +508,6 @@ uint8_t Pet::battleResult(bool won, int16_t wildDex, bool *newInDex) {
     if (battleWins < 65535) battleWins++;
     joy = clamp100(joy + 10);
     heartUntil = millis() + HEART_MS;
-    // directo al bit normal: registerSpecies() marcaria el shiny si la mascota lo es
-    if (wildDex >= 1 && wildDex <= 151 && !isRegistered(wildDex)) {
-      dexReg[(wildDex - 1) >> 3] |= (1 << ((wildDex - 1) & 7));
-      if (newInDex) *newInDex = true;
-    }
   } else {
     joy = dropTo(joy, 3, 5);
   }
@@ -520,6 +515,41 @@ uint8_t Pet::battleResult(bool won, int16_t wildDex, bool *newInDex) {
   registerCare();
   save();
   return gain;
+}
+
+bool Pet::catchWild(int16_t dex) {
+  if (dex < 1 || dex > 151 || isRegistered(dex)) return false;
+  // directo al bit normal: registerSpecies() marcaria el shiny si la mascota lo es
+  dexReg[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
+  save();
+  return true;
+}
+
+void Pet::quizResult(uint8_t correct) {
+  if (ceremony != CER_NONE || isEgg()) return;
+  joy = clamp100(joy + 3 + correct * 3);
+  if (correct >= QUIZ_ROUNDS) heartUntil = millis() + HEART_MS;
+  addBond(1);
+  registerCare();
+  save();
+}
+
+bool Pet::visitorDueNow() const {
+  if (isEgg() || sleeping || ceremony != CER_NONE || !lastSeenEpoch) return false;
+  return visitorDue(today(), (lastSeenEpoch / 3600) % 24, visitorDay);
+}
+
+void Pet::visitorArrived() {
+  visitorDay = today();
+  save();
+}
+
+void Pet::visitorLeft() {
+  if (isEgg() || ceremony != CER_NONE) return;
+  joy = clamp100(joy + 5);
+  heartUntil = millis() + HEART_MS;
+  addBond(1);
+  save();
 }
 
 int16_t Pet::pickWildSpecies(uint8_t lvl) {
@@ -596,6 +626,7 @@ PetMood Pet::mood() const {
 void Pet::save() {
   ticksSinceSave = 0;
   pendingSave = false;
+  if (noSave) return;
   prefs.putUChar("full", fullness);
   prefs.putUChar("joy", joy);
   prefs.putUChar("ene", energy);
@@ -632,6 +663,7 @@ void Pet::save() {
   prefs.putUShort("ghi", gameHi);
   prefs.putUShort("bwin", battleWins);
   prefs.putUChar("bmov", movesSeen);
+  prefs.putUInt("vday", visitorDay);
   prefs.putString("nick", nick);
 }
 
@@ -685,6 +717,7 @@ void Pet::load() {
   gameHi = prefs.getUShort("ghi", 0);
   battleWins = prefs.getUShort("bwin", 0);
   movesSeen = prefs.getUChar("bmov", 1);
+  visitorDay = prefs.getUInt("vday", 0);
   prefs.getString("nick", nick, sizeof(nick));
   // siembra: la mascota actual cuenta como criada (guardados antiguos)
   if (speciesId >= 1) registerSpecies(speciesId);

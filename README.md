@@ -65,7 +65,7 @@ While **awake**, per minute:
 - 🍬 **Candy:** +10 FOOD, +12 JOY, but **+12 weight** (fattening).
 - ⚽ **Play / minigame:** +JOY, −ENE; the minigame trains **SPEED** and burns weight.
 - ⚔️ **Wild battles:** turn-based, Gen-1 style. Everyone knows TACKLE and learns a type move
-  at **level 10**. A win gives **STRENGTH +6**, costs 12 energy and adds the species to the Pokédex. A loss
+  at **level 10**. A win gives **STRENGTH +6** and costs 12 energy. A new species can then be caught: tap the Poké Ball and lean to steer it, with 3 balls and a direct hit needed. A loss
   gives +2 and drops energy to 5, so it must **sleep** before fighting again (below 15 energy, or
   asleep, it refuses). Leave it exhausted for over 10 minutes and it counts as a care slip-up.
 - 🫧 **Bath:** clears poops, HYG → 100.
@@ -118,7 +118,7 @@ After any ending, a **new egg** appears.
   neglect. Both streak & bond improve egg/shiny odds.
 - **8 medals** (Lv10/25/50, favorite berry found, 7-day streak, max bond, final form,
   "fit" = weight 0 & no slip-ups), per-pet + a global counter.
-- **Pokédex:** raising a species or beating it registers it; tap a registered one for its type, evolution and a fun fact; **151 + shinies** to complete.
+- **Pokédex:** raising a species or catching it registers it; tap a registered one for its type, evolution and a fun fact; **151 + shinies** to complete.
 
 ### Battle stats
 ATK / DEF / SPD = real **Gen-1 base** × genes + level + training (STRENGTH ← battles,
@@ -143,7 +143,7 @@ SPEED ← minigame, DEFENSE ← 12 h of unbroken good care).
 The game also runs on the **BIGTREETECH Knomi V2** (GC9A01 240x240, CST816S touch, no SD, audio,
 RTC or battery). Build flag `BOARD_KNOMI_V2`; `tools/knomi_flash.sh` compiles and flashes the
 firmware plus the sprites, packed into flash (`tools/pack_flash.py`). The clock comes from NTP using
-the Wi-Fi the Knomi already has saved. The BOOT button starts a wild battle (tap), toggles the screen
+the Wi-Fi the Knomi already has saved. The Poké Ball button opens a games menu (Tilt Catch and Who's That Pokémon?), and a daily visitor drops by. The BOOT button starts a wild battle (tap), toggles the screen
 (hold 1-3 s), or asks whether to erase the game (hold 10 s).
 Swipe left on the clock screen for **Settings**: *Change Wi-Fi* lists nearby networks and opens a keyboard
 for the password. A new network is saved only once it connects, so a failed attempt keeps the old one.

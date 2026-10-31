@@ -145,3 +145,47 @@ private:
   uint32_t iUntil = 0, iMs = 1;
   bool iOn = false;
 };
+
+// LIS2DW12 (0x19, mismo bus I2C). Se lee la gravedad para inclinar; el juego fija el cero al empezar.
+#define KNOMI_ACC_ADDR 0x19
+class KnomiAccel {
+public:
+  bool begin(TwoWire &w) {
+    wire = &w;
+    if (readReg(0x0F) != 0x44) return false;  // WHO_AM_I
+    writeReg(0x20, 0x54);  // 100 Hz, alto rendimiento
+    writeReg(0x21, 0x0C);  // BDU y autoincremento
+    writeReg(0x25, 0x04);  // +-2 g, bajo ruido
+    ok = true;
+    return true;
+  }
+  bool ready() const { return ok; }
+  // gravedad en g por eje
+  bool read(float g[3]) {
+    if (!ok) return false;
+    wire->beginTransmission(KNOMI_ACC_ADDR);
+    wire->write(0x28);
+    if (wire->endTransmission(false) != 0 || wire->requestFrom((uint8_t)KNOMI_ACC_ADDR, (uint8_t)6) != 6) return false;
+    for (int i = 0; i < 3; i++) {
+      int16_t v = wire->read();
+      v |= (int16_t)wire->read() << 8;
+      g[i] = v / 16384.0f;
+    }
+    return true;
+  }
+private:
+  uint8_t readReg(uint8_t r) {
+    wire->beginTransmission(KNOMI_ACC_ADDR);
+    wire->write(r);
+    if (wire->endTransmission(false) != 0 || wire->requestFrom((uint8_t)KNOMI_ACC_ADDR, (uint8_t)1) != 1) return 0;
+    return wire->read();
+  }
+  void writeReg(uint8_t r, uint8_t v) {
+    wire->beginTransmission(KNOMI_ACC_ADDR);
+    wire->write(r);
+    wire->write(v);
+    wire->endTransmission();
+  }
+  TwoWire *wire = nullptr;
+  bool ok = false;
+};

@@ -414,8 +414,8 @@ TEST(stats, el_huevo_no_tiene_stats) {
 TEST(train, ganar_entrena_mas_que_perder) {
   Pet p;
   makePet(p, 4);
-  CHECK_EQ(p.battleResult(true, 16, nullptr), (uint8_t)BTL_WIN_TRAIN);
-  CHECK_EQ(p.battleResult(false, 16, nullptr), (uint8_t)BTL_LOSS_TRAIN);
+  CHECK_EQ(p.battleResult(true), (uint8_t)BTL_WIN_TRAIN);
+  CHECK_EQ(p.battleResult(false), (uint8_t)BTL_LOSS_TRAIN);
   CHECK_EQ(p.trAtk, (uint8_t)(BTL_WIN_TRAIN + BTL_LOSS_TRAIN));
   CHECK_EQ(p.battleWins, (uint16_t)1);
 }
@@ -424,9 +424,9 @@ TEST(train, el_combate_anuncia_lo_que_de_verdad_sube) {
   Pet p;
   makePet(p, 4);
   p.trAtk = 98;
-  CHECK_EQ(p.battleResult(true, 16, nullptr), (uint8_t)2);
+  CHECK_EQ(p.battleResult(true), (uint8_t)2);
   CHECK_EQ(p.trAtk, (uint8_t)100);
-  CHECK_EQ(p.battleResult(true, 16, nullptr), (uint8_t)0);
+  CHECK_EQ(p.battleResult(true), (uint8_t)0);
 }
 
 TEST(train, ganar_cansa_y_quema_peso) {
@@ -435,12 +435,12 @@ TEST(train, ganar_cansa_y_quema_peso) {
   p.weight = 40;
   p.energy = 80;
   p.fullness = 80;
-  p.battleResult(true, 16, nullptr);
+  p.battleResult(true);
   CHECK_EQ(p.energy, (uint8_t)(80 - BTL_ENERGY_COST));
   CHECK_EQ(p.fullness, (uint8_t)75);
   CHECK_EQ(p.weight, (uint8_t)35);
   p.energy = 3;  // el suelo protege de dejarlo a cero
-  p.battleResult(true, 16, nullptr);
+  p.battleResult(true);
   CHECK_EQ(p.energy, (uint8_t)3);
 }
 
@@ -448,7 +448,7 @@ TEST(train, perder_agota_y_obliga_a_dormir) {
   Pet p;
   makePet(p, 4);
   p.energy = 90;
-  p.battleResult(false, 16, nullptr);
+  p.battleResult(false);
   CHECK_EQ(p.energy, (uint8_t)BTL_LOSS_ENERGY);
   CHECK(p.energy < BTL_MIN_ENERGY);  // no puede volver a pelear asi
 }
@@ -457,7 +457,7 @@ TEST(train, perder_no_es_descuido_pero_ignorarlo_si) {
   Pet p;
   makePet(p, 4);
   p.fullness = p.joy = p.hygiene = 90;
-  p.battleResult(false, 16, nullptr);
+  p.battleResult(false);
   uint8_t before = p.careMistakes;
   advance(p, BTL_LOSS_GRACE_MIN - 2);
   CHECK_MSG(p.careMistakes == before, "margen para acostarlo");
@@ -465,27 +465,62 @@ TEST(train, perder_no_es_descuido_pero_ignorarlo_si) {
   CHECK_MSG(p.careMistakes == before + 1, "ignorar al agotado si cuenta");
 }
 
-TEST(train, ganar_registra_al_rival_y_perder_no) {
+TEST(train, ganar_no_registra_hasta_capturar) {
   Pet p;
   makePet(p, 4);
-  bool isNew = true;
-  p.battleResult(false, 25, &isNew);
-  CHECK(!isNew);
+  p.battleResult(true);
   CHECK(!p.isRegistered(25));
-  p.battleResult(true, 25, &isNew);
-  CHECK(isNew);
+  CHECK(p.catchWild(25));
   CHECK(p.isRegistered(25));
-  p.battleResult(true, 25, &isNew);
-  CHECK_MSG(!isNew, "solo es nuevo la primera vez");
+  CHECK_MSG(!p.catchWild(25), "solo es nuevo la primera vez");
 }
 
-TEST(train, una_mascota_shiny_no_registra_rivales_como_shiny) {
+TEST(train, una_mascota_shiny_no_captura_rivales_como_shiny) {
   Pet p;
   makePet(p, 4);
   p.shiny = true;
-  p.battleResult(true, 25, nullptr);
+  p.catchWild(25);
   CHECK(p.isRegistered(25));
   CHECK(!p.isShinyRegistered(25));
+}
+
+TEST(train, el_modo_de_prueba_no_llega_a_la_nvs) {
+  Pet p;
+  makePet(p, 4);
+  p.noSave = true;
+  p.trAtk = 77;
+  p.catchWild(99);
+  p.flushSave();
+  Pet q;
+  q.begin();
+  CHECK_MSG(q.trAtk != 77, "el entrenamiento de prueba no se guarda");
+  CHECK_MSG(!q.isRegistered(99), "la captura de prueba no se guarda");
+}
+
+TEST(visitor, se_guarda_el_dia_y_alegra_al_irse) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(20000UL * 86400 + 20 * 3600);  // 20:00: ya ha pasado la hora de cualquier dia
+  CHECK(p.visitorDueNow());
+  p.visitorArrived();
+  CHECK(!p.visitorDueNow());
+  Pet q;
+  q.begin();
+  CHECK_MSG(q.visitorDay == p.visitorDay, "reiniciar no trae otra visita");
+  p.joy = 50;
+  p.visitorLeft();
+  CHECK_EQ(p.joy, (uint8_t)55);
+}
+
+TEST(quiz, acertar_alegra_mas) {
+  Pet p;
+  makePet(p, 4);
+  p.joy = 40;
+  p.quizResult(0);
+  CHECK_EQ(p.joy, (uint8_t)43);
+  p.joy = 40;
+  p.quizResult(5);
+  CHECK_EQ(p.joy, (uint8_t)58);
 }
 
 TEST(train, el_rival_respeta_niveles_de_evolucion_y_legendarios) {
@@ -502,7 +537,7 @@ TEST(train, el_rival_respeta_niveles_de_evolucion_y_legendarios) {
 TEST(train, el_rival_prefiere_lo_que_falta_en_la_pokedex) {
   Pet p;
   makePet(p, 4);
-  for (int16_t d = 1; d <= 75; d++) p.battleResult(true, d, nullptr);
+  for (int16_t d = 1; d <= 75; d++) p.catchWild(d);
   int fresh = 0;
   for (int i = 0; i < 1000; i++)
     if (!p.isRegistered(p.pickWildSpecies(50))) fresh++;
