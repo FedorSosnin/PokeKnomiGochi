@@ -8,10 +8,12 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 |:--:|:--:|:--:|
 | ![Your Pokémon at home](docs/images/home.png) | ![A wild battle](docs/images/battle.png) | ![Throwing a Poké Ball](docs/images/catch.png) |
 | **Raise your Pokémon** | **Battle wild Pokémon** | **Lean to aim your Poké Ball** |
-| ![The Pokédex](docs/images/pokedex.png) | ![A Pokédex entry](docs/images/pokedex-entry.png) | ![Games menu](docs/images/games.png) |
-| **Fill the Pokédex** | **Read about what you've caught** | **Play mini games** |
-| ![PokeRun](docs/images/pokerun.png) | ![Who's That Pokémon?](docs/images/quiz.png) | ![Tilt Catch](docs/images/tilt-catch.png) |
-| **PokeRun** | **Who's That Pokémon?** | **Tilt Catch** |
+| ![A successful catch](docs/images/caught.png) | ![The Pokédex](docs/images/pokedex.png) | ![A Pokédex entry](docs/images/pokedex-entry.png) |
+| **Catch what you beat** | **Fill the Pokédex** | **Read about what you've caught** |
+| ![Games menu](docs/images/games.png) | ![PokeRun](docs/images/pokerun.png) | ![Who's That Pokémon?](docs/images/quiz.png) |
+| **Play mini games** | **PokeRun** | **Who's That Pokémon?** |
+| ![The answer revealed](docs/images/quiz-reveal.png) | ![Tilt Catch](docs/images/tilt-catch.png) | ![A daily visitor](docs/images/visitor.png) |
+| **Guess the silhouette** | **Tilt Catch** | **A visitor drops by each day** |
 
 ## Install
 
@@ -37,7 +39,7 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 | Problem | Try this |
 |---|---|
-| No port appears | Use a different USB-C cable, because many only charge. On macOS or Windows you may also need the [CH340 driver](https://www.wch-ic.com/downloads/CH34XSER_MAC_ZIP.html) ([Windows version](https://www.wch-ic.com/downloads/CH341SER_EXE.html)). |
+| No port appears | Use a different USB-C cable, because many only charge. On macOS or Windows you may also need the driver from the [CH340 page](https://www.wch-ic.com/products/CH340.html). |
 | The port is busy | Close anything else using it, such as a serial monitor or Klipper. |
 | It fails partway | Run it again. A failed install won't damage the Knomi. |
 | The clock is wrong | The clock needs Wi-Fi. See [Wi-Fi and the clock](#wi-fi-and-the-clock). |
