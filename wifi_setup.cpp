@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
+#include <nvs.h>
 #include "rtcbat.h"
 #include "wifi_form.h"
 
@@ -142,21 +143,41 @@ void wifiSetupTry(const char *ssid, const char *pass) {
 
 // Vuelve a guardar en flash y escribe cfg (la configuracion activa si es nullptr). El driver
 // rechaza cambios mientras intenta conectar, asi que antes corta y espera a que pare.
+static bool writeStaConfig(wifi_config_t *cfg) {
+  esp_err_t err = ESP_FAIL;
+  for (int i = 0; i < 20 && err != ESP_OK; i++) {
+    delay(50);
+    err = esp_wifi_set_config(WIFI_IF_STA, cfg);
+  }
+  return err == ESP_OK;
+}
+
 static bool applyStaConfig(wifi_config_t *cfg) {
-  wifi_config_t current;
+  wifi_config_t current, blank;
+  memset(&blank, 0, sizeof(blank));
   if (!cfg) {
     esp_wifi_get_config(WIFI_IF_STA, &current);
     cfg = &current;
   }
   esp_wifi_disconnect();
   esp_wifi_set_storage(WIFI_STORAGE_FLASH);
-  esp_err_t err = ESP_FAIL;
-  for (int i = 0; i < 20 && err != ESP_OK; i++) {
-    delay(50);
-    err = esp_wifi_set_config(WIFI_IF_STA, cfg);
-  }
+  // el driver puede saltarse la escritura si la configuracion no cambia respecto a la de RAM:
+  // pasando antes por una vacia, la buena siempre llega a la NVS
+  bool ok = writeStaConfig(&blank) && writeStaConfig(cfg);
   memset(&current, 0, sizeof(current));
-  return err == ESP_OK;
+  return ok;
+}
+
+// comprueba en la NVS que la red ha quedado guardada de verdad
+static bool savedSsidIs(const char *ssid) {
+  nvs_handle_t h;
+  if (nvs_open("nvs.net80211", NVS_READONLY, &h) != ESP_OK) return false;
+  uint8_t blob[64];
+  size_t len = sizeof(blob);
+  bool ok = nvs_get_blob(h, "sta.ssid", blob, &len) == ESP_OK &&
+            memmem(blob, len, ssid, strlen(ssid)) != nullptr;
+  nvs_close(h);
+  return ok;
 }
 
 void wifiSetupPoll() {
@@ -176,8 +197,8 @@ void wifiSetupPoll() {
     case WS_TRY:
       if (WiFi.status() == WL_CONNECTED) {
         Serial.printf("wifi setup: conectado, ip=%s\n", WiFi.localIP().toString().c_str());
-        bool saved = applyStaConfig(nullptr);
-        Serial.println(saved ? "wifi setup: guardada" : "wifi setup: no se pudo guardar");
+        bool saved = applyStaConfig(nullptr) && savedSsidIs(trySsid);
+        Serial.println(saved ? "wifi setup: guardada y comprobada" : "wifi setup: no se pudo guardar");
         if (saved) clockSetWifiSsid(trySsid);
         setState(saved ? WS_OK : WS_FAIL);
       } else if (now - stateT > TRY_TIMEOUT_MS) {

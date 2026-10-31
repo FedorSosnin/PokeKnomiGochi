@@ -99,6 +99,8 @@ uint8_t nameLen = 0;
 uint8_t cardPage = 0;         // 0 perfil, 1 stats+medallas
 uint8_t clockPage = 0;        // 0 hora, 1 ajustes (solo Knomi)
 uint8_t wifiListPage = 0, wifiKbLayer = 0;
+int8_t wifiKbHover = -1;      // tecla bajo el dedo: se escribe al levantarlo
+int16_t wifiKbX = 0, wifiKbY = 0;
 #define KB_COLS 6
 #define KB_X 40
 #define KB_Y 150
@@ -689,6 +691,24 @@ void handleTouch() {
   int16_t x, y;
   bool pressed = touch.getPoint(&x, &y, 1) > 0;
 
+#ifdef BOARD_KNOMI_V2
+  // clave de wifi: la tecla se ilumina bajo el dedo y se pulsa al levantarlo, para poder
+  // deslizarse hasta la buena en un teclado tan pequeno
+  if (clockOpen && clockPage == 1 && wifiSetupState() == WS_PASS) {
+    if (pressed) {
+      wakeUI();
+      wifiKbX = x;
+      wifiKbY = y;
+      wifiKbHover = wifiKeyAt(x, y);
+    } else if (wasPressed) {
+      wifiKbHover = -1;
+      settingsTap(wifiKbX, wifiKbY);
+    }
+    wasPressed = pressed;
+    return;
+  }
+#endif
+
   // combate: responde al toque, sin gestos
   if (battleOpen) {
     if (pressed && !wasPressed) {
@@ -1198,6 +1218,7 @@ static uint32_t screenKey() {
     h = mixKey(h, wifiSetupState());
     h = mixKey(h, wifiListPage);
     h = mixKey(h, wifiKbLayer);
+    h = mixKey(h, (uint32_t)(wifiKbHover + 1));
     h = mixKey(h, wifiSetupNetCount());
     for (const char *p = wifiSetupPass(); *p; p++) h = mixKey(h, (uint8_t)*p);
 #ifdef BOARD_KNOMI_V2
@@ -1997,6 +2018,14 @@ void drawClockDots() {
   gfx->fillCircle(CX + 9, 24, 4, clockPage == 1 ? UI_INK : UI_TRACK);
 }
 
+// tecla del teclado de la clave en esas coordenadas, -1 si no hay
+int wifiKeyAt(int16_t x, int16_t y) {
+  if (x < KB_X || y < KB_Y) return -1;
+  int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;
+  if (col >= KB_COLS || row >= 5) return -1;
+  return row * KB_COLS + col;
+}
+
 #define WIFI_ROWS 5
 #define WIFI_ROW_Y 88
 #define WIFI_ROW_H 48
@@ -2027,10 +2056,8 @@ void settingsTap(int16_t x, int16_t y) {
     }
     case WS_PASS: {
       if (y < 80) { wifiSetupBackToList(); break; }  // "< red": volver a la lista
-      if (x < KB_X || y < KB_Y) break;
-      int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;
-      if (col >= KB_COLS || row >= 5) break;
-      int i = row * KB_COLS + col;
+      int i = wifiKeyAt(x, y);
+      if (i < 0) break;
       if (i < KB_CHAR_KEYS) {
         char c = kbLayerChar(wifiKbLayer, i);
         if (c) wifiSetupType(c);
@@ -2111,6 +2138,7 @@ void renderWifiKeyboard() {
     char c = i < KB_CHAR_KEYS ? kbLayerChar(wifiKbLayer, i) : 0;
     if (i < KB_CHAR_KEYS && !c) continue;
     uint16_t bg = i < KB_CHAR_KEYS ? UI_WHITE : (i == 29 ? (ready ? UI_BAR_OK : UI_TRACK) : UI_BAR_WARN);
+    if (i == wifiKbHover) bg = TYPE_ACCENT[TY_AGUA];
     gfx->fillRoundRect(x, y, KB_W - 6, KB_H - 6, 6, bg);
     gfx->drawRoundRect(x, y, KB_W - 6, KB_H - 6, 6, UI_INK);
     gfx->setTextColor(UI_INK);
@@ -2121,6 +2149,25 @@ void renderWifiKeyboard() {
       const char *lab = i < KB_CHAR_KEYS ? "sp" : i == KB_CHAR_KEYS ? KB_LAYER_NEXT[wifiKbLayer] : i == 28 ? "<-" : "OK";
       setCur(x + (KB_W - 6 - (int)strlen(lab) * 12) / 2, y + KB_H / 2 - 10);
       printT(lab);
+    }
+  }
+
+  // la tecla bajo el dedo, en grande y por encima del campo: el dedo tapa la de verdad
+  if (wifiKbHover >= 0) {
+    char big[4] = "";
+    if (wifiKbHover < KB_CHAR_KEYS) {
+      char c = kbLayerChar(wifiKbLayer, wifiKbHover);
+      if (c == ' ') strlcpy(big, "sp", sizeof(big));
+      else if (c) big[0] = c;
+    } else {
+      strlcpy(big, wifiKbHover == KB_CHAR_KEYS ? KB_LAYER_NEXT[wifiKbLayer] : wifiKbHover == 28 ? "<-" : "OK", sizeof(big));
+    }
+    if (big[0]) {
+      gfx->fillRoundRect(CX - 62, 34, 124, 92, 14, TYPE_ACCENT[TY_AGUA]);
+      gfx->setTextColor(UI_WHITE);
+      setSize(6);
+      setCur(CX - (int)strlen(big) * 18, 54);
+      printT(big);
     }
   }
 }

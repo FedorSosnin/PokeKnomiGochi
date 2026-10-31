@@ -47,6 +47,7 @@ static uint32_t t0 = 0, lastTry = 0, wait = 0;
 static bool first = true, paused = false;
 static uint8_t wifiStatus = 0;  // 0 sin intentar, 1 ultima hora de red correcta, 2 sin conexion
 static char savedSsid[33] = "";
+static volatile uint8_t lastReason = 0;  // ultimo motivo de desconexion: dice si es la clave o la cobertura
 
 const char *clockWifiSsid() { return savedSsid; }
 uint8_t clockWifiStatus() { return wifiStatus; }
@@ -75,7 +76,7 @@ bool clockPoll() {
         if (!hooked) {
           hooked = true;
           WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t i) {
-            Serial.printf("wifi: desconectado, motivo %u\n", i.wifi_sta_disconnected.reason);
+            lastReason = i.wifi_sta_disconnected.reason;
           }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
         }
         // lo guardado por el firmware anterior, pasado de nuevo para limpiar canal/BSSID viejos
@@ -96,8 +97,8 @@ bool clockPoll() {
       } else if (now - t0 > WIFI_TIMEOUT_MS) {
         wifi_config_t cfg = {};
         esp_wifi_get_config(WIFI_IF_STA, &cfg);
-        Serial.printf("wifi: sin conexion (estado %d, ssid guardado '%s', clave de %u caracteres), sigue con el reloj interno\n",
-                      (int)WiFi.status(), (const char *)cfg.sta.ssid, (unsigned)strlen((const char *)cfg.sta.password));
+        Serial.printf("wifi: sin conexion (motivo %u, estado %d, ssid guardado '%s', clave de %u caracteres), sigue con el reloj interno\n",
+                      lastReason, (int)WiFi.status(), (const char *)cfg.sta.ssid, (unsigned)strlen((const char *)cfg.sta.password));
         WiFi.mode(WIFI_OFF);
         wait = NTP_RETRY_MS;
         wifiStatus = 2;
