@@ -147,7 +147,7 @@ uint32_t gameOverUntil = 0;
 // pokerun
 bool runOpen = false, runJump = false, runNewHi = false, runBot = false;
 RunState run;
-uint32_t runLast = 0, runOverT = 0;
+uint32_t runLast = 0, runOverT = 0, runFrames = 0;
 uint8_t runScale = 2;
 float ballX, ballY, ballVX, ballVY, gamePetX, gamePetVX = 0;
 uint32_t gameStartT = 0;
@@ -793,7 +793,9 @@ void handleTouch() {
       tX0 = x;
       tY0 = y;
       tStart = millis();
-      swallowGesture = (dimStage > 0) || screenOff;  // si estaba a oscuras, solo despierta
+      // solo despierta si no se veia nada: atenuada sigue siendo la partida en curso (en
+      // Tilt Catch no se toca la pantalla, asi que se atenua jugando)
+      swallowGesture = dimStage >= DIM_OFF || screenOff;
       screenOff = false;
       wakeUI();
       if (runOpen && !swallowGesture) runJump = true;
@@ -2425,6 +2427,7 @@ void startRun() {
   runJump = false;
   runNewHi = false;
   runOverT = 0;
+  runFrames = 0;
   runLast = millis();
   uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 90, 90);  // los grandes no deben tapar lo que viene
   runScale = fit > 3 ? 3 : fit;
@@ -2504,6 +2507,7 @@ void renderRun() {
     runJump = false;
     runStep(run, (now - runLast) / 1000.0f, jump);
     runLast = now;
+    runFrames++;
     if (run.jumped) sfxPlay(SFX_TAP);
     if (run.dead) {
       uint16_t secs = (uint16_t)run.t;
@@ -2511,6 +2515,7 @@ void renderRun() {
       pet.runResult(secs);  // el premio y el record solo al terminar de verdad
       sfxPlay(runNewHi ? SFX_MEDAL : SFX_DENY);
       runOverT = millis();
+      Serial.printf("pokerun: %u s, %lu frames\n", secs, (unsigned long)runFrames);
     }
   }
 
