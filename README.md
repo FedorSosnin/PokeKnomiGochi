@@ -74,6 +74,7 @@ If you beat a Pokémon you haven't caught yet, you get three Poké Balls. Tap to
 Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
 - **PokeRun:** tap to jump over rocks and bushes in a forest that keeps getting faster. How long can you last?
+- **Dungeon Dive:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
 - **Who's That Pokémon?:** name the silhouette, five rounds per game.
 - **Tilt Catch:** lean left and right to catch falling berries.
 

@@ -525,6 +525,13 @@ void Pet::runResult(uint16_t secs) {
   save();
 }
 
+void Pet::dungeonResult(uint8_t floor) {
+  if (ceremony != CER_NONE || isEgg()) return;
+  if (floor > dungeonHi) dungeonHi = floor;
+  exerciseReward(floor > 100 ? 200 : floor * 2);
+  save();
+}
+
 // combate: ganar entrena mas que perder, y perder nunca hace dano permanente
 uint8_t Pet::battleResult(bool won) {
   if (ceremony != CER_NONE || isEgg()) return 0;
@@ -701,6 +708,7 @@ void Pet::save() {
   prefs.putUShort("mstone", lastMilestone);
   prefs.putUShort("ghi", gameHi);
   prefs.putUShort("rhi", runHi);
+  prefs.putUChar("dhi", dungeonHi);
   prefs.putUShort("bwin", battleWins);
   prefs.putUChar("bmov", movesSeen);
   prefs.putUInt("vday", visitorDay);
@@ -757,6 +765,7 @@ void Pet::load() {
   lastMilestone = prefs.getUShort("mstone", 0);
   gameHi = prefs.getUShort("ghi", 0);
   runHi = prefs.getUShort("rhi", 0);
+  dungeonHi = prefs.getUChar("dhi", 0);
   battleWins = prefs.getUShort("bwin", 0);
   movesSeen = prefs.getUChar("bmov", 1);
   visitorDay = prefs.getUInt("vday", 0);
