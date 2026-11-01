@@ -8,6 +8,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Shiny odds:** the next Pokémon has a 25% shiny chance after a goodbye or release.
 - **Run-away:** the button now asks first, and offers to take care of the Pokémon instead of letting it go.
 - **Next Pokémon:** after a goodbye or release, choose your next Pokémon from your Pokédex. A run-away still gives a random common egg.
 - **Moves:** every Pokémon fights with its own level-up moves from Red and Blue, instead of one move per type.

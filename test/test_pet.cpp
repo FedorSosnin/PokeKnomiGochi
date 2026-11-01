@@ -715,6 +715,29 @@ TEST(egg, cuidarlo_a_tiempo_cancela_la_escapada) {
   CHECK_EQ(p.speciesId, (int16_t)25);
 }
 
+static int shinyCount(uint8_t ending, int rounds) {
+  int shinies = 0;
+  Pet p;
+  makePet(p, 25);
+  for (int i = 0; i < rounds; i++) {
+    randomSeed(i + 1);
+    if (ending == CER_FAREWELL) p.startFarewell();
+    else if (ending == CER_RELEASE) p.release();
+    else p.startRunaway();
+    p.newEgg();
+    if (p.awaitingEggPick()) p.chooseEgg(25);
+    hatchNow(p);
+    if (p.shiny) shinies++;
+  }
+  return shinies;
+}
+
+TEST(egg, dejarlo_marchar_da_un_25_por_ciento_de_shiny) {
+  CHECK_RANGE(shinyCount(CER_FAREWELL, 2000), 400, 600);
+  CHECK_RANGE(shinyCount(CER_RELEASE, 2000), 400, 600);
+  CHECK_MSG(shinyCount(CER_RUNAWAY, 2000) < 150, "una escapada no tiene el premio");
+}
+
 TEST(egg, tras_una_escapada_no_se_elige) {
   Pet p;
   makePet(p, 25);

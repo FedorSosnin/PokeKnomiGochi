@@ -59,7 +59,7 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 ### Raising your next Pokémon
 
-A fully evolved Pokémon that is at least 3 days old offers a goodbye, which you can put off as long as you like. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from any Pokémon in your Pokédex. If you neglect a Pokémon until it runs away, you get a random common egg instead.
+A fully evolved Pokémon that is at least 3 days old offers a goodbye, which you can put off as long as you like. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from any Pokémon in your Pokédex, with a 1 in 4 chance that it hatches shiny. If you neglect a Pokémon until it runs away, you get a random common egg instead.
 
 ### Battles and catching
 

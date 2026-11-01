@@ -24,9 +24,12 @@ void Pet::newEgg() {
   eggTarget = pickEggSpecies();  // especie oculta segun rareza y pokedex
   starterPick = (registeredCount() == 0);  // primera partida: el jugador elige inicial
   eggPick = !starterPick && lastEnd != CER_RUNAWAY;  // tras una escapada el huevo lo decide el sorteo
-  // sorteo shiny: 1/48 base, mejor con despedida y con racha/vinculo altos
-  int shinyBase = (lastEnd == CER_FAREWELL ? 24 : 48) - careBonus();
-  if (shinyBase < 8) shinyBase = 8;
+  // sorteo shiny: 1/4 tras dejarlo marchar bien; si no, 1/48 base, mejor con racha/vinculo altos
+  int shinyBase = SHINY_AFTER_GOODBYE;
+  if (lastEnd != CER_FAREWELL && lastEnd != CER_RELEASE) {
+    shinyBase = 48 - careBonus();
+    if (shinyBase < 8) shinyBase = 8;
+  }
   eggShiny = (random(shinyBase) == 0);
   eggTaps = 0;
   fullness = 80;
