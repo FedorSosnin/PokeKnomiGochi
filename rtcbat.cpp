@@ -17,6 +17,7 @@
 #define WIFI_TIMEOUT_MS 30000UL
 #define NTP_RESYNC_MS (24UL * 3600UL * 1000UL)
 #define NTP_RETRY_MS (10UL * 60UL * 1000UL)
+#define WIFI_RECONNECT_MS 60000UL
 
 static uint32_t baseEpoch = 0, baseMs = 0;
 
@@ -45,6 +46,7 @@ enum { CLK_IDLE, CLK_CONNECTING, CLK_WAIT_NTP };
 static uint8_t st = CLK_IDLE;
 static uint32_t t0 = 0, lastTry = 0, wait = 0;
 static bool first = true, paused = false;
+static bool stayedOn = false;   // la wifi sigue encendida tras la ultima hora de red
 static uint8_t wifiStatus = 0;  // 0 sin intentar, 1 ultima hora de red correcta, 2 sin conexion
 static char savedSsid[33] = "";
 static volatile uint8_t lastReason = 0;  // ultimo motivo de desconexion: dice si es la clave o la cobertura
@@ -60,15 +62,25 @@ void clockPollPause(bool p) {
   if (!p) first = true;
 }
 
-// Maquina de estados sin bloqueos: conecta, espera NTP, apaga la wifi y repite cada 24 h.
+// Maquina de estados sin bloqueos: conecta, espera NTP y repite cada 24 h. La wifi se queda
+// encendida si hubo red (el buddy la necesita, y el Knomi siempre va enchufado por USB).
 bool clockPoll() {
   if (paused) return false;
   enum { IDLE = CLK_IDLE, CONNECTING = CLK_CONNECTING, WAIT_NTP = CLK_WAIT_NTP };
   uint32_t now = millis();
   switch (st) {
     case IDLE:
-      if (!first && now - lastTry < wait) return false;
+      if (stayedOn && WiFi.status() == WL_CONNECTED) {
+        if (now - lastTry < wait) return false;
+        lastTry = t0 = now;  // sigue conectada: basta con volver a preguntar la hora
+        configTzTime(KNOMI_TZ, "pool.ntp.org", "time.google.com");
+        st = WAIT_NTP;
+        return false;
+      }
+      // se cayo la red (router reiniciado...): se reconecta pronto, sin esperar al NTP
+      if (!first && now - lastTry < (stayedOn ? WIFI_RECONNECT_MS : wait)) return false;
       first = false;
+      stayedOn = false;
       lastTry = t0 = now;
       WiFi.mode(WIFI_STA);
       {
@@ -116,7 +128,9 @@ bool clockPoll() {
         rtcSetEpoch(civilEpoch(tmv));
         Serial.printf("NTP ok, hora local %02d:%02d\n", tmv.tm_hour, tmv.tm_min);
       } else Serial.println("NTP: sin respuesta");
-      WiFi.mode(WIFI_OFF);
+      stayedOn = WiFi.status() == WL_CONNECTED;
+      if (stayedOn) WiFi.setSleep(false);  // con ahorro se pierden mensajes a toda la red
+      else WiFi.mode(WIFI_OFF);
       wait = ok ? NTP_RESYNC_MS : NTP_RETRY_MS;
       wifiStatus = ok ? 1 : 2;
       st = IDLE;

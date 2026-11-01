@@ -78,6 +78,15 @@ Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the 
 - **Who's That Pokémon?:** name the silhouette, five rounds per game.
 - **Tilt Catch:** lean left and right to catch falling berries.
 
+### Buddies
+
+If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over to play and a "... is here!" button appears. Tap the button to open the buddy menu.
+
+- **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
+- **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, each of you gets the other's entry and keeps your own.
+
+To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work on the Knomi only.
+
 ### Daily visitor
 
 Once a day, a wild Pokémon drops by to hang out with yours for a little while, then says goodbye.

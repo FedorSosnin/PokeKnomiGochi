@@ -103,6 +103,7 @@ public:
   void playResult(uint8_t score);  // recompensa del minijuego (entrena VEL)
   void runResult(uint16_t secs);   // PokeRun: igual, cada 4 s cuentan como un punto
   void dungeonResult(uint8_t floor);
+  void friendlyBattle(bool won);  // contra un buddy: alegra, pero no agota ni entrena
   // combate: entrena FUE y cansa. Devuelve la subida de FUE.
   uint8_t battleResult(bool won);
   bool catchWild(int16_t dex);           // captura: registra en la pokedex; true si es nueva

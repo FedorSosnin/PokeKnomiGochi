@@ -39,6 +39,12 @@ static std::string joinSpecs(const std::vector<std::string> &v) {
 // firma esperada de cada cadena con formato, sacada de las llamadas del sketch
 struct ExpectedFmt { StrId id; const char *sig; };
 static const ExpectedFmt EXPECTED[] = {
+  { S_BUDDY_HERE_FMT, "%s" },
+  { S_BUDDY_INV_BTL_FMT, "%s" },
+  { S_BUDDY_INV_TRD_FMT, "%s" },
+  { S_BUDDY_LEFT_FMT, "%s" },
+  { S_BUDDY_BUSY_FMT, "%s" },
+  { S_TRADE_GOT_FMT, "%s" },
   { S_POKEDEX_FMT,     "%u" },
   { S_NAME_FMT,        "%s,%s,%u" },
   { S_RELEASE_FMT,     "%s" },

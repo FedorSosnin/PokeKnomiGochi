@@ -525,6 +525,15 @@ void Pet::runResult(uint16_t secs) {
   save();
 }
 
+void Pet::friendlyBattle(bool won) {
+  if (ceremony != CER_NONE || isEgg()) return;
+  joy = clamp100(joy + (won ? 15 : 8));
+  heartUntil = millis() + HEART_MS;
+  addBond(2);
+  registerCare();
+  save();
+}
+
 void Pet::dungeonResult(uint8_t floor) {
   if (ceremony != CER_NONE || isEgg()) return;
   if (floor > dungeonHi) dungeonHi = floor;

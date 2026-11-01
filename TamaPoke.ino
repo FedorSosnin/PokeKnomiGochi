@@ -38,6 +38,7 @@
 #include "minigames.h"
 #include "pokerun.h"
 #include "dungeon.h"
+#include "buddy_net.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
@@ -152,6 +153,30 @@ uint32_t gameOverUntil = 0;
 bool runOpen = false, runJump = false, runNewHi = false, runBot = false;
 bool dungeonOpen = false, dnBot = false, dnNewHi = false, dnHeld = false;
 DnState dn;
+
+// buddy: otro PokeKnomiGochi en la misma wifi
+enum BuddySession : uint8_t { BS_IDLE, BS_INVITING, BS_INVITED, BS_SYNC, BS_BATTLE, BS_TRADE };
+enum TradePhase : uint8_t { TR_PICK, TR_WAIT, TR_REVIEW, TR_WAITC, TR_DONE };
+BuddyPeer bPeer;
+PmdMon buddyPmd;
+int16_t buddyPmdDex = 0;
+BuddySession bsState = BS_IDLE;
+uint8_t bsKind = 0;
+uint32_t bsId = 0, bsT = 0, bsResendT = 0, buddyHelloT = 0;
+bool buddyMenuOpen = false;
+char buddyNote[44] = "";
+uint32_t buddyNoteUntil = 0;
+bool bPvp = false, bPvpGone = false;   // este combate es contra el buddy
+uint32_t bRng = 0;
+uint8_t bPvpTurn = 0, bPvpMine = 0, bPvpMinePrev = 0;
+int16_t bPvpFoeTurn = -1;              // turno y jugada del buddy, cuando llegan
+uint8_t bPvpFoeMove = 0;
+bool tradeOpen = false;
+TradePhase trPhase = TR_PICK;
+int16_t trMine = 0, trTheirs = 0;
+int trPage = 0;
+bool trTheirConfirm = false;
+uint32_t trT = 0;
 uint32_t dnOverT = 0, dnStepT = 0, dnHoldT = 0, dnHurtT = 0, dnHitT = 0;
 float dnCamX = 0, dnCamY = 0;
 uint8_t dnScale = 2;
@@ -167,7 +192,7 @@ uint32_t hitTime = 0;
 bool gameNewHi = false;
 
 // combate contra un rival salvaje (entrena la fuerza y llena la pokedex)
-enum BattlePhase : uint8_t { BP_TIRED, BP_INTRO, BP_LEARNED, BP_CHOOSE, BP_ATTACK, BP_HIT, BP_EFFECT, BP_RAN, BP_END,
+enum BattlePhase : uint8_t { BP_TIRED, BP_INTRO, BP_LEARNED, BP_CHOOSE, BP_WAIT, BP_ATTACK, BP_HIT, BP_EFFECT, BP_RAN, BP_END,
                             BP_AIM, BP_THROW, BP_MISS, BP_CAUGHT, BP_FLED };
 bool battleOpen = false;
 BattlePhase bPhase = BP_INTRO;
@@ -378,6 +403,7 @@ void loop() {
 
   handleTouch();
   visitTick(now);
+  buddyTick(now);
   handleSerial();
   ensureMon();
 
@@ -632,6 +658,10 @@ void handleSerial() {
   } else if (line == "RUN") {
     startRun();
     Serial.println("DONE");
+  } else if (line == "BUDDY") {
+    Serial.printf("buddy: up=%d id=%08lx peer=%d %08lx #%d Lv.%u estado=%u\n", buddyNetUp(), (unsigned long)buddyNetId(),
+                  bPeer.on, (unsigned long)bPeer.id, bPeer.dex, bPeer.level, bsState);
+    Serial.println("DONE");
   } else if (line == "DUNGEON") {
     startDungeon();
     Serial.println("DONE");
@@ -855,7 +885,7 @@ void handleTouch() {
     tXl = x;
     tYl = y;
     // pulsacion larga sin moverse sobre el bicho -> dialogo de soltar
-    if (!holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen && millis() - tStart > 3000 &&
+    if (!holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen && !buddyMenuOpen && !tradeOpen && millis() - tStart > 3000 &&
         abs(tXl - tX0) < 30 && abs(tYl - tY0) < 30 && inPetZone(tX0, tY0) &&
         !pet.isEgg() && !confirmUntil && !pet.ceremony) {
       confirmUntil = millis() + 10000;
@@ -878,7 +908,7 @@ void handleTouch() {
 void openClock();  // prototipo
 
 void onSwipeV(int dir) {
-  if (pet.awaitingStarter() || pet.awaitingEggPick()) return;  // bloqueado mientras se elige
+  if (pet.awaitingStarter() || pet.awaitingEggPick() || buddyMenuOpen || tradeOpen) return;  // bloqueado mientras se elige
   if (gameOpen || galleryOpen || kbOpen || battleOpen || quizOpen || gamesMenuOpen || pet.ceremony) return;
   if (clockOpen) {
     if (wifiSetupState() == WS_PASS) return;  // un toque movido no debe tirar la clave escrita
@@ -900,6 +930,13 @@ void onSwipeV(int dir) {
 
 // deslizar: dir +1 = hacia la derecha
 void onSwipe(int dir) {
+  if (buddyMenuOpen) return;
+  if (tradeOpen) {
+    int pages = (pet.registeredCount() + 15) / 16;
+    int np = trPage - dir;
+    if (trPhase == TR_PICK && np >= 0 && np < pages) trPage = np;
+    return;
+  }
   if (pet.awaitingEggPick()) {
     int pages = (pet.registeredCount() + 15) / 16;
     int np = eggPickPage - dir;  // deslizar a la izquierda avanza pagina
@@ -969,6 +1006,14 @@ void onTap(int16_t x, int16_t y) {
     eggPickTap(x, y);
     return;
   }
+  if (buddyMenuOpen) {
+    buddyMenuTap(x, y);
+    return;
+  }
+  if (tradeOpen) {
+    tradeTap(x, y);
+    return;
+  }
   if (galleryOpen) {
     galleryTap(x, y);
     return;
@@ -1007,6 +1052,9 @@ void onTap(int16_t x, int16_t y) {
     } else if (choiceKind == 4) {          // escapada: cuidarlo es la opcion de arriba
       if (b1) pet.rescue();
       else if (b2) pet.startRunaway();
+    } else if (choiceKind == 5) {          // el buddy invita
+      if (b1) buddyAcceptInvite();
+      else buddyDeclineInvite();
     } else if (choiceKind == 3 && b1) {    // borrar la partida (boton del Knomi)
       pet.factoryReset();
       delay(100);
@@ -1035,6 +1083,11 @@ void onTap(int16_t x, int16_t y) {
   if (pet.isEgg()) {
     pet.eggTap();
     sfxPlay(SFX_TAP);
+    return;
+  }
+  if (buddyVisible() && buddyHit(x, y)) {
+    sfxPlay(SFX_TAP);
+    buddyMenuOpen = true;
     return;
   }
   // boton de evolucion: abre el dialogo evolucionar/mantener
@@ -1341,7 +1394,7 @@ void printT(const char *s) {
 // mientras su "clave" no cambie no se repintan ni se vuelcan por QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (pet.awaitingEggPick() || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || runOpen || dungeonOpen) return false;  // la galeria gestiona su propio repintado
+  if (pet.awaitingEggPick() || buddyMenuOpen || tradeOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || runOpen || dungeonOpen) return false;  // la galeria gestiona su propio repintado
   if (kbOpen || clockOpen) return true;
   return cardOpen && cardPage != 0;  // la pagina 0 tiene el retrato animado
 }
@@ -1399,6 +1452,14 @@ bool render() {
   }
   if (pet.awaitingEggPick()) {
     renderEggPick();
+    return true;
+  }
+  if (buddyMenuOpen) {
+    renderBuddyMenu();
+    return true;
+  }
+  if (tradeOpen) {
+    renderTrade();
     return true;
   }
   if (galleryOpen) {
@@ -1547,6 +1608,8 @@ bool render() {
       printT(T(S_NO));
     }
   }
+
+  drawBuddyTop();
 
   // dialogo de decision (evolucionar/mantener, despedirse/quedaros)
   if (choiceKind) {
@@ -1827,7 +1890,7 @@ void renderQuiz() {
 #define VISIT_X 356
 
 void startVisitWith(int16_t dex) {
-  if (visitPhase != VP_NONE || pet.isEgg() || pet.sleeping || pet.ceremony) return;
+  if (visitPhase != VP_NONE || bPeer.on || pet.isEgg() || pet.sleeping || pet.ceremony) return;
   if (dex < 1 || dex > DEX_COUNT) dex = pet.pickWildSpecies(btlCapLevel(pet.level()));
   visitPmd.load(dex, false);
   if (!visitPmd.loaded) return;
@@ -1845,12 +1908,16 @@ void endVisit() {
 }
 
 // comprueba la hora y hace avanzar la visita, aunque haya otra pantalla abierta encima
+bool onMainScreen() {
+  return !gameOpen && !runOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !galleryOpen && !cardOpen &&
+                      !kbOpen && !clockOpen && !choiceKind && !confirmUntil && !buddyMenuOpen && !tradeOpen;
+}
+
 void visitTick(uint32_t now) {
   if (visitPhase == VP_NONE) {
     if (now - visitCheckT < 20000) return;
     visitCheckT = now;
-    bool mainScreen = !gameOpen && !runOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !galleryOpen && !cardOpen &&
-                      !kbOpen && !clockOpen && !choiceKind && !confirmUntil;
+    bool mainScreen = onMainScreen();
     // con la pantalla atenuada no hay nadie mirando: mejor esperar a que alguien vuelva
     if (mainScreen && !screenOff && dimStage == 0 && pet.visitorDueNow()) startVisitWith(0);
     return;
@@ -1880,7 +1947,10 @@ void drawVisitBanner(const char *msg) {
 }
 
 void drawVisitor(uint32_t now) {
-  if (visitPhase == VP_NONE) return;
+  if (visitPhase == VP_NONE) {
+    drawBuddyPet(now);
+    return;
+  }
   uint32_t t = now - visitT;
   int x = VISIT_X;
   uint8_t act = PMD_IDLE;
@@ -1920,7 +1990,7 @@ void knomiButtonTap() {
   screenOff = false;
   wakeUI();
   if (wasAsleep) return;  // a oscuras solo despierta, como la pantalla tactil
-  if (gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
+  if (buddyMenuOpen || tradeOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
   if (visitPhase != VP_NONE) return;  // no se pelea con la visita delante
   startBattle();
 }
@@ -2029,6 +2099,7 @@ void startBattleWith(int16_t dex) {
 void startBattle() { startBattleWith(0); }
 
 void closeBattle() {
+  if (bPvp) buddyBattleClosed();
   battleOpen = false;
   wildPmd.unload();
 }
@@ -2065,6 +2136,13 @@ void battleTap(int16_t x, int16_t y) {
     battleMoveRect(i, x0, x1);
     if (x < x0 || x > x1) continue;
     sfxPlay(SFX_TAP);
+    if (bPvp) {  // se espera a la jugada del buddy; el turno se resuelve en las dos placas a la vez
+      bPvpMine = i;
+      buddySendMove(bPvpTurn, i, false);
+      bsResendT = millis();
+      battleSetPhase(BP_WAIT);
+      return;
+    }
     bool first = btlPlayerFirst(bMe.spe, bFoe.spe, random(2));
     uint8_t foeMove = btlWildMove(bFoeMoves, random(100));
     bTurn[0] = { first, first ? i : foeMove };
@@ -2077,7 +2155,12 @@ void battleTap(int16_t x, int16_t y) {
 
 void battleFinish(bool won) {
   bWon = won;
-  bGain = pet.battleResult(won);
+  if (bPvp) {
+    pet.friendlyBattle(won);
+    bGain = 0;
+  } else {
+    bGain = pet.battleResult(won);
+  }
   sfxPlay(won ? SFX_LEVEL : SFX_DENY);
   Serial.printf("combate: gana=%d fuerza+%u\n", won, bGain);
   battleSetPhase(BP_END);
@@ -2085,7 +2168,7 @@ void battleFinish(bool won) {
 
 // tras el resultado: si es una especie nueva, se puede intentar capturar
 void battleAfterEnd() {
-  if (bWon && !pet.isRegistered(bFoe.dex)) {
+  if (!bPvp && bWon && !pet.isRegistered(bFoe.dex)) {
     bBalls = CATCH_BALLS;
     battleSetPhase(BP_AIM);
   } else {
@@ -2125,7 +2208,7 @@ void battleApplyHit() {
   BtlFighter &a = mine ? bMe : bFoe, &t = mine ? bFoe : bMe;
   uint8_t aType = DEX_TBL[a.dex].type, tType = DEX_TBL[t.dex].type;
   BtlMove m = MOVE_TBL[(mine ? bMeMoves : bFoeMoves).ids[bTurn[bStep].move]];
-  uint16_t dmg = btlDamage(a.level, m, a.atk, t.def, aType, tType, 85 + random(16));
+  uint16_t dmg = btlDamage(a.level, m, a.atk, t.def, aType, tType, bPvp ? pvpRoll(bRng) : 85 + random(16));
   bLastEff = btlEffect(m.type, tType);
   t.hp = dmg >= t.hp ? 0 : t.hp - dmg;
   if (dmg) sfxPlay(SFX_PLAY);
@@ -2145,8 +2228,9 @@ void battleStep() {
     case BP_INTRO:
       if (t > 1800) {
         // se avisa del ataque nuevo una sola vez; DITTO copia, no aprende
-        int16_t learned = bMe.dex == DEX_DITTO ? -1 : btlMoveToAnnounce(pet.movesSeen, bMeMoves);
-        if (bMe.dex != DEX_DITTO) pet.movesSeen = btlMovesSeenValue(bMeMoves);
+        bool announces = bMe.dex != DEX_DITTO && !bPvp;
+        int16_t learned = announces ? btlMoveToAnnounce(pet.movesSeen, bMeMoves) : -1;
+        if (announces) pet.movesSeen = btlMovesSeenValue(bMeMoves);
         if (learned >= 0) {
           bLearned = learned;
           sfxPlay(SFX_MEDAL);
@@ -2158,6 +2242,19 @@ void battleStep() {
     case BP_CHOOSE:  // nadie responde: huye solo para que la pantalla pueda atenuarse
       if (idleSince(millis(), lastInteract) > 60000) battleSetPhase(BP_RAN);
       break;
+    case BP_WAIT:
+      if (bPvpFoeTurn == bPvpTurn) {
+        bool first = pvpMineFirst(bMe.spe, bFoe.spe, buddyNetId(), bPeer.id, bRng);
+        bTurn[0] = { first, first ? bPvpMine : bPvpFoeMove };
+        bTurn[1] = { !first, first ? bPvpFoeMove : bPvpMine };
+        bPvpMinePrev = bPvpMine;
+        bPvpTurn++;
+        bStep = 0;
+        battleSetPhase(BP_ATTACK);
+      } else if (t > BUDDY_REPLY_MS) {
+        buddyGoneFromBattle();
+      }
+      break;
     case BP_ATTACK:
       if (t > 800) { battleApplyHit(); battleSetPhase(BP_HIT); }
       break;
@@ -2168,7 +2265,7 @@ void battleStep() {
       }
       break;
     case BP_EFFECT: if (t > 1000) battleAfterHit(); break;
-    case BP_RAN: if (t > 1200) closeBattle(); break;
+    case BP_RAN: if (t > (bPvpGone ? 2500UL : 1200UL)) closeBattle(); break;
     case BP_END: if (t > 3500) battleAfterEnd(); break;
     case BP_AIM:  // nadie responde: se va
       if (idleSince(millis(), lastInteract) > 60000) battleSetPhase(BP_FLED);
@@ -2331,7 +2428,8 @@ void renderBattle() {
   switch (bPhase) {
     case BP_TIRED: battleCenterLine(T(S_BTL_TIRED), 380); break;
     case BP_INTRO:
-      snprintf(b, sizeof(b), T(S_BTL_WILD), dexName(bFoe.dex));
+      if (bPvp) snprintf(b, sizeof(b), "VS %s!", buddyName());
+      else snprintf(b, sizeof(b), T(S_BTL_WILD), dexName(bFoe.dex));
       battleCenterLine(b, 380);
       break;
     case BP_LEARNED:
@@ -2362,7 +2460,15 @@ void renderBattle() {
     case BP_EFFECT:
       battleCenterLine(T(bLastEff == 0 ? S_BTL_IMMUNE : (bLastEff > 2 ? S_BTL_SUPER : S_BTL_WEAK)), 380);
       break;
-    case BP_RAN: battleCenterLine(T(S_BTL_RAN), 380); break;
+    case BP_WAIT: battleCenterLine(T(S_BUDDY_WAITING), 380); break;
+    case BP_RAN:
+      if (bPvpGone) {
+        snprintf(b, sizeof(b), T(S_BUDDY_LEFT_FMT), buddyName());
+        battleCenterLine(b, 380);
+      } else {
+        battleCenterLine(T(S_BTL_RAN), 380);
+      }
+      break;
     case BP_END: {
       if (bWon) {
         gfx->setTextColor(UI_BAR_OK);
@@ -2371,9 +2477,11 @@ void renderBattle() {
         snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(bMe.dex));
         battleCenterLine(b, 352);
       }
-      gfx->setTextColor(UI_BAR_BAD);
-      snprintf(b, sizeof(b), T(S_STR_GAIN_FMT), bGain);
-      battleCenterLine(b, 380);
+      if (!bPvp) {  // entre amigos no se entrena
+        gfx->setTextColor(UI_BAR_BAD);
+        snprintf(b, sizeof(b), T(S_STR_GAIN_FMT), bGain);
+        battleCenterLine(b, 380);
+      }
       break;
     }
   }
@@ -3736,12 +3844,18 @@ void renderEggPick() {
 
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  drawOwnedGrid(T(S_CHOOSE_POKEMON), eggPickPage);
+  gfx->flush();
+}
+
+// rejilla de lo registrado, sin huecos
+void drawOwnedGrid(const char *title, int page) {
   gfx->setTextColor(UI_INK);
   setSize(2);
-  setCur(centerX(T(S_CHOOSE_POKEMON), 2), 50);
-  printT(T(S_CHOOSE_POKEMON));
+  setCur(centerX(title, 2), 50);
+  printT(title);
   for (int i = 0; i < 16; i++) {
-    int16_t dex = pet.registeredAt(eggPickPage * 16 + i);
+    int16_t dex = pet.registeredAt(page * 16 + i);
     if (!dex) break;
     if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, GAL_X + (i % 4) * GAL_CELL, GAL_Y + (i / 4) * GAL_CELL, 2, false);
   }
@@ -3749,11 +3863,17 @@ void renderEggPick() {
   if (pages > 1) {
     for (int i = 0; i < pages; i++) {
       int dotX = CX + (i * 2 - (pages - 1)) * 7;
-      if (i == eggPickPage) gfx->fillCircle(dotX, 436, 4, UI_INK);
+      if (i == page) gfx->fillCircle(dotX, 436, 4, UI_INK);
       else gfx->drawCircle(dotX, 436, 3, UI_INK);
     }
   }
-  gfx->flush();
+}
+
+int16_t ownedGridAt(int16_t x, int16_t y, int page) {
+  if (x < GAL_X || y < GAL_Y) return 0;
+  int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
+  if (c > 3 || r > 3) return 0;
+  return pet.registeredAt(page * 16 + r * 4 + c);
 }
 
 void eggPickTap(int16_t x, int16_t y) {
@@ -3772,14 +3892,490 @@ void eggPickTap(int16_t x, int16_t y) {
     galleryPmd.unload();
     return;
   }
-  if (x < GAL_X || y < GAL_Y) return;
-  int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
-  if (c > 3 || r > 3) return;
-  int16_t dex = pet.registeredAt(eggPickPage * 16 + r * 4 + c);
+  int16_t dex = ownedGridAt(x, y, eggPickPage);
   if (!dex) return;
   sfxPlay(SFX_TAP);
   eggPickDetail = dex;
   galleryPmd.load(dex, false);  // el shiny sigue siendo sorpresa
+}
+
+// ---------- buddy: otro PokeKnomiGochi en la misma wifi ----------
+#define BUDDY_PILL_Y 104
+#define BUDDY_PILL_H 32
+
+const char *buddyName() { return bPeer.nick[0] ? bPeer.nick : (buddyDexOk(bPeer.dex) ? dexName(bPeer.dex) : "?"); }
+
+BuddyMsg buddyMsg(BuddyType type) {
+  BuddyMsg m;
+  buddyInit(m, type, buddyNetId(), type == BM_HELLO ? 0 : bPeer.id, bsId);
+  return m;
+}
+
+void buddySetNote(uint8_t fmt) {
+  snprintf(buddyNote, sizeof(buddyNote), T((StrId)fmt), buddyName());
+  buddyNoteUntil = millis() + 3000;
+}
+
+void buddySendHello() {
+  BuddyMsg m = buddyMsg(BM_HELLO);
+  m.dex = pet.speciesId;
+  m.level = btlCapLevel(pet.level());
+  m.shiny = pet.shiny;
+  strlcpy(m.nick, pet.nick, sizeof(m.nick));
+  for (int16_t d = 1; d <= 151; d++)
+    if (pet.isRegistered(d)) m.reg[(d - 1) >> 3] |= 1 << ((d - 1) & 7);
+  buddyNetSend(m);
+}
+
+void buddySendFighter(bool ack) {
+  BuddyMsg m = buddyMsg(BM_FIGHTER);
+  BtlFighter f = petFighter(btlCapLevel(pet.level()));
+  m.ack = ack;
+  m.dex = f.dex;
+  m.level = f.level;
+  m.shiny = pet.shiny;
+  m.hp = f.maxHp;
+  m.atk = f.atk;
+  m.def = f.def;
+  m.spe = f.spe;
+  buddyNetSend(m);
+}
+
+void buddySendMove(uint8_t turn, uint8_t move, bool ack) {
+  BuddyMsg m = buddyMsg(BM_MOVE);
+  m.turn = turn;
+  m.move = move;
+  m.ack = ack;
+  buddyNetSend(m);
+}
+
+void buddySendTrade(BuddyType type, int16_t dex, bool ack) {
+  BuddyMsg m = buddyMsg(type);
+  m.dex = dex;
+  m.ack = ack;
+  buddyNetSend(m);
+}
+
+void buddyEndSession() {
+  bsState = BS_IDLE;
+  bsId = 0;
+  if (choiceKind == 5) choiceKind = 0;
+}
+
+void buddyInvite(uint8_t kind) {
+  bsKind = kind;
+  bsId = esp_random() | 1;
+  bsState = BS_INVITING;
+  bsT = millis();
+  bsResendT = 0;  // sale en el siguiente tick
+  strlcpy(buddyNote, T(S_BUDDY_WAITING), sizeof(buddyNote));
+  buddyNoteUntil = millis() + BUDDY_REPLY_MS;
+}
+
+void buddyStartSession() {
+  buddyNoteUntil = 0;
+  if (!onMainScreen()) {  // mientras se esperaba, se ha abierto otra cosa
+    buddyNetSend(buddyMsg(BM_LEAVE));
+    buddyEndSession();
+    return;
+  }
+  bsT = millis();
+  bsResendT = 0;
+  if (bsKind == BK_BATTLE) {
+    bsState = BS_SYNC;
+    return;
+  }
+  bsState = BS_TRADE;
+  tradeOpen = true;
+  trPhase = TR_PICK;
+  trMine = trTheirs = 0;
+  trPage = 0;
+  trTheirConfirm = false;
+  trT = millis();
+}
+
+void buddyAcceptInvite() {
+  choiceKind = 0;
+  buddyNetSend(buddyMsg(BM_ACCEPT));
+  buddyStartSession();
+}
+
+void buddyDeclineInvite() {
+  buddyNetSend(buddyMsg(BM_DECLINE));
+  buddyEndSession();
+}
+
+// llega la ficha del buddy: empieza el combate. La vida es la de un combate entero en las dos placas.
+void buddyStartBattle(const BuddyMsg &m) {
+  wildPmd.load(m.dex, m.shiny);
+  if (!wildPmd.loaded) {
+    buddyNetSend(buddyMsg(BM_LEAVE));
+    buddyEndSession();
+    return;
+  }
+  gamesMenuOpen = false;
+  bMe = petFighter(btlCapLevel(pet.level()));
+  bFoe = BtlFighter();
+  bFoe.dex = m.dex;
+  bFoe.level = m.level;
+  bFoe.hp = bFoe.maxHp = m.hp;
+  bFoe.atk = m.atk;
+  bFoe.def = m.def;
+  bFoe.spe = m.spe;
+  bMeMoves = btlMovesFor(bMe.dex, bMe.level, bFoe.dex);
+  bFoeMoves = btlMovesFor(bFoe.dex, bFoe.level, bMe.dex);
+  bShownMe = bMe.hp;
+  bShownFoe = bFoe.hp;
+  bWon = false;
+  bGain = 0;
+  bPvp = true;
+  bPvpGone = false;
+  bRng = bsId;
+  bPvpTurn = 0;
+  bPvpFoeTurn = -1;
+  battleOpen = true;
+  bsState = BS_BATTLE;
+  wakeUI();
+  battleSetPhase(BP_INTRO);
+  sfxPlay(SFX_PLAY);
+  Serial.printf("buddy: combate contra #%d Nv.%u\n", m.dex, m.level);
+}
+
+void buddyGoneFromBattle() {
+  bPvpGone = true;
+  battleSetPhase(BP_RAN);
+}
+
+void buddyBattleClosed() {
+  if (bPhase != BP_END && !bPvpGone) buddyNetSend(buddyMsg(BM_LEAVE));
+  bPvp = bPvpGone = false;
+  buddyEndSession();
+}
+
+void tradeClose(bool notify) {
+  if (notify) buddyNetSend(buddyMsg(BM_LEAVE));
+  tradeOpen = false;
+  buddyEndSession();
+}
+
+void buddyHandle(const BuddyMsg &m, uint32_t now) {
+  if (m.type == BM_HELLO) {
+    if (buddyPeerHello(bPeer, m, now)) {
+      buddyNetSetPeer(bPeer.id);
+      sfxPlay(SFX_MEDAL);
+      wakeUI();
+      Serial.printf("buddy: llega #%d Nv.%u\n", m.dex, m.level);
+    }
+    return;
+  }
+  if (!bPeer.on || m.from != bPeer.id) return;  // primero hay que saludar
+
+  if (m.type == BM_INVITE) {
+    if (bsState == BS_IDLE) {
+      bool free = onMainScreen() && !pet.isEgg() && !pet.sleeping && !pet.ceremony && !choiceKind;
+      if (!free) {
+        bsId = m.session;
+        buddyNetSend(buddyMsg(BM_DECLINE));
+        bsId = 0;
+        return;
+      }
+      bsId = m.session;
+      bsKind = m.kind;
+      bsState = BS_INVITED;
+      choiceKind = 5;
+      choiceUntil = now + 12000;
+      screenOff = false;
+      wakeUI();
+      sfxPlay(SFX_MEDAL);
+    } else if (bsState == BS_INVITING && m.from < buddyNetId()) {
+      bsId = m.session;  // se han invitado a la vez: gana la invitacion del id mas bajo
+      bsKind = m.kind;
+      buddyAcceptInvite();
+    } else if (m.session == bsId && bsState != BS_INVITED) {
+      buddyNetSend(buddyMsg(BM_ACCEPT));  // se perdio el ACCEPT
+    }
+    return;
+  }
+  if (m.session != bsId || bsState == BS_IDLE) return;
+
+  switch (m.type) {
+    case BM_ACCEPT:
+      if (bsState == BS_INVITING) buddyStartSession();
+      break;
+    case BM_DECLINE:
+      if (bsState == BS_INVITING) {
+        buddySetNote(S_BUDDY_BUSY_FMT);
+        buddyEndSession();
+      }
+      break;
+    case BM_LEAVE:
+      if (bPvp) {
+        if (bPhase < BP_END) buddyGoneFromBattle();
+      } else if (tradeOpen && trPhase != TR_DONE) {
+        buddySetNote(S_BUDDY_LEFT_FMT);
+        tradeClose(false);
+      } else if (bsState != BS_TRADE) {
+        buddySetNote(S_BUDDY_LEFT_FMT);
+        buddyEndSession();
+      }
+      break;
+    case BM_FIGHTER:
+      if (bsState == BS_INVITING) buddyStartSession();
+      if (!m.ack) buddySendFighter(true);
+      if (bsState == BS_SYNC && bsKind == BK_BATTLE) buddyStartBattle(m);
+      break;
+    case BM_MOVE:
+      if (!bPvp) break;
+      if (m.turn == bPvpTurn) {
+        bPvpFoeTurn = m.turn;
+        bPvpFoeMove = m.move < bFoeMoves.count ? m.move : 0;
+        if (!m.ack && bPhase == BP_WAIT) buddySendMove(bPvpTurn, bPvpMine, true);
+      } else if (!m.ack && (uint8_t)(m.turn + 1) == bPvpTurn) {
+        buddySendMove(m.turn, bPvpMinePrev, true);  // el buddy no recibio la jugada anterior
+      }
+      break;
+    case BM_OFFER:
+      if (bsState == BS_INVITING) buddyStartSession();
+      if (!tradeOpen || !buddyRegHas(bPeer.reg, m.dex)) break;
+      trTheirs = m.dex;
+      if (!m.ack && trMine) buddySendTrade(BM_OFFER, trMine, true);
+      if (trPhase == TR_WAIT) trPhase = TR_REVIEW;
+      break;
+    case BM_CONFIRM:
+      if (!tradeOpen) break;
+      trTheirConfirm = true;
+      if (!m.ack && (trPhase == TR_WAITC || trPhase == TR_DONE)) buddySendTrade(BM_CONFIRM, trMine, true);
+      break;
+    default: break;
+  }
+}
+
+void tradeFinish() {
+  bool isNew = pet.catchWild(trTheirs);  // se copia: nadie pierde lo que ya tiene en su Pokedex
+  Serial.printf("buddy: intercambio, da #%d recibe #%d nuevo=%d\n", trMine, trTheirs, isNew);
+  sfxPlay(SFX_MEDAL);
+  trPhase = TR_DONE;
+  trT = millis();
+}
+
+void buddyTick(uint32_t now) {
+  if (!buddyNetUp()) {
+    if (bPeer.on) {
+      bPeer.on = false;
+      buddyNetSetPeer(0);
+    }
+  } else {
+    if (now - buddyHelloT > BUDDY_HELLO_MS && !pet.isEgg() && !pet.ceremony && !pet.awaitingEggPick() && !pet.awaitingStarter()) {
+      buddyHelloT = now;
+      buddySendHello();
+    }
+    BuddyMsg m;
+    for (int i = 0; i < 8 && buddyNetPoll(m); i++) buddyHandle(m, now);
+  }
+
+  if (buddyPeerGone(bPeer, now)) bPeer.on = false;
+  if (!bPeer.on) {
+    if (buddyPmdDex) {
+      buddyPmd.unload();
+      buddyPmdDex = 0;
+      buddyNetSetPeer(0);
+    }
+    buddyMenuOpen = false;
+    if (bPvp && bPhase < BP_END) {
+      if (bPhase != BP_RAN) buddyGoneFromBattle();
+    } else if (tradeOpen && trPhase != TR_DONE) {
+      tradeClose(false);
+    } else if (bsState != BS_IDLE && !bPvp && !tradeOpen) {
+      buddyEndSession();
+    }
+    return;
+  }
+
+  // el sprite se carga fuera de la red: si no cabe, el buddy simplemente no se dibuja
+  if (buddyPmdDex != bPeer.dex && visitPhase == VP_NONE) {
+    buddyPmd.load(bPeer.dex, bPeer.shiny);
+    buddyPmdDex = bPeer.dex;
+  }
+
+  if (bsState == BS_INVITED && choiceKind != 5) buddyDeclineInvite();  // se acabo el tiempo
+
+  if (bsState == BS_INVITING && now - bsT > BUDDY_REPLY_MS) {
+    buddySetNote(S_BUDDY_BUSY_FMT);
+    buddyEndSession();
+  }
+  if (bsState == BS_SYNC && now - bsT > BUDDY_REPLY_MS) buddyEndSession();
+  if (tradeOpen && trPhase != TR_DONE && now - trT > 90000UL) tradeClose(true);  // nadie responde
+  if (tradeOpen && trPhase == TR_DONE && now - trT > 3500) tradeClose(false);
+  if (tradeOpen && trPhase == TR_WAITC && trTheirConfirm) tradeFinish();
+
+  if (now - bsResendT < BUDDY_RESEND_MS) return;
+  bsResendT = now;
+  if (bsState == BS_INVITING) {
+    BuddyMsg m = buddyMsg(BM_INVITE);
+    m.kind = bsKind;
+    buddyNetSend(m);
+  } else if (bsState == BS_SYNC) {
+    buddySendFighter(false);
+  } else if (bPvp && bPhase == BP_WAIT) {
+    buddySendMove(bPvpTurn, bPvpMine, false);
+  } else if (tradeOpen && trPhase == TR_WAIT) {
+    buddySendTrade(BM_OFFER, trMine, false);
+  } else if (tradeOpen && trPhase == TR_WAITC) {
+    buddySendTrade(BM_CONFIRM, trMine, false);
+  }
+}
+
+bool buddyVisible() {
+  return bPeer.on && visitPhase == VP_NONE && !pet.isEgg() && !pet.sleeping && !pet.ceremony;
+}
+
+void drawBuddyPet(uint32_t now) {
+  if (!buddyVisible() || !buddyPmd.loaded) return;
+  uint8_t act = (now / 5000) % 2 && buddyPmd.has(PMD_HOP) ? PMD_HOP : PMD_IDLE;
+  drawPmdActM(buddyPmd, act, VISIT_X, PET_GROUND, now, true, false, 4);
+  if ((now / 900) % 4 == 0) drawMap(SPR_HEART, 32, VISIT_X - 90, PET_GROUND - 160, 1, false);  // se llevan bien
+}
+
+// el aviso del buddy y, por encima de todo, las notas de que ha pasado
+void drawBuddyTop() {
+  char b[44];
+  setSize(2);
+  if (timeLeft(buddyNoteUntil)) {
+    int w = textW(buddyNote, 2) + 24;
+    gfx->fillRoundRect(CX - w / 2, BUDDY_PILL_Y, w, BUDDY_PILL_H, 12, UI_INK);
+    gfx->setTextColor(UI_WHITE);
+    setCur(centerX(buddyNote, 2), BUDDY_PILL_Y + 8);
+    printT(buddyNote);
+  } else if (buddyVisible()) {
+    snprintf(b, sizeof(b), T(S_BUDDY_HERE_FMT), buddyName());
+    int w = textW(b, 2) + 24;
+    gfx->fillRoundRect(CX - w / 2, BUDDY_PILL_Y, w, BUDDY_PILL_H, 12, C565(0x1e, 0x7d, 0x3c));
+    gfx->setTextColor(UI_WHITE);
+    setCur(centerX(b, 2), BUDDY_PILL_Y + 8);
+    printT(b);
+  }
+}
+
+bool buddyHit(int16_t x, int16_t y) {
+  if (y >= BUDDY_PILL_Y - 6 && y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6 && x >= 60 && x <= 406) return true;
+  return abs(x - VISIT_X) < 60 && y > PET_GROUND - 120 && y < PET_GROUND;  // tocar al buddy tambien
+}
+
+void renderBuddyMenu() {
+  if (!bPeer.on) { buddyMenuOpen = false; return; }
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  char b[44];
+  snprintf(b, sizeof(b), T(S_BUDDY_HERE_FMT), buddyName());
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(b, 2), 66);
+  printT(b);
+  if (buddyPmd.loaded) drawPmdActM(buddyPmd, PMD_IDLE, CX, 200, millis(), true, false, 3);
+  const char *labels[3] = { T(S_BUDDY_BATTLE), T(S_BUDDY_TRADE), T(S_BACK_BTN) };
+  const uint16_t colors[3] = { UI_BAR_BAD, C565(0x1e, 0x7d, 0x3c), UI_TRACK };
+  for (int i = 0; i < 3; i++) {
+    int y = 216 + i * 64;
+    gfx->fillRoundRect(CX - 130, y, 260, 54, 14, colors[i]);
+    gfx->setTextColor(i == 2 ? UI_INK : UI_WHITE);
+    setCur(centerX(labels[i], 2), y + 19);
+    printT(labels[i]);
+  }
+  gfx->flush();
+}
+
+void buddyMenuTap(int16_t x, int16_t y) {
+  buddyMenuOpen = false;
+  if (abs(x - CX) > 130 || y < 216) return;
+  int row = (y - 216) / 64;
+  sfxPlay(SFX_TAP);
+  if (row == 0) buddyInvite(BK_BATTLE);
+  else if (row == 1) buddyInvite(BK_TRADE);
+}
+
+void renderTrade() {
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  if (trPhase == TR_PICK) {
+    drawOwnedGrid(T(S_TRADE_PICK), trPage);
+    for (int i = 0; i < 16; i++) {  // punto verde: esta le falta al buddy
+      int16_t dex = pet.registeredAt(trPage * 16 + i);
+      if (!dex) break;
+      if (!buddyRegHas(bPeer.reg, dex)) gfx->fillCircle(GAL_X + (i % 4) * GAL_CELL + 66, GAL_Y + (i / 4) * GAL_CELL + 14, 7, UI_BAR_OK);
+    }
+    gfx->flush();
+    return;
+  }
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  if (trPhase == TR_DONE) {
+    char b[44];
+    snprintf(b, sizeof(b), T(S_TRADE_GOT_FMT), dexName(trTheirs));
+    if (const uint8_t *t = thumbs.get(trTheirs)) drawThumb(t, CX - GAL_CELL / 2 - 40, 120, 4, false);
+    catchBanner(b, C565(0x1e, 0x7d, 0x3c));
+    gfx->flush();
+    return;
+  }
+  // lo que das a la izquierda, lo que recibes a la derecha (aun sin saber, una interrogacion)
+  setCur(136 - textW(T(S_TRADE_GIVE), 2) / 2, 92);
+  printT(T(S_TRADE_GIVE));
+  setCur(330 - textW(T(S_TRADE_GET), 2) / 2, 92);
+  printT(T(S_TRADE_GET));
+  if (const uint8_t *t = thumbs.get(trMine)) drawThumb(t, 136 - GAL_CELL / 2, 124, 3, false);
+  setCur(136 - textW(dexName(trMine), 2) / 2, 216);
+  printT(dexName(trMine));
+  if (trTheirs) {
+    if (const uint8_t *t = thumbs.get(trTheirs)) drawThumb(t, 330 - GAL_CELL / 2, 124, 3, false);
+    setCur(330 - textW(dexName(trTheirs), 2) / 2, 216);
+    printT(dexName(trTheirs));
+  } else {
+    setSize(5);
+    setCur(330 - textW("?", 5) / 2, 146);
+    printT("?");
+    setSize(2);
+  }
+  if (trPhase == TR_REVIEW) {
+    gfx->fillRoundRect(CX - 110, PICK_BTN_Y - 40, 220, PICK_BTN_H, 14, C565(0x1e, 0x7d, 0x3c));
+    gfx->setTextColor(UI_WHITE);
+    setCur(centerX(T(S_BUDDY_TRADE), 2), PICK_BTN_Y - 21);
+    printT(T(S_BUDDY_TRADE));
+    gfx->fillRoundRect(CX - 80, PICK_BACK_Y - 40, 160, PICK_BACK_H, 12, UI_TRACK);
+    gfx->setTextColor(UI_INK);
+    setCur(centerX(T(S_BACK_BTN), 2), PICK_BACK_Y - 26);
+    printT(T(S_BACK_BTN));
+  } else {
+    setCur(centerX(T(S_BUDDY_WAITING), 2), PICK_BTN_Y);
+    printT(T(S_BUDDY_WAITING));
+  }
+  gfx->flush();
+}
+
+void tradeTap(int16_t x, int16_t y) {
+  if (trPhase == TR_PICK) {
+    if (y < 72) {  // tocar la cabecera = salir, como en la Pokedex
+      sfxPlay(SFX_TAP);
+      tradeClose(true);
+      return;
+    }
+    int16_t dex = ownedGridAt(x, y, trPage);
+    if (!dex) return;
+    sfxPlay(SFX_TAP);
+    trMine = dex;
+    trT = millis();
+    bsResendT = 0;
+    trPhase = trTheirs ? TR_REVIEW : TR_WAIT;
+    buddySendTrade(BM_OFFER, trMine, false);
+  } else if (trPhase == TR_REVIEW) {
+    if (y >= PICK_BTN_Y - 40 && y < PICK_BTN_Y - 40 + PICK_BTN_H && abs(x - CX) <= 110) {
+      sfxPlay(SFX_TAP);
+      trPhase = TR_WAITC;
+      trT = millis();
+      bsResendT = 0;
+    } else if (y >= PICK_BACK_Y - 40 && y < PICK_BACK_Y - 40 + PICK_BACK_H && abs(x - CX) <= 80) {
+      sfxPlay(SFX_TAP);
+      tradeClose(true);
+    }
+  }
 }
 
 void drawBattery() {
@@ -3887,6 +4483,11 @@ void drawChoiceDialog() {
   } else if (choiceKind == 3) {  // borrar la partida
     q = T(S_RESET_Q); o1 = T(S_RESET_GO); o2 = T(S_RESET_KEEP);
     c1 = UI_BAR_BAD; t1 = UI_WHITE; c2 = UI_BAR_OK; t2 = UI_WHITE;
+  } else if (choiceKind == 5) {  // el buddy invita
+    static char invite[44];
+    snprintf(invite, sizeof(invite), T(bsKind == BK_BATTLE ? S_BUDDY_INV_BTL_FMT : S_BUDDY_INV_TRD_FMT), buddyName());
+    q = invite; o1 = T(S_YES); o2 = T(S_NO);
+    c1 = UI_BAR_OK; t1 = UI_WHITE; c2 = UI_TRACK; t2 = UI_INK;
   } else if (choiceKind == 4) {  // escapada
     q = T(S_RUNAWAY_Q); o1 = T(S_RUNAWAY_CARE); o2 = T(S_RUNAWAY_GO);
     c1 = UI_BAR_OK; t1 = UI_WHITE; c2 = UI_TRACK; t2 = UI_INK;
