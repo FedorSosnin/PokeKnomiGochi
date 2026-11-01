@@ -57,6 +57,10 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 | **Hold the button for 1–3 seconds** | Turn the screen on or off |
 | **Hold the button for 10 seconds** | Asks whether to erase the game and start over |
 
+### Raising your next Pokémon
+
+A fully evolved Pokémon that is at least 3 days old offers a goodbye, which you can put off as long as you like. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from any Pokémon in your Pokédex. If you neglect a Pokémon until it runs away, you get a random common egg instead.
+
 ### Battles and catching
 
 Press the button to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up.

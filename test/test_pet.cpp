@@ -679,6 +679,71 @@ TEST(egg, el_primer_huevo_es_un_inicial_clasico) {
   }
 }
 
+static void hatchNow(Pet &p) { p.eggTap(); p.eggTap(); p.eggTap(); }
+
+TEST(egg, tras_despedida_o_liberacion_se_elige_de_la_pokedex) {
+  Pet p;
+  makePet(p, 25);
+  p.catchWild(102);
+  p.startFarewell();
+  p.newEgg();
+  CHECK(p.awaitingEggPick());
+  CHECK(!p.awaitingStarter());
+  CHECK_MSG(!p.chooseEgg(150), "lo que no esta en la pokedex no se puede elegir");
+  CHECK(p.awaitingEggPick());
+  CHECK(p.chooseEgg(102));
+  CHECK(!p.awaitingEggPick());
+  hatchNow(p);
+  CHECK_EQ(p.speciesId, (int16_t)102);
+
+  p.release();
+  p.newEgg();
+  CHECK(p.awaitingEggPick());
+}
+
+TEST(egg, tras_una_escapada_no_se_elige) {
+  Pet p;
+  makePet(p, 25);
+  p.startRunaway();
+  p.newEgg();
+  CHECK(!p.awaitingEggPick());
+  CHECK(!p.chooseEgg(25));
+}
+
+TEST(egg, la_primera_partida_sigue_siendo_el_inicial) {
+  mockNvsReset();
+  Pet p;
+  p.begin();
+  CHECK(p.awaitingStarter());
+  CHECK(!p.awaitingEggPick());
+}
+
+TEST(egg, la_eleccion_para_el_tiempo_y_sobrevive_a_un_reinicio) {
+  Pet p;
+  makePet(p, 25);
+  p.release();
+  p.newEgg();
+  uint32_t age = p.ageMinutes;
+  mockSetMillis(10 * PET_TICK_MS);
+  p.update(10 * PET_TICK_MS);
+  CHECK_EQ(p.ageMinutes, age);
+  CHECK(p.isEgg());
+  Pet again;
+  again.begin();
+  CHECK(again.awaitingEggPick());
+}
+
+TEST(egg, lista_de_registrados_en_orden) {
+  Pet p;
+  makePet(p, 25);
+  p.catchWild(102);
+  p.catchWild(4);
+  CHECK_EQ(p.registeredAt(0), (int16_t)4);
+  CHECK_EQ(p.registeredAt(1), (int16_t)25);
+  CHECK_EQ(p.registeredAt(2), (int16_t)102);
+  CHECK_EQ(p.registeredAt(3), (int16_t)0);
+}
+
 TEST(egg, una_escapada_castiga_la_rareza) {
   Pet p;
   makePet(p, 4);
@@ -945,9 +1010,13 @@ TEST(offline, el_huevo_eclosiona_en_tu_ausencia) {
   p.newEgg();  // ya hay pokedex: no pide inicial
   CHECK(!p.awaitingStarter());
   p.setClock(1000u * 86400);
-  p.syncClock(1000u * 86400 + 600);  // 10 minutos
+  p.syncClock(1000u * 86400 + 600);  // 10 minutos: sigue esperando la eleccion
+  CHECK(p.isEgg());
+  p.chooseEgg(4);
+  p.setClock(1000u * 86400);
+  p.syncClock(1000u * 86400 + 600);
   CHECK(!p.isEgg());
-  CHECK_RANGE(p.speciesId, (int16_t)1, (int16_t)151);
+  CHECK_EQ(p.speciesId, (int16_t)4);
 }
 
 TEST(offline, durmiendo_se_descansa_tambien_apagado) {

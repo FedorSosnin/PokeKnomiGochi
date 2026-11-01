@@ -23,6 +23,7 @@ void Pet::newEgg() {
   prevSpeciesId = -1;
   eggTarget = pickEggSpecies();  // especie oculta segun rareza y pokedex
   starterPick = (registeredCount() == 0);  // primera partida: el jugador elige inicial
+  eggPick = !starterPick && lastEnd != CER_RUNAWAY;  // tras una escapada el huevo lo decide el sorteo
   // sorteo shiny: 1/48 base, mejor con despedida y con racha/vinculo altos
   int shinyBase = (lastEnd == CER_FAREWELL ? 24 : 48) - careBonus();
   if (shinyBase < 8) shinyBase = 8;
@@ -58,8 +59,8 @@ void Pet::syncClock(uint32_t nowEpoch) {
   lastSeenEpoch = nowEpoch;
   if (nowEpoch == 0) return;
   uint32_t mins = (seen && nowEpoch > seen) ? (nowEpoch - seen) / 60 : 0;
-  if (mins < 2 || ceremony != CER_NONE || starterPick) {
-    save();  // primera vez, sin tiempo que aplicar o aun eligiendo inicial
+  if (mins < 2 || ceremony != CER_NONE || starterPick || eggPick) {
+    save();  // primera vez, sin tiempo que aplicar o aun eligiendo que criar
     return;
   }
   if (mins > 14UL * 24 * 60) mins = 14UL * 24 * 60;  // tope: 2 semanas
@@ -110,6 +111,7 @@ void Pet::update(uint32_t nowMs) {
 
 void Pet::tick() {
   if (ceremony != CER_NONE) return;  // el tiempo se detiene en la despedida
+  if (eggPick) return;      // igual que al elegir inicial: el huevo aun no tiene especie
   if (starterPick) return;  // la partida no empieza hasta elegir inicial: si el
                             // tiempo corriera aqui, el huevo eclosionaria solo a
                             // los 3 min con la especie sorteada y se perderia la
@@ -251,6 +253,20 @@ int16_t Pet::pickEggSpecies() {
     }
   }
   return CLASSIC_DEX[random(NUM_CLASSIC_DEX)];  // inalcanzable, por si acaso
+}
+
+bool Pet::chooseEgg(int16_t dex) {
+  if (!eggPick || !isRegistered(dex)) return false;
+  eggTarget = dex;
+  eggPick = false;
+  save();
+  return true;
+}
+
+int16_t Pet::registeredAt(int idx) const {
+  for (int16_t d = 1; d <= 151; d++)
+    if (isRegistered(d) && idx-- == 0) return d;
+  return 0;
 }
 
 void Pet::registerSpecies(int16_t dex) {
@@ -654,6 +670,7 @@ void Pet::save() {
   prefs.putBool("shy", shiny);
   prefs.putBool("eshy", eggShiny);
   prefs.putBool("stpk", starterPick);
+  prefs.putBool("egpk", eggPick);
   prefs.putBytes("dexsh", dexShinyReg, sizeof(dexShinyReg));
   prefs.putUInt("age", ageMinutes);
   prefs.putShort("dexn", speciesId);
@@ -701,6 +718,7 @@ void Pet::load() {
   shiny = prefs.getBool("shy", false);
   eggShiny = prefs.getBool("eshy", false);
   starterPick = prefs.getBool("stpk", false);
+  eggPick = prefs.getBool("egpk", false);
   prefs.getBytes("dexsh", dexShinyReg, sizeof(dexShinyReg));
   ageMinutes = prefs.getUInt("age", 0);
   if (prefs.isKey("dexn")) {

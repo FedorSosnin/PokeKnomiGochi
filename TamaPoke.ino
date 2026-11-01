@@ -91,6 +91,9 @@ PmdMon galleryPmd;  // sprite grande de la vista detalle de la galeria (PMD/TPK2
 bool galleryOpen = false;
 bool galleryDirty = false;
 int galleryPage = 0;        // 10 paginas de 16
+int eggPickPage = 0;        // eleccion del huevo: rejilla solo con lo registrado
+int16_t eggPickDetail = 0;
+bool eggPickDirty = true;
 int16_t galleryDetail = 0;  // dex en vista detalle, 0 = rejilla
 
 bool screenOff = false;       // pulsacion corta del boton PWR
@@ -852,7 +855,7 @@ void handleTouch() {
 void openClock();  // prototipo
 
 void onSwipeV(int dir) {
-  if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
+  if (pet.awaitingStarter() || pet.awaitingEggPick()) return;  // bloqueado mientras se elige
   if (gameOpen || galleryOpen || kbOpen || battleOpen || quizOpen || gamesMenuOpen || pet.ceremony) return;
   if (clockOpen) {
     if (wifiSetupState() == WS_PASS) return;  // un toque movido no debe tirar la clave escrita
@@ -874,6 +877,15 @@ void onSwipeV(int dir) {
 
 // deslizar: dir +1 = hacia la derecha
 void onSwipe(int dir) {
+  if (pet.awaitingEggPick()) {
+    int pages = (pet.registeredCount() + 15) / 16;
+    int np = eggPickPage - dir;  // deslizar a la izquierda avanza pagina
+    if (!eggPickDetail && np >= 0 && np < pages) {
+      eggPickPage = np;
+      eggPickDirty = true;
+    }
+    return;
+  }
   if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
 #ifdef BOARD_KNOMI_V2
   if (clockOpen && wifiSetupState() == WS_OFF) {  // hora <-> ajustes; izquierda avanza
@@ -928,6 +940,10 @@ void onTap(int16_t x, int16_t y) {
         break;
       }
     }
+    return;
+  }
+  if (pet.awaitingEggPick()) {
+    eggPickTap(x, y);
     return;
   }
   if (galleryOpen) {
@@ -1299,7 +1315,7 @@ void printT(const char *s) {
 // mientras su "clave" no cambie no se repintan ni se vuelcan por QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || runOpen) return false;  // la galeria gestiona su propio repintado
+  if (pet.awaitingEggPick() || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || runOpen) return false;  // la galeria gestiona su propio repintado
   if (kbOpen || clockOpen) return true;
   return cardOpen && cardPage != 0;  // la pagina 0 tiene el retrato animado
 }
@@ -1353,6 +1369,10 @@ bool render() {
   }
   if (pet.awaitingStarter()) {  // primera partida: elegir inicial (prioridad total)
     renderStarterSelect();
+    return true;
+  }
+  if (pet.awaitingEggPick()) {
+    renderEggPick();
     return true;
   }
   if (galleryOpen) {
@@ -3321,7 +3341,7 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
 }
 
 // tipo, evolucion y dato curioso de una especie ya encontrada
-void drawDexInfo(int16_t dex) {
+void drawDexInfo(int16_t dex, bool withFact = true) {
   const DexEntry &d = DEX_TBL[dex];
   setSize(2);
   const char *ty = TYPE_NAME[d.type];
@@ -3342,6 +3362,7 @@ void drawDexInfo(int16_t dex) {
     printT(T(S_FINAL_FORM));
   }
 
+  if (!withFact) return;
   gfx->setTextColor(UI_INK);
   const char *p = DEX_FACT[dex];
   for (int y = 304; *p && y <= 376; y += 24) {
@@ -3451,6 +3472,92 @@ void galleryTap(int16_t x, int16_t y) {
   if (dex > 151) return;
   galleryDetail = dex;
   galleryPmd.load(dex, pet.isShinyRegistered(dex));
+}
+
+// ---------- eleccion del huevo ----------
+// misma rejilla que la Pokedex, pero sin huecos: solo lo que ya se ha registrado
+
+#define PICK_BTN_Y 316
+#define PICK_BTN_H 56
+#define PICK_BACK_Y 384
+#define PICK_BACK_H 44
+
+void renderEggPick() {
+  if (eggPickDetail) {  // animada: se redibuja siempre
+    const DexEntry &d = DEX_TBL[eggPickDetail];
+    gfx->fillScreen(RGB565_BLACK);
+    gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+    gfx->setTextColor(d.accent);
+    const char *name = dexName(eggPickDetail);
+    setSize(3);
+    setCur(centerX(name, 3), 56);
+    printT(name);
+    if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 240, millis(), true, false, 4);
+    else if (const uint8_t *t = thumbs.get(eggPickDetail)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
+    drawDexInfo(eggPickDetail, false);
+    gfx->fillRoundRect(CX - 110, PICK_BTN_Y, 220, PICK_BTN_H, 14, C565(0x1e, 0x7d, 0x3c));
+    gfx->setTextColor(UI_WHITE);
+    setSize(3);
+    setCur(centerX(T(S_CHOOSE_BTN), 3), PICK_BTN_Y + 16);
+    printT(T(S_CHOOSE_BTN));
+    gfx->fillRoundRect(CX - 80, PICK_BACK_Y, 160, PICK_BACK_H, 12, UI_TRACK);
+    gfx->setTextColor(UI_INK);
+    setSize(2);
+    setCur(centerX(T(S_BACK_BTN), 2), PICK_BACK_Y + 14);
+    printT(T(S_BACK_BTN));
+    gfx->flush();
+    return;
+  }
+
+  if (!eggPickDirty) return;  // la rejilla es estatica
+  eggPickDirty = false;
+
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(T(S_CHOOSE_POKEMON), 2), 50);
+  printT(T(S_CHOOSE_POKEMON));
+  for (int i = 0; i < 16; i++) {
+    int16_t dex = pet.registeredAt(eggPickPage * 16 + i);
+    if (!dex) break;
+    if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, GAL_X + (i % 4) * GAL_CELL, GAL_Y + (i / 4) * GAL_CELL, 2, false);
+  }
+  int pages = (pet.registeredCount() + 15) / 16;
+  if (pages > 1) {
+    for (int i = 0; i < pages; i++) {
+      int dotX = CX + (i * 2 - (pages - 1)) * 7;
+      if (i == eggPickPage) gfx->fillCircle(dotX, 436, 4, UI_INK);
+      else gfx->drawCircle(dotX, 436, 3, UI_INK);
+    }
+  }
+  gfx->flush();
+}
+
+void eggPickTap(int16_t x, int16_t y) {
+  if (eggPickDetail) {
+    if (y >= PICK_BTN_Y && y < PICK_BTN_Y + PICK_BTN_H && abs(x - CX) <= 110) {
+      pet.chooseEgg(eggPickDetail);
+      sfxPlay(SFX_TAP);
+    } else if (y >= PICK_BACK_Y && y < PICK_BACK_Y + PICK_BACK_H && abs(x - CX) <= 80) {
+      sfxPlay(SFX_TAP);
+    } else {
+      return;
+    }
+    eggPickDetail = 0;
+    eggPickPage = 0;
+    eggPickDirty = true;
+    galleryPmd.unload();
+    return;
+  }
+  if (x < GAL_X || y < GAL_Y) return;
+  int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
+  if (c > 3 || r > 3) return;
+  int16_t dex = pet.registeredAt(eggPickPage * 16 + r * 4 + c);
+  if (!dex) return;
+  sfxPlay(SFX_TAP);
+  eggPickDetail = dex;
+  galleryPmd.load(dex, false);  // el shiny sigue siendo sorpresa
 }
 
 void drawBattery() {

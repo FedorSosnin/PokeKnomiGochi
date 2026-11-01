@@ -8,6 +8,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Next Pokémon:** after a goodbye or release, choose your next Pokémon from your Pokédex. A run-away still gives a random common egg.
 - **Moves:** every Pokémon fights with its own level-up moves from Red and Blue, instead of one move per type.
 - **Catch results:** each throw ends in a large banner, and a missed ball visibly bounces away.
 - **Catching:** winning no longer registers a species; lean to steer a thrown Poké Ball at it.

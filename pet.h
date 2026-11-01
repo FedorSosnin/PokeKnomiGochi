@@ -145,7 +145,11 @@ public:
   void declineFarewell() { farDeclinedAge = ageMinutes + 1440; } // re-ofrece dentro de 1 dia
   // primera partida: el jugador elige inicial (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }
-  void chooseStarter(int16_t dex) { eggTarget = dex; starterPick = false; save(); }
+  void chooseStarter(int16_t dex) { eggTarget = dex; starterPick = eggPick = false; save(); }
+  // tras una despedida o liberacion el siguiente huevo se elige entre lo ya registrado
+  bool awaitingEggPick() const { return eggPick; }
+  bool chooseEgg(int16_t dex);
+  int16_t registeredAt(int idx) const;  // el idx-esimo registrado por numero de dex, 0 si no hay
   void factoryReset() { prefs.clear(); }  // borra la NVS (test: comando serie WIPE)
   void dbgRunawayReady() { fullness = joy = energy = hygiene = 0; neglectTicks = RUNAWAY_TICKS; }  // test
   // uint16_t, no uint8_t: con MINUTES_PER_LEVEL=60 el nivel son las horas, asi
@@ -205,6 +209,7 @@ private:
   uint16_t evoDeclinedLv = 0;   // "mantener forma": no ofrecer evolucion hasta subir de nivel
   uint32_t farDeclinedAge = 0;  // "quedaros juntos": no ofrecer despedida hasta esta edad
   bool starterPick = false;     // primera partida: esperando que el jugador elija inicial
+  bool eggPick = false;         // huevo nuevo: esperando que elija de la pokedex
   uint8_t neglectTicks = 0;
   uint16_t goodTicks = 0;  // racha bien cuidado: forja la DEF
   uint32_t ceremonyUntil = 0;
