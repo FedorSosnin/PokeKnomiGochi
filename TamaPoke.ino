@@ -243,7 +243,7 @@ uint32_t confirmUntil = 0;  // dialogo "soltar?" activo hasta este millis
 #ifdef BOARD_KNOMI_V2
 uint32_t gBtnSimUntil = 0;  // pulsacion simulada del boton fisico (consola serie)
 #endif
-uint8_t choiceKind = 0;     // dialogo de decision: 0 ninguno, 1 evolucion, 2 despedida, 3 borrar partida
+uint8_t choiceKind = 0;     // dialogo de decision: 0 ninguno, 1 evolucion, 2 despedida, 3 borrar partida, 4 escapada
 uint32_t choiceUntil = 0;   // se cierra solo a este millis
 int16_t tX0, tY0, tXl, tYl; // gesto en curso (inicio y ultima posicion)
 uint32_t tStart = 0;
@@ -981,6 +981,9 @@ void onTap(int16_t x, int16_t y) {
     } else if (choiceKind == 2) {          // despedida
       if (b1) pet.startFarewell();
       else if (b2) pet.declineFarewell();
+    } else if (choiceKind == 4) {          // escapada: cuidarlo es la opcion de arriba
+      if (b1) pet.rescue();
+      else if (b2) pet.startRunaway();
     } else if (choiceKind == 3 && b1) {    // borrar la partida (boton del Knomi)
       pet.factoryReset();
       delay(100);
@@ -1017,10 +1020,10 @@ void onTap(int16_t x, int16_t y) {
     choiceKind = 1; choiceUntil = millis() + 12000;
     return;
   }
-  // botones de final (mismo recuadro): escapada directa; despedida abre dialogo
+  // botones de final (mismo recuadro): los dos abren dialogo
   if (x >= FAR_BTN_X && x <= FAR_BTN_X + FAR_BTN_W &&
       y >= FAR_BTN_Y && y <= FAR_BTN_Y + FAR_BTN_H) {
-    if (pet.canRunawayNow()) { pet.startRunaway(); return; }
+    if (pet.canRunawayNow()) { choiceKind = 4; choiceUntil = millis() + 12000; return; }
     if (pet.wantFarewellButton()) { choiceKind = 2; choiceUntil = millis() + 12000; return; }
   }
   for (int i = 0; i < 4; i++) {
@@ -3665,6 +3668,9 @@ void drawChoiceDialog() {
   } else if (choiceKind == 3) {  // borrar la partida
     q = T(S_RESET_Q); o1 = T(S_RESET_GO); o2 = T(S_RESET_KEEP);
     c1 = UI_BAR_BAD; t1 = UI_WHITE; c2 = UI_BAR_OK; t2 = UI_WHITE;
+  } else if (choiceKind == 4) {  // escapada
+    q = T(S_RUNAWAY_Q); o1 = T(S_RUNAWAY_CARE); o2 = T(S_RUNAWAY_GO);
+    c1 = UI_BAR_OK; t1 = UI_WHITE; c2 = UI_TRACK; t2 = UI_INK;
   } else {                // despedida
     q = T(S_FAR_Q); o1 = T(S_FAR_GO); o2 = T(S_FAR_STAY);
     c1 = UI_BAR_WARN; t1 = UI_INK; c2 = UI_BAR_OK; t2 = UI_WHITE;

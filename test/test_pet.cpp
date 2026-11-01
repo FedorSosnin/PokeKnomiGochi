@@ -701,6 +701,20 @@ TEST(egg, tras_despedida_o_liberacion_se_elige_de_la_pokedex) {
   CHECK(p.awaitingEggPick());
 }
 
+TEST(egg, cuidarlo_a_tiempo_cancela_la_escapada) {
+  Pet p;
+  makePet(p, 25);
+  p.dbgRunawayReady();
+  CHECK(p.canRunawayNow());
+  p.rescue();
+  CHECK(!p.canRunawayNow());
+  CHECK_EQ(p.ceremony, (uint8_t)CER_NONE);
+  CHECK(p.fullness > 0);
+  CHECK(p.joy > 0);
+  CHECK_EQ(p.hygiene, (uint8_t)100);
+  CHECK_EQ(p.speciesId, (int16_t)25);
+}
+
 TEST(egg, tras_una_escapada_no_se_elige) {
   Pet p;
   makePet(p, 25);

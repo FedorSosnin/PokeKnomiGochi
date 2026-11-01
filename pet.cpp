@@ -392,6 +392,14 @@ void Pet::startRunaway() {
   save();
 }
 
+void Pet::rescue() {
+  if (isEgg() || ceremony != CER_NONE) return;
+  caress();
+  feed();
+  clean();
+  neglectTicks = 0;
+}
+
 void Pet::release() {
   if (isEgg() || ceremony != CER_NONE) return;
   lastEnd = CER_RELEASE;

@@ -125,6 +125,7 @@ public:
   void setClock(uint32_t nowEpoch);   // fija la hora sin aplicar progresion
   void startFarewell();  // tambien usable desde la consola serie (BYE)
   void startRunaway();   // tambien usable desde la consola serie (RUN)
+  void rescue();         // lo cuida de golpe: cancela la escapada
 
   bool isEgg() const { return speciesId < 0; }
   uint8_t eggCracks() const { return eggTaps; }
