@@ -27,6 +27,7 @@ TYPE_ACCENTS = {
     'roca':      '#93803d',
     'fantasma':  '#6a5a9e',
     'dragon':    '#5a52c4',
+    'volador':   '#7a8ad4',  # solo ataques: cada especie tiene un unico tipo, sin volador
 }
 
 # num, slug, display, tipo, evolucionaA, nivel

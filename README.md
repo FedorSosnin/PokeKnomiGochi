@@ -59,7 +59,7 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 ### Battles and catching
 
-Press the button to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. You start with one attack and learn a second at level 10.
+Press the button to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up.
 
 Winning trains your Pokémon. Losing leaves it nearly out of energy, so it has to sleep before it can fight again.
 

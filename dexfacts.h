@@ -1,7 +1,7 @@
 #pragma once
 // GENERADO por tools/gen_facts.py desde tools/dex_facts.py - no editar
 
-static const char *const TYPE_NAME[] = { "NORMAL", "FIRE", "WATER", "GRASS", "ELECTRIC", "ICE", "FIGHTING", "POISON", "GROUND", "PSYCHIC", "BUG", "ROCK", "GHOST", "DRAGON" };
+static const char *const TYPE_NAME[] = { "NORMAL", "FIRE", "WATER", "GRASS", "ELECTRIC", "ICE", "FIGHTING", "POISON", "GROUND", "PSYCHIC", "BUG", "ROCK", "GHOST", "DRAGON", "FLYING" };
 
 static const char *const DEX_FACT[152] = {
   "",

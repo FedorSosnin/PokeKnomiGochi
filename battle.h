@@ -1,15 +1,15 @@
 #pragma once
 #include <stdint.h>
 #include "dex.h"
+#include "moves.h"
 
 // Reglas del combate, sin hardware ni estado de juego (se prueban en test/test_battle.cpp).
 // Version simplificada de gen 1: formula de dano y tabla de tipos reales, un solo tipo por
-// especie (asi vienen en dex_data.py), y sin estados, precision ni golpes criticos.
+// especie (asi vienen en dex_data.py), y sin estados, precision ni golpes criticos. Los ataques
+// son los de cada especie en Red/Blue (moves.h).
 
 #define BTL_LEVEL_CAP 100     // el nivel de la mascota sigue subiendo; aqui se topa para equilibrar
-#define BTL_MOVE2_LEVEL 10    // nivel al que aprende el segundo ataque
-#define BTL_TACKLE_POWER 40
-#define BTL_TYPE_POWER 60
+#define DEX_DITTO 132         // TRANSFORM: pelea con los ataques del rival
 
 struct BtlFighter {
   int16_t dex = 0;
@@ -17,41 +17,66 @@ struct BtlFighter {
   uint16_t hp = 1, maxHp = 1, atk = 1, def = 1, spe = 1;
 };
 
-struct BtlMove { const char *name; uint8_t type; uint8_t power; };
+// los dos ataques de un combate, indices de MOVE_TBL
+struct BtlMoves { uint8_t count; uint8_t ids[2]; uint8_t newest; };
 
 inline uint8_t btlCapLevel(uint16_t lvl) { return lvl > BTL_LEVEL_CAP ? BTL_LEVEL_CAP : (lvl < 1 ? 1 : (uint8_t)lvl); }
-inline uint8_t btlMoveCount(uint8_t lvl) { return lvl >= BTL_MOVE2_LEVEL ? 2 : 1; }
 
-// ataque 0: PLACAJE para todos. Ataque 1: el del tipo de la especie.
-inline BtlMove btlMove(uint8_t type, uint8_t idx) {
-  if (idx == 0) return { "TACKLE", TY_NORMAL, BTL_TACKLE_POWER };
-  static const char *const NAMES[TY_COUNT] = {
-    "BODY SLAM", "EMBER", "WATER GUN", "VINE WHIP", "THUNDERSHOCK", "ICE BEAM", "KARATE CHOP",
-    "POISON STING", "DIG", "CONFUSION", "LEECH LIFE", "ROCK THROW", "LICK", "DRAGON RAGE",
-  };
-  return { NAMES[type < TY_COUNT ? type : TY_NORMAL], type < TY_COUNT ? type : (uint8_t)TY_NORMAL, BTL_TYPE_POWER };
+// Lo aprendido hasta su nivel en Red/Blue: el mejor de su tipo a la derecha y el mejor
+// de los demas a la izquierda. Los juegos guardan 4, y solo con los ultimos aprendidos un
+// Charmander de nivel 30 se quedaria sin ningun ataque de fuego.
+inline BtlMoves btlMovesFor(int16_t dex, uint8_t lvl, int16_t foeDex) {
+  if (dex == DEX_DITTO) dex = foeDex;
+  uint8_t type = DEX_TBL[dex].type;
+  int best = -1, other = -1;
+  uint16_t from = LEARN_START[dex], to = LEARN_START[dex + 1];
+  for (uint16_t i = from; i < to && LEARN_TBL[i].level <= lvl; i++) {
+    uint8_t p = MOVE_TBL[LEARN_TBL[i].move].power;
+    if (MOVE_TBL[LEARN_TBL[i].move].type == type && (best < 0 || p >= MOVE_TBL[LEARN_TBL[best].move].power)) best = i;
+  }
+  for (uint16_t i = from; i < to && LEARN_TBL[i].level <= lvl; i++) {
+    if ((int)i == best) continue;
+    uint8_t p = MOVE_TBL[LEARN_TBL[i].move].power;
+    if (other < 0 || p >= MOVE_TBL[LEARN_TBL[other].move].power) other = i;
+  }
+  if (best < 0 && other < 0) return { 1, { 0, 0 }, 0 };  // STRUGGLE: no conoce nada que haga dano
+  if (best < 0 || other < 0) {
+    uint8_t only = LEARN_TBL[best < 0 ? other : best].move;
+    return { 1, { only, only }, only };
+  }
+  return { 2, { LEARN_TBL[other].move, LEARN_TBL[best].move }, LEARN_TBL[best > other ? best : other].move };
+}
+
+// El ultimo ataque anunciado se guarda como id + 3: las partidas antiguas guardan 1 o 2
+// (cuantos conocia). Devuelve el ataque que avisar, o -1 si no hay nada nuevo.
+inline uint8_t btlMovesSeenValue(const BtlMoves &m) { return m.newest + 3; }
+inline int16_t btlMoveToAnnounce(uint8_t seen, const BtlMoves &m) {
+  if (seen == btlMovesSeenValue(m) || m.newest == 0) return -1;
+  if (seen <= 2 && m.count <= seen) return -1;
+  return m.newest;
 }
 
 // efectividad x2 (entero): 0 = inmune, 1 = la mitad, 2 = normal, 4 = el doble
 inline uint8_t btlEffect(uint8_t moveType, uint8_t defType) {
   // filas: atacante
   // columnas en el orden de TY_*: normal fuego agua planta electrico hielo lucha veneno
-  // tierra psiquico bicho roca fantasma dragon
+  // tierra psiquico bicho roca fantasma dragon volador
   static const char CHART[TY_COUNT][TY_COUNT + 1] = {
-    /* normal    */ "22222222222102",
-    /* fuego     */ "21142422224121",
-    /* agua      */ "24112222422421",
-    /* planta    */ "21412221421421",
-    /* electrico */ "22411222022221",
-    /* hielo     */ "22142122422224",
-    /* lucha     */ "42222421211402",
-    /* veneno    */ "22242221124112",
-    /* tierra    */ "24214224221422",
-    /* psiquico  */ "22222244212222",
-    /* bicho     */ "21242214242222",
-    /* roca      */ "24222412124222",
-    /* fantasma  */ "02222222202242",
-    /* dragon    */ "22222222222224",
+    /* normal    */ "222222222221022",
+    /* fuego     */ "211424222241212",
+    /* agua      */ "241122224224212",
+    /* planta    */ "214122214214211",
+    /* electrico */ "224112220222214",
+    /* hielo     */ "221421224222244",
+    /* lucha     */ "422224212114021",
+    /* veneno    */ "222422211241122",
+    /* tierra    */ "242142242214220",
+    /* psiquico  */ "222222442122222",
+    /* bicho     */ "212422142422221",
+    /* roca      */ "242224121242224",
+    /* fantasma  */ "022222222022422",
+    /* dragon    */ "222222222222242",
+    /* volador   */ "222412422241222",
   };
   if (moveType >= TY_COUNT || defType >= TY_COUNT) return 2;
   return (uint8_t)(CHART[moveType][defType] - '0');
@@ -114,4 +139,4 @@ inline bool btlPlayerFirst(uint16_t mySpe, uint16_t foeSpe, uint8_t coin) {
 }
 
 // el rival prefiere su ataque de tipo si lo tiene (roll en [0, 99])
-inline uint8_t btlWildMove(uint8_t lvl, uint8_t roll) { return btlMoveCount(lvl) == 2 && roll < 70 ? 1 : 0; }
+inline uint8_t btlWildMove(const BtlMoves &m, uint8_t roll) { return m.count == 2 && roll < 70 ? 1 : 0; }

@@ -12,6 +12,7 @@ TYPE_NAMES = {
     'electrico': 'ELECTRIC', 'hielo': 'ICE', 'lucha': 'FIGHTING', 'veneno': 'POISON',
     'tierra': 'GROUND', 'psiquico': 'PSYCHIC', 'bicho': 'BUG', 'roca': 'ROCK',
     'fantasma': 'GHOST', 'dragon': 'DRAGON',
+    'volador': 'FLYING',
 }
 MAX_LEN = 84
 

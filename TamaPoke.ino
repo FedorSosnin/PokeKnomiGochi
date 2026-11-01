@@ -170,6 +170,8 @@ struct { bool mine; uint8_t move; } bTurn[2];
 uint8_t bStep = 0, bLastEff = 2;
 uint8_t bGain = 0;
 bool bWon = false;
+BtlMoves bMeMoves, bFoeMoves;
+uint8_t bLearned = 0;  // el ataque que anuncia BP_LEARNED
 float bBallX = 233, bFoeX = 233;  // captura: posicion del tiro y del rival
 uint8_t bBalls = 0;
 uint32_t bBallT = 0;
@@ -1951,6 +1953,8 @@ void startBattleWith(int16_t dex) {
   bMe.def = btlStat(d.bDef, pet.geneDef, lvl, pet.trDef);
   bMe.spe = btlStat(d.bSpe, pet.geneSpe, lvl, pet.trSpe);
   bFoe = btlMakeWild(dex, foeLvl, btlWildGene(random(16)));
+  bMeMoves = btlMovesFor(bMe.dex, lvl, dex);
+  bFoeMoves = btlMovesFor(dex, foeLvl, bMe.dex);
   bShownMe = bMe.hp;
   bShownFoe = bFoe.hp;
   bWon = false;
@@ -1958,7 +1962,9 @@ void startBattleWith(int16_t dex) {
   battleOpen = true;
   battleSetPhase(BP_INTRO);
   sfxPlay(SFX_PLAY);
-  Serial.printf("combate: rival #%d Nv.%u\n", dex, foeLvl);
+  Serial.printf("combate: rival #%d Nv.%u %s/%s contra %s/%s\n", dex, foeLvl,
+                MOVE_TBL[bFoeMoves.ids[0]].name, MOVE_TBL[bFoeMoves.ids[1]].name,
+                MOVE_TBL[bMeMoves.ids[0]].name, MOVE_TBL[bMeMoves.ids[1]].name);
 }
 
 void startBattle() { startBattleWith(0); }
@@ -1969,7 +1975,7 @@ void closeBattle() {
 }
 
 void battleMoveRect(uint8_t i, int &x0, int &x1) {
-  if (btlMoveCount(bMe.level) == 1) { x0 = 116; x1 = 350; return; }
+  if (bMeMoves.count == 1) { x0 = 116; x1 = 350; return; }
   x0 = i == 0 ? 62 : 238;
   x1 = i == 0 ? 228 : 404;
 }
@@ -1995,13 +2001,13 @@ void battleTap(int16_t x, int16_t y) {
     return;
   }
   if (y < 344 || y > 386) return;
-  for (uint8_t i = 0; i < btlMoveCount(bMe.level); i++) {
+  for (uint8_t i = 0; i < bMeMoves.count; i++) {
     int x0, x1;
     battleMoveRect(i, x0, x1);
     if (x < x0 || x > x1) continue;
     sfxPlay(SFX_TAP);
     bool first = btlPlayerFirst(bMe.spe, bFoe.spe, random(2));
-    uint8_t foeMove = btlWildMove(bFoe.level, random(100));
+    uint8_t foeMove = btlWildMove(bFoeMoves, random(100));
     bTurn[0] = { first, first ? i : foeMove };
     bTurn[1] = { !first, first ? foeMove : i };
     bStep = 0;
@@ -2059,7 +2065,7 @@ void battleApplyHit() {
   bool mine = bTurn[bStep].mine;
   BtlFighter &a = mine ? bMe : bFoe, &t = mine ? bFoe : bMe;
   uint8_t aType = DEX_TBL[a.dex].type, tType = DEX_TBL[t.dex].type;
-  BtlMove m = btlMove(aType, bTurn[bStep].move);
+  BtlMove m = MOVE_TBL[(mine ? bMeMoves : bFoeMoves).ids[bTurn[bStep].move]];
   uint16_t dmg = btlDamage(a.level, m, a.atk, t.def, aType, tType, 85 + random(16));
   bLastEff = btlEffect(m.type, tType);
   t.hp = dmg >= t.hp ? 0 : t.hp - dmg;
@@ -2079,9 +2085,11 @@ void battleStep() {
     case BP_TIRED: if (t > 1500) closeBattle(); break;
     case BP_INTRO:
       if (t > 1800) {
-        uint8_t n = btlMoveCount(bMe.level);
-        if (n > pet.movesSeen) {  // se avisa del ataque nuevo una sola vez
-          pet.movesSeen = n;
+        // se avisa del ataque nuevo una sola vez; DITTO copia, no aprende
+        int16_t learned = bMe.dex == DEX_DITTO ? -1 : btlMoveToAnnounce(pet.movesSeen, bMeMoves);
+        if (bMe.dex != DEX_DITTO) pet.movesSeen = btlMovesSeenValue(bMeMoves);
+        if (learned >= 0) {
+          bLearned = learned;
           sfxPlay(SFX_MEDAL);
           battleSetPhase(BP_LEARNED);
         } else battleSetPhase(BP_CHOOSE);
@@ -2108,10 +2116,10 @@ void battleStep() {
       break;
     case BP_THROW: battleThrowStep(millis()); break;
     case BP_MISS:
-      if (t > 1200) battleSetPhase(bBalls ? BP_AIM : BP_FLED);
+      if (t > 2000) battleSetPhase(bBalls ? BP_AIM : BP_FLED);
       break;
-    case BP_CAUGHT: if (t > 4000) closeBattle(); break;
-    case BP_FLED: if (t > 2500) closeBattle(); break;
+    case BP_CAUGHT: if (t > 5000) closeBattle(); break;
+    case BP_FLED: if (t > 3500) closeBattle(); break;
   }
 }
 
@@ -2157,6 +2165,19 @@ void battleCenterLine(const char *s, int y) {
   printT(s);
 }
 
+// el resultado de un tiro: texto grande sobre color, para que nadie se quede con la duda
+void catchBanner(const char *s, uint16_t bg) {
+  uint8_t size = textW(s, 3) <= 306 ? 3 : 2;
+  int w = textW(s, size) + 24, h = size == 3 ? 44 : 36;
+  gfx->fillRoundRect(CX - w / 2, 352, w, h, 12, bg);
+  gfx->setTextColor(UI_WHITE);
+  setSize(size);
+  setCur(centerX(s, size), 352 + (h - 8 * size) / 2);
+  printT(s);
+  setSize(2);
+  gfx->setTextColor(UI_INK);
+}
+
 void renderCatch() {
   uint32_t now = millis();
   drawGameScene();
@@ -2174,6 +2195,10 @@ void renderCatch() {
     if (k > 1) k = 1;
     int y = 360 - (int)(200 * k), s = k < 0.5f ? 3 : 2;  // se aleja
     drawMap(SPR_ICON_PLAY, 16, (int)bBallX - 8 * s, y - 8 * s, s, false);
+  } else if (bPhase == BP_MISS) {  // rebota y cae: se ve que no ha entrado
+    float k = (now - bPhaseT) / 700.0f;
+    if (k > 1) k = 1;
+    drawMap(SPR_ICON_PLAY, 16, (int)(bBallX + (bBallX < foeX ? -70 : 70) * k) - 16, 144 + (int)(200 * k * k), 2, false);
   } else if (bPhase == BP_CAUGHT) {
     int wob = (int)(10 * sinf((now - bPhaseT) * 0.012f));
     drawMap(SPR_ICON_PLAY, 16, (int)bFoeX - 24 + wob, 150, 3, false);
@@ -2194,18 +2219,17 @@ void renderCatch() {
       battleCenterLine(T(S_TILT_HINT), 380);
       break;
     case BP_MISS:
-      battleCenterLine(T(S_MISSED), 380);
+      catchBanner(T(S_MISSED), C565(0xb8, 0x2e, 0x2a));
+      for (uint8_t i = 0; i < bBalls; i++) gfx->fillCircle(CX + (i * 2 - (bBalls - 1)) * 12, 416, 6, UI_BAR_BAD);
       break;
     case BP_CAUGHT:
       snprintf(b, sizeof(b), T(S_CAUGHT_FMT), dexName(bFoe.dex));
-      gfx->setTextColor(UI_BAR_OK);
-      battleCenterLine(b, 366);
-      gfx->setTextColor(UI_BAR_WARN);
-      battleCenterLine(T(S_BTL_NEWDEX), 394);
+      catchBanner(b, C565(0x1e, 0x7d, 0x3c));
+      battleCenterLine(T(S_BTL_NEWDEX), 408);
       break;
     case BP_FLED:
       snprintf(b, sizeof(b), T(S_FLED_FMT), dexName(bFoe.dex));
-      battleCenterLine(b, 380);
+      catchBanner(b, C565(0x55, 0x55, 0x60));
       break;
     default: break;
   }
@@ -2252,12 +2276,12 @@ void renderBattle() {
       battleCenterLine(b, 380);
       break;
     case BP_LEARNED:
-      snprintf(b, sizeof(b), T(S_BTL_LEARNED), btlMove(DEX_TBL[bMe.dex].type, 1).name);
+      snprintf(b, sizeof(b), T(S_BTL_LEARNED), MOVE_TBL[bLearned].name);
       battleCenterLine(b, 380);
       break;
     case BP_CHOOSE:
-      for (uint8_t i = 0; i < btlMoveCount(bMe.level); i++) {
-        BtlMove m = btlMove(DEX_TBL[bMe.dex].type, i);
+      for (uint8_t i = 0; i < bMeMoves.count; i++) {
+        BtlMove m = MOVE_TBL[bMeMoves.ids[i]];
         int x0, x1;
         battleMoveRect(i, x0, x1);
         gfx->fillRoundRect(x0, 346, x1 - x0, 40, 10, TYPE_ACCENT[m.type]);
@@ -2272,7 +2296,7 @@ void renderBattle() {
     case BP_ATTACK:
     case BP_HIT: {
       const BtlFighter &a = bTurn[bStep].mine ? bMe : bFoe;
-      snprintf(b, sizeof(b), "%s: %s!", dexName(a.dex), btlMove(DEX_TBL[a.dex].type, bTurn[bStep].move).name);
+      snprintf(b, sizeof(b), "%s: %s!", dexName(a.dex), MOVE_TBL[(bTurn[bStep].mine ? bMeMoves : bFoeMoves).ids[bTurn[bStep].move]].name);
       battleCenterLine(b, 380);
       break;
     }

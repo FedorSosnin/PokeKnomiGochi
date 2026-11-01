@@ -25,20 +25,59 @@ TEST(battle, tabla_completa_sin_valores_raros) {
     }
 }
 
-TEST(battle, se_empieza_con_un_ataque_y_se_aprende_otro) {
-  CHECK_EQ((int)btlMoveCount(1), 1);
-  CHECK_EQ((int)btlMoveCount(BTL_MOVE2_LEVEL - 1), 1);
-  CHECK_EQ((int)btlMoveCount(BTL_MOVE2_LEVEL), 2);
-  CHECK_EQ((int)btlMove(TY_FUEGO, 0).type, (int)TY_NORMAL);
-  CHECK_EQ((int)btlMove(TY_FUEGO, 1).type, (int)TY_FUEGO);
+static const char *moveName(int16_t dex, uint8_t lvl, uint8_t slot) {
+  return MOVE_TBL[btlMovesFor(dex, lvl, 1).ids[slot]].name;
+}
+
+static bool sameName(const char *a, const char *b) { return strcmp(a, b) == 0; }
+
+TEST(battle, cada_especie_usa_sus_ataques_de_red_blue) {
+  CHECK_EQ((int)btlMovesFor(102, 20, 1).count, 1);  // Exeggcute solo tiene BARRAGE a ese nivel
+  CHECK(sameName(moveName(102, 20, 0), "BARRAGE"));
+  CHECK_EQ((int)btlMovesFor(1, 5, 4).count, 1);
+  CHECK(sameName(moveName(1, 5, 0), "TACKLE"));
+  CHECK(sameName(moveName(1, 21, 0), "TACKLE"));
+  CHECK(sameName(moveName(1, 21, 1), "VINE WHIP"));
+  CHECK(sameName(moveName(4, 30, 0), "SLASH"));
+  CHECK(sameName(moveName(4, 30, 1), "EMBER"));  // no se queda sin ataque de su tipo
+  CHECK(sameName(moveName(25, 1, 0), "THUNDERSHOCK"));
+}
+
+TEST(battle, sin_ataques_que_dañen_usa_struggle) {
+  CHECK(sameName(moveName(63, 50, 0), "STRUGGLE"));  // Abra solo tiene TELEPORT
+  CHECK(sameName(moveName(129, 14, 0), "STRUGGLE"));  // Magikarp: SPLASH no hace nada
+  CHECK(sameName(moveName(129, 15, 0), "TACKLE"));
+}
+
+TEST(battle, conserva_lo_aprendido_antes_de_evolucionar) {
+  CHECK(sameName(moveName(11, 8, 0), "TACKLE"));  // Metapod, de cuando era Caterpie
+  CHECK(sameName(moveName(14, 8, 0), "POISON STING"));
+}
+
+TEST(battle, ditto_copia_los_ataques_del_rival) {
+  BtlMoves m = btlMovesFor(DEX_DITTO, 30, 25);
+  BtlMoves p = btlMovesFor(25, 30, 1);
+  CHECK_EQ((int)m.ids[0], (int)p.ids[0]);
+  CHECK_EQ((int)m.ids[1], (int)p.ids[1]);
+  CHECK(sameName(MOVE_TBL[btlMovesFor(DEX_DITTO, 30, DEX_DITTO).ids[0]].name, "STRUGGLE"));
+}
+
+TEST(battle, aviso_de_ataque_nuevo_una_sola_vez) {
+  BtlMoves one = btlMovesFor(1, 5, 4), two = btlMovesFor(1, 13, 4);
+  CHECK_EQ((int)btlMoveToAnnounce(1, one), -1);  // mascota nueva: nada que anunciar
+  CHECK_EQ((int)btlMoveToAnnounce(1, two), (int)two.newest);
+  CHECK_EQ((int)btlMoveToAnnounce(2, two), -1);  // partida antigua que ya tenia dos
+  CHECK_EQ((int)btlMoveToAnnounce(btlMovesSeenValue(two), two), -1);
+  CHECK_EQ((int)btlMoveToAnnounce(btlMovesSeenValue(one), two), (int)two.newest);
+  CHECK(sameName(MOVE_TBL[two.newest].name, "VINE WHIP"));
 }
 
 TEST(battle, los_ataques_caben_en_el_boton) {
-  for (int t = 0; t < TY_COUNT; t++) CHECK(strlen(btlMove(t, 1).name) <= 13);
+  for (size_t i = 0; i < sizeof(MOVE_TBL) / sizeof(MOVE_TBL[0]); i++) CHECK(strlen(MOVE_TBL[i].name) <= 13);
 }
 
 TEST(battle, dano_efectividad_y_stab) {
-  BtlMove ember = btlMove(TY_FUEGO, 1);
+  BtlMove ember = { "EMBER", TY_FUEGO, 60 };
   uint16_t base = btlDamage(20, ember, 50, 50, TY_NORMAL, TY_NORMAL, 100);
   uint16_t stab = btlDamage(20, ember, 50, 50, TY_FUEGO, TY_NORMAL, 100);
   uint16_t sup = btlDamage(20, ember, 50, 50, TY_NORMAL, TY_PLANTA, 100);
@@ -47,7 +86,7 @@ TEST(battle, dano_efectividad_y_stab) {
   CHECK_EQ((int)sup, (int)base * 2);
   CHECK(weak < base);
   CHECK(weak >= 1);
-  CHECK_EQ((int)btlDamage(20, btlMove(TY_NORMAL, 0), 50, 50, TY_NORMAL, TY_FANTASMA, 100), 0);
+  CHECK_EQ((int)btlDamage(20, BtlMove{ "TACKLE", TY_NORMAL, 40 }, 50, 50, TY_NORMAL, TY_FANTASMA, 100), 0);
 }
 
 TEST(battle, nivel_tope_y_rival_cercano) {
@@ -72,13 +111,14 @@ static bool simulate(int16_t mine, int16_t foeDex, uint8_t lvl, uint8_t trained)
   me.spe = btlStat(d.bSpe, 100, lvl, 0);
   BtlFighter foe = btlMakeWild(foeDex, btlWildLevel(lvl, rand() % 4), btlWildGene(rand() % 16));
   uint8_t myT = d.type, foeT = DEX_TBL[foeDex].type;
+  BtlMoves myMoves = btlMovesFor(mine, lvl, foeDex), foeMoves = btlMovesFor(foeDex, foe.level, mine);
   for (int turn = 0; turn < 200; turn++) {
     uint16_t best = 0;
-    for (int m = 0; m < btlMoveCount(lvl); m++) {
-      uint16_t x = btlDamage(lvl, btlMove(myT, m), me.atk, foe.def, myT, foeT, 85 + rand() % 16);
+    for (int m = 0; m < myMoves.count; m++) {
+      uint16_t x = btlDamage(lvl, MOVE_TBL[myMoves.ids[m]], me.atk, foe.def, myT, foeT, 85 + rand() % 16);
       if (x > best) best = x;
     }
-    BtlMove fm = btlMove(foeT, btlWildMove(foe.level, rand() % 100));
+    BtlMove fm = MOVE_TBL[foeMoves.ids[btlWildMove(foeMoves, rand() % 100)]];
     uint16_t back = btlDamage(foe.level, fm, foe.atk, me.def, foeT, myT, 85 + rand() % 16);
     bool first = btlPlayerFirst(me.spe, foe.spe, rand() % 2);
     if (first) {

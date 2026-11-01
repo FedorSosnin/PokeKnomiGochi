@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Moves:** every Pokémon fights with its own level-up moves from Red and Blue, instead of one move per type.
+- **Catch results:** each throw ends in a large banner, and a missed ball visibly bounces away.
 - **Catching:** winning no longer registers a species; lean to steer a thrown Poké Ball at it.
 - **Games menu:** Tilt Catch (replaces the ball game), Who's That Pokémon? and PokeRun. Swipe up from the lower half of the screen to quit any game with nothing earned.
 - **Knomi web installer:** `web/knomi/` flashes the firmware and sprites from the browser.
