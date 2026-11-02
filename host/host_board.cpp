@@ -1,7 +1,6 @@
-// What rtcbat.cpp, wifi_setup.cpp and buddy_net.cpp are on the Knomi.
+// What rtcbat.cpp and wifi_setup.cpp are on the Knomi (buddy_net.cpp is host_buddy.cpp).
 #include <Arduino.h>
 #include <time.h>
-#include "buddy_net.h"
 #include "rtcbat.h"
 #include "wifi_setup.h"
 
@@ -71,10 +70,3 @@ void wifiSetupDelete() {}
 bool wifiSetupCanSubmit() { return false; }
 void wifiSetupSubmit() {}
 void wifiSetupTry(const char *, const char *) {}
-
-// ---- buddy: no network yet, the game sees nobody ----
-uint32_t buddyNetId() { return 1; }
-bool buddyNetUp() { return false; }
-bool buddyNetPoll(BuddyMsg &) { return false; }
-void buddyNetSend(const BuddyMsg &) {}
-void buddyNetSetPeer(uint32_t) {}

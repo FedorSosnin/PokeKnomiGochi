@@ -1,11 +1,15 @@
 // Tests for the host layer, without a window. The first ones are individual pieces; the last one starts the whole
 // game against the real sprites and a save in a temporary folder.
+#include <arpa/inet.h>
 #include <dirent.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string>
 #include <vector>
 #include "U8g2lib.h"
+#include "buddy_net.h"
 #include "audio.h"
 #include "glcdfont.h"
 #include "host.h"
@@ -197,6 +201,114 @@ static void testPrefs() {
   removeDir(dir);
 }
 
+// a UDP socket on loopback, port chosen by the system
+static int loopSock(uint16_t &port) {
+  int s = socket(AF_INET, SOCK_DGRAM, 0);
+  sockaddr_in a = {};
+  a.sin_family = AF_INET;
+  a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  socklen_t len = sizeof(a);
+  if (s < 0 || bind(s, (sockaddr *)&a, sizeof(a)) != 0 || getsockname(s, (sockaddr *)&a, &len) != 0) return -1;
+  timeval tv = {1, 0};  // a lost packet fails the test instead of hanging it
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+  port = ntohs(a.sin_port);
+  return s;
+}
+
+static void sendLoop(int s, uint16_t port, const void *data, size_t len) {
+  sockaddr_in a = {};
+  a.sin_family = AF_INET;
+  a.sin_port = htons(port);
+  a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  sendto(s, data, len, 0, (sockaddr *)&a, sizeof(a));
+}
+
+// what the host takes out of buddyNetPoll() within a second
+static bool pollFor(BuddyMsg &m) {
+  for (int i = 0; i < 100; i++) {
+    if (buddyNetPoll(m)) return true;
+    usleep(10000);
+  }
+  return false;
+}
+
+// the host's buddy radio against a socket playing a Knomi, on loopback so nothing leaves the machine
+static void testBuddy() {
+  std::string dir = tempDir();
+  hostPrefsSetDir(dir.c_str());
+  uint32_t me = buddyNetId();
+  CHECK(me != 0);
+  CHECK(buddyNetId() == me);  // stable
+  {
+    Preferences p;
+    p.begin("buddy", true);
+    CHECK(p.getUInt("id") == me);  // kept with the save
+    p.end();
+  }
+  hostPrefsFlush();
+  CHECK(!readFile(dir + "/buddy.prefs").empty());
+
+  uint16_t knomiPort = 0, hostPort = 0;
+  int knomi = loopSock(knomiPort);
+  int spare = loopSock(hostPort);  // only to get a free port for the host
+  CHECK(knomi >= 0 && spare >= 0);
+  close(spare);
+  hostBuddyNetConfig(true, hostPort, "127.0.0.1", knomiPort);
+  CHECK(buddyNetUp());
+
+  // the host greets: the Knomi gets the same 65 bytes and understands them
+  BuddyMsg hello;
+  buddyInit(hello, BM_HELLO, me, 0, 0);
+  hello.dex = 25;
+  hello.level = 12;
+  strcpy(hello.nick, "Sparky");
+  hello.reg[3] = 0x81;
+  buddyNetSend(hello);
+  uint8_t buf[128];
+  ssize_t got = recv(knomi, buf, sizeof(buf), 0);
+  CHECK(got == 65);
+  CHECK(memcmp(buf, "PKG1", 4) == 0 && buf[4] == BUDDY_VER && buf[5] == BM_HELLO);
+  CHECK(buf[6] == (me & 0xff) && buf[9] == (me >> 24));  // little-endian, as on the ESP32
+  CHECK(buf[22] == 25 && buf[23] == 0 && buf[24] == 12);
+  BuddyMsg back;
+  CHECK(got > 0 && buddyParse(buf, (size_t)got, back));
+  CHECK(back.from == me && back.dex == 25 && strcmp(back.nick, "Sparky") == 0 && back.reg[3] == 0x81);
+
+  // the Knomi answers; garbage, echoes of our own and messages for others are dropped
+  const uint32_t knomiId = 0x12345679;
+  sendLoop(knomi, hostPort, "garbage", 7);
+  BuddyMsg echo = hello;
+  sendLoop(knomi, hostPort, &echo, sizeof(echo));
+  BuddyMsg other;
+  buddyInit(other, BM_INVITE, knomiId, me + 2, 7);
+  other.kind = BK_BATTLE;
+  sendLoop(knomi, hostPort, &other, sizeof(other));
+  BuddyMsg invite = other;
+  invite.to = me;
+  sendLoop(knomi, hostPort, &invite, sizeof(invite));
+  BuddyMsg in;
+  CHECK(pollFor(in));
+  CHECK(in.type == BM_INVITE && in.from == knomiId && in.to == me && in.session == 7 && in.kind == BK_BATTLE);
+  CHECK(!buddyNetPoll(in));
+
+  // with the buddy known, replies still reach it
+  buddyNetSetPeer(knomiId);
+  sendLoop(knomi, hostPort, &invite, sizeof(invite));
+  CHECK(pollFor(in));
+  BuddyMsg accept;
+  buddyInit(accept, BM_ACCEPT, me, knomiId, 7);
+  buddyNetSend(accept);
+  got = recv(knomi, buf, sizeof(buf), 0);
+  CHECK(got == 65 && buddyParse(buf, (size_t)got, back) && back.type == BM_ACCEPT && back.to == knomiId);
+  buddyNetSetPeer(0);
+
+  hostBuddyNetConfig(false, 0, nullptr, 0);  // the rest of the tests stay off the network
+  CHECK(!buddyNetUp());
+  close(knomi);
+  hostPrefsSetDir(nullptr);
+  removeDir(dir);
+}
+
 static bool anySound(int frames) {
   std::vector<int16_t> pcm((size_t)frames);
   hostAudioRender(pcm.data(), frames);
@@ -299,6 +411,7 @@ int main() {
   testCanvas();
   testU8g2();
   testPrefs();
+  testBuddy();
   testAudio();
   testGame();
   printf("host layer: %d checks, %d failures\n", gChecks, gFails);

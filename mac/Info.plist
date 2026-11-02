@@ -14,5 +14,6 @@
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSLocalNetworkUsageDescription</key><string>PokeMacGochi looks for PokeKnomiGochis and other PokeMacGochis on your Wi-Fi so your Pokémon can visit, battle and trade.</string>
 </dict>
 </plist>

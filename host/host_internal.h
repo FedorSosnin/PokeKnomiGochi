@@ -11,3 +11,7 @@ void hostGameSetup();
 void hostGameLoop();
 void hostGameSave();
 void hostGameWake();
+
+// host_buddy.cpp: where the buddy radio listens and sends. By default BUDDY_PORT and the broadcast
+// address of every network the machine is on; tests point it at loopback, or switch it off.
+void hostBuddyNetConfig(bool enabled, uint16_t listenPort, const char *target, uint16_t sendPort);

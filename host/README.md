@@ -19,7 +19,7 @@ Runs the game on something that isn't a board. It is split in two so a future we
 | Clock screen | No Wi-Fi settings page, because the system owns Wi-Fi |
 | `tiltZero()` | With arrow keys, straight is always zero |
 
-`rtcbat.cpp`, `audio.cpp`, `wifi_setup.cpp` and `buddy_net.cpp` are not compiled here. `host_board.cpp` and `host_audio.cpp` replace them, and `sfx_notes.h` keeps one table of sound effects for both.
+`rtcbat.cpp`, `audio.cpp`, `wifi_setup.cpp` and `buddy_net.cpp` are not compiled here. `host_board.cpp`, `host_buddy.cpp` and `host_audio.cpp` replace them, and `sfx_notes.h` keeps one table of sound effects for both.
 
 Arduino adds prototypes to a `.ino` before compiling it. `gen_sketch_unit.py` does the same, so the host needs neither arduino-cli nor ctags.
 
@@ -60,9 +60,12 @@ The save lives in `~/Library/Application Support/PokeMacGochi`, separate from an
 
 For testing, launching with `--console` keeps the app from taking keyboard focus and reads the Knomi's serial commands from stdin (`HEALTH`, `GAMES`, `WILD 25`...). It also takes `MOUSE down|drag|up|right x y` and `KEY down|up code`, which go through AppKit's event queue, and `MENU n`, which triggers menu item n. `POKEMACGOCHI_SAVE_DIR` points the app at another save folder.
 
+## Buddies
+
+`host_buddy.cpp` is `buddy_net.cpp` on BSD sockets: the same 65-byte `BuddyMsg` on UDP `BUDDY_PORT` (47115), sent to the broadcast address of every network the machine is on until the buddy's address is known, then straight to it. The id that the Knomi takes from its MAC is a random odd number kept in `buddy.prefs` in the save folder. The port is shared (`SO_REUSEPORT`), so two copies on one Mac with different saves are buddies too; between those, everything stays broadcast, since a direct packet would reach only one of the two sockets. A WebAssembly build has no UDP and keeps the stub. The tests talk to it over loopback and switch it off before running the game, so `make test` never shows up on a real Knomi. `POKEMACGOCHI_BUDDY_PORT` moves the app to another port: test copies on it see each other and no Knomi.
+
 ## Not done yet
 
-- **Buddies:** `host_board.cpp` stubs the network, so the game sees no one. UDP from a Mac would reach any real Knomi on the same Wi-Fi, so it should be a deliberate choice.
 - **Web build:** not started. It needs a front end that calls `host.h` and a way to serve `mons/` and `fonts/`.
 
 ## Fonts

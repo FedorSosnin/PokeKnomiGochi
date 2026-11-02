@@ -99,7 +99,7 @@ If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over 
 - **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, each of you gets the other's entry and keeps your own.
 
-To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work on the Knomi only.
+To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis and the Mac version, PokeMacGochi, in any mix.
 
 ### Daily visitor
 
@@ -195,6 +195,8 @@ The same game as a small round window on your Mac desktop, in a Poké Ball ring.
 **Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Tilt Catch and throwing Poké Balls. Space is the Knomi's button, for a wild battle. Drag the ring to move the window. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound and Quit.
 
 Your pet, sound setting and window size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
+
+**Buddies:** a Knomi or another PokeMacGochi on the same Wi-Fi shows up as a buddy, just like between two Knomis. The first time, macOS asks whether PokeMacGochi may find devices on your local network: click **Allow**. If you clicked **Don't Allow**, turn PokeMacGochi on in **System Settings → Privacy & Security → Local Network** and reopen it.
 
 To build it yourself, run `mac/build_dmg.sh` (needs Xcode's Command Line Tools). [host/README.md](host/README.md) explains how it works.
 

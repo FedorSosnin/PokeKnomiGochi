@@ -1,4 +1,5 @@
 #pragma once
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -32,6 +33,13 @@ struct __attribute__((packed)) BuddyMsg {
   char nick[12];
   uint8_t reg[19];             // Pokedex, 1 bit per species
 };
+
+// The wire format: these bytes in this order, little-endian, on the ESP32 and on the Mac alike.
+// Changing them breaks talking to boards on older firmware.
+static_assert(sizeof(BuddyMsg) == 65, "BuddyMsg wire size");
+static_assert(offsetof(BuddyMsg, from) == 6 && offsetof(BuddyMsg, kind) == 18 && offsetof(BuddyMsg, dex) == 22 &&
+                  offsetof(BuddyMsg, hp) == 26 && offsetof(BuddyMsg, nick) == 34 && offsetof(BuddyMsg, reg) == 46,
+              "BuddyMsg wire layout");
 
 inline void buddyInit(BuddyMsg &m, BuddyType type, uint32_t from, uint32_t to, uint32_t session) {
   memset(&m, 0, sizeof(m));
