@@ -1206,11 +1206,12 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
 
   // sol o luna
   if (night) {
-    gfx->fillCircle(360, 78, 24, C565(0xe8, 0xee, 0xf5));
-    gfx->fillCircle(370, 72, 22, lerp565(top, bot, 78, HORIZON));  // creciente
+    // por debajo del nombre y el nivel, que no los tape
+    gfx->fillCircle(360, 134, 24, C565(0xe8, 0xee, 0xf5));
+    gfx->fillCircle(370, 128, 22, lerp565(top, bot, 134, HORIZON));  // creciente
     for (auto &st : STARS) gfx->fillRect(st[0], st[1], 4, 4, UI_WHITE);
   } else if (h < 18) {
-    gfx->fillCircle(360, 84, 26, h < 8 ? C565(0xff, 0xd9, 0x8a) : C565(0xff, 0xe7, 0x9f));
+    gfx->fillCircle(360, 138, 26, h < 8 ? C565(0xff, 0xd9, 0x8a) : C565(0xff, 0xe7, 0x9f));
     drawClouds(now, C565(0xff, 0xff, 0xff));
   } else {
     gfx->fillCircle(233, HORIZON - 6, 34, C565(0xff, 0xf1, 0xc8));  // sol poniente
@@ -2377,6 +2378,8 @@ void catchBanner(const char *s, uint16_t bg) {
   gfx->setTextColor(UI_INK);
 }
 
+static const uint16_t ZONE_GROUND[ZONE_COUNT] = { C565(0x4f, 0x9a, 0x4a), C565(0xec, 0xd5, 0x93), C565(0x54, 0x4b, 0x63), C565(0x25, 0x28, 0x3a), C565(0x79, 0xbd, 0x4f) };
+
 void renderCatch() {
   uint32_t now = millis();
   drawGameScene();
@@ -2451,7 +2454,7 @@ void renderBattle() {
     uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
     if (sceneHour() < 6 || sceneHour() >= 20) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
     if (zoneBg) {
-      soil = C565(0x10, 0x18, 0x20);  // sombra del rival sobre el escenario
+      soil = ZONE_GROUND[bZone];  // el rival pisa el suelo de su zona
     } else {
       gfx->fillRect(0, 232, 466, BTL_BAND_Y - 232, soil);
     }
@@ -4570,7 +4573,7 @@ void renderZones() {
       setCur(cx - textW(T(ZONE_NAME[z]), 2) / 2, y);
       printT(T(ZONE_NAME[z]));
       snprintf(b, sizeof(b), "%d/%d", got, all);
-      gfx->setTextColor(got == all ? UI_BAR_WARN : got ? ZONE_COLOR[z] : UI_TRACK);
+      gfx->setTextColor(got == all ? UI_BAR_WARN : got ? ZONE_COLOR[z] : C565(0x6b, 0x6a, 0x60));
       setCur(cx - textW(b, 2) / 2, y + 18);
       printT(b);
     }

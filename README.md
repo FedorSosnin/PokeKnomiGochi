@@ -12,6 +12,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 | **Catch what you beat** | **Fill the Pokédex** | **Read about what you've caught** |
 | ![Games menu](docs/images/games.png) | ![PokeRun](docs/images/pokerun.png) | ![Who's That Pokémon?](docs/images/quiz.png) |
 | **Play mini games** | **PokeRun** | **Who's That Pokémon?** |
+| ![Five zones to hunt in](docs/images/zones.png) | ![What's missing in a zone](docs/images/zone.png) | ![A battle in the Forest](docs/images/zone-battle.png) |
+| **Choose where to hunt** | **See what's missing** | **Battle in that zone** |
 | ![The answer revealed](docs/images/quiz-reveal.png) | ![Tilt Catch](docs/images/tilt-catch.png) | ![A daily visitor](docs/images/visitor.png) |
 | **Guess the silhouette** | **Tilt Catch** | **A visitor drops by each day** |
 
