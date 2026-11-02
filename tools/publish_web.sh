@@ -23,6 +23,7 @@ mkdir -p $SITE/images  # the README's pictures
 for i in web-desktop web-phone home battle catch zones pokedex games buddy buddy-menu press; do
   cp docs/images/$i.png $SITE/images/
 done
+cp docs/images/knomi-in-hand.jpg $SITE/images/
 touch $SITE/.nojekyll
 $GIT -C $SITE add -A
 if $GIT -C $SITE diff --cached --quiet; then echo "nothing new to publish"; exit 0; fi

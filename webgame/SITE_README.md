@@ -38,9 +38,21 @@ Your Pokémon is saved in this browser automatically. Clearing the browser's dat
 
 Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle or trade Pokédex entries. You meet players of the browser version, the [Mac app](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
 
-## Also on a Knomi and a Mac
+## Want a real one?
 
-PokeWebGochi is the browser version of [**PokeKnomiGochi**](https://github.com/FedorSosnin/PokeKnomiGochi), the same game on the BIGTREETECH Knomi V2, a little round screen made for 3D printers, and as **PokeMacGochi**, a round window on your Mac desktop.
+<p align="center"><img src="images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a BTT Knomi V2 in a 3D-printed Poké Ball case" width="420"></p>
+
+The same game runs on the **BIGTREETECH Knomi V2**, a little round touchscreen made for 3D printers. Put it in a 3D-printed Poké Ball case and you have a pocket tamagotchi that tilts, buzzes and meets the browser and Mac players as buddies.
+
+1. **Get a Knomi V2:** [BIGTREETECH Knomi V2](https://www.awin1.com/pclick.php?p=43148197656&a=2034499&m=95665). This is an affiliate link from [deals.3dprintsos.com](https://deals.3dprintsos.com): buying through it supports this project at no extra cost to you.
+2. **Install the game** from your browser with the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/) (Chrome or Edge, a USB-C data cable). After that it updates itself over Wi-Fi.
+3. **Print the case:** download [`PokeKnomiGochi-case.3mf`](https://github.com/FedorSosnin/PokeKnomiGochi/raw/main/print/PokeKnomiGochi-case.3mf), ready to print in red, white and black. It's a remix of [Knomi V2 Creality K1 wall holder / table stand](https://www.printables.com/model/850244-knomi-v2-creality-k1-wall-holder-table-stand) by [Nastra](https://www.printables.com/@Nastra_283431), with a new button and rounded back, shared under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): free to print and remix with credit, not to sell.
+
+More in the [PokeKnomiGochi README](https://github.com/FedorSosnin/PokeKnomiGochi#3d-printed-case).
+
+## Also on a Mac
+
+**PokeMacGochi** is the same game as a small round window on your Mac desktop: [download it](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest). Everything starts from [**PokeKnomiGochi**](https://github.com/FedorSosnin/PokeKnomiGochi).
 
 ## Credits
 

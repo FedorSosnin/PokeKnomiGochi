@@ -200,7 +200,7 @@ The code still supports the original Waveshare board that TamaPoke was made for.
 - **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser.
 - **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.
 - **Controls:** tap, hold and swipe the screen. On a phone, tilt it to aim (iPhones ask permission once). On a computer, the left and right arrows tilt and Space is the Knomi's button.
-- **Size:** Small, Medium or Large, like the Mac app. On a small screen it shrinks to fit.
+- **Size:** Small (the default), Medium or Large, like the Mac app. On a small screen it shrinks to fit.
 - **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and PokeMacGochi use it too, so all three meet each other.
 - **Updates:** it updates itself: reload to get the newest version, and a tab left open says when there is one.
 
