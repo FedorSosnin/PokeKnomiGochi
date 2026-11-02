@@ -1,0 +1,16 @@
+# The buddy relay (src/index.js) on Cloudflare Workers, free plan. Deploy: cd relay && wrangler deploy
+name = "pokeknomigochi-relay"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "Lobby"
+
+# SQLite-backed Durable Objects are the ones the free plan includes
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Lobby"]
+
+[observability]
+enabled = false  # nothing about players is logged

@@ -34,6 +34,65 @@ static NSString *const kPrefToldVersion = @"updateToldVersion";
 static NSString *gNewVersion = nil;  // newer than this app, once a check found one
 static NSURL *gNewURL = nil;         // its DMG (or the release page)
 
+// ---- the buddy relay (relay/): Knomis and Macs meet on the Wi-Fi by themselves; the relay adds
+// the browsers, which can't. One WebSocket, retried with a growing pause when it drops. ----
+static NSURLSessionWebSocketTask *gRelay = nil;
+static int gRelayTries = 0;
+static void relaySend(const uint8_t *data, int len) {
+  NSURLSessionWebSocketMessage *m = [[NSURLSessionWebSocketMessage alloc] initWithData:[NSData dataWithBytes:data length:len]];
+  [gRelay sendMessage:m completionHandler:^(NSError *e) {}];
+}
+static void relayConnect(void);
+static void relayDropped(NSURLSessionWebSocketTask *task) {
+  if (task != gRelay) return;
+  gRelay = nil;
+  hostRelayConnected(NULL);
+  double wait = MIN(60.0, 2.0 * (1 << MIN(gRelayTries++, 5)));
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(wait * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ relayConnect(); });
+}
+static void relayReceive(NSURLSessionWebSocketTask *task) {
+  [task receiveMessageWithCompletionHandler:^(NSURLSessionWebSocketMessage *m, NSError *err) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (task != gRelay) return;
+      if (err || !m) { relayDropped(task); return; }
+      if (m.type == NSURLSessionWebSocketMessageTypeString) {  // {"n": others}: it also says we are in
+        NSDictionary *j = [NSJSONSerialization JSONObjectWithData:[m.string dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+        gRelayTries = 0;
+        hostRelayConnected(relaySend);
+        if ([j isKindOfClass:NSDictionary.class]) hostRelayPeers([j[@"n"] intValue]);
+      } else {
+        hostRelayReceived((const uint8_t *)m.data.bytes, (int)m.data.length);
+      }
+      relayReceive(task);
+    });
+  }];
+}
+static void relayConnect(void) {
+  static bool pinging = false;
+  if (!pinging) {  // keeps a quiet connection open; the relay answers "pong" without waking up
+    pinging = true;
+    NSTimer *t = [NSTimer timerWithTimeInterval:45 repeats:YES block:^(NSTimer *timer) {
+      [gRelay sendMessage:[[NSURLSessionWebSocketMessage alloc] initWithString:@"ping"] completionHandler:^(NSError *e) {}];
+    }];
+    [NSRunLoop.mainRunLoop addTimer:t forMode:NSRunLoopCommonModes];
+  }
+  if (gRelay) return;
+  // the home's shared IPv4: a Mac connecting over IPv6 would otherwise not meet the Knomi on its Wi-Fi
+  NSURLRequest *v4req = [NSURLRequest requestWithURL:[NSURL URLWithString:@HOST_RELAY_V4_URL] cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:8];
+  [[NSURLSession.sharedSession dataTaskWithRequest:v4req completionHandler:^(NSData *d, NSURLResponse *r, NSError *e) {
+    NSString *v4 = d ? [[NSString alloc] initWithData:d encoding:NSUTF8StringEncoding] : @"";
+    v4 = [v4 stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    bool ok = [v4 rangeOfString:@"^[0-9]{1,3}(\\.[0-9]{1,3}){3}$" options:NSRegularExpressionSearch].location != NSNotFound;
+    NSString *url = ok ? [NSString stringWithFormat:@"%s?v4=%@", HOST_RELAY_URL, v4] : @HOST_RELAY_URL;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (gRelay) return;
+      gRelay = [NSURLSession.sharedSession webSocketTaskWithURL:[NSURL URLWithString:url]];
+      [gRelay resume];
+      relayReceive(gRelay);
+    });
+  }] resume];
+}
+
 static bool gConsole = false;  // --console: launched for testing
 static bool gOwnSave = true;   // false with POKEMACGOCHI_SAVE_DIR: another save than the user's
 static char **gArgv;
@@ -494,6 +553,10 @@ static NSRect initialFrame(bool ownSave) {
   [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
   // starting the audio device can take seconds: don't stall the game
   dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{ startAudio(); });
+  // the relay: the real app always; test copies only when asked (POKEMACGOCHI_RELAY=1), so they don't
+  // turn up as buddies on everyone's devices at home
+  const char *relayEnv = getenv("POKEMACGOCHI_RELAY");
+  if (relayEnv ? atoi(relayEnv) != 0 : gOwnSave) relayConnect();
   if (gOwnSave && !gConsole) {  // test copies never nag
     [self performSelector:@selector(checkForUpdates:) withObject:nil afterDelay:10];
     NSTimer *daily = [NSTimer timerWithTimeInterval:UPDATE_EVERY_S target:self selector:@selector(dailyUpdateCheck:) userInfo:nil repeats:YES];

@@ -127,6 +127,8 @@ static uint32_t gPointerHoldUntil = 0;
 static bool gButtonDown = false;
 static bool gTiltLeft = false, gTiltRight = false;
 static float gTilt = 0;
+static float gTiltSensor = 0;
+static bool gTiltSensorOn = false;  // a real tilt sensor (a phone in the browser) instead of the keys
 
 // the game polls the touch panel every 20 ms and resolves on release: a touch seen in two polls is not lost
 #define POINTER_MIN_HOLD_MS 45
@@ -155,6 +157,10 @@ void hostPointer(int x, int y, bool down) {
 }
 void hostPointerHover(void) { hostGameWake(); }
 void hostTiltKeys(bool left, bool right) { gTiltLeft = left; gTiltRight = right; }
+void hostTiltSensor(float x) {
+  gTiltSensorOn = x == x;  // NaN: back to the keys
+  if (gTiltSensorOn) gTiltSensor = x < -1 ? -1 : x > 1 ? 1 : x;
+}
 void hostButton(bool down) { gButtonDown = down; }
 
 bool hostPointerRead(int16_t *x, int16_t *y) {
@@ -164,6 +170,10 @@ bool hostPointerRead(int16_t *x, int16_t *y) {
 }
 
 static void stepTilt(uint32_t dtMs) {
+  if (gTiltSensorOn) {  // a sensor is already smooth: no ramp
+    gTilt = gTiltSensor;
+    return;
+  }
   float target = (gTiltRight ? 1.0f : 0.0f) - (gTiltLeft ? 1.0f : 0.0f);
   float span = target == 0 ? TILT_RELEASE_S : TILT_RAMP_S;
   float step = dtMs / 1000.0f / span;

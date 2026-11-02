@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>PokeWebGochi</title>
+<style>
+  :root { --fit: min(92vw, calc(100vh - 110px), 720px); --side: var(--fit); --ring: calc(var(--side) * 0.04); }
+  html, body { margin: 0; height: 100%; background: #000; color: #9a9a9a; overflow: hidden;
+    font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  /* the Knomi screen in a Poke Ball ring, centered both ways */
+  #ball { position: absolute; left: 50%; top: 50%; width: var(--side); height: var(--side);
+    transform: translate(-50%, -50%); border-radius: 50%; box-sizing: border-box;
+    background: linear-gradient(#de2121 0 calc(50% - var(--ring) / 2), #000 0 calc(50% + var(--ring) / 2), #fff 0); }
+  #screen { position: absolute; inset: var(--ring); width: calc(100% - 2 * var(--ring));
+    height: calc(100% - 2 * var(--ring)); border-radius: 50%; background: #000;
+    image-rendering: pixelated; touch-action: none; cursor: pointer; }
+  #bar { position: absolute; left: 0; right: 0; bottom: max(10px, env(safe-area-inset-bottom));
+    display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 0 16px; }
+  #bar button, #bar label { background: none; border: 1px solid #333; color: #9a9a9a; border-radius: 14px;
+    padding: 4px 12px; font: inherit; cursor: pointer; }
+  #bar button:hover, #bar label:hover { border-color: #666; color: #ddd; }
+  #hint { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 0; right: 0; text-align: center; }
+  #upd { position: absolute; top: max(34px, calc(env(safe-area-inset-top) + 24px)); left: 50%; transform: translateX(-50%);
+    display: none; background: #1e7d3c; color: #fff; border: 0; border-radius: 14px; padding: 6px 14px; font: inherit; cursor: pointer; }
+  #msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #ddd; }
+  @media (max-height: 520px) { #hint { display: none; } }
+</style>
+</head>
+<body>
+<div id="hint">Tap, hold and swipe the screen · ← → tilt · Space: wild battle</div>
+<div id="ball"><canvas id="screen" width="466" height="466"></canvas></div>
+<div id="msg">Loading…</div>
+<button id="upd" type="button">New version · Reload</button>
+<div id="bar">
+  <button id="size" type="button">Size: Fit</button>
+  <button id="sound" type="button">Sound on</button>
+  <button id="export" type="button">Export save</button>
+  <label>Import save<input id="import" type="file" accept=".prefs,.txt" hidden></label>
+  <a href="https://github.com/FedorSosnin/PokeKnomiGochi" style="color:#666">About</a>
+</div>
+<script>
+'use strict';
+const SIDE = 466, SAVE_FILE = '/save/tamapoke.prefs';
+const canvas = document.getElementById('screen');
+const ctx = canvas.getContext('2d');
+const img = ctx.createImageData(SIDE, SIDE);
+const msg = document.getElementById('msg');
+let skipSave = false;  // an import replaces the save: the running game must not write over it
+
+const BUILD = '__BUILD__';  // stamped by build.sh: every file of one version is fetched together
+var Module = {
+  noInitialRun: false,
+  locateFile: (path) => path + '?v=' + BUILD,
+  print: (t) => console.log(t),
+  printErr: (t) => console.warn(t),
+  // erased the save in the game, or imported one: save the files and start a fresh page
+  saveAndReload() { sync(() => location.reload()); },
+  onRuntimeInitialized() { claimTab(false); },
+};
+
+// ---- one tab at a time: they would share one save and write over each other ----
+const tabs = 'BroadcastChannel' in self ? new BroadcastChannel('pokewebgochi') : null;
+let running = false;
+function claimTab(steal) {
+  if (!navigator.locks) { startGame(); return; }  // very old browsers: no lock to take
+  navigator.locks.request('pokewebgochi-save', steal ? { steal: true } : { ifAvailable: true }, (lock) => {
+    if (!lock) { showElsewhere(); return; }
+    startGame();
+    return new Promise(() => {});  // held until this tab closes
+  }).catch((e) => {               // another tab took over with "Play here"
+    if (e && e.name !== 'AbortError') console.error(e);
+    stopGame();
+  });
+}
+function showElsewhere() {
+  msg.innerHTML = 'PokeWebGochi is open in another tab.<br><br><button id="here" type="button">Play here</button>';
+  document.getElementById('here').onclick = () => {
+    msg.textContent = 'Loading…';
+    if (tabs) tabs.postMessage('save');  // the other one saves first, then lets go
+    setTimeout(() => claimTab(true), 400);
+  };
+}
+if (tabs) tabs.onmessage = (e) => { if (e.data === 'save' && running) { Module._webSave(); sync(); } };
+function stopGame() {
+  running = false;
+  if (relay) relay.close();
+  skipSave = true;
+  msg.textContent = 'PokeWebGochi moved to another tab.';
+  if (!msg.isConnected) document.body.appendChild(msg);
+}
+function startGame() {
+  if (running) return;
+  if (!FS.analyzePath('/save').exists) {
+    FS.mkdir('/save');
+    FS.mount(Module.IDBFS || IDBFS, {}, "/save");
+  }
+  FS.syncfs(true, (err) => {  // the saved files, back from IndexedDB
+    if (err) console.warn('save not read', err);
+    running = true;
+    skipSave = false;
+    msg.remove();
+    Module._webStart();
+    requestAnimationFrame(frame);
+    connectRelay();
+    setInterval(() => { if (running) sync(); }, 5000);  // the game writes its files on its own; this keeps IndexedDB current
+    updateSoundButton();
+  });
+}
+
+function sync(done) {
+  FS.syncfs(false, (err) => { if (err) console.warn('save not stored', err); if (done) done(); });
+}
+
+// a hidden tab gets no animation frames: it keeps ticking once a second instead, so buddies still
+// get answers, like a Knomi with its screen off
+setInterval(() => { if (running && document.hidden) Module._webFrame(); }, 1000);
+
+function frame() {
+  if (!running) return;
+  const p = Module._webFrame();
+  if (p) {
+    img.data.set(HEAPU8.subarray(p, p + SIDE * SIDE * 4));
+    ctx.putImageData(img, 0, 0);
+  }
+  requestAnimationFrame(frame);
+}
+// a hidden tab gets no animation frames: the game keeps its time from the clock and
+// catches up when it comes back, like a Knomi with the screen off
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && !skipSave) { Module._webSave(); sync(); }
+});
+addEventListener('pagehide', () => { if (!skipSave) { Module._webSave(); sync(); } });
+
+// ---- touch and mouse: a finger on the 466 x 466 canvas ----
+function point(e) {
+  const r = canvas.getBoundingClientRect();
+  return [Math.round((e.clientX - r.left) * SIDE / r.width), Math.round((e.clientY - r.top) * SIDE / r.height)];
+}
+let down = false;
+canvas.addEventListener('pointerdown', (e) => {
+  startAudio();
+  if (e.pointerType === 'touch') startTilt();
+  canvas.setPointerCapture(e.pointerId);
+  down = true;
+  const [x, y] = point(e);
+  Module._webPointer(x, y, 1);
+  e.preventDefault();
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (down) { const [x, y] = point(e); Module._webPointer(x, y, 1); } else Module._webHover();
+});
+for (const ev of ['pointerup', 'pointercancel']) {
+  canvas.addEventListener(ev, (e) => {
+    if (!down) return;
+    down = false;
+    const [x, y] = point(e);
+    Module._webPointer(x, y, 0);
+  });
+}
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// ---- keys: arrows tilt, Space is the Knomi's button ----
+const keys = { left: false, right: false };
+function key(e, isDown) {
+  if (e.key === 'ArrowLeft') keys.left = isDown;
+  else if (e.key === 'ArrowRight') keys.right = isDown;
+  else if (e.key === ' ') { if (!e.repeat) Module._webButton(isDown ? 1 : 0); }
+  else return;
+  startAudio();
+  Module._webTilt(keys.left ? 1 : 0, keys.right ? 1 : 0);
+  e.preventDefault();
+}
+addEventListener('keydown', (e) => key(e, true));
+addEventListener('keyup', (e) => key(e, false));
+
+// ---- sound: the game's 16 kHz mono, pulled by the browser ----
+let audio = null;
+function startAudio() {
+  if (audio) { if (audio.state === 'suspended') audio.resume(); return; }
+  const rate = Module._webAudioRate();
+  try { audio = new AudioContext({ sampleRate: rate }); } catch (e) { audio = new AudioContext(); }
+  const n = 1024, step = rate / audio.sampleRate;
+  const buf = Module._malloc(n * 2);
+  const node = audio.createScriptProcessor(n, 0, 1);
+  let src = new Int16Array(0), pos = 0;
+  node.onaudioprocess = (ev) => {
+    const out = ev.outputBuffer.getChannelData(0);
+    for (let i = 0; i < out.length; i++) {
+      if (pos >= src.length) {  // the next block from the game
+        Module._webAudio(buf, n);
+        src = new Int16Array(HEAP16.buffer, buf, n).slice();
+        pos = 0;
+      }
+      out[i] = src[Math.floor(pos)] / 32768;
+      pos += step;
+    }
+  };
+  node.connect(audio.destination);
+}
+
+// ---- sound on/off: the same setting as the SND switch on the clock screen ----
+const soundBtn = document.getElementById('sound');
+function updateSoundButton() { soundBtn.textContent = Module._webSoundOn() ? 'Mute' : 'Unmute'; }
+soundBtn.addEventListener('click', () => {
+  Module._webSetSound(Module._webSoundOn() ? 0 : 1);
+  updateSoundButton();
+  startAudio();
+});
+
+// ---- tilt: a phone's own tilt, like the Knomi's (iPhones ask permission on the first tap) ----
+let tiltAsked = false;
+function startTilt() {
+  if (tiltAsked || !('DeviceOrientationEvent' in window)) return;
+  tiltAsked = true;
+  const go = () => addEventListener('deviceorientation', onTilt);
+  if (typeof DeviceOrientationEvent.requestPermission === 'function')
+    DeviceOrientationEvent.requestPermission().then((s) => { if (s === 'granted') go(); }).catch(() => {});
+  else go();
+}
+function onTilt(e) {
+  if (e.gamma == null) return;
+  const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  // left-right tilt as the player sees it, whichever way the phone is turned
+  const t = angle === 90 ? e.beta : angle === 270 || angle === -90 ? -e.beta : angle === 180 ? -e.gamma : e.gamma;
+  Module._webTiltSensor(Math.max(-1, Math.min(1, t / 30)));
+}
+
+// ---- buddies: browsers can't use the Knomi's local Wi-Fi messages, so they meet through the relay ----
+let relay = null, relayIn = 0, relayTries = 0;
+Module.relaySend = (bytes) => { if (relay && relay.readyState === 1) relay.send(bytes); };
+async function connectRelay() {
+  if (!running || relay) return;
+  let v4 = '';  // the home's shared address: a Knomi on the same Wi-Fi shows the relay that one
+  try { v4 = (await (await fetch(UTF8ToString(Module._webRelayV4Url()), { cache: 'no-store' })).text()).trim(); } catch (e) {}
+  if (!running) return;
+  const ws = new WebSocket(UTF8ToString(Module._webRelayUrl()) + (/^\d{1,3}(\.\d{1,3}){3}$/.test(v4) ? '?v4=' + v4 : ''));
+  ws.binaryType = 'arraybuffer';
+  relay = ws;
+  ws.onopen = () => { relayTries = 0; Module._webRelayUp(1); };
+  const ping = setInterval(() => { if (ws.readyState === 1) ws.send('ping'); }, 45000);  // keeps it open; the relay answers "pong" for free
+  ws.onmessage = (e) => {
+    if (typeof e.data === 'string') {  // {"n": others in the group}
+      try { Module._webRelayPeers(JSON.parse(e.data).n | 0); } catch (x) {}
+      return;
+    }
+    const b = new Uint8Array(e.data);
+    if (b.length !== 65) return;
+    if (!relayIn) relayIn = Module._malloc(65);
+    HEAPU8.set(b, relayIn);
+    Module._webRelayIn(relayIn, 65);
+  };
+  ws.onclose = () => {
+    clearInterval(ping);
+    if (relay !== ws) return;
+    relay = null;
+    Module._webRelayUp(0);
+    if (running) setTimeout(connectRelay, Math.min(60000, 2000 * 2 ** relayTries++));  // back off, then try again
+  };
+}
+
+// ---- size: fit the screen, or a fixed size like the Mac app ----
+const SIZES = [['Fit', null], ['Small', 260], ['Medium', 380], ['Large', 520]];
+let sizeAt = 0;
+try { sizeAt = Math.max(0, SIZES.findIndex((s) => s[0] === localStorage.getItem('pwg-size'))); } catch (e) {}
+const sizeBtn = document.getElementById('size');
+function applySize() {
+  const [name, px] = SIZES[sizeAt];
+  document.documentElement.style.setProperty('--side', px ? `min(var(--fit), ${px}px)` : 'var(--fit)');
+  sizeBtn.textContent = 'Size: ' + name;
+  try { localStorage.setItem('pwg-size', name); } catch (e) {}
+}
+sizeBtn.addEventListener('click', () => { sizeAt = (sizeAt + 1) % SIZES.length; applySize(); });
+applySize();
+
+// ---- a tab left open: offers the new version once one is published ----
+const updBtn = document.getElementById('upd');
+updBtn.addEventListener('click', () => { if (running) Module._webSave(); sync(() => location.reload()); });
+setInterval(async () => {
+  try {
+    const v = await (await fetch('version.json', { cache: 'no-store' })).json();
+    if (v.build && v.build !== BUILD) updBtn.style.display = 'block';
+  } catch (e) {}
+}, 60 * 60 * 1000);
+
+// ---- export / import the save file ----
+document.getElementById('export').addEventListener('click', () => {
+  Module._webSave();
+  let data;
+  try { data = FS.readFile(SAVE_FILE); } catch (e) { alert('There is no save yet: pick your first Pokémon.'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data], { type: 'text/plain' }));
+  a.download = 'pokewebgochi-' + new Date().toISOString().slice(0, 10) + '.prefs';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+document.getElementById('import').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const text = await file.text();
+  // a save is "key hex" lines; anything else is turned away before it replaces anything
+  const lines = text.trim().split('\n');
+  if (!lines.length || !lines.every((l) => /^[A-Za-z0-9_]{1,31} ([0-9a-f]+|-)$/.test(l.trim()))) {
+    alert('That file is not a PokeWebGochi save.');
+    return;
+  }
+  if (!confirm('Replace the Pokémon on this page with the one in ' + file.name + '?')) return;
+  skipSave = true;
+  FS.writeFile(SAVE_FILE, text);
+  sync(() => location.reload());
+});
+</script>
+<script src="pokewebgochi.js?v=__BUILD__"></script>
+</body>
+</html>

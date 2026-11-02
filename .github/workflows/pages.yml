@@ -1,5 +1,5 @@
-# Publishes the web installers to GitHub Pages: the Knomi one at the root (the README's link,
-# and where Knomis download Wi-Fi updates from), the Waveshare one under /waveshare/.
+# Publishes to GitHub Pages: the Knomi installer at the root (the README's link, and where Knomis
+# download Wi-Fi updates from), the Waveshare one under /waveshare/, and PokeWebGochi under /play/.
 name: Pages
 
 on:
@@ -30,6 +30,7 @@ jobs:
           mkdir -p site/waveshare
           cp -R web/knomi/. site/
           cp -R web/index.html web/manifest.json web/firmware web/sprites.pak site/waveshare/
+          cp -R web/play site/play  # PokeWebGochi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

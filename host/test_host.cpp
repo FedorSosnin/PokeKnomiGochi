@@ -309,6 +309,49 @@ static void testBuddy() {
   removeDir(dir);
 }
 
+// the relay: what a front end hands over reaches the game, and nothing goes out while alone
+static std::vector<std::vector<uint8_t> > gRelayOut;
+static void relayOut(const uint8_t *d, int n) { gRelayOut.push_back(std::vector<uint8_t>(d, d + n)); }
+
+static void testRelay() {
+  hostBuddyNetConfig(false, 0, nullptr, 0);  // UDP off: only the relay
+  CHECK(!buddyNetUp());
+  hostRelayConnected(relayOut);
+  CHECK(buddyNetUp());
+  uint32_t me = buddyNetId();
+  BuddyMsg hello;
+  buddyInit(hello, BM_HELLO, buddyNetId(), 0, 0);
+  hello.dex = 25;
+  hello.level = 5;
+  buddyNetSend(hello);
+  CHECK(gRelayOut.empty());  // alone: nothing sent
+  hostRelayPeers(1);
+  buddyNetSend(hello);
+  CHECK(gRelayOut.size() == 1 && gRelayOut[0].size() == 65);
+
+  BuddyMsg in, got;
+  buddyInit(in, BM_HELLO, 0x1234, 0, 0);
+  in.dex = 7;
+  in.level = 9;
+  hostRelayReceived((const uint8_t *)&in, sizeof(in));
+  CHECK(buddyNetPoll(got) && got.from == 0x1234 && got.dex == 7);
+  buddyInit(in, BM_INVITE, 0x1234, me + 2, 3);  // for someone else: not ours
+  in.kind = BK_BATTLE;
+  hostRelayReceived((const uint8_t *)&in, sizeof(in));
+  hostRelayReceived((const uint8_t *)"junk", 4);
+  CHECK(!buddyNetPoll(got));
+  buddyInit(in, BM_HELLO, me, 0, 0);  // our own echo
+  in.dex = 1;
+  in.level = 1;
+  hostRelayReceived((const uint8_t *)&in, sizeof(in));
+  CHECK(!buddyNetPoll(got));
+
+  hostRelayConnected(nullptr);  // dropped: off again, and nothing more goes out
+  CHECK(!buddyNetUp());
+  buddyNetSend(hello);
+  CHECK(gRelayOut.size() == 1);
+}
+
 static bool anySound(int frames) {
   std::vector<int16_t> pcm((size_t)frames);
   hostAudioRender(pcm.data(), frames);
@@ -412,6 +455,7 @@ int main() {
   testU8g2();
   testPrefs();
   testBuddy();
+  testRelay();
   testAudio();
   testGame();
   printf("host layer: %d checks, %d failures\n", gChecks, gFails);

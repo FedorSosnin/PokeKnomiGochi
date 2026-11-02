@@ -15,6 +15,11 @@
 #define BUDDY_RESEND_MS 400UL     // UDP can lose packets: repeats until there is a reply
 #define BUDDY_REPLY_MS 20000UL    // reply to an invitation or move, before giving up
 #define BUDDY_MAX_STAT 1000
+// The relay (relay/ on Cloudflare): lets browsers, which can't use these Wi-Fi messages, meet
+// everyone else. The same messages travel over one WebSocket; see relay/src/index.js.
+#define BUDDY_RELAY_HOST "pokeknomigochi-relay.fedor-dd0.workers.dev"
+#define BUDDY_RELAY_PATH "/ws"
+#define BUDDY_RELAY_PING_MS 45000UL  // keeps a quiet connection open (the relay answers "pong")
 
 enum BuddyType : uint8_t {
   BM_HELLO = 1, BM_INVITE, BM_ACCEPT, BM_DECLINE, BM_FIGHTER, BM_MOVE, BM_OFFER, BM_CONFIRM, BM_LEAVE, BM_END

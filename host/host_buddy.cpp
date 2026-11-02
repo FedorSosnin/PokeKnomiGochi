@@ -1,47 +1,17 @@
 // What buddy_net.cpp is on the Knomi: the same UDP messages on BUDDY_PORT, broadcast until the
-// buddy's address is known, then straight to it. Plain BSD sockets, never blocks.
+// buddy's address is known, then straight to it. Plain BSD sockets, never blocks. Plus the relay
+// (relay/ on Cloudflare): the front end keeps a WebSocket to it and hands the messages over, so
+// browsers, which have no UDP, meet everyone else too. A message may arrive both ways; the game
+// already copes with repeats, since the UDP ones are resent until answered.
 #include "buddy_net.h"
+#include "host.h"
 #include "host_internal.h"
 #include <Preferences.h>
-#include <random>
-
-#if defined(__EMSCRIPTEN__)  // a browser has no UDP: the game sees nobody
-
-uint32_t buddyNetId() { return 1; }
-bool buddyNetUp() { return false; }
-bool buddyNetPoll(BuddyMsg &) { return false; }
-void buddyNetSend(const BuddyMsg &) {}
-void buddyNetSetPeer(uint32_t) {}
-void hostBuddyNetConfig(bool, uint16_t, const char *, uint16_t) {}
-
-#else
-
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <ifaddrs.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #include <Arduino.h>
-#include <vector>
+#include <random>
+#include <string.h>
 
-#define IFACE_REFRESH_MS 5000UL  // Wi-Fi comes and goes: the list of networks is read again this often
-#define BIND_RETRY_MS 5000UL
-
-static bool gEnabled = true, gConfigured = false;
-static uint16_t gListenPort = BUDDY_PORT, gSendPort = BUDDY_PORT;
-static in_addr_t gFixedTarget = 0;  // tests: one address instead of the networks' broadcasts
-
-static int sock = -1;
-static uint32_t bindT = 0, ifaceT = 0;
-static bool bindTried = false, ifaceRead = false;
-static std::vector<in_addr_t> broadcasts, ownAddrs;  // network order
-static uint32_t peerId = 0;
-static in_addr_t peerIp = 0;
+#define RELAY_QUEUE 16
 
 uint32_t buddyNetId() {
   static uint32_t id = 0;
@@ -59,6 +29,77 @@ uint32_t buddyNetId() {
   }
   return id;
 }
+
+// ---- the relay: the front end calls these on the game's thread ----
+static HostRelaySend gRelaySend = nullptr;
+static int gRelayOthers = 0;
+static uint8_t gRelayQ[RELAY_QUEUE][sizeof(BuddyMsg)];
+static int gRelayHead = 0, gRelayCount = 0;
+
+void hostRelayConnected(HostRelaySend send) {
+  gRelaySend = send;
+  if (!send) gRelayOthers = 0;
+}
+void hostRelayPeers(int n) { gRelayOthers = n > 0 ? n : 0; }
+void hostRelayReceived(const uint8_t *data, int len) {
+  if (len != (int)sizeof(BuddyMsg) || gRelayCount == RELAY_QUEUE) return;  // full: dropped, like a lost packet
+  memcpy(gRelayQ[(gRelayHead + gRelayCount++) % RELAY_QUEUE], data, sizeof(BuddyMsg));
+}
+
+static bool relayPoll(BuddyMsg &out) {
+  while (gRelayCount) {
+    const uint8_t *b = gRelayQ[gRelayHead];
+    gRelayHead = (gRelayHead + 1) % RELAY_QUEUE;
+    gRelayCount--;
+    if (!buddyParse(b, sizeof(BuddyMsg), out) || out.from == buddyNetId()) continue;
+    if (out.to != 0 && out.to != buddyNetId()) continue;
+    return true;
+  }
+  return false;
+}
+
+static void relaySend(const BuddyMsg &m) {
+  // alone on the relay: nobody to tell. Otherwise every greeting, as on the Wi-Fi: with fewer, one
+  // late greeting is enough for a buddy to count as gone (BUDDY_TIMEOUT_MS)
+  if (!gRelaySend || !gRelayOthers) return;
+  gRelaySend((const uint8_t *)&m, sizeof(m));
+}
+
+#if defined(__EMSCRIPTEN__)  // a browser has no UDP: only the relay
+
+static bool udpUp() { return false; }
+static bool udpPoll(BuddyMsg &) { return false; }
+static void udpSend(const BuddyMsg &) {}
+static void udpSetPeer(uint32_t) {}
+void hostBuddyNetConfig(bool, uint16_t, const char *, uint16_t) {}
+
+#else
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <vector>
+
+#define IFACE_REFRESH_MS 5000UL  // Wi-Fi comes and goes: the list of networks is read again this often
+#define BIND_RETRY_MS 5000UL
+
+static bool gEnabled = true, gConfigured = false;
+static uint16_t gListenPort = BUDDY_PORT, gSendPort = BUDDY_PORT;
+static in_addr_t gFixedTarget = 0;  // tests: one address instead of the networks' broadcasts
+
+static int sock = -1;
+static uint32_t bindT = 0, ifaceT = 0;
+static bool bindTried = false, ifaceRead = false;
+static std::vector<in_addr_t> broadcasts, ownAddrs;  // network order
+static uint32_t peerId = 0;
+static in_addr_t peerIp = 0;
 
 static void closeSock() {
   if (sock >= 0) close(sock);
@@ -129,7 +170,7 @@ static void readInterfaces() {
   freeifaddrs(list);
 }
 
-bool buddyNetUp() {
+static bool udpUp() {
   if (!gConfigured) readEnv();
   if (!gEnabled) return false;
   uint32_t now = millis();
@@ -149,7 +190,7 @@ bool buddyNetUp() {
   return up && sock >= 0;
 }
 
-bool buddyNetPoll(BuddyMsg &out) {
+static bool udpPoll(BuddyMsg &out) {
   if (sock < 0) return false;
   // doesn't get stuck on garbage: at most a few packets per call
   for (int i = 0; i < 4; i++) {
@@ -187,7 +228,7 @@ static void sendTo(const BuddyMsg &m, in_addr_t ip) {
   }
 }
 
-void buddyNetSend(const BuddyMsg &m) {
+static void udpSend(const BuddyMsg &m) {
   if (sock < 0) return;
   // A buddy on this same machine shares the port, and a direct packet would reach only one of the
   // two sockets (maybe our own): it keeps getting broadcasts, which reach both.
@@ -198,9 +239,24 @@ void buddyNetSend(const BuddyMsg &m) {
   for (in_addr_t b : broadcasts) sendTo(m, b);
 }
 
-void buddyNetSetPeer(uint32_t id) {
+static void udpSetPeer(uint32_t id) {
   if (id != peerId) peerIp = 0;
   peerId = id;
 }
 
 #endif
+
+// ---- what the game sees: both ways as one ----
+bool buddyNetUp() {
+  bool udp = udpUp();
+  return udp || gRelaySend;
+}
+
+bool buddyNetPoll(BuddyMsg &out) { return udpPoll(out) || relayPoll(out); }
+
+void buddyNetSend(const BuddyMsg &m) {
+  udpSend(m);
+  relaySend(m);
+}
+
+void buddyNetSetPeer(uint32_t id) { udpSetPeer(id); }

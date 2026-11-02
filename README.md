@@ -99,7 +99,7 @@ If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over 
 - **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, each of you gets the other's entry and keeps your own.
 
-To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis and the Mac version, PokeMacGochi, in any mix.
+To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac version (PokeMacGochi) and the browser version (PokeWebGochi), in any mix.
 
 ### Daily visitor
 
@@ -185,6 +185,19 @@ Game rules run on your computer without a board:
 ```
 
 The code still supports the original Waveshare board that TamaPoke was made for. Its guide is in [`docs/TAMAPOKE-README.md`](docs/TAMAPOKE-README.md), and that document also explains the game's numbers in depth.
+
+## PokeWebGochi (browser)
+
+**[Play in your browser](https://fedorsosnin.github.io/PokeKnomiGochi/play/)** on a computer, phone or tablet: the same game, with the Knomi screen centered on a black page. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.
+
+- **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser.
+- **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.
+- **Controls:** tap, hold and swipe the screen. On a phone, tilt it to aim (iPhones ask permission once). On a computer, the left and right arrows tilt and Space is the Knomi's button.
+- **Size:** Fit fills the screen; Small, Medium and Large are fixed, like the Mac app.
+- **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and PokeMacGochi use it too, so all three meet each other.
+- **Updates:** it updates itself: reload to get the newest version, and a tab left open says when there is one.
+
+To build it yourself, run `webgame/build.sh` (needs [Emscripten](https://emscripten.org)). The relay's code is in [relay/](relay/).
 
 ## PokeMacGochi (Mac)
 
