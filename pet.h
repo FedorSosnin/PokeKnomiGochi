@@ -85,7 +85,7 @@ public:
   uint16_t lastMilestone = 0;  // hito de racha ya celebrado
   uint16_t gameHi = 0;     // record del minijuego (del jugador)
   uint16_t runHi = 0;      // record de PokeRun, en segundos
-  uint8_t dungeonHi = 0;   // planta mas honda de Dungeon Dive
+  uint8_t dungeonHi = 0;   // planta mas honda de PokeDungeon
   uint16_t battleWins = 0; // combates ganados por este individuo
   uint32_t visitorDay = 0;  // ultimo dia con visita
   uint8_t movesSeen = 1;   // ataques ya anunciados (para avisar del nuevo una sola vez)

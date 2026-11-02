@@ -9,7 +9,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 ## [Unreleased]
 
 - **Buddies:** other PokeKnomiGochis on the same Wi-Fi show up on your screen, and you can battle them or trade Pokédex entries. The Knomi stays connected to Wi-Fi to make this work.
-- **Dungeon Dive:** explore floor after floor with your own Pokémon. Tap to step or fight, find the stairs, and see how deep you get.
+- **PokeDungeon:** explore floor after floor with your own Pokémon. Tap to step or fight, find the stairs, and see how deep you get.
 - **Shiny odds:** the next Pokémon has a 25% shiny chance after a goodbye or release.
 - **Run-away:** the button now asks first, and offers to take care of the Pokémon instead of letting it go.
 - **Next Pokémon:** after a goodbye or release, choose your next Pokémon from your Pokédex. A run-away still gives a random common egg.

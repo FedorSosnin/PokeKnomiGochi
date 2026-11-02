@@ -1,4 +1,4 @@
-// Reglas de Dungeon Dive (dungeon.h).
+// Reglas de PokeDungeon (dungeon.h).
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "shim/Preferences.h"

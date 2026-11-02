@@ -49,7 +49,7 @@ def main():
 
     peer, peer_ip, session = None, None, 0
     invited = False
-    last_hello = 0
+    last_hello = last_invite = 0
     end = time.time() + a.seconds
 
     def send(data, ip=None):
@@ -63,11 +63,10 @@ def main():
         if now - last_hello > 4:
             last_hello = now
             s.sendto(pack(HELLO, me, dex=a.dex, level=a.level, nick=nick, reg=bytes(reg)), ('255.255.255.255', PORT))
-        if a.invite and peer and not invited and now - last_hello < 1:
-            invited = True
-            session = random.getrandbits(31) | 1
-            kind = 1 if a.invite == 'battle' else 2
-            send(pack(INVITE, me, peer, session, kind=kind))
+        if a.invite and peer and not invited and now - last_invite > 0.4:  # como la placa: hasta tener respuesta
+            last_invite = now
+            session = session or random.getrandbits(31) | 1
+            send(pack(INVITE, me, peer, session, kind=1 if a.invite == 'battle' else 2))
             print('-> INVITE', a.invite, flush=True)
         try:
             data, addr = s.recvfrom(128)
@@ -76,7 +75,7 @@ def main():
         if len(data) != struct.calcsize(FMT):
             continue
         f = struct.unpack(FMT, data)
-        mtype, sender, to, sess, kind, ack, turn, move, dex = f[1], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10]
+        mtype, sender, to, sess, kind, ack, turn, move, dex = f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10]
         if sender == me or (to and to != me):
             continue
         if mtype == HELLO:
@@ -85,6 +84,8 @@ def main():
                 print(f'buddy {f[17].split(bytes(1))[0].decode()} #{dex} Lv.{f[11]} at {addr[0]}', flush=True)
             continue
         print(f'<- {NAMES.get(mtype, mtype)} turn={turn} move={move} dex={dex} ack={ack}', flush=True)
+        if mtype in (ACCEPT, DECLINE):
+            invited = True
         if mtype == INVITE:
             session = sess
             send(pack(DECLINE if a.decline else ACCEPT, me, peer, session))

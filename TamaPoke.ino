@@ -3900,7 +3900,7 @@ void eggPickTap(int16_t x, int16_t y) {
 }
 
 // ---------- buddy: otro PokeKnomiGochi en la misma wifi ----------
-#define BUDDY_PILL_Y 104
+#define BUDDY_PILL_Y 116
 #define BUDDY_PILL_H 32
 
 const char *buddyName() { return bPeer.nick[0] ? bPeer.nick : (buddyDexOk(bPeer.dex) ? dexName(bPeer.dex) : "?"); }
@@ -4172,6 +4172,8 @@ void buddyTick(uint32_t now) {
     BuddyMsg m;
     for (int i = 0; i < 8 && buddyNetPoll(m); i++) buddyHandle(m, now);
   }
+  // los toques y los mensajes ya han sellado bsT y trT con millis(): con el now viejo la resta daria la vuelta
+  now = millis();
 
   if (buddyPeerGone(bPeer, now)) bPeer.on = false;
   if (!bPeer.on) {

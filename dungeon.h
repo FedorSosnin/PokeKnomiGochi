@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "battle.h"
 
-// Dungeon Dive: reglas por turnos sin hardware (test/test_dungeon.cpp). El jugador da un paso y
+// PokeDungeon: reglas por turnos sin hardware (test/test_dungeon.cpp). El jugador da un paso y
 // luego actua cada rival. Entrar en una casilla ocupada es atacar con el mejor ataque contra ese
 // rival, con la misma formula que el combate, asi que entrenar a la mascota se nota aqui.
 
