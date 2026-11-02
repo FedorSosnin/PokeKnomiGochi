@@ -59,9 +59,11 @@ enum : uint16_t {
   // the trainer's: kept across every pet raised (trainerMedals)
   MED_SHINY = 1 << 8, MED_DEX10 = 1 << 9, MED_DEX50 = 1 << 10, MED_DEX100 = 1 << 11,
   MED_DEX151 = 1 << 12, MED_LV100 = 1 << 13,
+  MED_BUDDY = 1 << 14, MED_PARTY = 1 << 15,  // a buddy on screen; a party of 5 Pokemon on screen
 };
 #define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer
-#define MED_COUNT 14
+#define MED_COUNT 16
+#define PARTY_SIZE 5  // MED_PARTY: yours and 4 buddies at once
 
 class Pet {
 public:
@@ -95,7 +97,7 @@ public:
   char nick[12] = "";    // nickname (empty = species name)
   // medals: the individual's + cumulative counter across all raisings
   uint16_t medals = 0, totalMedals = 0;
-  uint16_t trainerMedals = 0;  // MED_SHINY..MED_LV100: never reset by a new pet
+  uint16_t trainerMedals = 0;  // MED_SHINY..MED_PARTY: never reset by a new pet
   uint16_t newMedal = 0;   // just earned, to celebrate
   uint16_t lastMilestone = 0;  // streak milestone already celebrated
   uint16_t gameHi = 0;     // minigame record (the player's)
@@ -210,6 +212,7 @@ public:
 
   // streak / bond / medals / name
   void rename(const char *name);
+  void buddiesOnScreen(uint8_t n);  // buddies showing right now: MED_BUDDY, MED_PARTY
   bool hasMedal(uint16_t m) const { return (medals | trainerMedals) & m; }
   bool showMedal() const { return timeLeft(medalUntil) > 0; }
   bool showMilestone() const { return timeLeft(milestoneUntil) > 0; }
@@ -245,6 +248,7 @@ private:
   uint32_t ceremonyUntil = 0;
   uint8_t bondToday = 0;       // daily cap on bond gain
   uint32_t medalUntil = 0;     // medal celebration on screen
+  uint8_t buddyPeak = 0;       // most buddies on screen since boot (the medals keep the record)
   uint32_t milestoneUntil = 0; // streak milestone celebration
 
   uint32_t today() const { return lastSeenEpoch ? lastSeenEpoch / 86400 : 0; }

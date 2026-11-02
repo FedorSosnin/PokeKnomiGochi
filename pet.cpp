@@ -336,6 +336,8 @@ void Pet::checkMedals() {
   if (caught >= 100) trainerMedals |= MED_DEX100;
   if (caught >= 151) trainerMedals |= MED_DEX151;
   if (level() >= 100) trainerMedals |= MED_LV100;
+  if (buddyPeak >= 1) trainerMedals |= MED_BUDDY;
+  if (buddyPeak + 1 >= PARTY_SIZE) trainerMedals |= MED_PARTY;
   uint16_t gained = (medals | trainerMedals) & ~before;
   if (gained) {
     for (uint16_t m = gained; m; m &= (m - 1)) totalMedals++;
@@ -344,6 +346,12 @@ void Pet::checkMedals() {
     if (!sleeping) sfxPlay(SFX_MEDAL);
     save();
   }
+}
+
+void Pet::buddiesOnScreen(uint8_t n) {
+  if (n <= buddyPeak) return;
+  buddyPeak = n;
+  checkMedals();
 }
 
 void Pet::rename(const char *name) {

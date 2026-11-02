@@ -84,7 +84,9 @@ inline bool buddyRegHas(const uint8_t *reg, int16_t dex) {
   return buddyDexOk(dex) && (reg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
 }
 
-// for now a single buddy: the first one seen, until it leaves
+#define BUDDY_MAX 4  // buddies at once: with your own Pokemon, a party of 5 on screen
+
+// one buddy on the network, kept while its greetings keep coming
 struct BuddyPeer {
   bool on = false;
   uint32_t id = 0, seen = 0;
@@ -110,6 +112,45 @@ inline bool buddyPeerHello(BuddyPeer &p, const BuddyMsg &m, uint32_t now) {
 }
 
 inline bool buddyPeerGone(const BuddyPeer &p, uint32_t now) { return p.on && now - p.seen > BUDDY_TIMEOUT_MS; }
+
+// every buddy around: the slot of this id, -1 if it isn't one
+inline int buddyFind(const BuddyPeer *ps, uint32_t id) {
+  for (int i = 0; i < BUDDY_MAX; i++)
+    if (ps[i].on && ps[i].id == id) return i;
+  return -1;
+}
+
+inline int buddyCount(const BuddyPeer *ps) {
+  int n = 0;
+  for (int i = 0; i < BUDDY_MAX; i++) n += ps[i].on;
+  return n;
+}
+
+// a greeting: updates its buddy, or gives it a free slot. The slot, or -1 when all are taken
+// (the fifth buddy waits until one leaves). *arrived = it is new.
+inline int buddyHello(BuddyPeer *ps, const BuddyMsg &m, uint32_t now, bool *arrived) {
+  int i = buddyFind(ps, m.from);
+  if (i < 0)
+    for (int j = 0; j < BUDDY_MAX && i < 0; j++)
+      if (!ps[j].on) i = j;
+  if (i < 0) return -1;
+  *arrived = buddyPeerHello(ps[i], m, now);
+  return i;
+}
+
+// Where each Pokemon stands on the main screen with n buddies (slot 0 is yours) and how big:
+// with one buddy, as always (yours walks around, the buddy on the right); with more, everyone
+// in a row across the ground, smaller the more there are.
+#define PARTY_LEFT 78
+#define PARTY_RIGHT 388
+inline int16_t partySlotX(int n, int slot) {
+  if (n <= 1) return slot ? 356 : 233;
+  return PARTY_LEFT + (PARTY_RIGHT - PARTY_LEFT) * slot / n;
+}
+inline uint8_t partyScale(int n, bool mine) {
+  if (n <= 1) return mine ? 5 : 4;
+  return n == 2 ? 3 : 2;
+}
 
 // battle between two: both boards draw the same numbers from the same seed (the session)
 inline uint32_t pvpRand(uint32_t &r) {

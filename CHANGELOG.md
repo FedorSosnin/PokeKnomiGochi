@@ -10,6 +10,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [1.19] - 2026-11-02
 
+- **Buddy parties:** up to 4 buddies (Knomis and PokeMacGochis in any mix) show up at once. With two or more, everyone stands in a row, smaller; tap one to battle or trade with it, and swipe in the buddy menu to switch. New trainer medals: **First buddy** and **Party of 5**.
 - **Updates over Wi-Fi (Knomi):** the settings page has a **Check for update** button, and the Knomi also checks once a day while the screen is dimmed. Updates download from the web installer's site into the spare firmware slot, along with the sprites when they changed. The save is never touched, and a new version that fails to start rolls back.
 - **Update check (PokeMacGochi):** the Mac app looks for a new version at launch and once a day, tells you once, and has **Check for Updates** in its menu.
 - **Public:** the repository and the web installer at https://fedorsosnin.github.io/PokeKnomiGochi/ are now public.

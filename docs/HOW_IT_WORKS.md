@@ -104,3 +104,15 @@ Joy also drops 2 more per minute while 🍖 is below 30, and 2 more while 🧼 i
 | 💞 **Full bond** | Reach 100 💞 |
 | 🌟 **Final form** | Reach a fully evolved Pokémon |
 | 🏅 **Fit** | At level 5 or higher, keep ⚖️ at 20 or less with no care mistakes |
+
+### Trainer medals
+
+These stay with you across every Pokémon you raise.
+
+| Medal | How to earn it |
+|---|---|
+| ✨ **Shiny found** | Raise or register a shiny Pokémon |
+| 📖 **Pokédex 10 / 50 / 100 / 151** | Register that many Pokémon |
+| 💯 **Level 100** | Raise a Pokémon to level 100 |
+| 🤝 **First buddy** | Have a buddy's Pokémon on your screen |
+| 🎉 **Party of 5** | Have 4 buddies at once: 5 Pokémon on screen |

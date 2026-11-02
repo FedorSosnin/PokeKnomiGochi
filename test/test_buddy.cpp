@@ -121,3 +121,45 @@ TEST(buddy, both_boards_see_the_same_battle) {
     }
   }
 }
+
+TEST(buddy, several_buddies_get_their_own_slots) {
+  BuddyPeer ps[BUDDY_MAX];
+  BuddyMsg m;
+  bool arrived = false;
+  for (uint32_t id = 11; id < 11 + BUDDY_MAX; id++) {
+    buddyInit(m, BM_HELLO, id, 0, 0);
+    m.dex = 25;
+    m.level = 5;
+    CHECK_EQ(buddyHello(ps, m, 1000, &arrived), (int)(id - 11));
+    CHECK(arrived);
+  }
+  CHECK_EQ(buddyCount(ps), BUDDY_MAX);
+  buddyInit(m, BM_HELLO, 99, 0, 0);  // a fifth: no room until one leaves
+  m.dex = 1;
+  m.level = 3;
+  CHECK_EQ(buddyHello(ps, m, 1000, &arrived), -1);
+  buddyInit(m, BM_HELLO, 13, 0, 0);  // one already here: same slot, not new
+  m.dex = 26;
+  m.level = 6;
+  CHECK_EQ(buddyHello(ps, m, 2000, &arrived), 2);
+  CHECK(!arrived);
+  CHECK_EQ(ps[2].dex, (int16_t)26);
+  ps[1].on = false;                  // one left: the fifth fits now
+  buddyInit(m, BM_HELLO, 99, 0, 0);
+  m.dex = 1;
+  m.level = 3;
+  CHECK_EQ(buddyHello(ps, m, 3000, &arrived), 1);
+  CHECK_EQ(buddyFind(ps, 99), 1);
+  CHECK_EQ(buddyFind(ps, 12), -1);
+}
+
+TEST(buddy, the_party_fits_across_the_ground) {
+  CHECK_EQ(partySlotX(1, 0), 233);  // one buddy: as before
+  CHECK_EQ(partySlotX(1, 1), 356);
+  for (int n = 2; n <= BUDDY_MAX; n++) {
+    CHECK_EQ(partySlotX(n, 0), PARTY_LEFT);
+    CHECK_EQ(partySlotX(n, n), PARTY_RIGHT);
+    for (int i = 1; i <= n; i++) CHECK(partySlotX(n, i) - partySlotX(n, i - 1) >= 70);  // room for a 2x sprite
+    CHECK(partyScale(n, true) < partyScale(1, true));
+  }
+}

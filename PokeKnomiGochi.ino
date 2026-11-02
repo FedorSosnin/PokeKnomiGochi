@@ -177,10 +177,11 @@ DnState dn;
 // buddy: another PokeKnomiGochi on the same wifi
 enum BuddySession : uint8_t { BS_IDLE, BS_INVITING, BS_INVITED, BS_SYNC, BS_BATTLE, BS_TRADE };
 enum TradePhase : uint8_t { TR_PICK, TR_WAIT, TR_REVIEW, TR_WAITC, TR_DONE };
-BuddyPeer bPeer;
+BuddyPeer bPeers[BUDDY_MAX];  // everyone around (buddy.h)
+uint8_t bCur = 0;            // the one in the buddy menu, and in any battle or trade
 bool buddyFake = false;  // FAKEBUDDY (test mode): a buddy without a network, for screenshots
-PmdMon buddyPmd;
-int16_t buddyPmdDex = 0;
+PmdMon buddyPmd[BUDDY_MAX];  // each buddy's sprite, by slot
+int16_t buddyPmdDex[BUDDY_MAX] = {};
 BuddySession bsState = BS_IDLE;
 uint8_t bsKind = 0;
 uint32_t bsId = 0, bsT = 0, bsResendT = 0, buddyHelloT = 0;
@@ -716,20 +717,27 @@ void handleSerial() {
     startRun();
     Serial.println("DONE");
   } else if (line == "BUDDY") {
-    Serial.printf("buddy: up=%d id=%08lx peer=%d %08lx #%d Lv.%u state=%u\n", buddyNetUp(), (unsigned long)buddyNetId(),
-                  bPeer.on, (unsigned long)bPeer.id, bPeer.dex, bPeer.level, bsState);
+    Serial.printf("buddy: up=%d id=%08lx here=%d current=%u state=%u\n", buddyNetUp(), (unsigned long)buddyNetId(),
+                  buddyCount(bPeers), bCur, bsState);
+    for (int i = 0; i < BUDDY_MAX; i++)
+      if (bPeers[i].on)
+        Serial.printf("  %d: %08lx #%d Lv.%u\n", i, (unsigned long)bPeers[i].id, bPeers[i].dex, bPeers[i].level);
     Serial.println("DONE");
   } else if (line.startsWith("FAKEBUDDY ") && pet.noSave) {  // "FAKEBUDDY dex level [nick]": screenshots without a second board
     char nick[12] = "";
     int dex = 0, lv = 0;
     sscanf(line.c_str() + 10, "%d %d %11s", &dex, &lv, nick);
-    if (dex >= 1 && dex <= DEX_COUNT) {
-      bPeer.on = true;
-      bPeer.id = 0xFA4E;
-      bPeer.dex = dex;
-      bPeer.level = lv > 0 ? lv : 5;
-      strlcpy(bPeer.nick, nick, sizeof(bPeer.nick));
-      bPeer.seen = millis();
+    int slot = -1;
+    for (int i = 0; i < BUDDY_MAX && slot < 0; i++)
+      if (!bPeers[i].on) slot = i;
+    if (dex >= 1 && dex <= DEX_COUNT && slot >= 0) {
+      BuddyPeer &p = bPeers[slot];
+      p.on = true;
+      p.id = 0xFA41 + 2 * slot;
+      p.dex = dex;
+      p.level = lv > 0 ? lv : 5;
+      strlcpy(p.nick, nick, sizeof(p.nick));
+      p.seen = millis();
       buddyFake = true;
     }
     Serial.println("DONE");
@@ -859,6 +867,9 @@ void handleSerial() {
 // ---------- touch input ----------
 
 bool inPetZone(int16_t x, int16_t y) {
+  int n = partyBuddies();
+  if (n >= 2)  // in the row: yours is the first one
+    return abs(x - partySlotX(n, 0)) < (PARTY_RIGHT - PARTY_LEFT) / n / 2 && y > PET_GROUND - 90 && y < 310;
   return x > 110 && x < 356 && y > 95 && y < 310;
 }
 
@@ -879,6 +890,9 @@ void pressRepaint() {
 void pressUpdate(int16_t x, int16_t y) {
   PressTarget t;
   bool on = !swallowGesture && pressTargetAt(x, y, t);
+  // where left and right turn pages (buddies, time/settings, the card), a sideways drag is a swipe
+  bool pagesSideways = buddyMenuOpen || cardOpen || (clockOpen && wifiSetupState() == WS_OFF);
+  if (pagesSideways && abs(x - tX0) > 40 && abs(x - tX0) > abs(y - tY0)) on = false;
   if (on == pressOn && (!on || (t.x == pressT.x && t.y == pressT.y && t.w == pressT.w && t.h == pressT.h))) return;
   pressOn = on;
   if (on) pressT = t;
@@ -1048,7 +1062,16 @@ void onSwipeV(int dir) {
 
 // swipe: dir +1 = to the right
 void onSwipe(int dir) {
-  if (buddyMenuOpen) return;
+  if (buddyMenuOpen) {  // several buddies: left and right go through them
+    for (int k = 1; k < BUDDY_MAX && bsState == BS_IDLE; k++) {
+      int i = (bCur + (dir > 0 ? BUDDY_MAX - k : k)) % BUDDY_MAX;
+      if (bPeers[i].on) {
+        buddySelect(i);
+        break;
+      }
+    }
+    return;
+  }
   if (tradeOpen) {
     int pages = (pet.registeredCount() + 15) / 16;
     int np = trPage - dir;
@@ -1206,8 +1229,10 @@ void onTap(int16_t x, int16_t y) {
     sfxPlay(SFX_TAP);
     return;
   }
-  if (buddyVisible() && buddyHit(x, y)) {
+  int bt = buddyAt(x, y);
+  if (bt >= 0) {
     sfxPlay(SFX_TAP);
+    if (bsState == BS_IDLE) buddySelect(bt);
     buddyMenuOpen = true;
     return;
   }
@@ -2064,7 +2089,7 @@ void renderQuiz() {
 #define VISIT_X 356
 
 void startVisitWith(int16_t dex) {
-  if (visitPhase != VP_NONE || bPeer.on || pet.isEgg() || pet.sleeping || pet.ceremony) return;
+  if (visitPhase != VP_NONE || buddyCount(bPeers) || pet.isEgg() || pet.sleeping || pet.ceremony) return;
   if (dex < 1 || dex > DEX_COUNT) dex = pet.pickWildSpecies(btlCapLevel(pet.level()));
   visitPmd.load(dex, false);
   if (!visitPmd.loaded) return;
@@ -2421,7 +2446,7 @@ void battleStep() {
       break;
     case BP_WAIT:
       if (bPvpFoeTurn == bPvpTurn) {
-        bool first = pvpMineFirst(bMe.spe, bFoe.spe, buddyNetId(), bPeer.id, bRng);
+        bool first = pvpMineFirst(bMe.spe, bFoe.spe, buddyNetId(), bPeers[bCur].id, bRng);
         bTurn[0] = { first, first ? bPvpMine : bPvpFoeMove };
         bTurn[1] = { !first, first ? bPvpFoeMove : bPvpMine };
         bPvpMinePrev = bPvpMine;
@@ -4161,11 +4186,15 @@ void eggPickTap(int16_t x, int16_t y) {
 #define BUDDY_PILL_Y 116
 #define BUDDY_PILL_H 32
 
-const char *buddyName() { return bPeer.nick[0] ? bPeer.nick : (buddyDexOk(bPeer.dex) ? dexName(bPeer.dex) : "?"); }
+const char *buddyNameOf(int i) {
+  const BuddyPeer &p = bPeers[i];
+  return p.nick[0] ? p.nick : (buddyDexOk(p.dex) ? dexName(p.dex) : "?");
+}
+const char *buddyName() { return buddyNameOf(bCur); }
 
 BuddyMsg buddyMsg(BuddyType type) {
   BuddyMsg m;
-  buddyInit(m, type, buddyNetId(), type == BM_HELLO ? 0 : bPeer.id, bsId);
+  buddyInit(m, type, buddyNetId(), type == BM_HELLO ? 0 : bPeers[bCur].id, bsId);
   return m;
 }
 
@@ -4318,15 +4347,31 @@ void tradeClose(bool notify) {
 
 void buddyHandle(const BuddyMsg &m, uint32_t now) {
   if (m.type == BM_HELLO) {
-    if (buddyPeerHello(bPeer, m, now)) {
-      buddyNetSetPeer(bPeer.id);
+    bool arrived = false;
+    int i = buddyHello(bPeers, m, now, &arrived);
+    if (i >= 0 && arrived) {
+      if (!bPeers[bCur].on || bCur == i) buddySelect(i);
       sfxPlay(SFX_MEDAL);
       wakeUI();
-      Serial.printf("buddy: arrives #%d Lv.%u\n", m.dex, m.level);
+      Serial.printf("buddy: arrives #%d Lv.%u (%d here)\n", m.dex, m.level, buddyCount(bPeers));
     }
     return;
   }
-  if (!bPeer.on || m.from != bPeer.id) return;  // must say hello first
+  int from = buddyFind(bPeers, m.from);
+  if (from < 0) return;  // must say hello first
+  if (from != bCur) {
+    // another buddy: a free board takes its invitation; a busy one turns it down
+    if (m.type == BM_INVITE && bsState == BS_IDLE) {
+      buddySelect(from);
+    } else {
+      if (m.type == BM_INVITE) {
+        BuddyMsg d;
+        buddyInit(d, BM_DECLINE, buddyNetId(), m.from, m.session);
+        buddyNetSend(d);
+      }
+      return;
+    }
+  }
 
   if (m.type == BM_INVITE) {
     if (bsState == BS_IDLE) {
@@ -4394,7 +4439,7 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
       break;
     case BM_OFFER:
       if (bsState == BS_INVITING) buddyStartSession();
-      if (!tradeOpen || !buddyRegHas(bPeer.reg, m.dex)) break;
+      if (!tradeOpen || !buddyRegHas(bPeers[bCur].reg, m.dex)) break;
       trTheirs = m.dex;
       if (!m.ack && trMine) buddySendTrade(BM_OFFER, trMine, true);
       if (trPhase == TR_WAIT) trPhase = TR_REVIEW;
@@ -4417,12 +4462,11 @@ void tradeFinish() {
 }
 
 void buddyTick(uint32_t now) {
-  if (buddyFake) bPeer.seen = now;  // never times out (until reboot: it only exists in test mode)
+  if (buddyFake)  // never time out (until reboot: they only exist in test mode)
+    for (BuddyPeer &p : bPeers) p.seen = now;
   if (!buddyNetUp()) {
-    if (bPeer.on && !buddyFake) {
-      bPeer.on = false;
-      buddyNetSetPeer(0);
-    }
+    if (!buddyFake)
+      for (BuddyPeer &p : bPeers) p.on = false;
   } else {
     if (now - buddyHelloT > BUDDY_HELLO_MS && !pet.isEgg() && !pet.ceremony && !pet.awaitingEggPick() && !pet.awaitingStarter()) {
       buddyHelloT = now;
@@ -4434,13 +4478,21 @@ void buddyTick(uint32_t now) {
   // touches and messages have already stamped bsT and trT with millis(): with the old now the subtraction would wrap around
   now = millis();
 
-  if (buddyPeerGone(bPeer, now)) bPeer.on = false;
-  if (!bPeer.on) {
-    if (buddyPmdDex) {
-      buddyPmd.unload();
-      buddyPmdDex = 0;
-      buddyNetSetPeer(0);
+  for (int i = 0; i < BUDDY_MAX; i++) {
+    if (buddyPeerGone(bPeers[i], now)) bPeers[i].on = false;
+    if (!bPeers[i].on && buddyPmdDex[i]) {
+      buddyPmd[i].unload();
+      buddyPmdDex[i] = 0;
     }
+    // the sprite is loaded outside the network code: if it doesn't fit, that buddy is simply not drawn
+    if (bPeers[i].on && buddyPmdDex[i] != bPeers[i].dex && visitPhase == VP_NONE) {
+      buddyPmd[i].load(bPeers[i].dex, bPeers[i].shiny);
+      buddyPmdDex[i] = bPeers[i].dex;
+    }
+  }
+  pet.buddiesOnScreen(buddyVisible() ? buddyCount(bPeers) : 0);
+  if (!bPeers[bCur].on) {
+    buddyNetSetPeer(0);
     buddyMenuOpen = false;
     if (bPvp && bPhase < BP_END) {
       if (bPhase != BP_RAN) buddyGoneFromBattle();
@@ -4449,13 +4501,14 @@ void buddyTick(uint32_t now) {
     } else if (bsState != BS_IDLE && !bPvp && !tradeOpen) {
       buddyEndSession();
     }
+    // with nothing left in progress, the menu moves on to another buddy that is still here
+    if (bsState == BS_IDLE && !bPvp && !tradeOpen)
+      for (int i = 0; i < BUDDY_MAX; i++)
+        if (bPeers[i].on) {
+          buddySelect(i);
+          break;
+        }
     return;
-  }
-
-  // the sprite is loaded outside the network code: if it doesn't fit, the buddy is simply not drawn
-  if (buddyPmdDex != bPeer.dex && visitPhase == VP_NONE) {
-    buddyPmd.load(bPeer.dex, bPeer.shiny);
-    buddyPmdDex = bPeer.dex;
   }
 
   if (bsState == BS_INVITED && choiceKind != 5) buddyDeclineInvite();  // time ran out
@@ -4487,14 +4540,28 @@ void buddyTick(uint32_t now) {
 }
 
 bool buddyVisible() {
-  return bPeer.on && visitPhase == VP_NONE && !pet.isEgg() && !pet.sleeping && !pet.ceremony;
+  return buddyCount(bPeers) && visitPhase == VP_NONE && !pet.isEgg() && !pet.sleeping && !pet.ceremony;
+}
+
+// buddies on the main screen right now (0 = none): with 2 or more everyone stands in a row
+int partyBuddies() { return buddyVisible() ? buddyCount(bPeers) : 0; }
+
+// the buddy the menu, battles and trades are about; direct messages go to it
+void buddySelect(int i) {
+  bCur = i;
+  buddyNetSetPeer(bPeers[i].id);
 }
 
 void drawBuddyPet(uint32_t now) {
-  if (!buddyVisible() || !buddyPmd.loaded) return;
-  uint8_t act = (now / 5000) % 2 && buddyPmd.has(PMD_HOP) ? PMD_HOP : PMD_IDLE;
-  drawPmdActM(buddyPmd, act, VISIT_X, PET_GROUND, now, true, false, 4);
-  if ((now / 900) % 4 == 0) drawMap(SPR_HEART, 32, VISIT_X - 90, PET_GROUND - 160, 1, false);  // they get along
+  int n = partyBuddies(), k = 0;
+  for (int i = 0; i < BUDDY_MAX; i++) {
+    if (!bPeers[i].on) continue;
+    k++;  // party slot: in arrival-slot order, after yours
+    if (!buddyPmd[i].loaded) continue;
+    uint8_t act = ((now + i * 1300) / 5000) % 2 && buddyPmd[i].has(PMD_HOP) ? PMD_HOP : PMD_IDLE;
+    drawPmdActM(buddyPmd[i], act, partySlotX(n, k), PET_GROUND, now, true, false, partyScale(n, false));
+  }
+  if (n == 1 && (now / 900) % 4 == 0) drawMap(SPR_HEART, 32, VISIT_X - 90, PET_GROUND - 160, 1, false);  // they get along
 }
 
 // the buddy notice and, on top of everything, the notes about what happened
@@ -4508,7 +4575,9 @@ void drawBuddyTop() {
     setCur(centerX(buddyNote, 2), BUDDY_PILL_Y + 8);
     printT(buddyNote);
   } else if (buddyVisible()) {
-    snprintf(b, sizeof(b), T(S_BUDDY_HERE_FMT), buddyName());
+    int n = buddyCount(bPeers);
+    if (n > 1) snprintf(b, sizeof(b), T(S_BUDDIES_FMT), n);
+    else snprintf(b, sizeof(b), T(S_BUDDY_HERE_FMT), buddyName());
     int w = textW(b, 2) + 24;
     gfx->fillRoundRect(CX - w / 2, BUDDY_PILL_Y, w, BUDDY_PILL_H, 12, C565(0x1e, 0x7d, 0x3c));
     gfx->setTextColor(UI_WHITE);
@@ -4517,13 +4586,25 @@ void drawBuddyTop() {
   }
 }
 
-bool buddyHit(int16_t x, int16_t y) {
-  if (y >= BUDDY_PILL_Y - 6 && y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6 && x >= 60 && x <= 406) return true;
-  return abs(x - VISIT_X) < 60 && y > PET_GROUND - 120 && y < PET_GROUND;  // touching the buddy counts too
+// half the width each Pokemon has on the ground, and how tall it stands, with n buddies
+static int partyHalf(int n) { return n <= 1 ? 60 : (PARTY_RIGHT - PARTY_LEFT) / n / 2; }
+static int partyTall(int n) { return n <= 1 ? 120 : 90; }
+
+// the buddy under a touch on the main screen (its notice counts too), -1 if none
+int buddyAt(int16_t x, int16_t y) {
+  int n = partyBuddies(), k = 0;
+  if (!n) return -1;
+  if (y >= BUDDY_PILL_Y - 6 && y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6 && x >= 60 && x <= 406) return bCur;
+  for (int i = 0; i < BUDDY_MAX; i++) {
+    if (!bPeers[i].on) continue;
+    k++;
+    if (abs(x - partySlotX(n, k)) < partyHalf(n) && y > PET_GROUND - partyTall(n) && y < PET_GROUND) return i;
+  }
+  return -1;
 }
 
 void renderBuddyMenu() {
-  if (!bPeer.on) { buddyMenuOpen = false; return; }
+  if (!bPeers[bCur].on) { buddyMenuOpen = false; return; }
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   char b[44];
@@ -4532,7 +4613,16 @@ void renderBuddyMenu() {
   setSize(2);
   setCur(centerX(b, 2), 66);
   printT(b);
-  if (buddyPmd.loaded) drawPmdActM(buddyPmd, PMD_IDLE, CX, 200, millis(), true, false, 3);
+  if (buddyPmd[bCur].loaded) drawPmdActM(buddyPmd[bCur], PMD_IDLE, CX, 200, millis(), true, false, 3);
+  int n = buddyCount(bPeers);
+  if (n > 1) {  // several: swipe to the others
+    int pos = 1;
+    for (int i = 0; i < bCur; i++) pos += bPeers[i].on;
+    snprintf(b, sizeof(b), "< %d/%d >", pos, n);
+    gfx->setTextColor(UI_TRACK);
+    setCur(centerX(b, 2), 92);
+    printT(b);
+  }
   const char *labels[3] = { T(S_BUDDY_BATTLE), T(S_BUDDY_TRADE), T(S_BACK_BTN) };
   const uint16_t colors[3] = { UI_BAR_BAD, C565(0x1e, 0x7d, 0x3c), UI_TRACK };
   for (int i = 0; i < 3; i++) {
@@ -4562,7 +4652,7 @@ void renderTrade() {
     for (int i = 0; i < 16; i++) {  // green dot: the buddy is missing this one
       int16_t dex = pet.registeredAt(trPage * 16 + i);
       if (!dex) break;
-      if (!buddyRegHas(bPeer.reg, dex)) gfx->fillCircle(GAL_X + (i % 4) * GAL_CELL + 66, GAL_Y + (i / 4) * GAL_CELL + 14, 7, UI_BAR_OK);
+      if (!buddyRegHas(bPeers[bCur].reg, dex)) gfx->fillCircle(GAL_X + (i % 4) * GAL_CELL + 66, GAL_Y + (i / 4) * GAL_CELL + 14, 7, UI_BAR_OK);
     }
     gfx->flush();
     return;
@@ -5286,8 +5376,9 @@ void drawPetPMD() {
   } else if (m == MOOD_SAD && pmd.has(PMD_HURT)) {
     act = PMD_HURT;
   } else {
-    // happy: the planner decides (idle / walk / gesture)
+    // happy: the planner decides (idle / walk / gesture); in a row of buddies it stays put
     if (now > beh.until) behNext();
+    if (partyBuddies() >= 2 && beh.mode == 1) beh.mode = 0;
     if (beh.mode != 1) walkLast = 0;  // when walking again, the time stopped isn't counted
     if (beh.mode == 1) {
       float d = beh.targetX - beh.x;
@@ -5313,9 +5404,11 @@ void drawPetPMD() {
     if (!pmd.has(act)) act = PMD_IDLE;
   }
 
-  drawPmdAct(act, (int)beh.x, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, 5);
+  int n = partyBuddies();
+  int px = n >= 2 ? partySlotX(n, 0) : (int)beh.x;
+  drawPmdAct(act, px, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, partyScale(n, true));
 
-  if (pet.showHeart()) drawMap(SPR_HEART, 32, (int)beh.x + 50, PET_GROUND - 190, 2, false);
+  if (pet.showHeart()) drawMap(SPR_HEART, 32, px + (n >= 2 ? 20 : 50), PET_GROUND - (n >= 2 ? 120 : 190), n >= 2 ? 1 : 2, false);
   drawVisitor(now);
 }
 
@@ -5639,9 +5732,13 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, x0 + item * 66, 288, 66, 64, nullptr, ICON[item]);
   }
   if (pet.isEgg()) return false;
-  if (buddyVisible() && buddyHit(x, y)) {
-    if (y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6) return pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, buddyName());
-    return pressSet(t, VISIT_X - 60, PET_GROUND - 120, 120, 120, buddyName());
+  int bt = buddyAt(x, y);
+  if (bt >= 0) {
+    int n = partyBuddies(), k = 0;
+    for (int i = 0; i <= bt; i++) k += bPeers[i].on;
+    const char *nm = buddyNameOf(bt);
+    if (y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6) return pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, nm);
+    return pressSet(t, partySlotX(n, k) - partyHalf(n), PET_GROUND - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
   }
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   if (pet.wantEvolveButton() && pressIn(x, y, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H))

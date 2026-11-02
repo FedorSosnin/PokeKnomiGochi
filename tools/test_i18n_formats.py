@@ -139,7 +139,8 @@ def main():
     i18n_hpp = os.path.join(HERE, '..', 'i18n.h')
 
     str_count = count_enumerators(i18n_hpp, 'StrId', 'STR_COUNT')
-    med_count = 14  # MED_COUNT, #define'd in include/pet.hpp
+    with open(os.path.join(HERE, '..', 'pet.h'), encoding='utf-8') as fh:
+        med_count = int(re.search(r'#define\s+MED_COUNT\s+(\d+)', fh.read()).group(1))
 
     errors = []
     errors += check_table(
