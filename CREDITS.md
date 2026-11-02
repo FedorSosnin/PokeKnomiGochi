@@ -29,6 +29,13 @@ Huge thanks to that whole community for an enormous amount of work.
 > package the sprites from the original sources with `tools/pack_*.py` (or the web
 > installer).
 
+## 3D-printed case
+
+| Part | Source |
+|---|---|
+| **Front half** | [Knomi V2 Creality K1 wall holder / table stand](https://www.printables.com/model/850244-knomi-v2-creality-k1-wall-holder-table-stand) on Printables |
+| **Button and rounded back** | Fedor Sosnin |
+
 ## Software / hardware
 
 | Component | Author / source |

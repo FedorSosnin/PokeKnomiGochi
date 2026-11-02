@@ -108,7 +108,7 @@ The time zone is currently fixed to US Eastern time. You can set the clock by ha
 
 ## 3D-printed case
 
-A Poké Ball case for the Knomi, ready to print in three colors. Download [`PokeKnomiGochi-case.3mf`](print/PokeKnomiGochi-case.3mf).
+A Poké Ball case for the Knomi, ready to print in three colors. It's a remix: the front half comes from [Knomi V2 Creality K1 wall holder / table stand](https://www.printables.com/model/850244-knomi-v2-creality-k1-wall-holder-table-stand) on Printables, and the button and rounded back are new. Download [`PokeKnomiGochi-case.3mf`](print/PokeKnomiGochi-case.3mf).
 
 | | |
 |:--:|:--:|
