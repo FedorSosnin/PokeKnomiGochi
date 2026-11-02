@@ -8,6 +8,10 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.19.1] - 2026-11-02
+
+- The first version delivered over Wi-Fi: no other changes.
+
 ## [1.19] - 2026-11-02
 
 - **Buddy parties:** up to 4 buddies (Knomis and PokeMacGochis in any mix) show up at once. With two or more, everyone stands in a row, smaller; tap one to battle or trade with it, and swipe in the buddy menu to switch. New trainer medals: **First buddy** and **Party of 5**.
