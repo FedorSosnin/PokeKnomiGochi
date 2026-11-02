@@ -10,6 +10,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 - **PokeMacGochi:** the same game as a small round window on a Mac desktop, in a Pokéball ring, with arrow keys for tilt and its own save. Build it with `mac/build_app.sh`; see `host/README.md`.
 - **Buddies:** other PokeKnomiGochis on the same Wi-Fi show up on your screen, and you can battle them or trade Pokédex entries. The Knomi stays connected to Wi-Fi to make this work.
+- **3D-printed case:** a Poké Ball case for the Knomi, with the print file and recommended colors.
 - **Auto-rotating screen (Knomi):** turn it any way you like and the screen, touch and tilt follow. It starts ready for your right hand with the cable going off to the left. It holds still during Tilt Catch and when aiming a Poké Ball.
 - **12-hour clock:** the clock now shows the time with AM and PM.
 - **Joy is earned:** only the first 3 pets each hour add joy, though it still loves every one. Candy is limited to 2 a day and leaves the menu after that.

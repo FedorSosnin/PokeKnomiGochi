@@ -108,7 +108,18 @@ The time zone is currently fixed to US Eastern time. You can set the clock by ha
 
 ## 3D-printed case
 
-Printable case files are coming soon.
+A Poké Ball case for the Knomi, ready to print in three colors. Download [`PokeKnomiGochi-case.3mf`](print/PokeKnomiGochi-case.3mf).
+
+| | |
+|:--:|:--:|
+| ![The finished case](docs/images/case.png) | ![The parts laid out by color](docs/images/case-parts.png) |
+| **Finished case** | **Parts in their recommended colors** |
+
+| Part | Recommended color | Size |
+|---|---|---|
+| Front ring and button | Red (`#D41721`) | 55 × 55 × 6 mm |
+| Ball | White (`#FFFFFF`) | 55 × 55 × 29.3 mm |
+| Band | Black (`#111111`) | 53.1 × 55 × 5.3 mm |
 
 ## Going back to the stock firmware
 
