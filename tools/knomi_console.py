@@ -54,7 +54,9 @@ def shot(s, path):
     else:
         print('captura: sin respuesta')
         return
-    w, h = map(int, line.split()[1:3])
+    parts = line.split()
+    w, h = int(parts[1]), int(parts[2])
+    rot = int(parts[3]) if len(parts) > 3 else 0
     need = w * h * 2
     s.timeout = 15
     raw = s.read(need)
@@ -65,7 +67,8 @@ def shot(s, path):
         return
     img = Image.new('RGB', (w, h))
     img.putdata([((c >> 8) & 0xF8, (c >> 3) & 0xFC, (c << 3) & 0xF8) for c in struct.unpack(f'<{w * h}H', raw)])
-    img.resize((w * 2, h * 2), Image.NEAREST).save(path)
+    # el panel gira con la pantalla: la captura se guarda como se ve en la mano
+    img.rotate(90 * rot).resize((w * 2, h * 2), Image.NEAREST).save(path)
     print('ok', path, flush=True)
 
 

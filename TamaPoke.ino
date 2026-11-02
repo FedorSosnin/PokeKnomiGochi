@@ -42,6 +42,7 @@
 #include "dungeon.h"
 #include "zones.h"
 #include "zones_art.h"
+#include "autorot.h"
 #include "buddy_net.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
@@ -414,6 +415,9 @@ void loop() {
   wasRunReady = runReady;
 
   handleTouch();
+#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
+  autoRotateTick(now);
+#endif
   visitTick(now);
   buddyTick(now);
   handleSerial();
@@ -589,8 +593,8 @@ void handleSerial() {
   if (sdSerialCommand(line)) return;
 
 #ifdef BOARD_KNOMI_V2
-  if (line == "SHOT") {  // captura del panel: "SHOT 240 240\n" + RGB565 little endian
-    Serial.printf("SHOT %d %d\n", PANEL_SIZE, PANEL_SIZE);
+  if (line == "SHOT") {  // captura del panel: "SHOT 240 240 giro\n" + RGB565 little endian
+    Serial.printf("SHOT %d %d %u\n", PANEL_SIZE, PANEL_SIZE, gPanelRot);
     Serial.write((uint8_t *)gfx->panelBuffer(), PANEL_SIZE * PANEL_SIZE * 2);
     Serial.println("DONE");
     return;
@@ -617,6 +621,11 @@ void handleSerial() {
   } else if (line == "WIFIEND") {
     wifiSetupStop();
     clockOpen = false;
+    Serial.println("DONE");
+    return;
+  } else if (line.startsWith("ROT ")) {  // giro a mano (pruebas): hasta que el sensor diga otra cosa
+    gPanelRot = line.substring(4).toInt() & 3;
+    gfx->flush();
     Serial.println("DONE");
     return;
   } else if (line == "ACC") {  // gravedad por eje, para elegir eje y signo de la inclinacion
@@ -1693,10 +1702,32 @@ void quitGame() {
 }
 
 // cero de la inclinacion: lo que marque ahora es "recto"
+#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
+// la pantalla sigue a la gravedad, salvo con el dedo encima o cuando inclinar es parte del juego
+void autoRotateTick(uint32_t now) {
+  static uint32_t last = 0;
+  static RotFilter filter;
+  if (now - last < 100) return;
+  last = now;
+  if (screenOff || wasPressed || gameOpen || (battleOpen && bPhase >= BP_AIM)) {
+    filter.reset();
+    return;
+  }
+  float g[3];
+  if (!accel.read(g)) return;
+  uint8_t rot = gPanelRot;
+  if (filter.update(g[0], g[1], now, &rot)) {
+    gPanelRot = rot;
+    gfx->flush();  // hay pantallas que solo se redibujan al cambiar
+    Serial.printf("pantalla: giro %u\n", rot);
+  }
+}
+#endif
+
 float tiltRaw() {
 #ifdef BOARD_KNOMI_V2
   float g[3];
-  if (accel.read(g)) return g[KNOMI_TILT_AXIS] * KNOMI_TILT_SIGN;
+  if (accel.read(g)) return rotTilt(g, gPanelRot);
 #endif
   return 0;
 }

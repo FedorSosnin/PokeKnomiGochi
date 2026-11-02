@@ -48,6 +48,8 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 ## How to play
 
+The screen turns to follow however you hold the Knomi. It starts ready for your right hand with the cable going off to the left, so the button is under your finger.
+
 See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does.
 
 | Do this | What happens |

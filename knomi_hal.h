@@ -5,6 +5,7 @@
 #include <Wire.h>
 #include "Arduino_GFX_Library.h"
 #include "pin_config.h"
+#include "autorot.h"
 #include <esp_heap_caps.h>
 #include <soc/usb_serial_jtag_reg.h>
 #include <soc/soc.h>
@@ -41,7 +42,7 @@ private:
   int8_t level = -1;
 };
 
-// Lienzo logico 466x466 en PSRAM; flush() promedia 2x2 sobre el panel de 240x240
+// Lienzo logico 466x466 en PSRAM; flush() promedia 2x2 sobre el panel de 240x240, con el giro actual
 class ScaledCanvas : public Arduino_Canvas {
 public:
   ScaledCanvas(Arduino_G *out) : Arduino_Canvas(LCD_WIDTH, LCD_HEIGHT, out) {}
@@ -57,7 +58,7 @@ public:
   }
 
   void flush(bool = false) override {
-    uint16_t *d = panel;
+    const RotBlit r = rotBlit(gPanelRot, PANEL_SIZE);
     for (int y = 0; y < PANEL_SIZE; y++) {
       const uint16_t *a = _framebuffer + (y * (LCD_HEIGHT - 1) / PANEL_SIZE) * LCD_WIDTH;
       const uint16_t *b = a + LCD_WIDTH;
@@ -65,7 +66,7 @@ public:
         int sx = x * (LCD_WIDTH - 1) / PANEL_SIZE;
         uint32_t s = expand(a[sx]) + expand(a[sx + 1]) + expand(b[sx]) + expand(b[sx + 1]);
         s = (s >> 2) & 0x07E0F81F;
-        *d++ = (uint16_t)(s | (s >> 16));
+        panel[r.base + x * r.dx + y * r.dy] = (uint16_t)(s | (s >> 16));
       }
     }
     _output->draw16bitRGBBitmap(0, 0, panel, PANEL_SIZE, PANEL_SIZE);
@@ -102,7 +103,7 @@ public:
     writeReg(0xFE, 0x01);  // sin auto-sleep: el chip contesta siempre por I2C
   }
   void setMaxCoordinates(int, int) {}  // fijas: el panel es de 240
-  void setMirrorXY(bool, bool) {}      // el Knomi no va girado (la Waveshare si)
+  void setMirrorXY(bool, bool) {}      // el giro del Knomi va en getPoint() (la Waveshare usa esto)
 
   // toque simulado desde la consola serie, en coordenadas logicas
   void inject(int16_t x, int16_t y, uint32_t ms) { swipe(x, y, x, y, ms); }
@@ -126,8 +127,12 @@ public:
     if (wire->endTransmission(false) != 0 || wire->requestFrom(addr, (uint8_t)5) != 5) return 0;
     uint8_t n = wire->read(), xh = wire->read(), xl = wire->read(), yh = wire->read(), yl = wire->read();
     if ((n & 0x0F) == 0) return 0;
-    *x = (((xh & 0x0F) << 8 | xl) * LCD_WIDTH) / PANEL_SIZE;
-    *y = (((yh & 0x0F) << 8 | yl) * LCD_HEIGHT) / PANEL_SIZE;
+    int32_t px = (((xh & 0x0F) << 8 | xl) * LCD_WIDTH) / PANEL_SIZE;
+    int32_t py = (((yh & 0x0F) << 8 | yl) * LCD_HEIGHT) / PANEL_SIZE;
+    int32_t lx, ly;
+    rotTouch(gPanelRot, px, py, LCD_WIDTH, &lx, &ly);
+    *x = lx;
+    *y = ly;
     return 1;
   }
 
