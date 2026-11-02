@@ -113,3 +113,12 @@ TEST(pokerun, el_record_se_guarda_y_lo_viejo_no_cambia) {
   p.runResult(20);
   CHECK_EQ(p.runHi, (uint16_t)48);
 }
+
+TEST(clock, reloj_de_12_horas) {
+  CHECK_EQ(clock12Hour(0), 12);
+  CHECK_EQ(clock12Hour(1), 1);
+  CHECK_EQ(clock12Hour(11), 11);
+  CHECK_EQ(clock12Hour(12), 12);
+  CHECK_EQ(clock12Hour(13), 1);
+  CHECK_EQ(clock12Hour(23), 11);
+}

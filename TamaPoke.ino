@@ -3306,11 +3306,16 @@ void renderClock() {
   drawClockDots();
 #endif
 
+  // la hora se ve en formato de 12 horas; por dentro sigue siendo de 24
   char t[8];
-  snprintf(t, sizeof(t), "%02d:%02d", clockH, clockM);
+  int h12 = clock12Hour(clockH);
+  snprintf(t, sizeof(t), "%d:%02d", h12, clockM);
   setSize(7);
-  setCur(CX - 105, 108);
+  setCur(CX - 105 + (h12 < 10 ? 42 : 0), 108);  // los minutos no bailan: quedan sobre sus botones
   printT(t);
+  setSize(3);
+  setCur(CX + 109, 136);
+  printT(clockH < 12 ? "AM" : "PM");
 
   drawClockBtn(104, 190, "-");  // hora -
   drawClockBtn(170, 190, "+");  // hora +

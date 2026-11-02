@@ -17,6 +17,9 @@ inline bool swipeUpQuit(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint32_t
   return y0 >= 233 && y0 - y1 >= 100 && dx > -90 && dx < 90 && ms < 1000;
 }
 
+// 0-23 a la hora del reloj de 12 horas: medianoche y mediodia son las 12
+inline int clock12Hour(int h24) { return h24 % 12 == 0 ? 12 : h24 % 12; }
+
 // tres opciones distintas con la respuesta en la posicion pos. a y b son especies al azar.
 inline void quizChoices(int16_t answer, int16_t a, int16_t b, uint8_t pos, int16_t out[3]) {
   while (a == answer) a = a % 151 + 1;
