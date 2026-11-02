@@ -188,7 +188,7 @@ The code still supports the original Waveshare board that TamaPoke was made for.
 
 ## PokeWebGochi (browser)
 
-**[Play in your browser](https://fedorsosnin.github.io/PokeKnomiGochi/play/)** on a computer, phone or tablet: the same game, with the Knomi screen centered on a black page. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.
+**[Play in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet: the same game, with the Knomi screen centered on a black page. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.
 
 - **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser.
 - **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.
@@ -197,7 +197,7 @@ The code still supports the original Waveshare board that TamaPoke was made for.
 - **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and PokeMacGochi use it too, so all three meet each other.
 - **Updates:** it updates itself: reload to get the newest version, and a tab left open says when there is one.
 
-To build it yourself, run `webgame/build.sh` (needs [Emscripten](https://emscripten.org)). The relay's code is in [relay/](relay/).
+To build it yourself, run `webgame/build.sh` (needs [Emscripten](https://emscripten.org)); `tools/publish_web.sh` publishes it. The relay's code is in [relay/](relay/).
 
 ## PokeMacGochi (Mac)
 

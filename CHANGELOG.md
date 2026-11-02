@@ -10,7 +10,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [1.20] - 2026-11-02
 
-- **PokeWebGochi:** the game in any browser at https://fedorsosnin.github.io/PokeKnomiGochi/play/, the Knomi screen centered on a black page. It saves in the browser by itself, with **Export save** and **Import save** for backups, plays in one tab at a time, has Small, Medium and Large sizes, and uses a phone's own tilt. It updates itself: a tab left open offers the new version.
+- **PokeWebGochi:** the game in any browser at https://pokewebgochi.3dprintsos.com, the Knomi screen centered on a black page. It saves in the browser by itself, with **Export save** and **Import save** for backups, plays in one tab at a time, has Small, Medium and Large sizes, and uses a phone's own tilt. It updates itself: a tab left open offers the new version.
 - **Buddies through the relay:** browsers can't send the Knomi's local Wi-Fi messages, so a small relay on Cloudflare passes the same messages between devices on the same home network. Knomis and PokeMacGochi join it too, so everything meets everything. It stores nothing, and a device that is alone sends nothing.
 
 ## [1.19.1] - 2026-11-02

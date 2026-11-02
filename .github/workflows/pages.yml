@@ -1,5 +1,6 @@
 # Publishes to GitHub Pages: the Knomi installer at the root (the README's link, and where Knomis
-# download Wi-Fi updates from), the Waveshare one under /waveshare/, and PokeWebGochi under /play/.
+# download Wi-Fi updates from), the Waveshare one under /waveshare/, and /play/ pointing to
+# PokeWebGochi's own site (tools/publish_web.sh).
 name: Pages
 
 on:
@@ -30,7 +31,9 @@ jobs:
           mkdir -p site/waveshare
           cp -R web/knomi/. site/
           cp -R web/index.html web/manifest.json web/firmware web/sprites.pak site/waveshare/
-          cp -R web/play site/play  # PokeWebGochi
+          # PokeWebGochi lives at its own address only (a second one would keep a second save)
+          mkdir -p site/play
+          printf '<!doctype html><meta charset="utf-8"><title>PokeWebGochi</title><meta http-equiv="refresh" content="0; url=https://pokewebgochi.3dprintsos.com/"><a href="https://pokewebgochi.3dprintsos.com/">PokeWebGochi has moved</a>\n' > site/play/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
