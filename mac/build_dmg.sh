@@ -29,6 +29,11 @@ Playing
 - Drag the Pokeball ring to move the window. Right-click it, or use the Pokeball
   in the menu bar, for About, Size, Mute Sound and Quit.
 
+Buddies
+- Knomis and other Macs on the same Wi-Fi show up as buddies you can battle and
+  trade with. Click Allow when macOS asks about the local network. If you clicked
+  Don't Allow, turn it on in System Settings > Privacy & Security > Local Network.
+
 Your pet is saved on this Mac, separate from any Knomi.
 https://github.com/FedorSosnin/PokeKnomiGochi
 TXT
