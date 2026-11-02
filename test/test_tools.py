@@ -216,6 +216,9 @@ class TestBuffersDeTexto(unittest.TestCase):
         'S_CAUGHT_FMT': ('nombre',),
         'S_FLED_FMT': ('nombre',),
         'S_VISIT_BYE_FMT': ('nombre',),
+        'S_BUDDY_HERE_FMT': ('nombre_o_apodo',),
+        'S_BUDDY_LEFT_FMT': ('nombre_o_apodo',),
+        'S_TRADE_GOT_FMT': ('nombre',),
     }
     CIFRAS = {'u': 5, 'd': 5, 'lu': 10}
     ESPEC = re.compile(r'%0?\d*(lu|u|d|s)')
