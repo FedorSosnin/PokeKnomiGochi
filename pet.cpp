@@ -133,7 +133,7 @@ void Pet::tick() {
   // Weight still burns; the good-care streak (goodTicks) is paused.
   if (sleeping) {
     energy = clamp100(energy + 6);
-    if (weight > 0 && ageMinutes % 3 == 0) weight--;
+    if (weight > 0 && ageMinutes % (2 * WGT_BURN_MIN) == 0) weight--;
     if (ageMinutes % 2 == 0) {                 // ~4x slower than awake
       fullness = dropTo(fullness, 1, 30);
       joy = dropTo(joy, 1, 35);
@@ -153,7 +153,7 @@ void Pet::tick() {
   hygiene = clamp100(hygiene - 1 - 4 * poops);
   // overweight makes it lazy: energy drops twice as fast
   if (weight > 50) energy = clamp100(energy - 1);
-  if (weight > 0 && ageMinutes % 3 == 0) weight--;
+  if (weight > 0 && ageMinutes % WGT_BURN_MIN == 0) weight--;
 
   // discipline forges defense: 12 h in a row well cared for = +1 DEF
   if (lowestStat() >= 40) {
@@ -326,7 +326,7 @@ void Pet::checkMedals() {
   if (streak >= 7) medals |= MED_STREAK7;
   if (bond >= 100) medals |= MED_BOND;
   if (DEX_TBL[speciesId].evolvesTo == 0) medals |= MED_FINAL;
-  if (weight == 0 && level() >= 5 && careMistakes == 0) medals |= MED_FIT;
+  if (weight <= WGT_FIT && level() >= 5 && careMistakes == 0) medals |= MED_FIT;
   bool anyShiny = shiny;
   for (uint8_t b : dexShinyReg) anyShiny |= b != 0;
   uint16_t caught = registeredCount();
@@ -480,9 +480,15 @@ void Pet::feed() {
   feedBerry(0);
 }
 
+// every meal adds weight; eating while already full adds more
+void Pet::gainWeight(uint8_t base) {
+  weight = clamp100(weight + base + (fullness >= WGT_FULL_AT ? WGT_OVERFULL : 0));
+}
+
 void Pet::feedBerry(uint8_t color) {
   if (ceremony != CER_NONE) return;
   if (isEgg() || sleeping) return;
+  gainWeight(WGT_BERRY);
   if (lovesBerry(color)) {
     fullness = clamp100(fullness + 35);
     joy = clamp100(joy + 10);
@@ -505,9 +511,9 @@ void Pet::feedCandy() {
     candyToday = 0;
   }
   candyToday++;
+  gainWeight(WGT_CANDY);  // treats take their toll
   fullness = clamp100(fullness + 10);
   joy = clamp100(joy + 12);
-  weight = clamp100(weight + 12);  // treats take their toll
   eatUntil = millis() + EAT_ANIM_MS;
   registerCare();
   save();

@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Weight matters:** every meal adds a little weight and eating while already full adds more, so overfeeding makes your Pokémon chubby and sluggish. It burns off slowly and faster with games and battles. The Fit medal now needs weight 20 or less.
+- **Zone Pokédex:** tap a Pokémon in a battle zone's grid to open its full Pokédex entry.
 - **Press and slide:** holding a finger on any button, menu row or key shows it large above your finger, the way the Wi-Fi keyboard does. It only fires when you lift, so if you landed on the wrong one you can slide to the right one first. A quick flick still swipes.
 - **Trainer medals:** a new card page with medals that stay with you across every Pokémon you raise: find a shiny, register 10, 50, 100 and all 151 in the Pokédex, and raise a Pokémon to level 100.
 - **Stats page:** the card's second page is now called Stats instead of Battle.

@@ -153,7 +153,32 @@ TEST(feed, candy_fattens) {
   p.feedCandy();
   CHECK_EQ(p.fullness, (uint8_t)60);
   CHECK_EQ(p.joy, (uint8_t)62);
-  CHECK_EQ(p.weight, (uint8_t)12);
+  CHECK_EQ(p.weight, (uint8_t)WGT_CANDY);
+}
+
+TEST(feed, every_meal_adds_weight_and_overeating_more) {
+  Pet p;
+  makePet(p, 4);
+  p.fullness = 30;
+  p.feedBerry(0);
+  CHECK_EQ(p.weight, (uint8_t)WGT_BERRY);
+  p.fullness = WGT_FULL_AT;  // already full: it eats anyway, and it shows
+  p.feedBerry(0);
+  CHECK_EQ(p.weight, (uint8_t)(2 * WGT_BERRY + WGT_OVERFULL));
+}
+
+TEST(feed, a_day_of_overfeeding_makes_it_chubby) {
+  Pet p;
+  makePet(p, 4);
+  for (int h = 0; h < 8; h++) {  // a full berry every 20 minutes, from full
+    for (int i = 0; i < 3; i++) {
+      p.fullness = 90;
+      p.energy = 100;
+      p.feedBerry(0);
+      advance(p, 20);
+    }
+  }
+  CHECK_MSG(p.weight > 60, "fed while full all day: over 60 says it's chubby");
 }
 
 TEST(feed, asleep_or_egg_does_not_eat) {
@@ -222,8 +247,8 @@ TEST(tick, overweight_burns_off_by_itself) {
   Pet p;
   makePet(p, 4);
   p.weight = 30;
-  advance(p, 30);
-  CHECK_EQ(p.weight, (uint8_t)20);  // -1 every 3 minutes
+  advance(p, 60);
+  CHECK_EQ(p.weight, (uint8_t)20);  // -1 every 6 minutes
 }
 
 TEST(tick, neglect_counts_once_per_hour) {
@@ -1188,7 +1213,7 @@ TEST(joy, two_candies_a_day) {
   p.feedCandy();
   CHECK_EQ(p.fullness, (uint8_t)30);
   CHECK_EQ(p.joy, (uint8_t)34);
-  CHECK_EQ(p.weight, (uint8_t)24);
+  CHECK_EQ(p.weight, (uint8_t)(2 * WGT_CANDY));
   Pet q;
   q.begin();
   CHECK_MSG(!q.canHaveCandy(), "rebooting does not hand out candies");

@@ -19,6 +19,13 @@
 #define PET_JOY_TAPS 3                 // pets per hour that raise happiness
 #define PET_JOY_WINDOW_MS 3600000UL
 #define CANDY_PER_DAY 2
+// weight: every meal adds some, eating while already full adds more; it burns slowly and with exercise
+#define WGT_BERRY 4
+#define WGT_CANDY 12
+#define WGT_OVERFULL 6           // extra if it was already this full or more when it ate:
+#define WGT_FULL_AT 80
+#define WGT_BURN_MIN 6           // awake: -1 every 6 minutes (asleep: every 12)
+#define WGT_FIT 20               // the Fit medal: this or less
 #define EVOLVE_ANIM_MS 5200UL              // evolution animation (longer = more epic)
 #define CEREMONY_MS 10000UL                // duration of the goodbye on screen
 #define FAREWELL_AGE_MIN (3UL * 24 * 60)   // says goodbye after 3 game days (in final form)
@@ -109,6 +116,7 @@ public:
   void feed();              // red berry (compatibility)
   void feedBerry(uint8_t color);  // 0 red, 1 blue, 2 green
   void feedCandy();
+  void gainWeight(uint8_t base);
   bool lovesBerry(uint8_t color) const {
     return !isEgg() && (speciesId % 3) == color;  // hidden taste per species
   }

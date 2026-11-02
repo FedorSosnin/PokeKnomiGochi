@@ -11,7 +11,7 @@ Everything your Pokémon needs, what each action does, and how to fill the Poké
 | ⚡ | Energy | Needed for battles. Restored by sleep. |
 | 🧼 | Hygiene | Restored by a bath. Each poop makes it drop faster. |
 | 💞 | Bond | Grows with care, up to 20 points a day. |
-| ⚖️ | Weight | Candy adds it and exercise burns it. Above 50, energy drains twice as fast. |
+| ⚖️ | Weight | Every meal adds a little (berry +4, candy +12), and eating while already full adds 6 more. It burns off slowly (1 every 6 minutes, slower asleep), and games and battles burn more. Above 50, energy drains twice as fast; above 60 it looks chubby. |
 | 💪 | Strength | Trained by battling. |
 | 💨 | Speed | Trained by playing active games. |
 | 🛡️ | Defense | Trained by staying well cared for. |
@@ -103,4 +103,4 @@ Joy also drops 2 more per minute while 🍖 is below 30, and 2 more while 🧼 i
 | 📅 **7-day streak** | Care for it 7 days in a row |
 | 💞 **Full bond** | Reach 100 💞 |
 | 🌟 **Final form** | Reach a fully evolved Pokémon |
-| 🏅 **Fit** | At level 5 or higher, reach 0 ⚖️ with no care mistakes |
+| 🏅 **Fit** | At level 5 or higher, keep ⚖️ at 20 or less with no care mistakes |
