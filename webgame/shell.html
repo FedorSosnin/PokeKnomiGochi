@@ -54,6 +54,7 @@
 <div id="msg">Loading…</div>
 <button id="upd" type="button">New version · Reload</button>
 <div id="bar">
+  <button id="tilt" type="button" hidden>Enable tilt</button>
   <button id="size" type="button">Size: Small</button>
   <button id="sound" type="button">Sound on</button>
   <button id="export" type="button">Export save</button>
@@ -161,7 +162,6 @@ function point(e) {
 let down = false;
 canvas.addEventListener('pointerdown', (e) => {
   startAudio();
-  if (e.pointerType === 'touch') startTilt();
   canvas.setPointerCapture(e.pointerId);
   down = true;
   const [x, y] = point(e);
@@ -180,6 +180,7 @@ for (const ev of ['pointerup', 'pointercancel']) {
   });
 }
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+canvas.addEventListener('touchend', startTilt);  // a finished tap: the moment iPhones accept the question
 
 // ---- keys: arrows tilt, Space is the Knomi's button ----
 const keys = { left: false, right: false };
@@ -229,16 +230,28 @@ soundBtn.addEventListener('click', () => {
   startAudio();
 });
 
-// ---- tilt: a phone's own tilt, like the Knomi's (iPhones ask permission on the first tap) ----
-let tiltAsked = false;
-function startTilt() {
-  if (tiltAsked || !('DeviceOrientationEvent' in window)) return;
-  tiltAsked = true;
-  const go = () => addEventListener('deviceorientation', onTilt);
-  if (typeof DeviceOrientationEvent.requestPermission === 'function')
-    DeviceOrientationEvent.requestPermission().then((s) => { if (s === 'granted') go(); }).catch(() => {});
-  else go();
+// ---- tilt: a phone's own tilt, like the Knomi's. iPhones only let a page ask from a finished tap
+// (not a finger going down), so it asks on the first one, and an "Enable tilt" button stays
+// until the answer is yes. ----
+const tiltBtn = document.getElementById('tilt');
+const tiltNeedsAsk = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+let tiltState = 'off';  // off, asking, on, denied
+function tiltOn() {
+  tiltState = 'on';
+  tiltBtn.hidden = true;
+  addEventListener('deviceorientation', onTilt);
 }
+function startTilt() {
+  if (tiltState !== 'off' || typeof DeviceOrientationEvent === 'undefined') return;
+  if (!tiltNeedsAsk) { tiltOn(); return; }
+  tiltState = 'asking';
+  DeviceOrientationEvent.requestPermission().then((answer) => {
+    if (answer === 'granted') tiltOn();
+    else { tiltState = 'denied'; tiltBtn.textContent = 'Tilt is off'; }  // iPhone keeps "no" until Safari is closed
+  }).catch(() => { tiltState = 'off'; });  // not a tap the browser accepted: the button asks again
+}
+if (tiltNeedsAsk && matchMedia('(pointer: coarse)').matches) tiltBtn.hidden = false;
+tiltBtn.addEventListener('click', () => { if (tiltState === 'denied') tiltState = 'off', tiltBtn.textContent = 'Enable tilt'; startTilt(); });
 function onTilt(e) {
   if (e.gamma == null) return;
   const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
