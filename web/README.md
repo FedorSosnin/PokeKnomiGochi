@@ -60,13 +60,12 @@ attribution is allowed); see [`../CREDITS.md`](../CREDITS.md).
 
 ## Deploy (GitHub Pages)
 
-1. Repo settings → Pages → serve from `main`, folder `/web` (or move `web/` to
-   `docs/`). Pages gives HTTPS automatically.
-2. URL ends up at `https://<user>.github.io/<repo>/`.
-
-> **Pages on private repos** needs GitHub Pro/Team. If you make the repo
-> **public** to use Pages for free, decide about the sprites first (see above and
-> CREDITS).
+`.github/workflows/pages.yml` publishes on every push to `main` that touches
+`web/`: the Knomi installer (`web/knomi/`) at
+https://fedorsosnin.github.io/PokeKnomiGochi/ and this Waveshare one under
+`/waveshare/`. Knomis download their Wi-Fi updates from the same place, so
+rebuild `web/knomi/firmware/` with `tools/build_knomi_web.sh` before pushing a
+firmware change.
 
 ## Limitations
 

@@ -1,0 +1,37 @@
+# Publishes the web installers to GitHub Pages: the Knomi one at the root (the README's link,
+# and where Knomis download Wi-Fi updates from), the Waveshare one under /waveshare/.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble the site
+        run: |
+          mkdir -p site/waveshare
+          cp -R web/knomi/. site/
+          cp -R web/index.html web/manifest.json web/firmware web/sprites.pak site/waveshare/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
