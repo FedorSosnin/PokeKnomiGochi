@@ -12,7 +12,7 @@
 // About box
 #define AUTHOR_EMAIL "fedor@3dprintsos.com"
 #define GITHUB_URL "https://github.com/FedorSosnin/PokeKnomiGochi"
-#define YOUTUBE_URL ""
+#define YOUTUBE_URL "https://youtube.com/3dprintsos"
 #define TICK_S (1.0 / 60.0)
 // The Pokeball frame around the screen, in points
 #define RING 6.0
