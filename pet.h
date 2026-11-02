@@ -113,6 +113,8 @@ public:
   void visitorLeft();                    // la visita alegra
   bool noSave = false;                   // pruebas en la placa: nada llega a la NVS
   int16_t pickWildSpecies(uint8_t lvl);  // rival: sesgo hacia lo que falta en la pokedex
+  int16_t pickZoneSpecies(uint8_t zone, uint8_t lvl);  // lo mismo, dentro de una zona
+  int zoneCaught(uint8_t zone) const;    // cuantas de la zona hay en la pokedex
 
   // stats de combate: base real de gen 1 x genes + nivel + entrenamiento
   uint16_t atkStat() const;

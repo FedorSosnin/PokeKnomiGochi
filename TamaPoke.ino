@@ -38,6 +38,8 @@
 #include "minigames.h"
 #include "pokerun.h"
 #include "dungeon.h"
+#include "zones.h"
+#include "zones_art.h"
 #include "buddy_net.h"
 
 // Version del firmware. Subir este numero en cada release (y manifest.json para
@@ -126,6 +128,14 @@ uint32_t feedMenuUntil = 0;   // selector de comida abierto hasta este millis
 // minijuego "toques": mantener la pokeball en el aire
 bool gameOpen = false;
 bool gamesMenuOpen = false;
+enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE };
+ZoneScreen zoneScreen = ZS_NONE;
+uint8_t zoneCur = 0, zonePage = 0;
+int8_t bZone = -1;                  // este combate es en una zona; -1 = al azar
+uint32_t zoneUntil = 0, zoneNoteUntil = 0;
+const char *zoneNote = nullptr;
+uint16_t *zoneArt = nullptr;        // los 5 cuadros, se pintan al abrir el menu la primera vez
+uint16_t *zoneBg = nullptr;         // el del combate en curso, ampliado a pantalla
 uint32_t gamesMenuUntil = 0;
 // quien es ese pokemon
 enum QuizPhase : uint8_t { QP_ASK, QP_REVEAL, QP_END };
@@ -681,6 +691,9 @@ void handleSerial() {
   } else if (line == "BATTLE") {
     startBattle();
     Serial.println("DONE");
+  } else if (line == "ZONES") {
+    openZones();
+    Serial.println("DONE");
   } else if (line.startsWith("WILD ")) {  // rival concreto (pruebas)
     startBattleWith(line.substring(5).toInt());
     Serial.println("DONE");
@@ -835,7 +848,7 @@ void handleTouch() {
 
   // juegos: el toque se resuelve al levantar el dedo, para que deslizar arriba salga
   // sin pulsar nada de paso. Solo el salto de PokeRun va al apoyar: ahi cuenta cada ms.
-  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen || dungeonOpen) {
+  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen || dungeonOpen || zoneScreen) {
     if (pressed) { tXl = x; tYl = y; }  // tXl: apuntar con el dedo donde no hay acelerometro
     // en la mazmorra, dejar el dedo apoyado sigue andando
     if (dungeonOpen && pressed && wasPressed && !swallowGesture && !dnOverT && millis() - tStart > 350 &&
@@ -859,11 +872,16 @@ void handleTouch() {
     } else if (!pressed && wasPressed) {
       wakeUI();
       if (!swallowGesture) {
-        if (swipeUpQuit(tX0, tY0, tXl, tYl, millis() - tStart)) quitGame();
-        else if (abs(tXl - tX0) < 40 && abs(tYl - tY0) < 40) {
+        if (swipeUpQuit(tX0, tY0, tXl, tYl, millis() - tStart)) {
+          if (zoneScreen) zoneBack();
+          else quitGame();
+        } else if (zoneScreen && abs(tXl - tX0) >= 40 && abs(tYl - tY0) < abs(tXl - tX0)) {
+          zoneTurnPage(tXl > tX0 ? -1 : 1);  // izquierda avanza, como en la Pokedex
+        } else if (abs(tXl - tX0) < 40 && abs(tYl - tY0) < 40) {
           if (battleOpen) battleTap(tX0, tY0);
           else if (quizOpen) quizTap(tX0, tY0);
           else if (gamesMenuOpen) gamesMenuTap(tX0, tY0);
+          else if (zoneScreen) zoneTap(tX0, tY0);
           else if (runOpen) runTap();
           else if (dungeonOpen && !dnHeld) dungeonTap(tX0, tY0);
         }
@@ -1394,7 +1412,7 @@ void printT(const char *s) {
 // mientras su "clave" no cambie no se repintan ni se vuelcan por QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (pet.awaitingEggPick() || buddyMenuOpen || tradeOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || runOpen || dungeonOpen) return false;  // la galeria gestiona su propio repintado
+  if (pet.awaitingEggPick() || buddyMenuOpen || tradeOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // la galeria gestiona su propio repintado
   if (kbOpen || clockOpen) return true;
   return cardOpen && cardPage != 0;  // la pagina 0 tiene el retrato animado
 }
@@ -1488,6 +1506,10 @@ bool render() {
   }
   if (gamesMenuOpen) {
     renderGamesMenu();
+    return true;
+  }
+  if (zoneScreen) {
+    renderZones();
     return true;
   }
   if (kbOpen) {
@@ -1729,7 +1751,7 @@ void stepGame() {
 #define GAMES_ROW_GAP 8
 #define GAMES_ROW_Y 112
 #ifdef BOARD_KNOMI_V2
-#define GAMES_COUNT 4
+#define GAMES_COUNT 5
 #else
 #define GAMES_COUNT 5  // sin boton fisico, el combate vive aqui
 #endif
@@ -1745,11 +1767,19 @@ void gamesMenuTap(int16_t x, int16_t y) {
   int row = (y - GAMES_ROW_Y) / (GAMES_ROW_H + GAMES_ROW_GAP);
   if (y < GAMES_ROW_Y || row >= GAMES_COUNT || x < GAMES_ROW_X || x > GAMES_ROW_X + GAMES_ROW_W) return;  // fuera = volver
   sfxPlay(SFX_TAP);
+#ifdef BOARD_KNOMI_V2
+  if (row == 0) openZones();
+  else if (row == 1) startDungeon();
+  else if (row == 2) startRun();
+  else if (row == 3) startQuiz();
+  else startGame();
+#else
   if (row == 0) startGame();
   else if (row == 1) startQuiz();
   else if (row == 2) startRun();
   else if (row == 3) startDungeon();
   else startBattle();
+#endif
 }
 
 void renderGamesMenu() {
@@ -1760,8 +1790,13 @@ void renderGamesMenu() {
   setSize(3);
   setCur(centerX(T(S_GAMES), 3), 74);
   printT(T(S_GAMES));
+#ifdef BOARD_KNOMI_V2
+  const char *labels[5] = { T(S_GAME_BATTLE), T(S_GAME_DUNGEON), T(S_GAME_RUN), T(S_GAME_WHO), T(S_GAME_TILT) };
+  const uint16_t colors[5] = { UI_BAR_BAD, TYPE_ACCENT[TY_FANTASMA], TYPE_ACCENT[TY_FUEGO], TYPE_ACCENT[TY_PSIQUICO], TYPE_ACCENT[TY_PLANTA] };
+#else
   const char *labels[5] = { T(S_GAME_TILT), T(S_GAME_WHO), T(S_GAME_RUN), T(S_GAME_DUNGEON), T(S_BTL_START) };
   const uint16_t colors[5] = { TYPE_ACCENT[TY_PLANTA], TYPE_ACCENT[TY_PSIQUICO], TYPE_ACCENT[TY_FUEGO], TYPE_ACCENT[TY_FANTASMA], UI_BAR_BAD };
+#endif
   setSize(2);
   for (int i = 0; i < GAMES_COUNT; i++) {
     int y = GAMES_ROW_Y + i * (GAMES_ROW_H + GAMES_ROW_GAP);
@@ -1909,7 +1944,7 @@ void endVisit() {
 
 // comprueba la hora y hace avanzar la visita, aunque haya otra pantalla abierta encima
 bool onMainScreen() {
-  return !gameOpen && !runOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !galleryOpen && !cardOpen &&
+  return !gameOpen && !runOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !zoneScreen && !galleryOpen && !cardOpen &&
                       !kbOpen && !clockOpen && !choiceKind && !confirmUntil && !buddyMenuOpen && !tradeOpen;
 }
 
@@ -1990,7 +2025,7 @@ void knomiButtonTap() {
   screenOff = false;
   wakeUI();
   if (wasAsleep) return;  // a oscuras solo despierta, como la pantalla tactil
-  if (buddyMenuOpen || tradeOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
+  if (buddyMenuOpen || tradeOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
   if (visitPhase != VP_NONE) return;  // no se pelea con la visita delante
   startBattle();
 }
@@ -2003,6 +2038,7 @@ void knomiAskReset() {
   if (runOpen) closeRun();
   if (dungeonOpen) closeDungeon();
   gamesMenuOpen = false;
+  zoneScreen = ZS_NONE;
   if (galleryOpen) { galleryOpen = false; galleryPmd.unload(); }
   wifiSetupStop();
   gameOpen = cardOpen = kbOpen = clockOpen = false;
@@ -2076,7 +2112,7 @@ void startBattleWith(int16_t dex) {
     return;
   }
   uint8_t foeLvl = btlWildLevel(lvl, random(4));
-  if (dex < 1 || dex > DEX_COUNT) dex = pet.pickWildSpecies(foeLvl);
+  if (dex < 1 || dex > DEX_COUNT) dex = bZone >= 0 ? pet.pickZoneSpecies(bZone, foeLvl) : pet.pickWildSpecies(foeLvl);
   wildPmd.load(dex, false);
   if (!wildPmd.loaded) return;  // sin sprite no hay rival que ensenar
 
@@ -2102,6 +2138,7 @@ void closeBattle() {
   if (bPvp) buddyBattleClosed();
   battleOpen = false;
   wildPmd.unload();
+  if (bZone >= 0) zoneBattleEnded();
 }
 
 void battleMoveRect(uint8_t i, int &x0, int &x1) {
@@ -2342,7 +2379,7 @@ void renderCatch() {
   uint8_t bio = DEX_TBL[bFoe.dex].biome;
   uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
   if (sceneHour() < 6 || sceneHour() >= 20) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
-  gfx->fillRect(0, 216, 466, BTL_BAND_Y - 216, soil);
+  if (!zoneBg) gfx->fillRect(0, 216, 466, BTL_BAND_Y - 216, soil);
   if (bPhase != BP_CAUGHT && bPhase != BP_FLED) {
     drawPmdActM(wildPmd, PMD_IDLE, (int)foeX, 216, now - bPhaseT, true, false, 3);
   }
@@ -2407,7 +2444,11 @@ void renderBattle() {
     uint8_t bio = DEX_TBL[bFoe.dex].biome;
     uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
     if (sceneHour() < 6 || sceneHour() >= 20) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
-    gfx->fillRect(0, 232, 466, BTL_BAND_Y - 232, soil);
+    if (zoneBg) {
+      soil = C565(0x10, 0x18, 0x20);  // sombra del rival sobre el escenario
+    } else {
+      gfx->fillRect(0, 232, 466, BTL_BAND_Y - 232, soil);
+    }
     gfx->fillRoundRect(BTL_FOE_X - 70, BTL_FOE_GROUND - 10, 140, 24, 12, soil);
     // la vida en pantalla persigue a la real
     bShownMe += (bMe.hp - bShownMe) * 0.28f;
@@ -2490,6 +2531,10 @@ void renderBattle() {
 
 // fondo del minijuego: hatibat del bicho (cielo por hora + suelo del bioma)
 void drawGameScene() {
+  if (zoneBg) {
+    gfx->draw16bitRGBBitmap(0, 0, zoneBg, 466, BTL_BAND_Y);
+    return;
+  }
   int hh = sceneHour();
   bool night = hh < 6 || hh >= 20;
   uint16_t top, bot;
@@ -4378,6 +4423,192 @@ void tradeTap(int16_t x, int16_t y) {
       tradeClose(true);
     }
   }
+}
+
+// ---------- Combate: las zonas ----------
+#define ZONE_ICON_R 50
+#define ZONE_GRID_X 73
+#define ZONE_GRID_Y 76
+#define ZONE_CELL 80
+#define ZONE_PAGE 12
+#define ZONE_BTN_X 123
+#define ZONE_BTN_Y 322
+#define ZONE_BTN_W 220
+#define ZONE_BTN_H 56
+#define ZONE_IDLE_MS 30000UL
+
+static const int16_t ZONE_XY[ZONE_COUNT][2] = { { 155, 112 }, { 311, 112 }, { 93, 258 }, { 233, 258 }, { 373, 258 } };
+static const StrId ZONE_NAME[ZONE_COUNT] = { S_ZONE_FOREST, S_ZONE_BEACH, S_ZONE_CAVE, S_ZONE_MANSION, S_ZONE_FIELD };
+static const uint16_t ZONE_COLOR[ZONE_COUNT] = { C565(0x3a, 0x8a, 0x4f), C565(0x2f, 0x7f, 0xb5), C565(0x6b, 0x5a, 0x8a), C565(0x7a, 0x3f, 0x8f), C565(0xc9, 0x8a, 0x1e) };
+
+void openZones() {
+  if (pet.isEgg() || pet.sleeping || pet.ceremony) { sfxPlay(SFX_DENY); return; }
+  if (!zoneArt) {
+    zoneArt = (uint16_t *)ps_malloc(ZONE_COUNT * ZONE_ART * ZONE_ART * sizeof(uint16_t));
+    if (zoneArt)
+      for (uint8_t z = 0; z < ZONE_COUNT; z++) zoneArtDraw(zoneArt + z * ZONE_ART * ZONE_ART, z);
+  }
+  zoneScreen = ZS_PICK;
+  zoneUntil = millis() + ZONE_IDLE_MS;
+}
+
+void zoneBack() {
+  sfxPlay(SFX_TAP);
+  if (zoneScreen == ZS_ZONE) {
+    zoneScreen = ZS_PICK;
+    zoneUntil = millis() + ZONE_IDLE_MS;
+  } else {
+    zoneScreen = ZS_NONE;
+    openGamesMenu();
+  }
+}
+
+void zoneTurnPage(int dir) {
+  zoneUntil = millis() + ZONE_IDLE_MS;
+  if (zoneScreen != ZS_ZONE) return;
+  int pages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
+  int np = (int)zonePage + dir;
+  if (np >= 0 && np < pages) zonePage = np;
+}
+
+// el fondo del combate se amplia una sola vez: copiarlo en cada fotograma cuesta poco
+void zoneBgLoad(uint8_t z) {
+  if (!zoneArt) return;
+  zoneBg = (uint16_t *)ps_malloc(466 * BTL_BAND_Y * sizeof(uint16_t));
+  if (!zoneBg) return;
+  const uint16_t *art = zoneArt + z * ZONE_ART * ZONE_ART;
+  for (int y = 0; y < BTL_BAND_Y; y++) {
+    const uint16_t *row = art + (y * ZONE_ART / BTL_BAND_Y) * ZONE_ART;
+    uint16_t *out = zoneBg + y * 466;
+    for (int x = 0; x < 466; x++) out[x] = row[x * ZONE_ART / 466];
+  }
+}
+
+void zoneSearch() {
+  sfxPlay(SFX_TAP);
+  zoneScreen = ZS_NONE;
+  bZone = zoneCur;
+  zoneBgLoad(zoneCur);
+  startBattleWith(0);
+  if (!battleOpen) zoneBattleEnded();  // sin sprite no hay combate: de vuelta a la zona
+}
+
+void zoneBattleEnded() {
+  if (zoneBg) { free(zoneBg); zoneBg = nullptr; }
+  zoneCur = bZone;
+  bZone = -1;
+  zoneScreen = ZS_ZONE;  // a seguir buscando, ya con la captura en la lista
+  zoneUntil = millis() + ZONE_IDLE_MS;
+}
+
+void zoneTap(int16_t x, int16_t y) {
+  zoneUntil = millis() + ZONE_IDLE_MS;
+  if (zoneScreen == ZS_PICK) {
+    for (uint8_t z = 0; z < ZONE_COUNT; z++) {
+      int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
+      if (dx * dx + dy * dy < (ZONE_ICON_R + 6) * (ZONE_ICON_R + 6) || (abs(dx) < 66 && dy > 0 && dy < ZONE_ICON_R + 44)) {
+        sfxPlay(SFX_TAP);
+        zoneCur = z;
+        zonePage = 0;
+        zoneNoteUntil = 0;
+        zoneScreen = ZS_ZONE;
+        return;
+      }
+    }
+    return;
+  }
+  if (y >= ZONE_BTN_Y && y < ZONE_BTN_Y + ZONE_BTN_H && x >= ZONE_BTN_X && x < ZONE_BTN_X + ZONE_BTN_W) {
+    zoneSearch();
+    return;
+  }
+  if (x < ZONE_GRID_X || y < ZONE_GRID_Y) return;
+  int c = (x - ZONE_GRID_X) / ZONE_CELL, r = (y - ZONE_GRID_Y) / ZONE_CELL;
+  if (c > 3 || r > 2) return;
+  int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + r * 4 + c);
+  if (!dex) return;
+  sfxPlay(SFX_TAP);
+  zoneNote = pet.isRegistered(dex) ? dexName(dex) : T(S_ZONE_MISSING);
+  zoneNoteUntil = millis() + 1600;
+}
+
+void zoneDrawIcon(uint8_t z) {
+  int cx = ZONE_XY[z][0], cy = ZONE_XY[z][1];
+  if (zoneArt) {
+    const uint16_t *art = zoneArt + z * ZONE_ART * ZONE_ART;
+    for (int dy = -ZONE_ICON_R; dy < ZONE_ICON_R; dy++) {
+      int half = (int)sqrtf(ZONE_ICON_R * ZONE_ICON_R - (dy + 0.5f) * (dy + 0.5f));
+      gfx->draw16bitRGBBitmap(cx - half, cy + dy, (uint16_t *)art + (dy + ZONE_ICON_R) * ZONE_ART + ZONE_ICON_R - half, half * 2, 1);
+    }
+  } else {
+    gfx->fillCircle(cx, cy, ZONE_ICON_R, ZONE_COLOR[z]);
+  }
+  for (int r = 0; r < 3; r++) gfx->drawCircle(cx, cy, ZONE_ICON_R + r - 1, UI_INK);
+}
+
+void renderZones() {
+  if (!timeLeft(zoneUntil) || pet.sleeping || pet.ceremony || pet.isEgg()) { zoneScreen = ZS_NONE; return; }
+  char b[32];
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->setTextColor(UI_INK);
+  setSize(3);
+  if (zoneScreen == ZS_PICK) {
+    setCur(centerX(T(S_GAME_BATTLE), 3), 26);
+    printT(T(S_GAME_BATTLE));
+    setSize(2);
+    for (uint8_t z = 0; z < ZONE_COUNT; z++) {
+      zoneDrawIcon(z);
+      int cx = ZONE_XY[z][0], y = ZONE_XY[z][1] + ZONE_ICON_R + 6;
+      int got = pet.zoneCaught(z), all = zoneSize(z);
+      gfx->setTextColor(UI_INK);
+      setCur(cx - textW(T(ZONE_NAME[z]), 2) / 2, y);
+      printT(T(ZONE_NAME[z]));
+      snprintf(b, sizeof(b), "%d/%d", got, all);
+      gfx->setTextColor(got == all ? UI_BAR_WARN : got ? ZONE_COLOR[z] : UI_TRACK);
+      setCur(cx - textW(b, 2) / 2, y + 18);
+      printT(b);
+    }
+    gfx->setTextColor(UI_INK);
+    setCur(centerX(T(S_SWIPE_BACK), 2), 396);
+    printT(T(S_SWIPE_BACK));
+    gfx->flush();
+    return;
+  }
+
+  setCur(centerX(T(ZONE_NAME[zoneCur]), 3), 22);
+  printT(T(ZONE_NAME[zoneCur]));
+  setSize(2);
+  const char *line = b;
+  if (timeLeft(zoneNoteUntil)) {
+    line = zoneNote;
+    gfx->setTextColor(ZONE_COLOR[zoneCur]);
+  } else {
+    snprintf(b, sizeof(b), T(S_ZONE_CAUGHT_FMT), pet.zoneCaught(zoneCur), zoneSize(zoneCur));
+  }
+  setCur(centerX(line, 2), 54);
+  printT(line);
+  for (int i = 0; i < ZONE_PAGE; i++) {
+    int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + i);
+    if (!dex) break;
+    int x = ZONE_GRID_X + (i % 4) * ZONE_CELL, y = ZONE_GRID_Y + (i / 4) * ZONE_CELL;
+    if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, x, y, 2, !pet.isRegistered(dex));
+    if (dex == ZONE_LEGEND[zoneCur]) {  // estrella: aqui espera el legendario
+      gfx->setTextColor(UI_BAR_WARN);
+      setCur(x + 62, y + 4);
+      printT("*");
+    }
+  }
+  gfx->fillRoundRect(ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, 14, ZONE_COLOR[zoneCur]);
+  gfx->setTextColor(UI_WHITE);
+  setCur(centerX(T(S_ZONE_SEARCH), 2), ZONE_BTN_Y + 21);
+  printT(T(S_ZONE_SEARCH));
+  int pages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
+  for (int i = 0; i < pages; i++) {
+    int dotX = CX + (i * 2 - (pages - 1)) * 7;
+    if (i == zonePage) gfx->fillCircle(dotX, 396, 4, UI_INK);
+    else gfx->drawCircle(dotX, 396, 3, UI_INK);
+  }
+  gfx->flush();
 }
 
 void drawBattery() {

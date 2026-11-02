@@ -1,5 +1,6 @@
 #include "pet.h"
 #include "battle.h"
+#include "zones.h"
 #include "minigames.h"
 #include "dex.h"
 #include "audio.h"
@@ -625,6 +626,34 @@ int16_t Pet::pickWildSpecies(uint8_t lvl) {
     legend = false;
   }
   return 16;  // inalcanzable: las formas base siempre son candidatas
+}
+
+int Pet::zoneCaught(uint8_t zone) const {
+  int n = 0;
+  for (int16_t d = 1; d <= 151; d++)
+    if (zoneOf(d) == zone && isRegistered(d)) n++;
+  return n;
+}
+
+int16_t Pet::pickZoneSpecies(uint8_t zone, uint8_t lvl) {
+  int16_t legend = ZONE_LEGEND[zone];
+  bool complete = true;
+  for (int16_t d = 1; d <= 151 && complete; d++)
+    if (zoneOf(d) == zone && d != legend && !isRegistered(d)) complete = false;
+  if (complete && random(100) < (isRegistered(legend) ? ZONE_LEGEND_SEEN_PCT : ZONE_LEGEND_NEW_PCT)) return legend;
+
+  bool preferNew = random(100) < ZONE_NEW_PCT;
+  for (int pass = 0; pass < 2; pass++) {
+    int16_t cand[151];
+    int n = 0;
+    for (int16_t d = 1; d <= 151; d++) {
+      if (zoneOf(d) != zone || d == legend || btlMinLevel(d) > lvl) continue;
+      if (pass == 0 && preferNew && isRegistered(d)) continue;
+      cand[n++] = d;
+    }
+    if (n > 0) return cand[random(n)];
+  }
+  return zoneMember(zone, 0);  // inalcanzable: cada zona tiene formas base
 }
 
 void Pet::play() {

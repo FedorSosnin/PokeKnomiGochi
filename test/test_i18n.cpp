@@ -45,6 +45,7 @@ static const ExpectedFmt EXPECTED[] = {
   { S_BUDDY_LEFT_FMT, "%s" },
   { S_BUDDY_BUSY_FMT, "%s" },
   { S_TRADE_GOT_FMT, "%s" },
+  { S_ZONE_CAUGHT_FMT, "%d,%d" },
   { S_POKEDEX_FMT,     "%u" },
   { S_NAME_FMT,        "%s,%s,%u" },
   { S_RELEASE_FMT,     "%s" },
