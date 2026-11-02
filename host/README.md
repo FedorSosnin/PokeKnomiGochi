@@ -7,13 +7,13 @@ Runs the game on something that isn't a board. It is split in two so a future we
 
 ## The game is not forked
 
-`TamaPoke.ino`, `pet.cpp`, `i18n.cpp` and `sdmon.cpp` are the same files the boards compile. The host builds with `-DBOARD_HOST -DBOARD_KNOMI_V2`: to the sketch it is a Knomi with different hardware underneath, so it gets the Knomi's Games menu, Battle zones and physical button. `host_hal.h` provides the classes `knomi_hal.h` provides on the board.
+`PokeKnomiGochi.ino`, `pet.cpp`, `i18n.cpp` and `sdmon.cpp` are the same files the boards compile. The host builds with `-DBOARD_HOST -DBOARD_KNOMI_V2`: to the sketch it is a Knomi with different hardware underneath, so it gets the Knomi's Games menu, Battle zones and physical button. `host_hal.h` provides the classes `knomi_hal.h` provides on the board.
 
 `BOARD_HOST` appears in the shared code only where a desktop should differ from the Knomi:
 
 | Where | Why |
 |---|---|
-| `TamaPoke.ino` includes | Picks `host_hal.h` |
+| `PokeKnomiGochi.ino` includes | Picks `host_hal.h` |
 | `sdmon.cpp` includes | Reads sprites from a folder through `host_pak.h` |
 | `loop()` frame rate | Caps the idle interval at 150 ms, since there is no battery to protect |
 | Clock screen | No Wi-Fi settings page, because the system owns Wi-Fi |

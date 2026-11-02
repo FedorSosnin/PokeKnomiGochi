@@ -1,4 +1,4 @@
-# TamaPoke assets — where the sprites come from
+# PokeKnomiGochi assets — where the sprites come from
 
 The sprites are NOT edited by hand or stored here: they are **downloaded from
 their sources and packed** with the scripts in `tools/`. This folder is only

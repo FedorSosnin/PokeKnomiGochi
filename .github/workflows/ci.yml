@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: TamaPoke  # arduino-cli requires the folder to be named like the sketch
+          path: PokeKnomiGochi  # arduino-cli requires the folder to be named like the sketch
 
       - name: Install arduino-cli
         uses: arduino/setup-arduino-cli@v2
@@ -33,7 +33,7 @@ jobs:
         run: >
           arduino-cli compile --warnings=all
           --fqbn "esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-          TamaPoke
+          PokeKnomiGochi
 
       - name: Compile for Knomi
         run: >
@@ -41,7 +41,7 @@ jobs:
           --fqbn "esp32:esp32:esp32s3:CDCOnBoot=default,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
           --build-property "compiler.cpp.extra_flags=-DBOARD_KNOMI_V2"
           --build-property "compiler.c.extra_flags=-DBOARD_KNOMI_V2"
-          TamaPoke
+          PokeKnomiGochi
 
   generated:
     name: Generated headers up to date

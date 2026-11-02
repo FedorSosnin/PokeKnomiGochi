@@ -11,10 +11,10 @@ arduino-cli compile --fqbn "$FQBN" --export-binaries .
 B=build/esp32.esp32.esp32s3
 echo "Merging binaries..."
 esptool.py --chip esp32s3 merge-bin -o web/firmware/tamapoke.bin \
-  0x0     "$B/TamaPoke.ino.bootloader.bin" \
-  0x8000  "$B/TamaPoke.ino.partitions.bin" \
+  0x0     "$B/PokeKnomiGochi.ino.bootloader.bin" \
+  0x8000  "$B/PokeKnomiGochi.ino.partitions.bin" \
   0xe000  "$B/boot_app0.bin" \
-  0x10000 "$B/TamaPoke.ino.bin"
+  0x10000 "$B/PokeKnomiGochi.ino.bin"
 
 echo "OK -> web/firmware/tamapoke.bin ($(du -h web/firmware/tamapoke.bin | cut -f1))"
 

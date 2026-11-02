@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TamaPoke sprite workshop.
+"""PokeKnomiGochi sprite workshop.
 
 The 32x32 sprites are BUILT from primitives (ellipses with automatic shading
 on the lower-right edge, automatic silhouette outline) plus pixel-level

@@ -169,7 +169,7 @@ class TestSketchSanity(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(ROOT, 'TamaPoke.ino')) as fh:
+        with open(os.path.join(ROOT, 'PokeKnomiGochi.ino')) as fh:
             cls.ino = fh.read()
 
     def test_sketch_has_no_non_ascii_characters_in_screen_literals(self):
@@ -179,11 +179,11 @@ class TestSketchSanity(unittest.TestCase):
             code = line.split('//')[0]
             for chunk in code.split('"')[1::2]:
                 self.assertTrue(chunk.isascii(),
-                                f'TamaPoke.ino:{lineno}: non-ASCII literal: {chunk!r}')
+                                f'PokeKnomiGochi.ino:{lineno}: non-ASCII literal: {chunk!r}')
 
     def test_braces_are_balanced(self):
         self.assertEqual(self.ino.count('{'), self.ino.count('}'),
-                         'unbalanced braces in TamaPoke.ino')
+                         'unbalanced braces in PokeKnomiGochi.ino')
 
 
 
@@ -238,7 +238,7 @@ class TestTextBuffers(unittest.TestCase):
         ids = re.findall(r'\b(S_[A-Z0-9_]+)\b', body)
         rows = fmt.extract_table(read('i18n.cpp'), 'STRINGS', len(cls.LANGS))
         cls.LIT = {sid: [row[k] for row in rows] for k, sid in enumerate(ids)}
-        cls.ino = read('TamaPoke.ino').splitlines()
+        cls.ino = read('PokeKnomiGochi.ino').splitlines()
         cls.NICK = int(re.search(r'char\s+nick\[(\d+)\]', read('pet.h')).group(1)) - 1
         base = max(len(row[2].encode()) for row in DEX)
         cls.NAME = {}
@@ -295,14 +295,14 @@ class TestTextBuffers(unittest.TestCase):
             size = next((int(d.group(1)) for k in range(n - 2, -1, -1)
                          for d in [re.search(r'\bchar\s+' + var + r'\s*\[(\d+)\]', self.ino[k])]
                          if d), None)
-            self.assertIsNotNone(size, f'TamaPoke.ino:{n}: cannot find the declaration of {var}')
+            self.assertIsNotNone(size, f'PokeKnomiGochi.ino:{n}: cannot find the declaration of {var}')
             checked += 1
             for li, lang in enumerate(self.LANGS):
                 with self.subTest(line=n, id=sid, language=lang):
                     worst = self.worst_case(sid, li)
                     self.assertLessEqual(
                         worst, size,
-                        f'TamaPoke.ino:{n}: {var}[{size}] with {sid} in {lang} needs {worst} bytes')
+                        f'PokeKnomiGochi.ino:{n}: {var}[{size}] with {sid} in {lang} needs {worst} bytes')
         self.assertGreater(checked, 10, 'the snprintf pattern no longer finds the calls')
 
 if __name__ == '__main__':

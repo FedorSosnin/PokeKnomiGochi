@@ -34,7 +34,7 @@ $(BUILD)/%.o: $(ROOT)/%.cpp $(HEADERS)
 	@mkdir -p $(BUILD)
 	$(CXX) $(ALLFLAGS) -c -o $@ $<
 
-$(UNIT): $(ROOT)/TamaPoke.ino gen_sketch_unit.py
+$(UNIT): $(ROOT)/PokeKnomiGochi.ino gen_sketch_unit.py
 	@mkdir -p $(BUILD)
 	python3 -I gen_sketch_unit.py $< $@
 

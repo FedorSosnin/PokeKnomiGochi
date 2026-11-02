@@ -1,4 +1,4 @@
-// TamaPoke - pixel-art tamagotchi inspired by gen 1
+// PokeKnomiGochi - pixel-art tamagotchi inspired by gen 1, adapted from TamaPoke by Quique Tortosa
 // for Waveshare ESP32-S3-Touch-AMOLED-1.75
 //
 // Libraries (Library Manager or Waveshare repo):
@@ -305,7 +305,7 @@ void setup() {
 #ifndef BOARD_KNOMI_V2  // the Knomi sends serial through a CH340 (UART0): it never blocks
   Serial.setTxTimeoutMs(0);
 #endif
-  Serial.printf("TamaPoke fw v%s\n", FW_VERSION);
+  Serial.printf("PokeKnomiGochi fw v%s\n", FW_VERSION);
   loadLang();  // saved language (ES by default)
   Wire.begin(IIC_SDA, IIC_SCL);
   // CST9217 (touch), AXP2101 (PMU) y PCF85063 (RTC) share this I2C bus.
@@ -3457,8 +3457,8 @@ void renderClock() {
   printT(T(S_CLOCK_CANCEL));
 
   // firmware version (discreet, at the very bottom)
-  char ver[20];
-  snprintf(ver, sizeof(ver), "TamaPoke v%s", FW_VERSION);
+  char ver[28];
+  snprintf(ver, sizeof(ver), "PokeKnomiGochi v%s", FW_VERSION);
   setSize(1);
   setCur(centerX(ver, 1), 436);
   printT(ver);

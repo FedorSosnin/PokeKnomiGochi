@@ -41,6 +41,6 @@ python3 test/test_tools.py    # only the tools/ scripts
 
 ## What is NOT covered
 
-Everything that needs the board: screen and touch (`TamaPoke.ino`), audio
+Everything that needs the board: screen and touch (`PokeKnomiGochi.ino`), audio
 (`audio.cpp`), SD card (`sdmon.cpp`) and RTC/battery (`rtcbat.cpp`). The
 `.ino` is not compiled here either: that needs `arduino-cli` with the ESP32 core.

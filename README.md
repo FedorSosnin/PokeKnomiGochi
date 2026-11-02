@@ -142,14 +142,14 @@ esptool --port YOUR_PORT read-flash 0 ALL knomi-backup.bin
 
 ## Build it yourself
 
-The project builds with [arduino-cli](https://arduino.github.io/arduino-cli/) and ESP32 core 3.3.10. The folder has to be called `TamaPoke`, because Arduino requires the folder to match the sketch name.
+The project builds with [arduino-cli](https://arduino.github.io/arduino-cli/) and ESP32 core 3.3.10. The folder has to be called `PokeKnomiGochi`, because Arduino requires the folder to match the sketch name.
 
 ```bash
-git clone https://github.com/FedorSosnin/PokeKnomiGochi.git TamaPoke
+git clone https://github.com/FedorSosnin/PokeKnomiGochi.git
 ```
 
 ```bash
-cd TamaPoke
+cd PokeKnomiGochi
 ```
 
 ```bash
