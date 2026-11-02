@@ -16,18 +16,13 @@ if [[ ! -d $SITE/.git ]]; then
   $GIT clone -q https://github.com/$REPO.git $SITE
 fi
 $GIT -C $SITE pull -q --ff-only 2>/dev/null || true
-rsync -a --delete --exclude .git --exclude CNAME --exclude README.md web/play/ $SITE/
+rsync -a --delete --exclude .git --exclude CNAME web/play/ $SITE/
 echo $DOMAIN > $SITE/CNAME
-cat > $SITE/README.md <<EOF
-# PokeWebGochi
-
-The browser version of [PokeKnomiGochi](https://github.com/FedorSosnin/PokeKnomiGochi), published at
-https://$DOMAIN. These are built files: the source and how to build them are in that repository
-(\`webgame/\`), and this repository is updated by its \`tools/publish_web.sh\`.
-
-Based on [TamaPoke](https://github.com/socquique/TamaPoke) by Quique Tortosa. Sprites from PMDCollab,
-CC BY-NC 4.0. Pokémon © Nintendo / Game Freak / The Pokémon Company. Personal, non-commercial use only.
-EOF
+cp webgame/SITE_README.md $SITE/README.md
+mkdir -p $SITE/images  # the README's pictures
+for i in web-desktop web-phone home battle catch zones pokedex games buddy buddy-menu press; do
+  cp docs/images/$i.png $SITE/images/
+done
 touch $SITE/.nojekyll
 $GIT -C $SITE add -A
 if $GIT -C $SITE diff --cached --quiet; then echo "nothing new to publish"; exit 0; fi

@@ -4,6 +4,8 @@ A Pokémon tamagotchi for the **BTT Knomi V2**, the little round screen made for
 
 <p align="center"><img src="docs/images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a Knomi in its printed Poké Ball case" width="420"></p>
 
+**No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac).
+
 This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) by Quique Tortosa, who created the game and did the hard work. PokeKnomiGochi brings it to the Knomi and adds battles, catching and new games. Please give the original a star.
 
 | | | |
@@ -189,6 +191,11 @@ The code still supports the original Waveshare board that TamaPoke was made for.
 ## PokeWebGochi (browser)
 
 **[Play in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet: the same game, with the Knomi screen centered on a black page. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.
+
+| | |
+|:--:|:--:|
+| <img src="docs/images/web-desktop.png" alt="PokeWebGochi in a computer's browser" width="520"> | <img src="docs/images/web-phone.png" alt="PokeWebGochi on a phone" width="170"> |
+| **On a computer** | **On a phone** |
 
 - **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser.
 - **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.

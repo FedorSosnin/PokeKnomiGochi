@@ -6,7 +6,21 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#000000">
-<title>PokeWebGochi</title>
+<title>PokeWebGochi · A Pokémon virtual pet in your browser</title>
+<meta name="description" content="Raise a Pokémon, battle and catch wild ones, fill your Pokédex and play with buddies. Free, in your browser, nothing to install.">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="PokeWebGochi">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pokewebgochi.3dprintsos.com/">
+<meta property="og:title" content="PokeWebGochi">
+<meta property="og:description" content="A Pokémon virtual pet in your browser: raise it, battle, catch, and play with buddies.">
+<meta property="og:image" content="https://pokewebgochi.3dprintsos.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root { --fit: min(92vw, calc(100vh - 110px)); --side: min(var(--fit), 380px); --ring: calc(var(--side) * 0.04); }
   html, body { margin: 0; height: 100%; background: #000; color: #9a9a9a; overflow: hidden;
@@ -33,6 +47,9 @@
 </head>
 <body>
 <div id="hint">Tap, hold and swipe the screen · ← → tilt · Space: wild battle</div>
+<script>  // a phone has no arrow keys or Space: it tilts
+  if (matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Tap, hold and swipe the screen · Tilt to aim';
+</script>
 <div id="ball"><canvas id="screen" width="466" height="466"></canvas></div>
 <div id="msg">Loading…</div>
 <button id="upd" type="button">New version · Reload</button>

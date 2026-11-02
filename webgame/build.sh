@@ -27,4 +27,5 @@ em++ -std=c++17 -O2 -DBOARD_HOST -DBOARD_KNOMI_V2 -I host -I host/shim -I . \
 BUILD=$(cat $OUT/pokewebgochi.js $OUT/pokewebgochi.wasm $OUT/pokewebgochi.data | shasum | cut -c1-10)
 sed "s/__BUILD__/$BUILD/g" webgame/shell.html > $OUT/index.html
 printf '{"build":"%s"}\n' "$BUILD" > $OUT/version.json
+cp webgame/assets/* $OUT/  # icons, the shared-link preview, the home-screen manifest
 du -ch $OUT/* | tail -1
