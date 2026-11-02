@@ -1089,8 +1089,11 @@ void onTap(int16_t x, int16_t y) {
     return;
   }
   if (feedMenuUntil) {       // selector de comida
-    if (timeLeft(feedMenuUntil) && y >= 288 && y <= 352 && x >= 101 && x <= 365) {
-      int item = (x - 101) / 66;
+    int count = pet.canHaveCandy() ? 4 : 3;
+    int x0 = CX - count * 33;
+    if (timeLeft(feedMenuUntil) && y >= 288 && y <= 352 && x >= x0 && x <= x0 + count * 66) {
+      int item = (x - x0) / 66;
+      if (item >= count) item = count - 1;
       if (item == 3) pet.feedCandy();
       else pet.feedBerry(item);
       sfxPlay(SFX_EAT);
@@ -1595,12 +1598,15 @@ bool render() {
     if (!timeLeft(feedMenuUntil)) {
       feedMenuUntil = 0;
     } else {
-      gfx->fillRoundRect(101, 288, 264, 64, 14, UI_WHITE);
-      gfx->drawRoundRect(101, 288, 264, 64, 14, inkColor());
-      drawMap(SPR_ICON_FOOD, 16, 110, 296, 3, false);
-      drawMap(SPR_ICON_BERRY_B, 16, 176, 296, 3, false);
-      drawMap(SPR_ICON_BERRY_G, 16, 242, 296, 3, false);
-      drawMap(SPR_ICON_CANDY, 16, 308, 296, 3, false);
+      // gastadas las chuches del dia, el menu se queda en las tres bayas
+      int count = pet.canHaveCandy() ? 4 : 3;
+      int x0 = CX - count * 33;
+      gfx->fillRoundRect(x0, 288, count * 66, 64, 14, UI_WHITE);
+      gfx->drawRoundRect(x0, 288, count * 66, 64, 14, inkColor());
+      drawMap(SPR_ICON_FOOD, 16, x0 + 9, 296, 3, false);
+      drawMap(SPR_ICON_BERRY_B, 16, x0 + 75, 296, 3, false);
+      drawMap(SPR_ICON_BERRY_G, 16, x0 + 141, 296, 3, false);
+      if (count == 4) drawMap(SPR_ICON_CANDY, 16, x0 + 207, 296, 3, false);
     }
   }
 

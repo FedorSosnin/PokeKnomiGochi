@@ -46,6 +46,8 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 ## How to play
 
+See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does.
+
 | Do this | What happens |
 |---|---|
 | **Tap the Pokémon** | Pet it |
@@ -73,9 +75,9 @@ If you beat a Pokémon you haven't caught yet, you get three Poké Balls. Tap to
 
 Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
-- **PokeRun:** tap to jump over rocks and bushes in a forest that keeps getting faster. How long can you last?
 - **Battle:** pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. The physical button still starts a random battle.
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
+- **PokeRun:** tap to jump over rocks and bushes in a forest that keeps getting faster. How long can you last?
 - **Who's That Pokémon?:** name the silhouette, five rounds per game.
 - **Tilt Catch:** lean left and right to catch falling berries.
 

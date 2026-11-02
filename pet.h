@@ -16,6 +16,9 @@
 #define BTL_MIN_ENERGY 15    // por debajo no quiere pelear
 #define EAT_ANIM_MS 2500UL
 #define HEART_MS 1500UL
+#define PET_JOY_TAPS 3                 // caricias por hora que suben la felicidad
+#define PET_JOY_WINDOW_MS 3600000UL
+#define CANDY_PER_DAY 2
 #define EVOLVE_ANIM_MS 5200UL              // animacion de evolucion (mas larga = mas epica)
 #define CEREMONY_MS 10000UL                // duracion de la despedida en pantalla
 #define FAREWELL_AGE_MIN (3UL * 24 * 60)   // se despide a los 3 dias de juego (en forma final)
@@ -85,6 +88,10 @@ public:
   uint16_t lastMilestone = 0;  // hito de racha ya celebrado
   uint16_t gameHi = 0;     // record del minijuego (del jugador)
   uint16_t runHi = 0;      // record de PokeRun, en segundos
+  uint8_t petJoyTaps = 0;  // caricias que han contado en esta hora (no se guarda)
+  uint32_t petJoyStart = 0;
+  uint8_t candyToday = 0;  // chuches dadas el dia candyDay
+  uint32_t candyDay = 0;
   uint8_t dungeonHi = 0;   // planta mas honda de PokeDungeon
   uint16_t battleWins = 0; // combates ganados por este individuo
   uint32_t visitorDay = 0;  // ultimo dia con visita
@@ -103,6 +110,9 @@ public:
   void playResult(uint8_t score);  // recompensa del minijuego (entrena VEL)
   void runResult(uint16_t secs);   // PokeRun: igual, cada 4 s cuentan como un punto
   void dungeonResult(uint8_t floor);
+  bool canHaveCandy() const {  // sin reloj aun no se sabe si es otro dia: sigue contando el ultimo
+    return (today() != 0 && today() != candyDay) || candyToday < CANDY_PER_DAY;
+  }
   void friendlyBattle(bool won);  // contra un buddy: alegra, pero no agota ni entrena
   // combate: entrena FUE y cansa. Devuelve la subida de FUE.
   uint8_t battleResult(bool won);
@@ -201,7 +211,7 @@ public:
   void flushSave();
 
 private:
-  void exerciseReward(uint8_t score);
+  void exerciseReward(uint8_t score, bool costsFood = true);
   Preferences prefs;
   uint32_t lastTick = 0;
   uint32_t eatUntil = 0;

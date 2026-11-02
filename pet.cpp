@@ -490,7 +490,12 @@ void Pet::feedBerry(uint8_t color) {
 
 void Pet::feedCandy() {
   if (ceremony != CER_NONE) return;
-  if (isEgg() || sleeping) return;
+  if (isEgg() || sleeping || !canHaveCandy()) return;
+  if (today() != 0 && today() != candyDay) {
+    candyDay = today();
+    candyToday = 0;
+  }
+  candyToday++;
   fullness = clamp100(fullness + 10);
   joy = clamp100(joy + 12);
   weight = clamp100(weight + 12);  // las chuches pasan factura
@@ -499,12 +504,12 @@ void Pet::feedCandy() {
   save();
 }
 
-void Pet::exerciseReward(uint8_t score) {
+void Pet::exerciseReward(uint8_t score, bool costsFood) {
   uint8_t v = trSpe + score / 5;  // jugar entrena la velocidad
   trSpe = v > 100 ? 100 : v;
   joy = clamp100(joy + 5 + (score > 15 ? 30 : score * 2));
   energy = dropTo(energy, 10 + score / 2, 5);
-  fullness = dropTo(fullness, 5, 5);
+  if (costsFood) fullness = dropTo(fullness, 5, 5);
   int burn = (int)weight - score * 2;  // el ejercicio quema peso
   weight = burn > 0 ? burn : 0;
   if (score >= 5) heartUntil = millis() + HEART_MS;
@@ -515,7 +520,8 @@ void Pet::exerciseReward(uint8_t score) {
 void Pet::playResult(uint8_t score) {
   if (ceremony != CER_NONE || isEgg()) return;
   if (score > gameHi) gameHi = score;  // nuevo record
-  exerciseReward(score);
+  exerciseReward(score, false);
+  fullness = clamp100(fullness + 5);   // lo que cae son bayas: atrapar tambien alimenta
   save();
 }
 
@@ -687,7 +693,16 @@ void Pet::clean() {
 void Pet::caress() {
   if (ceremony != CER_NONE) return;
   if (isEgg() || sleeping) return;
-  joy = clamp100(joy + 5);
+  // la caricia siempre se agradece, pero la felicidad hay que ganarsela: solo cuentan las primeras
+  uint32_t now = millis();
+  if (petJoyTaps == 0 || now - petJoyStart >= PET_JOY_WINDOW_MS) {
+    petJoyStart = now;
+    petJoyTaps = 0;
+  }
+  if (petJoyTaps < PET_JOY_TAPS) {
+    petJoyTaps++;
+    joy = clamp100(joy + 5);
+  }
   heartUntil = millis() + HEART_MS;
   addBond(1);
   registerCare();
@@ -747,6 +762,8 @@ void Pet::save() {
   prefs.putUShort("ghi", gameHi);
   prefs.putUShort("rhi", runHi);
   prefs.putUChar("dhi", dungeonHi);
+  prefs.putUChar("cdyn", candyToday);
+  prefs.putUInt("cdyd", candyDay);
   prefs.putUShort("bwin", battleWins);
   prefs.putUChar("bmov", movesSeen);
   prefs.putUInt("vday", visitorDay);
@@ -804,6 +821,8 @@ void Pet::load() {
   gameHi = prefs.getUShort("ghi", 0);
   runHi = prefs.getUShort("rhi", 0);
   dungeonHi = prefs.getUChar("dhi", 0);
+  candyToday = prefs.getUChar("cdyn", 0);
+  candyDay = prefs.getUInt("cdyd", 0);
   battleWins = prefs.getUShort("bwin", 0);
   movesSeen = prefs.getUChar("bmov", 1);
   visitorDay = prefs.getUInt("vday", 0);

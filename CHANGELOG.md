@@ -9,6 +9,9 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 ## [Unreleased]
 
 - **Buddies:** other PokeKnomiGochis on the same Wi-Fi show up on your screen, and you can battle them or trade Pokédex entries. The Knomi stays connected to Wi-Fi to make this work.
+- **Joy is earned:** only the first 3 pets each hour add joy, though it still loves every one. Candy is limited to 2 a day and leaves the menu after that.
+- **Tilt Catch feeds your Pokémon:** it now gives +5 food and only costs energy.
+- **How it works:** new guide with charts of what everything does.
 - **Battle zones (Knomi):** Games > Battle opens five zones to hunt in, with progress and silhouettes of what's missing. Filling a zone brings out its legendary. The Games menu now goes Battle, PokeDungeon, PokeRun, Who's That?, Tilt Catch.
 - **PokeDungeon:** explore floor after floor with your own Pokémon. Tap to step or fight, find the stairs, and see how deep you get.
 - **Shiny odds:** the next Pokémon has a 25% shiny chance after a goodbye or release.

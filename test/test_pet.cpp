@@ -1135,3 +1135,47 @@ TEST(save, el_autoguardado_se_marca_y_se_vuelca) {
   p.flushSave();
   CHECK(!p.savePending());
 }
+
+TEST(joy, solo_tres_caricias_por_hora_suben_la_felicidad) {
+  Pet p;
+  makePet(p, 4);
+  p.joy = 50;
+  for (int i = 0; i < 10; i++) p.caress();
+  CHECK_EQ(p.joy, (uint8_t)65);
+  CHECK(p.showHeart());  // sigue agradeciendolo
+  mockSetMillis(millis() + PET_JOY_WINDOW_MS);
+  p.caress();
+  CHECK_EQ(p.joy, (uint8_t)70);
+}
+
+TEST(joy, dos_chuches_al_dia) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(86400UL * 1000);
+  p.fullness = p.joy = 10;
+  CHECK(p.canHaveCandy());
+  p.feedCandy();
+  p.feedCandy();
+  CHECK(!p.canHaveCandy());
+  p.feedCandy();
+  CHECK_EQ(p.fullness, (uint8_t)30);
+  CHECK_EQ(p.joy, (uint8_t)34);
+  CHECK_EQ(p.weight, (uint8_t)24);
+  Pet q;
+  q.begin();
+  CHECK_MSG(!q.canHaveCandy(), "reiniciar no regala chuches");
+  p.setClock(86400UL * 1001);
+  CHECK(p.canHaveCandy());
+  p.feedCandy();
+  CHECK_EQ(p.candyToday, (uint8_t)1);
+}
+
+TEST(play, tilt_catch_alimenta_y_solo_cuesta_energia) {
+  Pet p;
+  makePet(p, 4);
+  p.fullness = 50;
+  p.energy = 80;
+  p.playResult(4);
+  CHECK_EQ(p.fullness, (uint8_t)55);
+  CHECK_EQ(p.energy, (uint8_t)68);
+}
