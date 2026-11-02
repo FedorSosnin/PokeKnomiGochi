@@ -116,3 +116,4 @@ These stay with you across every Pokémon you raise.
 | 💯 **Level 100** | Raise a Pokémon to level 100 |
 | 🤝 **First buddy** | Have a buddy's Pokémon on your screen |
 | 🎉 **Party of 5** | Have 4 buddies at once: 5 Pokémon on screen |
+| 🎮 **Playmate** | Play a game with a buddy (Who's That? Showdown) |

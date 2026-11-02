@@ -52,7 +52,7 @@ enum : uint8_t { CER_NONE = 0, CER_FAREWELL, CER_RUNAWAY, CER_RELEASE };
 enum PetMood : uint8_t { MOOD_HAPPY, MOOD_SAD, MOOD_EATING, MOOD_SLEEPING };
 
 // individual's medals (bitmask)
-enum : uint16_t {
+enum : uint32_t {
   MED_LV10 = 1 << 0, MED_LV25 = 1 << 1, MED_LV50 = 1 << 2,
   MED_BERRY = 1 << 3, MED_STREAK7 = 1 << 4, MED_BOND = 1 << 5,
   MED_FINAL = 1 << 6, MED_FIT = 1 << 7,
@@ -60,9 +60,10 @@ enum : uint16_t {
   MED_SHINY = 1 << 8, MED_DEX10 = 1 << 9, MED_DEX50 = 1 << 10, MED_DEX100 = 1 << 11,
   MED_DEX151 = 1 << 12, MED_LV100 = 1 << 13,
   MED_BUDDY = 1 << 14, MED_PARTY = 1 << 15,  // a buddy on screen; a party of 5 Pokemon on screen
+  MED_PLAYMATE = 1UL << 16,                  // played a game with a buddy (Who's That? Showdown)
 };
 #define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer
-#define MED_COUNT 16
+#define MED_COUNT 17
 #define PARTY_SIZE 5  // MED_PARTY: yours and 4 buddies at once
 
 class Pet {
@@ -97,8 +98,8 @@ public:
   char nick[12] = "";    // nickname (empty = species name)
   // medals: the individual's + cumulative counter across all raisings
   uint16_t medals = 0, totalMedals = 0;
-  uint16_t trainerMedals = 0;  // MED_SHINY..MED_PARTY: never reset by a new pet
-  uint16_t newMedal = 0;   // just earned, to celebrate
+  uint32_t trainerMedals = 0;  // MED_SHINY..MED_PLAYMATE: never reset by a new pet
+  uint32_t newMedal = 0;   // just earned, to celebrate
   uint16_t lastMilestone = 0;  // streak milestone already celebrated
   uint16_t gameHi = 0;     // minigame record (the player's)
   uint16_t runHi = 0;      // PokeRun record, in seconds
@@ -133,6 +134,7 @@ public:
   uint8_t battleResult(bool won);
   bool catchWild(int16_t dex);           // catch: registers in the pokedex; true if new
   void quizResult(uint8_t correct);      // who's that pokemon
+  void showdownResult(uint8_t mine, uint8_t theirs);  // Who's That? Showdown with a buddy
   bool visitorDueNow() const;            // a visit is due today
   void visitorArrived();                 // records the day: doesn't repeat even after a restart
   void visitorLeft();                    // the visit cheers it up
@@ -213,7 +215,7 @@ public:
   // streak / bond / medals / name
   void rename(const char *name);
   void buddiesOnScreen(uint8_t n);  // buddies showing right now: MED_BUDDY, MED_PARTY
-  bool hasMedal(uint16_t m) const { return (medals | trainerMedals) & m; }
+  bool hasMedal(uint32_t m) const { return (medals | trainerMedals) & m; }
   bool showMedal() const { return timeLeft(medalUntil) > 0; }
   bool showMilestone() const { return timeLeft(milestoneUntil) > 0; }
   int careBonus() const;  // egg improvement from streak + bond

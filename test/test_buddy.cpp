@@ -166,3 +166,46 @@ TEST(buddy, yours_stands_in_the_middle_and_bigger) {
   }
   CHECK(partyBuddyX(2, 1) < PARTY_MINE_X && partyBuddyX(2, 2) > PARTY_MINE_X);  // one on each side
 }
+
+TEST(buddy, showdown_rounds_are_the_same_on_both_boards) {
+  for (uint32_t session : { 1u, 0x12345u, 0xFFFFFFFFu }) {
+    int16_t seen[SD_ROUNDS] = {};
+    for (uint8_t r = 0; r < SD_ROUNDS; r++) {
+      int16_t a1, a2, o1[3], o2[3];
+      sdRoundOf(session, r, &a1, o1);
+      sdRoundOf(session, r, &a2, o2);  // the other board, the same numbers
+      CHECK_EQ(a1, a2);
+      CHECK(memcmp(o1, o2, sizeof(o1)) == 0);
+      CHECK(buddyDexOk(a1));
+      int n = (o1[0] == a1) + (o1[1] == a1) + (o1[2] == a1);
+      CHECK_EQ(n, 1);  // the answer once, the other two different from it and each other
+      CHECK(o1[0] != o1[1] && o1[1] != o1[2] && o1[0] != o1[2]);
+      seen[r] = a1;
+    }
+    CHECK(seen[0] != seen[1] || seen[1] != seen[2]);  // the rounds aren't all the same Pokemon
+  }
+}
+
+TEST(buddy, showdown_referee) {
+  CHECK_EQ(sdWinner(true, 900, true, 1200), (uint8_t)SD_HOST);
+  CHECK_EQ(sdWinner(true, 1300, true, 1200), (uint8_t)SD_GUEST);  // faster on its own screen wins
+  CHECK_EQ(sdWinner(false, 500, true, 4000), (uint8_t)SD_GUEST);  // a wrong tap never wins
+  CHECK_EQ(sdWinner(false, 0, false, 0), (uint8_t)SD_NOBODY);
+}
+
+TEST(buddy, showdown_messages_are_checked) {
+  BuddyMsg m;
+  uint8_t buf[sizeof(BuddyMsg)];
+  buddyInit(m, BM_ANSWER, 5, 6, 7);
+  m.turn = 2;
+  m.move = 1;
+  memcpy(buf, &m, sizeof(m));
+  CHECK(buddyParse(buf, sizeof(buf), m));
+  m.turn = SD_ROUNDS;  // no such round
+  memcpy(buf, &m, sizeof(m));
+  CHECK(!buddyParse(buf, sizeof(buf), m));
+  buddyInit(m, BM_INVITE, 5, 6, 7);
+  m.kind = BK_SHOWDOWN;
+  memcpy(buf, &m, sizeof(m));
+  CHECK(buddyParse(buf, sizeof(buf), m));
+}

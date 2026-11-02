@@ -50,7 +50,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.21"
+#define FW_VERSION "1.22"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -175,7 +175,7 @@ bool dungeonOpen = false, dnBot = false, dnNewHi = false, dnHeld = false;
 DnState dn;
 
 // buddy: another PokeKnomiGochi on the same wifi
-enum BuddySession : uint8_t { BS_IDLE, BS_INVITING, BS_INVITED, BS_SYNC, BS_BATTLE, BS_TRADE };
+enum BuddySession : uint8_t { BS_IDLE, BS_INVITING, BS_INVITED, BS_SYNC, BS_BATTLE, BS_TRADE, BS_PLAY };
 enum TradePhase : uint8_t { TR_PICK, TR_WAIT, TR_REVIEW, TR_WAITC, TR_DONE };
 BuddyPeer bPeers[BUDDY_MAX];  // everyone around (buddy.h)
 uint8_t bCur = 0;            // the one in the buddy menu, and in any battle or trade
@@ -186,6 +186,17 @@ BuddySession bsState = BS_IDLE;
 uint8_t bsKind = 0;
 uint32_t bsId = 0, bsT = 0, bsResendT = 0, buddyHelloT = 0;
 bool buddyMenuOpen = false;
+bool playMenuOpen = false;  // "Play together": the games to play with the buddy of the menu
+// Who's That? Showdown: the quiz against a buddy, best of SD_ROUNDS (buddy.h)
+enum SdPhase : uint8_t { SD_READY, SD_ASK, SD_REVEAL, SD_DONE };
+bool sdOpen = false, sdHost = false, sdRewarded = false;
+SdPhase sdPhase = SD_READY;
+uint8_t sdRound = 0, sdWho = 0, sdHostScore = 0, sdGuestScore = 0;  // sdWho: SD_NOBODY/SD_HOST/SD_GUEST
+int16_t sdAnswer = 0, sdOpts[3] = {};
+int8_t sdMyPick = -1, sdTheirPick = -1;
+uint16_t sdMyMs = 0, sdTheirMs = 0;
+bool sdTheirIn = false;
+uint32_t sdT = 0, sdAskT = 0, sdFirstRightT = 0, sdSendT = 0;
 char buddyNote[44] = "";
 uint32_t buddyNoteUntil = 0;
 bool bPvp = false, bPvpGone = false;   // this battle is against the buddy
@@ -541,7 +552,7 @@ PowerCtx powerCtx(uint32_t now) {
 #ifdef BOARD_HOST
   if (!c.sleeping) c.idleMs = 0;  // a desktop window has no panel to protect: only the pet's sleep dims it
 #endif
-  c.gameOpen = gameOpen || battleOpen || quizOpen || runOpen || dungeonOpen;
+  c.gameOpen = gameOpen || battleOpen || quizOpen || runOpen || dungeonOpen || sdOpen;
   c.arcadeOpen = runOpen || dungeonOpen;
   c.usb = usbPresent();
   c.charging = batCharging();
@@ -740,6 +751,12 @@ void handleSerial() {
       p.seen = millis();
       buddyFake = true;
     }
+    Serial.println("DONE");
+  } else if (line.startsWith("SDTEST") && pet.noSave && buddyFake) {  // "SDTEST [session]": a Showdown against the stand-in buddy, for screenshots
+    bsId = line.length() > 7 ? (uint32_t)line.substring(7).toInt() | 1 : esp_random() | 1;
+    bsKind = BK_SHOWDOWN;
+    bsState = BS_PLAY;
+    sdStart(true);
     Serial.println("DONE");
   } else if (line == "DUNGEON") {
     startDungeon();
@@ -956,7 +973,7 @@ void handleTouch() {
 
   // games: the touch is resolved on finger lift, so that swiping up exits
   // without pressing anything on the way. Only the PokeRun jump fires on touch-down: there every ms counts.
-  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen || dungeonOpen || zoneScreen) {
+  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen || dungeonOpen || zoneScreen || sdOpen) {
     if (pressed) { tXl = x; tYl = y; }  // tXl: aim with the finger where there is no accelerometer
     // in the dungeon, keeping the finger down keeps walking
     if (dungeonOpen && pressed && wasPressed && !swallowGesture && !dnOverT && millis() - tStart > 350 &&
@@ -1040,6 +1057,10 @@ void handleTouch() {
 void openClock();  // prototype
 
 void onSwipeV(int dir) {
+  if (playMenuOpen) {  // up: back to the buddy menu
+    if (dir < 0) { playMenuOpen = false; buddyMenuOpen = true; }
+    return;
+  }
   if (pet.awaitingStarter() || pet.awaitingEggPick() || buddyMenuOpen || tradeOpen) return;  // blocked while choosing
   if (gameOpen || galleryOpen || kbOpen || battleOpen || quizOpen || gamesMenuOpen || pet.ceremony) return;
   if (clockOpen) {
@@ -1149,6 +1170,10 @@ void onTap(int16_t x, int16_t y) {
   }
   if (buddyMenuOpen) {
     buddyMenuTap(x, y);
+    return;
+  }
+  if (playMenuOpen) {
+    playMenuTap(x, y);
     return;
   }
   if (tradeOpen) {
@@ -1541,7 +1566,7 @@ void printT(const char *s) {
 // while their "key" doesn't change they are neither repainted nor flushed over QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (pet.awaitingEggPick() || buddyMenuOpen || tradeOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // the gallery manages its own repainting
+  if (pet.awaitingEggPick() || buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // the gallery manages its own repainting
   if (kbOpen || clockOpen) return true;
   return cardOpen && cardPage != 0;  // page 0 has the animated portrait
 }
@@ -1604,6 +1629,14 @@ bool render() {
   }
   if (buddyMenuOpen) {
     renderBuddyMenu();
+    return true;
+  }
+  if (playMenuOpen) {
+    renderPlayMenu();
+    return true;
+  }
+  if (sdOpen) {
+    renderShowdown();
     return true;
   }
   if (tradeOpen) {
@@ -1806,6 +1839,7 @@ void respawnBall() {
 // the game ends, so closing is enough)
 void quitGame() {
   sfxPlay(SFX_TAP);
+  if (sdOpen) sdQuit();
   if (battleOpen) closeBattle();
   if (quizOpen) closeQuiz();
   if (runOpen) closeRun();
@@ -2109,7 +2143,8 @@ void endVisit() {
 // checks the time and advances the visit, even with another screen open on top
 bool onMainScreen() {
   return !gameOpen && !runOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !zoneScreen && !galleryOpen && !cardOpen &&
-                      !kbOpen && !clockOpen && !choiceKind && !confirmUntil && !buddyMenuOpen && !tradeOpen;
+                      !kbOpen && !clockOpen && !choiceKind && !confirmUntil && !buddyMenuOpen && !tradeOpen &&
+                      !playMenuOpen && !sdOpen;
 }
 
 void visitTick(uint32_t now) {
@@ -2189,7 +2224,7 @@ void knomiButtonTap() {
   screenOff = false;
   wakeUI();
   if (wasAsleep) return;  // in the dark it only wakes, like the touchscreen
-  if (buddyMenuOpen || tradeOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
+  if (buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
   if (visitPhase != VP_NONE) return;  // no fighting with a visitor present
   startBattle();
 }
@@ -2199,9 +2234,10 @@ void knomiAskReset() {
   if (pet.awaitingStarter() || pet.ceremony) return;  // nothing to delete, or farewell in progress
   if (battleOpen) closeBattle();
   if (quizOpen) closeQuiz();
+  if (sdOpen) sdQuit();
   if (runOpen) closeRun();
   if (dungeonOpen) closeDungeon();
-  gamesMenuOpen = false;
+  gamesMenuOpen = playMenuOpen = false;
   zoneDetailClose();
   zoneScreen = ZS_NONE;
   if (galleryOpen) { galleryOpen = false; galleryPmd.unload(); }
@@ -4260,6 +4296,7 @@ void buddyInvite(uint8_t kind) {
 }
 
 void buddyStartSession() {
+  bool inviter = bsState == BS_INVITING;  // the one who invited runs the showdown
   buddyNoteUntil = 0;
   if (!onMainScreen()) {  // something else opened while waiting
     buddyNetSend(buddyMsg(BM_LEAVE));
@@ -4270,6 +4307,11 @@ void buddyStartSession() {
   bsResendT = 0;
   if (bsKind == BK_BATTLE) {
     bsState = BS_SYNC;
+    return;
+  }
+  if (bsKind == BK_SHOWDOWN) {
+    bsState = BS_PLAY;
+    sdStart(inviter);
     return;
   }
   bsState = BS_TRADE;
@@ -4283,6 +4325,7 @@ void buddyStartSession() {
 
 void buddyAcceptInvite() {
   choiceKind = 0;
+  bsState = BS_INVITED;  // the one accepting is the guest, even after inviting each other at once
   buddyNetSend(buddyMsg(BM_ACCEPT));
   buddyStartSession();
 }
@@ -4411,7 +4454,18 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
         buddyEndSession();
       }
       break;
+    case BM_ROUND:
+    case BM_ANSWER:
+    case BM_RESULT:
+      if (bsState == BS_INVITING && bsKind == BK_SHOWDOWN) buddyStartSession();  // the ACCEPT was lost
+      sdHandle(m);
+      break;
     case BM_LEAVE:
+      if (sdOpen) {
+        buddySetNote(S_BUDDY_LEFT_FMT);
+        sdClose();
+        break;
+      }
       if (bPvp) {
         if (bPhase < BP_END) buddyGoneFromBattle();
       } else if (tradeOpen && trPhase != TR_DONE) {
@@ -4493,7 +4547,11 @@ void buddyTick(uint32_t now) {
   pet.buddiesOnScreen(buddyVisible() ? buddyCount(bPeers) : 0);
   if (!bPeers[bCur].on) {
     buddyNetSetPeer(0);
-    buddyMenuOpen = false;
+    buddyMenuOpen = playMenuOpen = false;
+    if (sdOpen) {
+      buddySetNote(S_BUDDY_LEFT_FMT);
+      sdClose();
+    }
     if (bPvp && bPhase < BP_END) {
       if (bPhase != BP_RAN) buddyGoneFromBattle();
     } else if (tradeOpen && trPhase != TR_DONE) {
@@ -4512,6 +4570,7 @@ void buddyTick(uint32_t now) {
   }
 
   if (bsState == BS_INVITED && choiceKind != 5) buddyDeclineInvite();  // time ran out
+  sdTick(now);
 
   if (bsState == BS_INVITING && now - bsT > BUDDY_REPLY_MS) {
     buddySetNote(S_BUDDY_BUSY_FMT);
@@ -4607,6 +4666,14 @@ int buddyAt(int16_t x, int16_t y) {
   return -1;
 }
 
+// the buddy menu's rows: Battle, Trade, Play, Back
+#define BUDDY_ROWS 4
+#define BUDDY_ROW_Y 172
+#define BUDDY_ROW_STEP 58
+#define BUDDY_ROW_H 48
+static const StrId BUDDY_ROW_LABEL[BUDDY_ROWS] = { S_BUDDY_BATTLE, S_BUDDY_TRADE, S_PLAY_BTN, S_BACK_BTN };
+static const uint16_t BUDDY_ROW_COLOR[BUDDY_ROWS] = { UI_BAR_BAD, C565(0x1e, 0x7d, 0x3c), TYPE_ACCENT[TY_PSYCHIC], UI_TRACK };
+
 void renderBuddyMenu() {
   if (!bPeers[bCur].on) { buddyMenuOpen = false; return; }
   gfx->fillScreen(RGB565_BLACK);
@@ -4617,7 +4684,7 @@ void renderBuddyMenu() {
   setSize(2);
   setCur(centerX(b, 2), 66);
   printT(b);
-  if (buddyPmd[bCur].loaded) drawPmdActM(buddyPmd[bCur], PMD_IDLE, CX, 200, millis(), true, false, 3);
+  if (buddyPmd[bCur].loaded) drawPmdActM(buddyPmd[bCur], PMD_IDLE, CX, 160, millis(), true, false, 2);
   int n = buddyCount(bPeers);
   if (n > 1) {  // several: swipe to the others
     int pos = 1;
@@ -4627,25 +4694,314 @@ void renderBuddyMenu() {
     setCur(centerX(b, 2), 92);
     printT(b);
   }
-  const char *labels[3] = { T(S_BUDDY_BATTLE), T(S_BUDDY_TRADE), T(S_BACK_BTN) };
-  const uint16_t colors[3] = { UI_BAR_BAD, C565(0x1e, 0x7d, 0x3c), UI_TRACK };
-  for (int i = 0; i < 3; i++) {
-    int y = 216 + i * 64;
-    gfx->fillRoundRect(CX - 130, y, 260, 54, 14, colors[i]);
-    gfx->setTextColor(i == 2 ? UI_INK : UI_WHITE);
-    setCur(centerX(labels[i], 2), y + 19);
-    printT(labels[i]);
+  for (int i = 0; i < BUDDY_ROWS; i++) {
+    int y = BUDDY_ROW_Y + i * BUDDY_ROW_STEP;
+    gfx->fillRoundRect(CX - 130, y, 260, BUDDY_ROW_H, 14, BUDDY_ROW_COLOR[i]);
+    gfx->setTextColor(i == BUDDY_ROWS - 1 ? UI_INK : UI_WHITE);
+    setCur(centerX(T(BUDDY_ROW_LABEL[i]), 2), y + 17);
+    printT(T(BUDDY_ROW_LABEL[i]));
   }
   gfx->flush();
 }
 
 void buddyMenuTap(int16_t x, int16_t y) {
   buddyMenuOpen = false;
-  if (abs(x - CX) > 130 || y < 216) return;
-  int row = (y - 216) / 64;
+  if (abs(x - CX) > 130 || y < BUDDY_ROW_Y) return;
+  int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
   sfxPlay(SFX_TAP);
   if (row == 0) buddyInvite(BK_BATTLE);
   else if (row == 1) buddyInvite(BK_TRADE);
+  else if (row == 2) playMenuOpen = true;
+}
+
+// ---------- "Play together": games only buddies can play ----------
+#define PLAY_ROW_Y 186
+#define PLAY_ROW_H 56
+#define PLAY_BACK_Y 330
+static const StrId PLAY_GAMES[] = { S_SHOWDOWN };  // more to come
+#define PLAY_GAME_COUNT (int)(sizeof(PLAY_GAMES) / sizeof(PLAY_GAMES[0]))
+
+void renderPlayMenu() {
+  if (!bPeers[bCur].on) { playMenuOpen = false; return; }
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->setTextColor(UI_INK);
+  setSize(3);
+  setCur(centerX(T(S_PLAY_TOGETHER), 3), 84);
+  printT(T(S_PLAY_TOGETHER));
+  setSize(2);
+  gfx->setTextColor(UI_INK);
+  setCur(centerX(buddyName(), 2), 126);
+  printT(buddyName());
+  for (int i = 0; i < PLAY_GAME_COUNT; i++) {
+    int y = PLAY_ROW_Y + i * (PLAY_ROW_H + 10);
+    gfx->fillRoundRect(CX - 150, y, 300, PLAY_ROW_H, 14, TYPE_ACCENT[TY_PSYCHIC]);
+    gfx->setTextColor(UI_WHITE);
+    setCur(centerX(T(PLAY_GAMES[i]), 2), y + 20);
+    printT(T(PLAY_GAMES[i]));
+  }
+  gfx->fillRoundRect(CX - 80, PLAY_BACK_Y, 160, 44, 12, UI_TRACK);
+  gfx->setTextColor(UI_INK);
+  setCur(centerX(T(S_BACK_BTN), 2), PLAY_BACK_Y + 14);
+  printT(T(S_BACK_BTN));
+  gfx->flush();
+}
+
+void playMenuTap(int16_t x, int16_t y) {
+  for (int i = 0; i < PLAY_GAME_COUNT; i++) {
+    int gy = PLAY_ROW_Y + i * (PLAY_ROW_H + 10);
+    if (abs(x - CX) <= 150 && y >= gy && y < gy + PLAY_ROW_H) {
+      sfxPlay(SFX_TAP);
+      playMenuOpen = false;
+      buddyInvite(BK_SHOWDOWN);
+      return;
+    }
+  }
+  if (abs(x - CX) <= 80 && y >= PLAY_BACK_Y && y < PLAY_BACK_Y + 44) {
+    sfxPlay(SFX_TAP);
+    playMenuOpen = false;
+    buddyMenuOpen = true;
+  }
+}
+
+// ---------- Who's That? Showdown: the quiz against a buddy ----------
+// Both boards draw the same rounds from the session (sdRoundOf). The host (the inviter) starts each
+// round and referees it: each answer carries how long it took on its own screen, so the network
+// delay doesn't decide who was first. Messages are resent until the next step shows they arrived.
+#define SD_READY_MS 1800UL   // "get ready" before the first round
+#define SD_ROUND_MS 10000UL  // nobody answers in time: nobody gets it
+#define SD_GRACE_MS 700UL    // after a right answer, how long to wait for a faster one still on its way
+#define SD_REVEAL_MS 2600UL
+#define SD_DONE_MS 6000UL
+
+uint8_t sdMine() { return sdHost ? sdHostScore : sdGuestScore; }
+uint8_t sdTheirs() { return sdHost ? sdGuestScore : sdHostScore; }
+
+void sdSend(BuddyType type, uint8_t move, uint16_t ms) {
+  BuddyMsg m = buddyMsg(type);
+  m.kind = BK_SHOWDOWN;
+  m.turn = sdRound;
+  m.move = move;
+  m.hp = type == BM_ANSWER ? ms : sdHostScore;  // the host's score travels with every round and result
+  m.atk = sdGuestScore;
+  buddyNetSend(m);
+}
+
+void sdStart(bool host) {
+  sdOpen = true;
+  sdHost = host;
+  sdRewarded = false;
+  sdRound = 0;
+  sdHostScore = sdGuestScore = 0;
+  sdPhase = SD_READY;
+  sdT = millis();
+  sdSendT = 0;
+  Serial.printf("buddy: showdown vs #%d (%s)\n", bPeers[bCur].dex, host ? "host" : "guest");
+}
+
+void sdBeginRound(uint8_t r) {
+  sdRound = r;
+  sdRoundOf(bsId, r, &sdAnswer, sdOpts);
+  quizPmd.load(sdAnswer, false);
+  sdPhase = SD_ASK;
+  sdMyPick = sdTheirPick = -1;
+  sdTheirIn = false;
+  sdFirstRightT = sdSendT = 0;
+  sdAskT = millis();  // after loading the sprite: the clock starts when the silhouette shows
+  sdT = sdAskT;
+}
+
+void sdFinishRound(uint8_t who) {
+  sdWho = who;
+  if (who == SD_HOST) sdHostScore++;
+  else if (who == SD_GUEST) sdGuestScore++;
+  sdPhase = SD_REVEAL;
+  sdT = millis();
+  sdSendT = 0;
+  bool mine = (who == SD_HOST) == sdHost && who != SD_NOBODY;
+  sfxPlay(mine ? SFX_HEART : who == SD_NOBODY ? SFX_TAP : SFX_DENY);
+  int at = sdOpts[0] == sdAnswer ? 0 : sdOpts[1] == sdAnswer ? 1 : 2;
+  Serial.printf("buddy: showdown round %u: %s (%u-%u) answer@%d mine=%d/%ums theirs=%d/%ums\n", sdRound + 1,
+                mine ? "mine" : who == SD_NOBODY ? "nobody" : "theirs", sdMine(), sdTheirs(), at, sdMyPick, sdMyMs,
+                sdTheirIn ? sdTheirPick : -9, sdTheirMs);
+}
+
+void sdReward() {
+  if (sdRewarded) return;
+  sdRewarded = true;
+  pet.showdownResult(sdMine(), sdTheirs());
+  sfxPlay(sdMine() > sdTheirs() ? SFX_MEDAL : SFX_LEVEL);
+  Serial.printf("buddy: showdown over %u-%u\n", sdMine(), sdTheirs());
+}
+
+void sdClose() {
+  sdOpen = false;
+  quizPmd.unload();
+  buddyEndSession();
+}
+
+void sdQuit() {  // swiped away: the buddy is told
+  buddyNetSend(buddyMsg(BM_LEAVE));
+  sdClose();
+}
+
+void sdHandle(const BuddyMsg &m) {
+  if (!sdOpen) return;
+  if (!sdHost && m.type == BM_ROUND) {
+    if ((sdPhase == SD_READY && m.turn == 0) || m.turn > sdRound || (sdPhase == SD_READY && m.turn > 0)) {
+      sdHostScore = m.hp;  // the host's count wins, even if a result went missing
+      sdGuestScore = m.atk;
+      sdBeginRound(m.turn);
+    }
+  } else if (!sdHost && m.type == BM_RESULT) {
+    if (m.turn == sdRound && sdPhase == SD_ASK) {
+      sdFinishRound(m.move);
+      sdHostScore = m.hp;
+      sdGuestScore = m.atk;
+    }
+  } else if (sdHost && m.type == BM_ANSWER) {
+    if (m.turn == sdRound && sdPhase == SD_ASK && !sdTheirIn) {
+      sdTheirIn = true;
+      sdTheirPick = m.move < 3 ? m.move : -1;
+      sdTheirMs = m.hp;
+    }
+  }
+}
+
+void sdTick(uint32_t now) {
+  if (!sdOpen) return;
+  uint32_t t = now - sdT;
+  bool resend = now - sdSendT >= BUDDY_RESEND_MS;
+  switch (sdPhase) {
+    case SD_READY:
+      if (sdHost && t > SD_READY_MS) sdBeginRound(0);
+      break;
+    case SD_ASK:
+      if (!sdHost) {  // the guest's answer goes out until the result comes back
+        if (sdMyPick >= 0 && resend) {
+          sdSendT = now;
+          sdSend(BM_ANSWER, sdMyPick, sdMyMs);
+        }
+        break;
+      }
+      if (resend) {
+        sdSendT = now;
+        sdSend(BM_ROUND, 0, 0);
+      }
+      {
+        bool myRight = sdMyPick >= 0 && sdOpts[sdMyPick] == sdAnswer;
+        bool theirRight = sdTheirIn && sdTheirPick >= 0 && sdOpts[sdTheirPick] == sdAnswer;
+        bool decide = (sdMyPick >= 0 && sdTheirIn) || now - sdAskT > SD_ROUND_MS;
+        if (!decide && (myRight || theirRight)) {
+          if (!sdFirstRightT) sdFirstRightT = now;
+          decide = now - sdFirstRightT > SD_GRACE_MS;
+        }
+        if (decide) sdFinishRound(sdWinner(myRight, sdMyMs, theirRight, sdTheirMs));
+      }
+      break;
+    case SD_REVEAL:
+      if (sdHost && resend) {
+        sdSendT = now;
+        sdSend(BM_RESULT, sdWho, 0);
+      }
+      if (t > SD_REVEAL_MS) {
+        if (sdRound + 1 >= SD_ROUNDS) {
+          sdPhase = SD_DONE;
+          sdT = now;
+          sdReward();
+        } else if (sdHost) {
+          sdBeginRound(sdRound + 1);
+        }
+      }
+      break;
+    case SD_DONE:
+      if (sdHost && t < 2500 && resend) {  // the last result, in case it went missing
+        sdSendT = now;
+        sdSend(BM_RESULT, sdWho, 0);
+      }
+      if (t > SD_DONE_MS) sdClose();
+      break;
+  }
+}
+
+#define SD_OPT_Y 268
+#define SD_OPT_H 44
+#define SD_OPT_GAP 6
+
+void sdTap(int16_t x, int16_t y) {
+  if (sdPhase == SD_DONE) {
+    if (millis() - sdT > 1200) sdClose();
+    return;
+  }
+  if (sdPhase != SD_ASK || sdMyPick >= 0 || y < SD_OPT_Y) return;
+  int i = (y - SD_OPT_Y) / (SD_OPT_H + SD_OPT_GAP);
+  if (i > 2) return;
+  uint32_t ms = millis() - sdAskT;
+  sdMyPick = i;
+  sdMyMs = ms > 65535 ? 65535 : ms;
+  sdSendT = 0;  // the guest's answer goes out right away
+  if (sdOpts[i] != sdAnswer) sfxPlay(SFX_DENY);  // a wrong tap: out for this round
+}
+
+void renderShowdown() {
+  if (!sdOpen) return;
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, TYPE_ACCENT[TY_PSYCHIC]);
+  gfx->setTextColor(UI_WHITE);
+  char b[48];
+  // the score: you on the left, the buddy on the right
+  setSize(2);
+  snprintf(b, sizeof(b), "%s %u : %u %s", T(S_SD_YOU_LBL), sdMine(), sdTheirs(), buddyName());
+  setCur(centerX(b, 2), 44);
+  printT(b);
+  if (sdPhase == SD_DONE) {
+    snprintf(b, sizeof(b), "%u : %u", sdMine(), sdTheirs());
+    setSize(6);
+    setCur(centerX(b, 6), 150);
+    printT(b);
+    setSize(2);
+    if (sdMine() > sdTheirs()) strlcpy(b, T(S_SD_WIN), sizeof(b));
+    else if (sdMine() < sdTheirs()) snprintf(b, sizeof(b), T(S_SD_LOSE_FMT), buddyName());
+    else strlcpy(b, T(S_SD_DRAW), sizeof(b));
+    setCur(centerX(b, 2), 250);
+    printT(b);
+    gfx->flush();
+    return;
+  }
+  if (sdPhase == SD_READY) {
+    setCur(centerX(T(S_SD_READY), 2), 220);
+    printT(T(S_SD_READY));
+    gfx->flush();
+    return;
+  }
+  bool reveal = sdPhase == SD_REVEAL;
+  if (reveal) {
+    bool mine = sdWho != SD_NOBODY && (sdWho == SD_HOST) == sdHost;
+    if (mine) strlcpy(b, T(S_SD_YOU_GOT), sizeof(b));
+    else if (sdWho == SD_NOBODY) strlcpy(b, T(S_SD_NOBODY), sizeof(b));
+    else snprintf(b, sizeof(b), T(S_SD_THEY_GOT_FMT), buddyName());
+  } else {
+    snprintf(b, sizeof(b), "%u/%u", sdRound + 1, SD_ROUNDS);
+  }
+  setCur(centerX(b, 2), 72);
+  printT(b);
+  gPmdForceScale = pmdFitScale(quizPmd, PMD_IDLE, 300, 166);
+  drawPmdActM(quizPmd, PMD_IDLE, CX, 262, reveal ? millis() : 0, true, !reveal, 8);
+  gPmdForceScale = 0;
+  bool locked = sdMyPick >= 0 && !reveal;
+  for (int i = 0; i < 3; i++) {
+    int y = SD_OPT_Y + i * (SD_OPT_H + SD_OPT_GAP);
+    int inset = i == 2 ? 26 : 0;  // the bottom one, narrower: the circle closes in
+    uint16_t bg = UI_WHITE;
+    if (reveal && sdOpts[i] == sdAnswer) bg = UI_BAR_OK;
+    else if (i == sdMyPick && sdOpts[i] != sdAnswer) bg = UI_BAR_BAD;
+    else if (locked) bg = UI_TRACK;  // answered: out until the round ends
+    gfx->fillRoundRect(83 + inset, y, 300 - 2 * inset, SD_OPT_H, 10, bg);
+    gfx->setTextColor(bg == UI_WHITE || bg == UI_TRACK ? UI_INK : UI_WHITE);
+    setCur(centerX(dexName(sdOpts[i]), 2), y + 15);
+    printT(dexName(sdOpts[i]));
+  }
+  gfx->flush();
 }
 
 void renderTrade() {
@@ -5038,7 +5394,7 @@ void drawChoiceDialog() {
     c1 = UI_BAR_BAD; t1 = UI_WHITE; c2 = UI_BAR_OK; t2 = UI_WHITE;
   } else if (choiceKind == 5) {  // the buddy invites
     static char invite[44];
-    snprintf(invite, sizeof(invite), T(bsKind == BK_BATTLE ? S_BUDDY_INV_BTL_FMT : S_BUDDY_INV_TRD_FMT), buddyName());
+    snprintf(invite, sizeof(invite), T(bsKind == BK_BATTLE ? S_BUDDY_INV_BTL_FMT : bsKind == BK_SHOWDOWN ? S_BUDDY_INV_PLAY_FMT : S_BUDDY_INV_TRD_FMT), buddyName());
     q = invite; o1 = T(S_YES); o2 = T(S_NO);
     c1 = UI_BAR_OK; t1 = UI_WHITE; c2 = UI_TRACK; t2 = UI_INK;
   } else if (choiceKind == 4) {  // runaway
@@ -5572,7 +5928,8 @@ void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette
 
 // the game screens' tap, by whichever is open (same order as handleTouch checks them)
 void gameTap(int16_t x, int16_t y) {
-  if (battleOpen) battleTap(x, y);
+  if (sdOpen) sdTap(x, y);
+  else if (battleOpen) battleTap(x, y);
   else if (quizOpen) quizTap(x, y);
   else if (gamesMenuOpen) gamesMenuTap(x, y);
   else if (zoneScreen) zoneTap(x, y);
@@ -5604,6 +5961,13 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       if (x >= x0 && x <= x1) return pressSet(t, x0, 346, x1 - x0, 40, MOVE_TBL[bMeMoves.ids[i]].name);
     }
     return false;
+  }
+  if (sdOpen) {
+    if (sdPhase != SD_ASK || sdMyPick >= 0 || y < SD_OPT_Y) return false;
+    int i = (y - SD_OPT_Y) / (SD_OPT_H + SD_OPT_GAP);
+    if (i > 2) return false;
+    int inset = i == 2 ? 26 : 0;
+    return pressSet(t, 83 + inset, SD_OPT_Y + i * (SD_OPT_H + SD_OPT_GAP), 300 - 2 * inset, SD_OPT_H, dexName(sdOpts[i]));
   }
   if (quizOpen) {
     if (quizPhase != QP_ASK || y < QUIZ_OPT_Y) return false;
@@ -5651,10 +6015,17 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (buddyMenuOpen) {
-    if (abs(x - CX) > 130 || y < 216 || y >= 216 + 3 * 64) return false;
-    static const StrId L[3] = { S_BUDDY_BATTLE, S_BUDDY_TRADE, S_BACK_BTN };
-    int row = (y - 216) / 64;
-    return pressSet(t, CX - 130, 216 + row * 64, 260, 54, T(L[row]));
+    if (abs(x - CX) > 130 || y < BUDDY_ROW_Y || y >= BUDDY_ROW_Y + BUDDY_ROWS * BUDDY_ROW_STEP) return false;
+    int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
+    return pressSet(t, CX - 130, BUDDY_ROW_Y + row * BUDDY_ROW_STEP, 260, BUDDY_ROW_H, T(BUDDY_ROW_LABEL[row]));
+  }
+  if (playMenuOpen) {
+    for (int i = 0; i < PLAY_GAME_COUNT; i++) {
+      int gy = PLAY_ROW_Y + i * (PLAY_ROW_H + 10);
+      if (abs(x - CX) <= 150 && y >= gy && y < gy + PLAY_ROW_H) return pressSet(t, CX - 150, gy, 300, PLAY_ROW_H, T(PLAY_GAMES[i]));
+    }
+    if (abs(x - CX) <= 80 && y >= PLAY_BACK_Y && y < PLAY_BACK_Y + 44) return pressSet(t, CX - 80, PLAY_BACK_Y, 160, 44, T(S_BACK_BTN));
+    return false;
   }
   if (tradeOpen) {
     if (trPhase != TR_REVIEW) return false;

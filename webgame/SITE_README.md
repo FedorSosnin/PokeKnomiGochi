@@ -14,6 +14,8 @@
 | **Choose where to hunt** | **Fill the Pokédex** | **Play mini games** |
 | ![A buddy visiting](images/buddy.png) | ![Battle or trade with a buddy](images/buddy-menu.png) | ![The button under your finger, shown large](images/press.png) |
 | **Buddies come to play** | **Battle or trade with them** | **Press and slide to choose** |
+| ![Play together](images/play.png) | ![Who's That? Showdown](images/showdown.png) | ![A Showdown won](images/showdown-win.png) |
+| **Play together** | **Who's That? Showdown** | **Race your buddy, best of 5** |
 
 ## On your phone
 
@@ -36,7 +38,7 @@ Your Pokémon is saved in this browser automatically. Clearing the browser's dat
 
 ## Buddies
 
-Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle or trade Pokédex entries. You meet players of the browser version, the [Mac app](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
+Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle, trade Pokédex entries, or **play** a game together: in **Who's That? Showdown** you both see the same silhouette and race to name it first. You meet players of the browser version, the [Mac app](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
 
 ## Want a real one?
 

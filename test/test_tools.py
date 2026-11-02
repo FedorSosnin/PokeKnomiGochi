@@ -220,6 +220,9 @@ class TestTextBuffers(unittest.TestCase):
         'S_BUDDY_LEFT_FMT': ('name_or_nick',),
         'S_TRADE_GOT_FMT': ('name',),
         'S_UPD_TO_FMT': ('version',),
+        'S_BUDDY_INV_PLAY_FMT': ('name_or_nick',),
+        'S_SD_THEY_GOT_FMT': ('name_or_nick',),
+        'S_SD_LOSE_FMT': ('name_or_nick',),
     }
     DIGITS = {'u': 5, 'd': 5, 'lu': 10}
     SPEC = re.compile(r'%0?\d*(lu|u|d|s)')

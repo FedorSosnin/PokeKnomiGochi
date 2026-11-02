@@ -22,6 +22,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 | **Guess the silhouette** | **Tilt Catch** | **A visitor drops by each day** |
 | ![A buddy visiting from another Knomi](docs/images/buddy.png) | ![Battle or trade with a buddy](docs/images/buddy-menu.png) | ![The button under your finger, shown large](docs/images/press.png) |
 | **A buddy visits from another Knomi** | **Battle or trade with them** | **Press and slide to choose** |
+| ![Play together](docs/images/play.png) | ![Who's That? Showdown](docs/images/showdown.png) | ![A Showdown won](docs/images/showdown-win.png) |
+| **Play together** | **Who's That? Showdown** | **Race your buddy, best of 5** |
 
 ## Install
 
@@ -100,6 +102,7 @@ If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over 
 
 - **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, each of you gets the other's entry and keeps your own.
+- **Play:** games only buddies can play together. **Who's That? Showdown** shows you both the same silhouette at the same moment: the first to tap the right name gets the point, and a wrong tap is out for that round. Best of 5, then joy and bond for both, a bit more for the winner, and the **Playmate** medal.
 
 To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac version (PokeMacGochi) and the browser version (PokeWebGochi), in any mix.
 

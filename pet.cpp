@@ -318,7 +318,7 @@ void Pet::addBond(uint8_t amt) {
 
 void Pet::checkMedals() {
   if (isEgg()) return;
-  uint16_t before = medals | trainerMedals;
+  uint32_t before = medals | trainerMedals;
   if (level() >= 10) medals |= MED_LV10;
   if (level() >= 25) medals |= MED_LV25;
   if (level() >= 50) medals |= MED_LV50;
@@ -338,9 +338,9 @@ void Pet::checkMedals() {
   if (level() >= 100) trainerMedals |= MED_LV100;
   if (buddyPeak >= 1) trainerMedals |= MED_BUDDY;
   if (buddyPeak + 1 >= PARTY_SIZE) trainerMedals |= MED_PARTY;
-  uint16_t gained = (medals | trainerMedals) & ~before;
+  uint32_t gained = (medals | trainerMedals) & ~before;
   if (gained) {
-    for (uint16_t m = gained; m; m &= (m - 1)) totalMedals++;
+    for (uint32_t m = gained; m; m &= (m - 1)) totalMedals++;
     newMedal = gained;
     medalUntil = millis() + 4000;
     if (!sleeping) sfxPlay(SFX_MEDAL);
@@ -618,6 +618,24 @@ void Pet::quizResult(uint8_t correct) {
   save();
 }
 
+// a game with a buddy: fun for both, more for the winner, and the playmate medal
+void Pet::showdownResult(uint8_t mine, uint8_t theirs) {
+  if (ceremony != CER_NONE || isEgg()) return;
+  joy = clamp100(joy + 12 + mine * 3 + (mine > theirs ? 10 : 0));
+  if (mine > theirs) heartUntil = millis() + HEART_MS;
+  addBond(3);
+  registerCare();
+  uint32_t before = trainerMedals;
+  trainerMedals |= MED_PLAYMATE;
+  if (trainerMedals != before) {
+    totalMedals++;
+    newMedal = MED_PLAYMATE;
+    medalUntil = millis() + 4000;
+    if (!sleeping) sfxPlay(SFX_MEDAL);
+  }
+  save();
+}
+
 bool Pet::visitorDueNow() const {
   if (isEgg() || sleeping || ceremony != CER_NONE || !lastSeenEpoch) return false;
   return visitorDue(today(), (lastSeenEpoch / 3600) % 24, visitorDay);
@@ -781,7 +799,8 @@ void Pet::save() {
   prefs.putUChar("bond", bond);
   prefs.putUShort("medal", medals);
   prefs.putUShort("tmedal", totalMedals);
-  prefs.putUShort("trmedal", trainerMedals);
+  prefs.putUShort("trmedal", (uint16_t)trainerMedals);  // the first 16, as older firmware reads them
+  prefs.putUInt("trmed32", trainerMedals);
   prefs.putUShort("mstone", lastMilestone);
   prefs.putUShort("ghi", gameHi);
   prefs.putUShort("rhi", runHi);
@@ -841,7 +860,7 @@ void Pet::load() {
   bond = prefs.getUChar("bond", 0);
   medals = prefs.getUShort("medal", 0);
   totalMedals = prefs.getUShort("tmedal", 0);
-  trainerMedals = prefs.getUShort("trmedal", 0);
+  trainerMedals = prefs.isKey("trmed32") ? prefs.getUInt("trmed32", 0) : prefs.getUShort("trmedal", 0);
   lastMilestone = prefs.getUShort("mstone", 0);
   gameHi = prefs.getUShort("ghi", 0);
   runHi = prefs.getUShort("rhi", 0);

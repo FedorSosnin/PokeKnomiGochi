@@ -70,7 +70,7 @@ const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = '4c05a424d0';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = 'f85ca06176';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -348,6 +348,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=4c05a424d0"></script>
+<script src="pokewebgochi.js?v=f85ca06176"></script>
 </body>
 </html>

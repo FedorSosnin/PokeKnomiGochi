@@ -41,6 +41,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Combate", "Bosque", "Playa", "Cueva", "Mansi\242n", "Campo", "Buscar", "%d/%d atrapados", "Sin atrapar", "Desliza arriba: volver",
     "ENTRENADOR %d/%d",
     "BUSCAR ACTUALIZACION", "Ya est\240 al d\241a", "ACTUALIZAR A v%s", "Actualizando %u%%", "Fall\242 la actualizaci\242n", "%u amigos aqu\241!",
+    "Jugar", "Jugar juntos", "Duelo: Qui\202n es?", "%s quiere jugar!", "Prep\240rate...", "T\243", "Lo tienes!", "%s lo tiene!", "Nadie acert\242", "Ganaste!", "Gana %s!", "Empate!",
   },
   // ---------------- EN ----------------
   {
@@ -76,6 +77,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Battle", "Forest", "Beach", "Cave", "Mansion", "Field", "Search", "%d/%d caught", "Not caught yet", "Swipe up to go back",
     "TRAINER %d/%d",
     "CHECK FOR UPDATE", "Up to date", "UPDATE TO v%s", "Updating %u%%", "Update failed", "%u buddies are here!",
+    "Play", "Play together", "Who's That? Showdown", "%s wants to play!", "Get ready...", "You", "You got it!", "%s got it!", "Nobody got it", "You win!", "%s wins!", "It's a draw!",
   },
   // ---------------- FR ----------------
   {
@@ -111,6 +113,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Combat", "For\210t", "Plage", "Grotte", "Manoir", "Champ", "Chercher", "%d/%d captur\202s", "Pas encore captur\202", "Glisse en haut: retour",
     "DRESSEUR %d/%d",
     "MISE \205 JOUR ?", "D\202j\205 \205 jour", "INSTALLER v%s", "Mise \205 jour %u%%", "\220chec de mise \205 jour", "%u copains sont l\205 !",
+    "Jouer", "Jouer ensemble", "Duel: Qui est-ce?", "%s veut jouer!", "Pr\202pare-toi...", "Toi", "Trouv\202!", "%s a trouv\202!", "Personne n\'a trouv\202", "Gagn\202!", "%s gagne!", "Egalit\202!",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -151,6 +154,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Kampf", "Wald", "Strand", "H\224hle", "Spukhaus", "Wiese", "Suchen", "%d/%d gefangen", "Noch nicht gefangen", "Hochwischen: zur\201ck",
     "TRAINER %d/%d",
     "NACH UPDATE SUCHEN", "Aktuell", "UPDATE AUF v%s", "Update l\204uft %u%%", "Update fehlgeschlagen", "%u Kumpel sind da!",
+    "Spielen", "Zusammen spielen", "Duell: Wer ist das?", "%s will spielen!", "Mach dich bereit...", "Du", "Richtig!", "%s war schneller!", "Niemand wusste es", "Gewonnen!", "%s gewinnt!", "Unentschieden!",
   },
   // ---------------- IT ----------------
   {
@@ -186,6 +190,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Lotta", "Foresta", "Spiaggia", "Grotta", "Villa", "Prato", "Cerca", "%d/%d presi", "Non ancora preso", "Scorri su: indietro",
     "ALLENATORE %d/%d",
     "CERCA AGGIORNAMENTI", "Gi\205 aggiornato", "AGGIORNA A v%s", "Aggiornamento %u%%", "Aggiornamento fallito", "%u amici sono qui!",
+    "Gioca", "Giochiamo insieme", "Sfida: Chi \212?", "%s vuole giocare!", "Pronti...", "Tu", "Indovinato!", "%s ha indovinato!", "Nessuno l\'ha preso", "Hai vinto!", "Vince %s!", "Pareggio!",
   },
   // ---------------- PT ----------------
   {
@@ -221,6 +226,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Combate", "Floresta", "Praia", "Caverna", "Solar", "Campo", "Procurar", "%d/%d apanhados", "Ainda por apanhar", "Desliza acima: voltar",
     "TREINADOR %d/%d",
     "PROCURAR ATUALIZACAO", "J\240 est\240 atualizado", "ATUALIZAR PARA v%s", "A atualizar %u%%", "Falhou a atualizacao", "%u amigos aqui!",
+    "Jogar", "Jogar juntos", "Duelo: Quem \202?", "%s quer jogar!", "Prepara-te...", "Tu", "Acertaste!", "%s acertou!", "Ningu\202m acertou", "Ganhaste!", "%s ganha!", "Empate!",
   },
   // ---------------- JA ----------------
   {
@@ -279,6 +285,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "バトル", "もり", "うみべ", "どうくつ", "やかた", "のはら", "さがす", "%d/%d つかまえた", "まだつかまえてない", "うえにスワイプでもどる",
     "トレーナー %d/%d",
     "アップデート", "さいしんです", "v%s にする", "アップデート %u%%", "しっぱいしました", "ともだち %u にん!",
+    "あそぶ", "いっしょに あそぶ", "だれだ? たいけつ", "%sが あそびたいって!", "よーい...", "きみ", "せいかい!", "%sが せいかい!", "だれも わからなかった", "きみの かち!", "%sの かち!", "ひきわけ!",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -319,71 +326,72 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "배틀", "숲", "해변", "동굴", "저택", "들판", "찾기", "%d/%d 잡음", "아직 못 잡음", "위로 밀면 뒤로",
     "트레이너 %d/%d",
     "업데이트 확인", "최신 버전", "v%s 로 업데이트", "업데이트 중 %u%%", "업데이트 실패", "친구 %u명이 왔어요!",
+    "놀기", "함께 놀기", "누구일까? 대결", "%s: 같이 놀래요!", "준비...", "나", "정답!", "%s 정답!", "아무도 못 맞췄어요", "내가 이겼다!", "%s 승리!", "무승부!",
   },
 };
 
 // Medal names in their three lengths [language][medal].
 static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Nv.10", "Nv.25", "Nv.50", "BAYA", "RACHA 7", "VINCULO", "FORMA TOPE", "EN FORMA",
-    "VARIOCOLOR", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Nv.100", "AMIGO", "FIESTA" },
+    "VARIOCOLOR", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Nv.100", "AMIGO", "FIESTA", "JUGAR" },
   { "Lv.10", "Lv.25", "Lv.50", "BERRY", "7 STREAK", "BOND", "TOP FORM", "IN SHAPE",
-    "SHINY!", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "BUDDY", "PARTY" },
+    "SHINY!", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "BUDDY", "PARTY", "PLAYMATE" },
   { "Niv.10", "Niv.25", "Niv.50", "BAIE", "SERIE 7", "LIEN", "FORME MAX", "EN FORME",
-    "CHROMATIQUE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "COPAIN", "FETE" },
+    "CHROMATIQUE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "COPAIN", "FETE", "JOUER" },
   { "Lv.10", "Lv.25", "Lv.50", "BEERE", "7 SERIE", "BINDUNG", "ENDFORM", "FIT",
-    "SCHILLERND", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "KUMPEL", "PARTY" },
+    "SCHILLERND", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "KUMPEL", "PARTY", "SPIELEN" },
   { "Lv.10", "Lv.25", "Lv.50", "BACCA", "SERIE 7", "LEGAME", "FORMA MAX", "IN FORMA",
-    "CROMATICO", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "AMICO", "FESTA" },
+    "CROMATICO", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "AMICO", "FESTA", "GIOCARE" },
   { "Niv.10", "Niv.25", "Niv.50", "BAGA", "SEQ 7", "LACO", "FORMA MAX", "EM FORMA",
-    "BRILHANTE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "AMIGO", "FESTA" },
+    "BRILHANTE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "AMIGO", "FESTA", "JOGAR" },
   { "Lv.10", "Lv.25", "Lv.50", "きのみ", "7にち", "なかよし", "さいしゅう", "げんき",
-    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "Lv.100", "ともだち", "パーティ" },
+    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "Lv.100", "ともだち", "パーティ", "あそぼう" },
   { "Lv.10", "Lv.25", "Lv.50", "열매", "연속 7일", "유대", "최고 컨디션", "건강함",
-    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "Lv.100", "친구", "파티" },
+    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "Lv.100", "친구", "파티", "놀이" },
 };
 static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Nv10", "Nv25", "Nv50", "BAYA", "7DIAS", "VINC", "TOPE", "SANO",
-    "VARIO", "DEX10", "DEX50", "DEX100", "DEX151", "Nv100", "AMIGO", "FIESTA" },
+    "VARIO", "DEX10", "DEX50", "DEX100", "DEX151", "Nv100", "AMIGO", "FIESTA", "JUEGO" },
   { "Lv10", "Lv25", "Lv50", "BERRY", "7DAYS", "BOND", "TOP", "FIT",
-    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "BUDDY", "PARTY" },
+    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "BUDDY", "PARTY", "PLAY" },
   { "Niv10", "Niv25", "Niv50", "BAIE", "7JRS", "LIEN", "MAX", "FORME",
-    "CHROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "COPAIN", "FETE" },
+    "CHROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "COPAIN", "FETE", "JEU" },
   { "Lv10", "Lv25", "Lv50", "BEERE", "7TAGE", "BND", "END", "FIT",
-    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "KUMPEL", "PARTY" },
+    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "KUMPEL", "PARTY", "SPIEL" },
   { "Lv10", "Lv25", "Lv50", "BACCA", "7GG", "LEG", "MAX", "FIT",
-    "CROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "AMICO", "FESTA" },
+    "CROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "AMICO", "FESTA", "GIOCO" },
   { "Niv10", "Niv25", "Niv50", "BAGA", "7DIAS", "LACO", "MAX", "FIT",
-    "BRILHO", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "AMIGO", "FESTA" },
+    "BRILHO", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "AMIGO", "FESTA", "JOGO" },
   { "Lv10", "Lv25", "Lv50", "きのみ", "7にち", "なかよし", "しんか", "げんき",
-    "いろ", "ずかん10", "ずかん50", "ずかん100", "ずかん151", "Lv100", "とも", "パーティ" },
+    "いろ", "ずかん10", "ずかん50", "ずかん100", "ずかん151", "Lv100", "とも", "パーティ", "あそび" },
   { "Lv10", "Lv25", "Lv50", "열매", "7일", "유대", "최고", "건강",
-    "이로치", "도감10", "도감50", "도감100", "도감151", "Lv100", "친구", "파티" },
+    "이로치", "도감10", "도감50", "도감100", "도감151", "Lv100", "친구", "파티", "놀이" },
 };
 static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAYA HALLADA",
     "RACHA 7 DIAS", "VINCULO MAX", "FORMA FINAL", "EN FORMA",
-    "VARIOCOLOR", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "PRIMER AMIGO", "FIESTA DE 5" },
+    "VARIOCOLOR", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "PRIMER AMIGO", "FIESTA DE 5", "JUGAR JUNTOS" },
   { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BERRY FOUND",
     "7 DAY STREAK", "MAX BOND", "FINAL FORM", "IN SHAPE",
-    "SHINY FOUND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "FIRST BUDDY", "PARTY OF 5" },
+    "SHINY FOUND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "FIRST BUDDY", "PARTY OF 5", "PLAY TOGETHER" },
   { "NIVEAU 10", "NIVEAU 25", "NIVEAU 50", "BAIE TROUVEE",
     "SERIE 7 JOURS", "LIEN MAX", "FORME FINALE", "EN FORME",
-    "CHROMATIQUE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEAU 100", "1ER COPAIN", "FETE A 5" },
+    "CHROMATIQUE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEAU 100", "1ER COPAIN", "FETE A 5", "JOUER ENSEMBLE" },
   { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BEERE GEFUNDEN",
     "7 TAGE SERIE", "MAX BINDUNG", "ENDFORM", "FIT",
-    "SCHILLERND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "1. KUMPEL", "PARTY ZU 5" },
+    "SCHILLERND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "1. KUMPEL", "PARTY ZU 5", "MITSPIELEN" },
   { "LIVELLO 10", "LIVELLO 25", "LIVELLO 50", "BACCA TROVATA",
     "SERIE 7 GIORNI", "LEGAME MAX", "FORMA FINALE", "IN FORMA",
-    "CROMATICO", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LIVELLO 100", "PRIMO AMICO", "FESTA DA 5" },
+    "CROMATICO", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LIVELLO 100", "PRIMO AMICO", "FESTA DA 5", "GIOCO INSIEME" },
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAGA ACHADA",
     "SEQ 7 DIAS", "LACO MAX", "FORMA FINAL", "EM FORMA",
-    "BRILHANTE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "AMIGO NOVO", "FESTA DE 5" },
+    "BRILHANTE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "AMIGO NOVO", "FESTA DE 5", "JOGAR JUNTOS" },
   { "レベル 10", "レベル 25", "レベル 50", "きのみ はっけん",
     "7にち れんぞく", "なかよし MAX", "さいしゅうしんか", "げんきいっぱい",
-    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "レベル 100", "はじめての ともだち", "5ひき パーティ" },
+    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "レベル 100", "はじめての ともだち", "5ひき パーティ", "いっしょに あそぶ" },
   { "레벨 10", "레벨 25", "레벨 50", "열매 발견",
     "연속 7일", "유대감 최대", "최종 진화", "건강함",
-    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "레벨 100", "첫 친구", "5마리 파티" },
+    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "레벨 100", "첫 친구", "5마리 파티", "함께 놀기" },
 };
 
 const char *T(StrId id) { return STRINGS[gLang][id]; }

@@ -15,6 +15,12 @@
 #define BUDDY_RESEND_MS 400UL     // UDP can lose packets: repeats until there is a reply
 #define BUDDY_REPLY_MS 20000UL    // reply to an invitation or move, before giving up
 #define BUDDY_MAX_STAT 1000
+// Who's That? Showdown: the inviter (the host) runs the rounds and referees them
+#define SD_ROUNDS 5
+#define SD_NO_PICK 3        // ANSWER.move: answered nothing (yet)
+#define SD_NOBODY 0         // RESULT.move: who took the round
+#define SD_HOST 1
+#define SD_GUEST 2
 // The relay (relay/ on Cloudflare): lets browsers, which can't use these Wi-Fi messages, meet
 // everyone else. The same messages travel over one WebSocket; see relay/src/index.js.
 #define BUDDY_RELAY_HOST "pokeknomigochi-relay.fedor-dd0.workers.dev"
@@ -22,9 +28,11 @@
 #define BUDDY_RELAY_PING_MS 45000UL  // keeps a quiet connection open (the relay answers "pong")
 
 enum BuddyType : uint8_t {
-  BM_HELLO = 1, BM_INVITE, BM_ACCEPT, BM_DECLINE, BM_FIGHTER, BM_MOVE, BM_OFFER, BM_CONFIRM, BM_LEAVE, BM_END
+  BM_HELLO = 1, BM_INVITE, BM_ACCEPT, BM_DECLINE, BM_FIGHTER, BM_MOVE, BM_OFFER, BM_CONFIRM, BM_LEAVE,
+  BM_ROUND, BM_ANSWER, BM_RESULT,  // Who's That? Showdown (older firmware drops these: it sees past BM_END)
+  BM_END
 };
-enum BuddyKind : uint8_t { BK_BATTLE = 1, BK_TRADE };
+enum BuddyKind : uint8_t { BK_BATTLE = 1, BK_TRADE, BK_SHOWDOWN };
 
 struct __attribute__((packed)) BuddyMsg {
   char magic[4];
@@ -72,8 +80,11 @@ inline bool buddyParse(const uint8_t *buf, size_t len, BuddyMsg &m) {
     if (m.hp < 1 || m.def < 1) return false;
     if (m.hp > BUDDY_MAX_STAT || m.atk > BUDDY_MAX_STAT || m.def > BUDDY_MAX_STAT || m.spe > BUDDY_MAX_STAT) return false;
   }
-  if (m.type == BM_INVITE && m.kind != BK_BATTLE && m.kind != BK_TRADE) return false;
+  if (m.type == BM_INVITE && m.kind != BK_BATTLE && m.kind != BK_TRADE && m.kind != BK_SHOWDOWN) return false;
   if (m.type == BM_MOVE && m.move > 1) return false;
+  if ((m.type == BM_ROUND || m.type == BM_ANSWER || m.type == BM_RESULT) && m.turn >= SD_ROUNDS) return false;
+  if (m.type == BM_ANSWER && m.move > SD_NO_PICK) return false;
+  if (m.type == BM_RESULT && m.move > SD_GUEST) return false;
   m.nick[sizeof(m.nick) - 1] = 0;
   for (char *c = m.nick; *c; c++) {
     if (*c < 32 || *c > 126) {  // anything that isn't printable ASCII doesn't reach the screen
@@ -175,6 +186,27 @@ inline uint32_t pvpRand(uint32_t &r) {
 }
 
 inline uint8_t pvpRoll(uint32_t &r) { return 85 + pvpRand(r) % 16; }
+
+// A Showdown round, the same on both boards: from the session (both know it) and the round number,
+// the Pokemon to guess and its 3 options (answer at a random place, two other species).
+inline void sdRoundOf(uint32_t session, uint8_t round, int16_t *answer, int16_t opts[3]) {
+  uint32_t r = session ^ (0x9E3779B9u * (round + 1));
+  int16_t a = 1 + pvpRand(r) % 151, x = 1 + pvpRand(r) % 151, y = 1 + pvpRand(r) % 151;
+  uint8_t pos = pvpRand(r) % 3;
+  while (x == a) x = x % 151 + 1;
+  while (y == a || y == x) y = y % 151 + 1;
+  opts[pos] = a;
+  opts[(pos + 1) % 3] = x;
+  opts[(pos + 2) % 3] = y;
+  *answer = a;
+}
+
+// The referee: who takes the round from both answers. Each time counts from when that player's own
+// screen showed the silhouette, so the network delay between boards doesn't decide it.
+inline uint8_t sdWinner(bool hostRight, uint16_t hostMs, bool guestRight, uint16_t guestMs) {
+  if (hostRight && guestRight) return hostMs <= guestMs ? SD_HOST : SD_GUEST;
+  return hostRight ? SD_HOST : guestRight ? SD_GUEST : SD_NOBODY;
+}
 
 // who attacks first, seen from this board. Always consumes one roll, and on a speed tie
 // the roll chooses by id, so both boards agree.

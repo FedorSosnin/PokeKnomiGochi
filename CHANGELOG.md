@@ -8,6 +8,10 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.22] - 2026-11-02
+
+- **Play with a buddy:** the buddy menu now has **Play**, next to Battle and Trade, with games only buddies can play together. The first is **Who's That? Showdown**: the same silhouette on both screens at once, the first to tap the right name gets the point, a wrong tap is out for the round, best of 5. Both get joy and bond, the winner a bit more, and the new **Playmate** trainer medal. Both players need this version.
+
 ## [1.21] - 2026-11-02
 
 - **Yours stands out:** whenever buddies or a daily visitor are on screen, your Pokémon stands in the middle and a size bigger than everyone else, even next to buddies of the same species. Buddies and visitors stand at the sides.
