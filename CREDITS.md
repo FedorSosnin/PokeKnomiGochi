@@ -36,6 +36,8 @@ Huge thanks to that whole community for an enormous amount of work.
 | **Front half** | [Knomi V2 Creality K1 wall holder / table stand](https://www.printables.com/model/850244-knomi-v2-creality-k1-wall-holder-table-stand) on Printables |
 | **Button and rounded back** | Fedor Sosnin |
 
+The original model is licensed [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/), and this remix is shared under the same license: print, share and remix it with credit, but don't sell it. The changes are the new button and the rounded back.
+
 ## Software / hardware
 
 | Component | Author / source |
