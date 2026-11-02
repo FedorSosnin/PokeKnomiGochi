@@ -44,11 +44,16 @@
 #include "zones_art.h"
 #include "autorot.h"
 #include "press.h"
+#include "ota.h"
+#include "ota_update.h"
 #include "buddy_net.h"
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.18"
+#define FW_VERSION "1.19"
+
+#define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
+bool otaChecking = false;  // it says "Searching..." while the check runs
 
 #ifdef BOARD_KNOMI_V2
 Arduino_DataBus *bus = new Arduino_ESP32SPI(LCD_DC, LCD_CS, LCD_SCLK, LCD_MOSI, GFX_NOT_DEFINED);
@@ -466,6 +471,21 @@ void loop() {
     else pet.syncClock(rtcEpoch());
     if (clockOpen && !clockEdited) clockLoadNow();  // the open time screen also picks it up
   }
+
+  // Wi-Fi updates: this firmware is confirmed once it has run 30 s (a broken update rolls
+  // back), and a new one is looked for once a day, only with the screen dimmed: the
+  // check holds the loop for a second or two
+  static bool bootConfirmed = false;
+  if (!bootConfirmed && now > 30000) {
+    bootConfirmed = true;
+    otaConfirmBoot();
+  }
+  static uint32_t lastOtaCheck = 0;
+  uint32_t otaDue = !lastOtaCheck ? OTA_FIRST_CHECK_MS : otaState() == OTA_FAILED ? 3600000UL : OTA_CHECK_EVERY_MS;
+  if ((screenOff || dimStage >= 1) && buddyNetUp() && !pet.ceremony && now - lastOtaCheck >= otaDue) {
+    lastOtaCheck = now ? now : 1;
+    otaCheck(FW_VERSION);
+  }
 #endif
 
   // records the real time every 30 s (persisted on each game save)
@@ -640,6 +660,13 @@ void handleSerial() {
     Serial.printf("acc ok=%d x=%.2f y=%.2f z=%.2f\n", ok, g[0], g[1], g[2]);
     Serial.println("DONE");
     return;
+  } else if (line == "OTACHECK") {
+    otaCheck(FW_VERSION);
+    Serial.printf("ota: state=%u new=%s\n", otaState(), otaNewVersion());
+    Serial.println("DONE");
+  } else if (line == "OTAGO") {
+    startUpdate();
+    Serial.println("DONE");
   } else if (line == "WIFIINFO") {
     Serial.printf("wifi: network '%s' state=%u setup=%u\n", clockWifiSsid(), clockWifiStatus(), wifiSetupState());
     Serial.println("DONE");
@@ -1512,6 +1539,7 @@ static uint32_t screenKey() {
     for (const char *p = wifiSetupPass(); *p; p++) h = mixKey(h, (uint8_t)*p);
 #ifdef BOARD_KNOMI_V2
     h = mixKey(h, clockWifiStatus());
+    h = mixKey(h, otaState() * 2 + otaChecking);
     h = mixKey(h, clockWifiSsid()[0]);
 #endif
     h = mixKey(h, audioEnabled());
@@ -3208,6 +3236,10 @@ void settingsTap(int16_t x, int16_t y) {
         sfxPlay(SFX_TAP);
         wifiListPage = 0;
         wifiSetupStart();
+      } else if (x >= 96 && x <= 370 && y >= UPD_BTN_Y && y <= UPD_BTN_Y + 48) {
+        sfxPlay(SFX_TAP);
+        if (otaState() == OTA_AVAILABLE) startUpdate();
+        else checkUpdate();
       }
       break;
     case WS_LIST: {
@@ -3343,6 +3375,43 @@ void renderWifiKeyboard() {
   }
 }
 
+// ---------- Wi-Fi updates (ota_update.h) ----------
+void checkUpdate() {
+  otaChecking = true;
+  renderSettings();  // the check blocks: show it's working first
+  otaCheck(FW_VERSION);
+  otaChecking = false;
+  screenKeyValid = false;
+}
+
+// the screen while installing: the loop is held until it restarts
+void drawUpdateProgress(uint8_t pct) {
+  static int8_t shown = -1;
+  if (pct == shown) return;
+  shown = pct;
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  char b[32];
+  snprintf(b, sizeof(b), T(S_UPD_BUSY_FMT), pct);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(b, 2), 200);
+  printT(b);
+  gfx->fillRoundRect(93, 236, 280, 24, 12, UI_TRACK);
+  if (pct) gfx->fillRoundRect(93, 236, 280 * pct / 100 < 24 ? 24 : 280 * pct / 100, 24, 12, UI_BAR_OK);
+  gfx->flush();
+}
+
+void startUpdate() {
+  if (otaState() != OTA_AVAILABLE) return;
+  pet.flushSave();  // the save is never touched by an update, but nothing is left pending either
+  wakeUI();
+  if (!otaInstall(drawUpdateProgress)) {  // on success it restarts and doesn't come back
+    sfxPlay(SFX_DENY);
+    screenKeyValid = false;
+  }
+}
+
 void renderSettings() {
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
@@ -3380,6 +3449,23 @@ void renderSettings() {
   gfx->setTextColor(UI_WHITE);
   setCur(centerX(T(S_WIFI_CHANGE), 2), 252);
   printT(T(S_WIFI_CHANGE));
+
+  // Wi-Fi updates: check, or install the new version once one is found
+  OtaState os = otaState();
+  char ub[48];
+  if (otaChecking) strlcpy(ub, T(S_WIFI_SEARCH), sizeof(ub));
+  else if (os == OTA_AVAILABLE) snprintf(ub, sizeof(ub), T(S_UPD_TO_FMT), otaNewVersion());
+  else strlcpy(ub, T(S_UPD_CHECK), sizeof(ub));
+  gfx->fillRoundRect(96, UPD_BTN_Y, 274, 48, 12, os == OTA_AVAILABLE ? UI_BAR_OK : TYPE_ACCENT[TY_WATER]);
+  gfx->setTextColor(UI_WHITE);
+  setCur(centerX(ub, 2), UPD_BTN_Y + 16);
+  printT(ub);
+  if (!otaChecking && (os == OTA_LATEST || os == OTA_FAILED)) {
+    const char *m = os == OTA_LATEST ? T(S_UPD_LATEST) : T(S_UPD_FAILED);
+    gfx->setTextColor(os == OTA_LATEST ? UI_BAR_OK : UI_BAR_BAD);
+    setCur(centerX(m, 2), UPD_BTN_Y + 60);
+    printT(m);
+  }
   gfx->setTextColor(UI_TRACK);
   setCur(centerX(T(S_CLOCK_CANCEL), 2), 410);
   printT(T(S_CLOCK_CANCEL));
@@ -5481,6 +5567,11 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     if (clockPage == 1) {
       WifiSetupState ws = wifiSetupState();
       if (ws == WS_OFF && pressIn(x, y, 96, 236, 274, 48)) return pressSet(t, 96, 236, 274, 48, T(S_WIFI_CHANGE));
+      if (ws == WS_OFF && pressIn(x, y, 96, UPD_BTN_Y, 274, 48)) {
+        if (otaState() == OTA_AVAILABLE) snprintf(buf, sizeof(buf), T(S_UPD_TO_FMT), otaNewVersion());
+        else strlcpy(buf, T(S_UPD_CHECK), sizeof(buf));
+        return pressSet(t, 96, UPD_BTN_Y, 274, 48, buf);
+      }
       if (ws != WS_LIST) return false;  // the password keyboard has its own preview
       int n = wifiSetupNetCount();
       if (y >= WIFI_ROW_Y && y < WIFI_ROW_Y + WIFI_ROWS * WIFI_ROW_H) {

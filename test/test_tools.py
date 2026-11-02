@@ -219,6 +219,7 @@ class TestTextBuffers(unittest.TestCase):
         'S_BUDDY_HERE_FMT': ('name_or_nick',),
         'S_BUDDY_LEFT_FMT': ('name_or_nick',),
         'S_TRADE_GOT_FMT': ('name',),
+        'S_UPD_TO_FMT': ('version',),
     }
     DIGITS = {'u': 5, 'd': 5, 'lu': 10}
     SPEC = re.compile(r'%0?\d*(lu|u|d|s)')
@@ -279,6 +280,8 @@ class TestTextBuffers(unittest.TestCase):
                 total += self.NAME[lang]
             elif arg == 'name_or_nick':
                 total += max(self.NAME[lang], self.NICK)
+            elif arg == 'version':
+                total += 15  # otaNewVersion(): newVer[16]
             elif arg == 'berry':
                 total += max(self.bytes_literal(self.LIT[b][li]) for b in
                              ('S_BERRY_UNK', 'S_BERRY_RED', 'S_BERRY_BLUE', 'S_BERRY_GREEN'))

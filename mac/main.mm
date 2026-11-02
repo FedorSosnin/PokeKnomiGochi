@@ -25,6 +25,15 @@
 static const CGFloat kSizes[] = {190, 240, 300};  // side of the window, frame included
 #define DEFAULT_SIZE 240.0
 
+// New versions: the newest "mac-v*" release on GitHub. Checked at launch and once a day; the
+// player is told once per version and can always check from the menu. The save lives outside
+// the app, so replacing it with the new DMG keeps the pet.
+#define RELEASES_API "https://api.github.com/repos/FedorSosnin/PokeKnomiGochi/releases?per_page=30"
+#define UPDATE_EVERY_S (24 * 60 * 60)
+static NSString *const kPrefToldVersion = @"updateToldVersion";
+static NSString *gNewVersion = nil;  // newer than this app, once a check found one
+static NSURL *gNewURL = nil;         // its DMG (or the release page)
+
 static bool gConsole = false;  // --console: launched for testing
 static bool gOwnSave = true;   // false with POKEMACGOCHI_SAVE_DIR: another save than the user's
 static char **gArgv;
@@ -68,6 +77,10 @@ static void startAudio(void) {
 }
 
 // ---- window ----
+@interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate>
+- (void)checkForUpdates:(id)sender;
+@end
+
 @interface RoundWindow : NSWindow
 @end
 @implementation RoundWindow
@@ -261,6 +274,9 @@ static void startAudio(void) {
   NSMenuItem *mute = [menu addItemWithTitle:@"Mute Sound" action:@selector(toggleMute:) keyEquivalent:@""];
   mute.target = self;
   mute.state = hostSoundEnabled() ? NSControlStateValueOff : NSControlStateValueOn;
+  NSString *upd = gNewVersion ? [NSString stringWithFormat:@"Download Version %@…", gNewVersion] : @"Check for Updates…";
+  NSMenuItem *update = [menu addItemWithTitle:upd action:@selector(checkForUpdates:) keyEquivalent:@""];
+  update.target = NSApp.delegate;
   [menu addItem:NSMenuItem.separatorItem];
   [menu addItemWithTitle:@"Drag the ring to move" action:nil keyEquivalent:@""].enabled = NO;
   [menu addItemWithTitle:@"\u2190 \u2192 tilt  \u00b7  Space: wild battle" action:nil keyEquivalent:@""].enabled = NO;
@@ -367,8 +383,6 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
 @end
 
 // ---- application ----
-@interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate>
-@end
 
 @implementation AppDelegate {
   RoundWindow *_window;
@@ -480,6 +494,74 @@ static NSRect initialFrame(bool ownSave) {
   [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
   // starting the audio device can take seconds: don't stall the game
   dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{ startAudio(); });
+  if (gOwnSave && !gConsole) {  // test copies never nag
+    [self performSelector:@selector(checkForUpdates:) withObject:nil afterDelay:10];
+    NSTimer *daily = [NSTimer timerWithTimeInterval:UPDATE_EVERY_S target:self selector:@selector(dailyUpdateCheck:) userInfo:nil repeats:YES];
+    daily.tolerance = 600;
+    [NSRunLoop.mainRunLoop addTimer:daily forMode:NSRunLoopCommonModes];
+  }
+}
+
+// Asks GitHub for the newest Mac release. From the menu (sender != nil) it always answers;
+// the automatic check only speaks up the first time it finds each new version.
+- (void)checkForUpdates:(id)sender {
+  bool asked = sender != nil;
+  if (asked && gNewVersion) {  // already known: straight to the download
+    [NSWorkspace.sharedWorkspace openURL:gNewURL];
+    return;
+  }
+  NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@RELEASES_API]];
+  [req setValue:@APP_NAME forHTTPHeaderField:@"User-Agent"];
+  [req setValue:@"application/vnd.github+json" forHTTPHeaderField:@"Accept"];
+  req.timeoutInterval = 15;
+  [[NSURLSession.sharedSession dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+    NSString *found = nil;
+    NSURL *url = nil;
+    NSArray *list = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
+    if ([list isKindOfClass:NSArray.class])
+      for (NSDictionary *r in list) {
+        if (![r isKindOfClass:NSDictionary.class] || [r[@"draft"] boolValue] || [r[@"prerelease"] boolValue]) continue;
+        NSString *tag = r[@"tag_name"];
+        if (![tag isKindOfClass:NSString.class] || ![tag hasPrefix:@"mac-v"]) continue;
+        NSString *v = [tag substringFromIndex:5];
+        if (found && [v compare:found options:NSNumericSearch] != NSOrderedDescending) continue;
+        found = v;
+        url = [NSURL URLWithString:r[@"html_url"] ?: @GITHUB_URL];
+        for (NSDictionary *a in r[@"assets"])
+          if ([a[@"name"] isEqual:@"PokeMacGochi.dmg"]) url = [NSURL URLWithString:a[@"browser_download_url"]];
+      }
+    dispatch_async(dispatch_get_main_queue(), ^{ [self updateCheckFound:found url:url asked:asked]; });
+  }] resume];
+}
+
+- (void)dailyUpdateCheck:(NSTimer *)t { [self checkForUpdates:nil]; }
+
+- (void)updateCheckFound:(NSString *)found url:(NSURL *)url asked:(bool)asked {
+  NSString *mine = NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"] ?: @"0";
+  bool newer = found && url && [found compare:mine options:NSNumericSearch] == NSOrderedDescending;
+  if (newer) {
+    gNewVersion = found;
+    gNewURL = url;
+  }
+  NSUserDefaults *d = NSUserDefaults.standardUserDefaults;
+  if (!asked && (!newer || [[d stringForKey:kPrefToldVersion] isEqual:found])) return;
+  NSAlert *alert = [[NSAlert alloc] init];
+  if (newer) {
+    [d setObject:found forKey:kPrefToldVersion];
+    alert.messageText = [NSString stringWithFormat:@APP_NAME " %@ is available", found];
+    alert.informativeText = [NSString stringWithFormat:@"You have version %@. Your pet is saved separately from the app, so "
+                                                       @"it stays when you replace the app with the new one: quit "
+                                                       @APP_NAME ", open the new DMG and drag it into Applications.",
+                                                       mine];
+    [alert addButtonWithTitle:@"Download"];
+    [alert addButtonWithTitle:@"Later"];
+  } else {
+    alert.messageText = found ? @"You're up to date" : @"Couldn't check for updates";
+    alert.informativeText = found ? [NSString stringWithFormat:@APP_NAME " %@ is the newest version.", mine]
+                                  : @"Check your internet connection and try again.";
+  }
+  if (!gConsole) [NSApp activateIgnoringOtherApps:YES];
+  if ([alert runModal] == NSAlertFirstButtonReturn && newer) [NSWorkspace.sharedWorkspace openURL:url];
 }
 
 - (void)tick:(NSTimer *)t {

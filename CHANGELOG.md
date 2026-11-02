@@ -8,6 +8,11 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.19] - 2026-11-02
+
+- **Updates over Wi-Fi (Knomi):** the settings page has a **Check for update** button, and the Knomi also checks once a day while the screen is dimmed. Updates download from the web installer's site into the spare firmware slot, along with the sprites when they changed. The save is never touched, and a new version that fails to start rolls back.
+- **Update check (PokeMacGochi):** the Mac app looks for a new version at launch and once a day, tells you once, and has **Check for Updates** in its menu.
+- **Public:** the repository and the web installer at https://fedorsosnin.github.io/PokeKnomiGochi/ are now public.
 - **Weight matters:** every meal adds a little weight and eating while already full adds more, so overfeeding makes your Pokémon chubby and sluggish. It burns off slowly and faster with games and battles. The Fit medal now needs weight 20 or less.
 - **Zone Pokédex:** tap a Pokémon in a battle zone's grid to open its full Pokédex entry.
 - **Press and slide:** holding a finger on any button, menu row or key shows it large above your finger, the way the Wi-Fi keyboard does. It only fires when you lift, so if you landed on the wrong one you can slide to the right one first. A quick flick still swipes.

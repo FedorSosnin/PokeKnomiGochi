@@ -40,6 +40,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "JUEGOS", "Inclina y Atrapa", "Qui\202n es?", "Qui\202n es ese Pokemon?", "Es %s!", "Inclina para moverte!", "Toca y apunta inclinando", "%s atrapado!", "Fallo!", "%s escap\242...", "Tienes una visita!", "Adi\242s, %s!", "PokeRun", "Toca para saltar!", "Desliza arriba: salir", "Elige tu Pokemon", "Elegir", "Volver", "Te necesita!", "Cuidarlo", "Dejarlo ir", "PokeDungeon", "Baya! +PS", "%s esta aqui!", "Combatir", "Intercambiar", "%s quiere combatir!", "%s quiere cambiar!", "Esperando...", "%s se fue", "%s no puede jugar", "Elige cual dar", "Das", "Recibes", "Tienes a %s!",
     "Combate", "Bosque", "Playa", "Cueva", "Mansi\242n", "Campo", "Buscar", "%d/%d atrapados", "Sin atrapar", "Desliza arriba: volver",
     "ENTRENADOR %d/%d",
+    "BUSCAR ACTUALIZACION", "Ya est\240 al d\241a", "ACTUALIZAR A v%s", "Actualizando %u%%", "Fall\242 la actualizaci\242n",
   },
   // ---------------- EN ----------------
   {
@@ -74,6 +75,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "GAMES", "Tilt Catch", "Who's That?", "Who's that Pokemon?", "It's %s!", "Lean to move!", "Tap ball, lean to aim", "Caught %s!", "Missed!", "%s got away...", "You have a visitor!", "Goodbye, %s!", "PokeRun", "Tap to jump!", "Swipe up to quit", "Choose your Pokemon", "Choose", "Back", "It needs you!", "Take care of it", "Let it go", "PokeDungeon", "Berry! +HP", "%s is here!", "Battle", "Trade", "%s wants to battle!", "%s wants to trade!", "Waiting...", "%s left", "%s can't play now", "Pick one to give", "You give", "You get", "Got %s!",
     "Battle", "Forest", "Beach", "Cave", "Mansion", "Field", "Search", "%d/%d caught", "Not caught yet", "Swipe up to go back",
     "TRAINER %d/%d",
+    "CHECK FOR UPDATE", "Up to date", "UPDATE TO v%s", "Updating %u%%", "Update failed",
   },
   // ---------------- FR ----------------
   {
@@ -108,6 +110,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "JEUX", "Penche et Attrape", "Qui est-ce?", "Quel est ce Pokemon?", "C'est %s!", "Penche pour bouger!", "Touche, penche pour viser", "%s attrap\202!", "Rat\202!", "%s s'enfuit...", "Tu as un visiteur!", "Au revoir, %s!", "PokeRun", "Touche pour sauter!", "Glisse en haut: quitter", "Choisis ton Pokemon", "Choisir", "Retour", "Il a besoin de toi!", "M'en occuper", "Le laisser partir", "PokeDungeon", "Baie! +PV", "%s est l\205!", "Combattre", "Echanger", "%s veut combattre!", "%s veut \202changer!", "Attente...", "%s est parti", "%s ne peut pas jouer", "Choisis quoi donner", "Tu donnes", "Tu re\207ois", "%s obtenu!",
     "Combat", "For\210t", "Plage", "Grotte", "Manoir", "Champ", "Chercher", "%d/%d captur\202s", "Pas encore captur\202", "Glisse en haut: retour",
     "DRESSEUR %d/%d",
+    "MISE \205 JOUR ?", "D\202j\205 \205 jour", "INSTALLER v%s", "Mise \205 jour %u%%", "\220chec de mise \205 jour",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -147,6 +150,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "SPIELE", "Neigen und Fangen", "Wer ist das?", "Wer ist das Pokemon?", "Es ist %s!", "Neigen zum Bewegen!", "Tippen, neigen zum Zielen", "%s gefangen!", "Daneben!", "%s ist entkommen", "Du hast Besuch!", "Tschuess, %s!", "PokeRun", "Tippen zum Springen!", "Hochwischen: Ende", "W\204hle dein Pokemon", "W\204hlen", "Zur\201ck", "Es braucht dich!", "K\201mmern", "Gehen lassen", "PokeDungeon", "Beere! +KP", "%s ist da!", "Kampf", "Tausch", "%s will k\204mpfen!", "%s will tauschen!", "Warten...", "%s ist weg", "%s kann nicht spielen", "W\204hle zum Geben", "Du gibst", "Du kriegst", "%s erhalten!",
     "Kampf", "Wald", "Strand", "H\224hle", "Spukhaus", "Wiese", "Suchen", "%d/%d gefangen", "Noch nicht gefangen", "Hochwischen: zur\201ck",
     "TRAINER %d/%d",
+    "NACH UPDATE SUCHEN", "Aktuell", "UPDATE AUF v%s", "Update l\204uft %u%%", "Update fehlgeschlagen",
   },
   // ---------------- IT ----------------
   {
@@ -181,6 +185,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "GIOCHI", "Inclina e Prendi", "Chi \212?", "Chi \212 questo Pokemon?", "E' %s!", "Inclina per muoverti!", "Tocca, inclina per mirare", "%s catturato!", "Mancato!", "%s \212 fuggito", "Hai una visita!", "Ciao, %s!", "PokeRun", "Tocca per saltare!", "Scorri su: esci", "Scegli il tuo Pokemon", "Scegli", "Indietro", "Ha bisogno di te!", "Prenditene cura", "Lascialo andare", "PokeDungeon", "Bacca! +PS", "%s \212 qui!", "Lotta", "Scambio", "%s vuole lottare!", "%s vuole scambiare!", "Attesa...", "%s se n'\212 andato", "%s non pu\225 giocare", "Scegli cosa dare", "Dai", "Ricevi", "Preso %s!",
     "Lotta", "Foresta", "Spiaggia", "Grotta", "Villa", "Prato", "Cerca", "%d/%d presi", "Non ancora preso", "Scorri su: indietro",
     "ALLENATORE %d/%d",
+    "CERCA AGGIORNAMENTI", "Gi\205 aggiornato", "AGGIORNA A v%s", "Aggiornamento %u%%", "Aggiornamento fallito",
   },
   // ---------------- PT ----------------
   {
@@ -215,6 +220,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "JOGOS", "Inclina e Apanha", "Quem \202?", "Quem \202 este Pokemon?", "E o %s!", "Inclina para mover!", "Toca e inclina para mirar", "%s apanhado!", "Falhou!", "%s fugiu...", "Tens uma visita!", "Adeus, %s!", "PokeRun", "Toca para saltar!", "Desliza acima: sair", "Escolhe o teu Pokemon", "Escolher", "Voltar", "Precisa de ti!", "Cuidar dele", "Deixar ir", "PokeDungeon", "Baga! +PS", "%s est\240 aqui!", "Combater", "Trocar", "%s quer combater!", "%s quer trocar!", "A esperar...", "%s saiu", "%s nao pode jogar", "Escolhe o que dar", "Das", "Recebes", "Tens %s!",
     "Combate", "Floresta", "Praia", "Caverna", "Solar", "Campo", "Procurar", "%d/%d apanhados", "Ainda por apanhar", "Desliza acima: voltar",
     "TREINADOR %d/%d",
+    "PROCURAR ATUALIZACAO", "J\240 est\240 atualizado", "ATUALIZAR PARA v%s", "A atualizar %u%%", "Falhou a atualizacao",
   },
   // ---------------- JA ----------------
   {
@@ -272,6 +278,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ゲーム", "かたむけキャッチ", "だれだ?", "このポケモンはだれ?", "%sだ!", "かたむけてうごこう!", "タッチしてかたむける", "%sをつかまえた!", "はずれ!", "%sはにげた", "おきゃくさんだよ!", "またね %s!", "PokeRun", "タッチでジャンプ!", "うえにスワイプでやめる", "ポケモンをえらぼう", "えらぶ", "もどる", "きみがひつようだよ!", "おせわする", "おわかれする", "PokeDungeon", "きのみ! HPかいふく", "%sがきたよ!", "バトル", "こうかん", "%sがバトルしたいって!", "%sがこうかんしたいって!", "まってね...", "%sはかえった", "%sはあそべないよ", "あげるのをえらぼう", "あげる", "もらう", "%sをもらった!",
     "バトル", "もり", "うみべ", "どうくつ", "やかた", "のはら", "さがす", "%d/%d つかまえた", "まだつかまえてない", "うえにスワイプでもどる",
     "トレーナー %d/%d",
+    "アップデート", "さいしんです", "v%s にする", "アップデート %u%%", "しっぱいしました",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -311,6 +318,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "게임", "기울여 잡기", "누구일까?", "이 포켓몬은 누구?", "%s!", "기울여서 움직여요!", "눌러서 기울여 조준", "%s 잡았다!", "빗나감!", "%s 도망감", "손님이 왔어요!", "잘 가, %s!", "PokeRun", "눌러서 점프!", "위로 밀면 나가기", "포켓몬을 고르세요", "고르기", "돌아가기", "널 필요로 해요!", "돌봐 주기", "떠나보내기", "PokeDungeon", "열매! HP 회복", "%s 왔어요!", "배틀", "교환", "%s: 배틀할래요!", "%s: 교환할래요!", "기다리는 중...", "%s 떠났어요", "%s 지금 못 놀아요", "줄 포켓몬 고르기", "줄래요", "받아요", "%s 받았어요!",
     "배틀", "숲", "해변", "동굴", "저택", "들판", "찾기", "%d/%d 잡음", "아직 못 잡음", "위로 밀면 뒤로",
     "트레이너 %d/%d",
+    "업데이트 확인", "최신 버전", "v%s 로 업데이트", "업데이트 중 %u%%", "업데이트 실패",
   },
 };
 

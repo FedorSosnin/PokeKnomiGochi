@@ -14,7 +14,7 @@ CXXFLAGS ?= -std=c++17 -O2 -g -Wall -Wextra -Wno-unused-parameter
 ALLFLAGS := $(CXXFLAGS) $(DEFS) $(INCLUDES)
 
 LAYER_SRC := host_canvas.cpp host_prefs.cpp host_runtime.cpp host_board.cpp host_buddy.cpp host_audio.cpp
-GAME_SRC  := $(ROOT)/pet.cpp $(ROOT)/i18n.cpp $(ROOT)/sdmon.cpp
+GAME_SRC  := $(ROOT)/pet.cpp $(ROOT)/i18n.cpp $(ROOT)/sdmon.cpp $(ROOT)/ota_update.cpp
 UNIT      := $(BUILD)/sketch_unit.cpp
 OBJS      := $(patsubst %.cpp,$(BUILD)/%.o,$(LAYER_SRC) $(notdir $(GAME_SRC))) $(BUILD)/sketch_unit.o
 HEADERS   := $(wildcard *.h shim/*.h shim/driver/*.h *.inc $(ROOT)/*.h)
