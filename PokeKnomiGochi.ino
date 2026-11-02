@@ -5370,8 +5370,6 @@ static bool pressSet(PressTarget &t, int x, int y, int w, int h, const char *lab
   t = { (int16_t)x, (int16_t)y, (int16_t)w, (int16_t)h, label, icon };
   return true;
 }
-// a Pokemon in a grid: its name if it's known, ??? if not
-static const char *pressDexLabel(int16_t dex) { return pet.isRegistered(dex) ? dexName(dex) : "???"; }
 
 // The control at (x, y) on the open screen, false if there is none there. It mirrors the
 // screens' own tap code, so it is only for real controls: petting, aiming, walking and the
@@ -5413,12 +5411,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   if (zoneScreen) {
     if (y >= ZONE_BTN_Y && y < ZONE_BTN_Y + ZONE_BTN_H && x >= ZONE_BTN_X && x < ZONE_BTN_X + ZONE_BTN_W)
       return pressSet(t, ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, T(S_ZONE_SEARCH));
-    if (x < ZONE_GRID_X || y < ZONE_GRID_Y) return false;
-    int c = (x - ZONE_GRID_X) / ZONE_CELL, r = (y - ZONE_GRID_Y) / ZONE_CELL;
-    if (c > 3 || r > 2) return false;
-    int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + r * 4 + c);
-    if (!dex) return false;
-    return pressSet(t, ZONE_GRID_X + c * ZONE_CELL, ZONE_GRID_Y + r * ZONE_CELL, ZONE_CELL, ZONE_CELL, pressDexLabel(dex));
+    return false;  // Pokedex grids (here and below) swipe between pages: a slow swipe must not pick a square
   }
   if (gameOpen || runOpen || dungeonOpen) return false;  // aiming, jumping, walking: no buttons
 
@@ -5436,11 +5429,8 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
         return pressSet(t, CX - 110, PICK_BTN_Y, 220, PICK_BTN_H, T(S_CHOOSE_BTN));
       if (y >= PICK_BACK_Y && y < PICK_BACK_Y + PICK_BACK_H && abs(x - CX) <= 80)
         return pressSet(t, CX - 80, PICK_BACK_Y, 160, PICK_BACK_H, T(S_BACK_BTN));
-      return false;
     }
-    int16_t dex = ownedGridAt(x, y, eggPickPage);
-    if (!dex) return false;
-    return pressSet(t, GAL_X + (x - GAL_X) / GAL_CELL * GAL_CELL, GAL_Y + (y - GAL_Y) / GAL_CELL * GAL_CELL, GAL_CELL, GAL_CELL, dexName(dex));
+    return false;
   }
   if (buddyMenuOpen) {
     if (abs(x - CX) > 130 || y < 216 || y >= 216 + 3 * 64) return false;
@@ -5449,11 +5439,6 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, CX - 130, 216 + row * 64, 260, 54, T(L[row]));
   }
   if (tradeOpen) {
-    if (trPhase == TR_PICK) {
-      int16_t dex = y < 72 ? 0 : ownedGridAt(x, y, trPage);
-      if (!dex) return false;
-      return pressSet(t, GAL_X + (x - GAL_X) / GAL_CELL * GAL_CELL, GAL_Y + (y - GAL_Y) / GAL_CELL * GAL_CELL, GAL_CELL, GAL_CELL, dexName(dex));
-    }
     if (trPhase != TR_REVIEW) return false;
     if (y >= PICK_BTN_Y - 40 && y < PICK_BTN_Y - 40 + PICK_BTN_H && abs(x - CX) <= 110)
       return pressSet(t, CX - 110, PICK_BTN_Y - 40, 220, PICK_BTN_H, T(S_BUDDY_TRADE));
@@ -5461,13 +5446,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       return pressSet(t, CX - 80, PICK_BACK_Y - 40, 160, PICK_BACK_H, T(S_BACK_BTN));
     return false;
   }
-  if (galleryOpen) {
-    if (galleryDetail || x < GAL_X || y < GAL_Y) return false;
-    int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
-    int16_t dex = galleryPage * 16 + r * 4 + c + 1;
-    if (c > 3 || r > 3 || dex > 151) return false;
-    return pressSet(t, GAL_X + c * GAL_CELL, GAL_Y + r * GAL_CELL, GAL_CELL, GAL_CELL, pressDexLabel(dex));
-  }
+  if (galleryOpen) return false;
   if (kbOpen) {
     if (x < KB_X || y < KB_Y) return false;
     int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;

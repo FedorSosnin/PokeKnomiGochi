@@ -8,7 +8,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
-- **Press and slide:** holding a finger on any button, menu row, key or Pokédex square shows it large above your finger, the way the Wi-Fi keyboard does. It only fires when you lift, so if you landed on the wrong one you can slide to the right one first. A quick flick still swipes.
+- **Press and slide:** holding a finger on any button, menu row or key shows it large above your finger, the way the Wi-Fi keyboard does. It only fires when you lift, so if you landed on the wrong one you can slide to the right one first. A quick flick still swipes.
 - **Trainer medals:** a new card page with medals that stay with you across every Pokémon you raise: find a shiny, register 10, 50, 100 and all 151 in the Pokédex, and raise a Pokémon to level 100.
 - **Stats page:** the card's second page is now called Stats instead of Battle.
 - **PokeMacGochi:** the window no longer dims when you leave it alone; only a sleeping pet dims it. Its size and place are kept with your save, and opening it a second time says where the running one is.
