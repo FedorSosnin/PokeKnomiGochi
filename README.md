@@ -18,6 +18,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 | **Choose where to hunt** | **See what's missing** | **Battle in that zone** |
 | ![The answer revealed](docs/images/quiz-reveal.png) | ![Tilt Catch](docs/images/tilt-catch.png) | ![A daily visitor](docs/images/visitor.png) |
 | **Guess the silhouette** | **Tilt Catch** | **A visitor drops by each day** |
+| ![A buddy visiting from another Knomi](docs/images/buddy.png) | ![Battle or trade with a buddy](docs/images/buddy-menu.png) | ![The button under your finger, shown large](docs/images/press.png) |
+| **A buddy visits from another Knomi** | **Battle or trade with them** | **Press and slide to choose** |
 
 ## Install
 
@@ -60,6 +62,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 |---|---|
 | **Tap the Pokémon** | Pet it |
 | **Tap the bottom icons** | Feed it, open games, turn the light off for bed, or give it a bath |
+| **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
 | **Swipe up** | See its stats |
 | **Swipe left or right** | Open the Pokédex |
 | **Swipe down** | Set the clock, then swipe left for settings |

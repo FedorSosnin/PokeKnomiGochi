@@ -10,6 +10,7 @@ void hostPanelSetBrightness(uint8_t v);
 void hostCanvasFlushed();
 bool hostPointerRead(int16_t *x, int16_t *y);
 float hostTiltValue();
+void pressOverlay();  // the sketch's press preview, drawn over every frame
 
 class KnomiPanel {
 public:
@@ -20,7 +21,10 @@ public:
 class ScaledCanvas : public Arduino_Canvas {
 public:
   explicit ScaledCanvas(KnomiPanel *) : Arduino_Canvas(LCD_WIDTH, LCD_HEIGHT) {}
-  void flush(bool = false) override { hostCanvasFlushed(); }
+  void flush(bool = false) override {
+    pressOverlay();
+    hostCanvasFlushed();
+  }
   // for the console's SHOT command: what the Knomi's panel would show
   uint16_t *panelBuffer();
 private:

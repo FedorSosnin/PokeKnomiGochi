@@ -43,6 +43,7 @@
 #include "zones.h"
 #include "zones_art.h"
 #include "autorot.h"
+#include "press.h"
 #include "buddy_net.h"
 
 // Firmware version. Bump this number on every release (and manifest.json for
@@ -172,6 +173,7 @@ DnState dn;
 enum BuddySession : uint8_t { BS_IDLE, BS_INVITING, BS_INVITED, BS_SYNC, BS_BATTLE, BS_TRADE };
 enum TradePhase : uint8_t { TR_PICK, TR_WAIT, TR_REVIEW, TR_WAITC, TR_DONE };
 BuddyPeer bPeer;
+bool buddyFake = false;  // FAKEBUDDY (test mode): a buddy without a network, for screenshots
 PmdMon buddyPmd;
 int16_t buddyPmdDex = 0;
 BuddySession bsState = BS_IDLE;
@@ -690,6 +692,20 @@ void handleSerial() {
     Serial.printf("buddy: up=%d id=%08lx peer=%d %08lx #%d Lv.%u state=%u\n", buddyNetUp(), (unsigned long)buddyNetId(),
                   bPeer.on, (unsigned long)bPeer.id, bPeer.dex, bPeer.level, bsState);
     Serial.println("DONE");
+  } else if (line.startsWith("FAKEBUDDY ") && pet.noSave) {  // "FAKEBUDDY dex level [nick]": screenshots without a second board
+    char nick[12] = "";
+    int dex = 0, lv = 0;
+    sscanf(line.c_str() + 10, "%d %d %11s", &dex, &lv, nick);
+    if (dex >= 1 && dex <= DEX_COUNT) {
+      bPeer.on = true;
+      bPeer.id = 0xFA4E;
+      bPeer.dex = dex;
+      bPeer.level = lv > 0 ? lv : 5;
+      strlcpy(bPeer.nick, nick, sizeof(bPeer.nick));
+      bPeer.seen = millis();
+      buddyFake = true;
+    }
+    Serial.println("DONE");
   } else if (line == "DUNGEON") {
     startDungeon();
     Serial.println("DONE");
@@ -819,6 +835,39 @@ bool inPetZone(int16_t x, int16_t y) {
   return x > 110 && x < 356 && y > 95 && y < 310;
 }
 
+// press preview (press.h): the control under the finger, drawn by pressOverlay() on each flush
+PressTarget pressT;
+bool pressOn = false;
+bool pressTargetAt(int16_t x, int16_t y, PressTarget &t);  // prototypes (defined at the end)
+void gameTap(int16_t x, int16_t y);
+
+// screens that only repaint on a change must repaint when the highlight moves
+extern bool screenKeyValid;
+void pressRepaint() {
+  screenKeyValid = false;
+  galleryDirty = true;
+  eggPickDirty = true;
+}
+
+void pressUpdate(int16_t x, int16_t y) {
+  PressTarget t;
+  bool on = !swallowGesture && pressTargetAt(x, y, t);
+  if (on == pressOn && (!on || (t.x == pressT.x && t.y == pressT.y && t.w == pressT.w && t.h == pressT.h))) return;
+  pressOn = on;
+  if (on) pressT = t;
+  pressRepaint();
+}
+
+// finger lifted: true if it was on a control and the gesture wasn't a quick swipe
+bool pressRelease() {
+  bool picked = pressOn && !pressIsFlick(tXl - tX0, tYl - tY0, millis() - tStart);
+  if (pressOn) {
+    pressOn = false;
+    pressRepaint();
+  }
+  return picked;
+}
+
 // the touch is resolved on finger LIFT to tell a tap from a swipe
 void handleTouch() {
   static uint32_t lastPoll = 0;
@@ -887,21 +936,22 @@ void handleTouch() {
       screenOff = false;
       wakeUI();
       if (runOpen && !swallowGesture) runJump = true;
-    } else if (!pressed && wasPressed) {
+    }
+    if (pressed) {
+      pressUpdate(x, y);
+    } else if (wasPressed) {
       wakeUI();
+      bool picked = pressRelease();
       if (!swallowGesture) {
-        if (swipeUpQuit(tX0, tY0, tXl, tYl, millis() - tStart)) {
+        if (picked) {
+          gameTap(tXl, tYl);  // the control under the finger when it lifted
+        } else if (swipeUpQuit(tX0, tY0, tXl, tYl, millis() - tStart)) {
           if (zoneScreen) zoneBack();
           else quitGame();
         } else if (zoneScreen && abs(tXl - tX0) >= 40 && abs(tYl - tY0) < abs(tXl - tX0)) {
           zoneTurnPage(tXl > tX0 ? -1 : 1);  // left advances, as in the Pokedex
         } else if (abs(tXl - tX0) < 40 && abs(tYl - tY0) < 40) {
-          if (battleOpen) battleTap(tX0, tY0);
-          else if (quizOpen) quizTap(tX0, tY0);
-          else if (gamesMenuOpen) gamesMenuTap(tX0, tY0);
-          else if (zoneScreen) zoneTap(tX0, tY0);
-          else if (runOpen) runTap();
-          else if (dungeonOpen && !dnHeld) dungeonTap(tX0, tY0);
+          gameTap(tX0, tY0);
         }
       }
     }
@@ -927,12 +977,17 @@ void handleTouch() {
       confirmUntil = millis() + 10000;
       holdFired = true;
     }
+  }
+  if (pressed) {
+    if (!holdFired) pressUpdate(x, y);
   } else if (wasPressed) {  // finger lifts: resolve gesture
     wakeUI();
     int dx = tXl - tX0, dy = tYl - tY0;
     uint32_t dt = millis() - tStart;
+    bool picked = pressRelease();
     if (!holdFired && !swallowGesture) {
-      if (abs(dx) > 80 && abs(dy) < 70 && dt < 800) onSwipe(dx > 0 ? 1 : -1);
+      if (picked) onTap(tXl, tYl);  // the control under the finger when it lifted
+      else if (abs(dx) > 80 && abs(dy) < 70 && dt < 800) onSwipe(dx > 0 ? 1 : -1);
       else if (abs(dy) > 80 && abs(dx) < 70 && dt < 800) onSwipeV(dy > 0 ? 1 : -1);
       else if (dt < 1500 && abs(dx) < 40 && abs(dy) < 40) onTap(tX0, tY0);
     }
@@ -1811,6 +1866,15 @@ void openGamesMenu() {
   gamesMenuUntil = millis() + 20000;
 }
 
+const char *gameLabel(int row) {
+#ifdef BOARD_KNOMI_V2
+  static const StrId L[5] = { S_GAME_BATTLE, S_GAME_DUNGEON, S_GAME_RUN, S_GAME_WHO, S_GAME_TILT };
+#else
+  static const StrId L[5] = { S_GAME_TILT, S_GAME_WHO, S_GAME_RUN, S_GAME_DUNGEON, S_BTL_START };
+#endif
+  return T(L[row]);
+}
+
 void gamesMenuTap(int16_t x, int16_t y) {
   gamesMenuOpen = false;
   int row = (y - GAMES_ROW_Y) / (GAMES_ROW_H + GAMES_ROW_GAP);
@@ -1840,10 +1904,8 @@ void renderGamesMenu() {
   setCur(centerX(T(S_GAMES), 3), 74);
   printT(T(S_GAMES));
 #ifdef BOARD_KNOMI_V2
-  const char *labels[5] = { T(S_GAME_BATTLE), T(S_GAME_DUNGEON), T(S_GAME_RUN), T(S_GAME_WHO), T(S_GAME_TILT) };
   const uint16_t colors[5] = { UI_BAR_BAD, TYPE_ACCENT[TY_GHOST], TYPE_ACCENT[TY_FIRE], TYPE_ACCENT[TY_PSYCHIC], TYPE_ACCENT[TY_GRASS] };
 #else
-  const char *labels[5] = { T(S_GAME_TILT), T(S_GAME_WHO), T(S_GAME_RUN), T(S_GAME_DUNGEON), T(S_BTL_START) };
   const uint16_t colors[5] = { TYPE_ACCENT[TY_GRASS], TYPE_ACCENT[TY_PSYCHIC], TYPE_ACCENT[TY_FIRE], TYPE_ACCENT[TY_GHOST], UI_BAR_BAD };
 #endif
   setSize(2);
@@ -1851,8 +1913,8 @@ void renderGamesMenu() {
     int y = GAMES_ROW_Y + i * (GAMES_ROW_H + GAMES_ROW_GAP);
     gfx->fillRoundRect(GAMES_ROW_X, y, GAMES_ROW_W, GAMES_ROW_H, 14, colors[i]);
     gfx->setTextColor(UI_WHITE);
-    setCur(centerX(labels[i], 2), y + 16);
-    printT(labels[i]);
+    setCur(centerX(gameLabel(i), 2), y + 16);
+    printT(gameLabel(i));
   }
   gfx->setTextColor(UI_INK);
   setCur(centerX(T(S_SWIPE_QUIT), 2), GAMES_ROW_Y + GAMES_COUNT * (GAMES_ROW_H + GAMES_ROW_GAP) + 4);
@@ -4263,8 +4325,9 @@ void tradeFinish() {
 }
 
 void buddyTick(uint32_t now) {
+  if (buddyFake) bPeer.seen = now;  // never times out (until reboot: it only exists in test mode)
   if (!buddyNetUp()) {
-    if (bPeer.on) {
+    if (bPeer.on && !buddyFake) {
       bPeer.on = false;
       buddyNetSetPeer(0);
     }
@@ -5286,4 +5349,249 @@ void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette
     forRuns(n, [&](int c) { return charKey(row[c], silhouette); },
             [&](int c0, int len, int k) { gfx->fillRect(x + c0 * s, y + r * s, len * s, s, silhouette ? INK_K : spriteColor((char)k)); });
   }
+}
+
+// ---------- press preview (press.h) ----------
+
+// the game screens' tap, by whichever is open (same order as handleTouch checks them)
+void gameTap(int16_t x, int16_t y) {
+  if (battleOpen) battleTap(x, y);
+  else if (quizOpen) quizTap(x, y);
+  else if (gamesMenuOpen) gamesMenuTap(x, y);
+  else if (zoneScreen) zoneTap(x, y);
+  else if (runOpen) runTap();
+  else if (dungeonOpen && !dnHeld) dungeonTap(x, y);
+}
+
+static bool pressIn(int16_t x, int16_t y, int rx, int ry, int rw, int rh) {
+  return x >= rx && x <= rx + rw && y >= ry && y <= ry + rh;
+}
+static bool pressSet(PressTarget &t, int x, int y, int w, int h, const char *label, const char *const *icon = nullptr) {
+  t = { (int16_t)x, (int16_t)y, (int16_t)w, (int16_t)h, label, icon };
+  return true;
+}
+// a Pokemon in a grid: its name if it's known, ??? if not
+static const char *pressDexLabel(int16_t dex) { return pet.isRegistered(dex) ? dexName(dex) : "???"; }
+
+// The control at (x, y) on the open screen, false if there is none there. It mirrors the
+// screens' own tap code, so it is only for real controls: petting, aiming, walking and the
+// "tap anywhere to close" screens keep working as they did, without a preview.
+bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
+  static char buf[52];
+  // --- game screens (handleTouch's first branch) ---
+  if (battleOpen) {
+    if (bPhase != BP_CHOOSE) return false;
+    if (y >= 392 && x >= 160 && x <= 306) return pressSet(t, 160, 394, 146, 38, T(S_BTL_RUN));
+    if (y < 344 || y > 386) return false;
+    for (uint8_t i = 0; i < bMeMoves.count; i++) {
+      int x0, x1;
+      battleMoveRect(i, x0, x1);
+      if (x >= x0 && x <= x1) return pressSet(t, x0, 346, x1 - x0, 40, MOVE_TBL[bMeMoves.ids[i]].name);
+    }
+    return false;
+  }
+  if (quizOpen) {
+    if (quizPhase != QP_ASK || y < QUIZ_OPT_Y) return false;
+    int i = (y - QUIZ_OPT_Y) / (QUIZ_OPT_H + QUIZ_OPT_GAP);
+    if (i > 2) return false;
+    int inset = i == 2 ? 26 : 0;
+    return pressSet(t, 83 + inset, QUIZ_OPT_Y + i * (QUIZ_OPT_H + QUIZ_OPT_GAP), 300 - 2 * inset, QUIZ_OPT_H, dexName(quizOpts[i]));
+  }
+  if (gamesMenuOpen) {
+    int row = (y - GAMES_ROW_Y) / (GAMES_ROW_H + GAMES_ROW_GAP);
+    if (y < GAMES_ROW_Y || row >= GAMES_COUNT || x < GAMES_ROW_X || x > GAMES_ROW_X + GAMES_ROW_W) return false;
+    return pressSet(t, GAMES_ROW_X, GAMES_ROW_Y + row * (GAMES_ROW_H + GAMES_ROW_GAP), GAMES_ROW_W, GAMES_ROW_H, gameLabel(row));
+  }
+  if (zoneScreen == ZS_PICK) {
+    for (uint8_t z = 0; z < ZONE_COUNT; z++) {
+      int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
+      if (dx * dx + dy * dy < (ZONE_ICON_R + 6) * (ZONE_ICON_R + 6) || (abs(dx) < 66 && dy > 0 && dy < ZONE_ICON_R + 44))
+        return pressSet(t, ZONE_XY[z][0] - ZONE_ICON_R, ZONE_XY[z][1] - ZONE_ICON_R, 2 * ZONE_ICON_R, 2 * ZONE_ICON_R, T(ZONE_NAME[z]));
+    }
+    return false;
+  }
+  if (zoneScreen) {
+    if (y >= ZONE_BTN_Y && y < ZONE_BTN_Y + ZONE_BTN_H && x >= ZONE_BTN_X && x < ZONE_BTN_X + ZONE_BTN_W)
+      return pressSet(t, ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, T(S_ZONE_SEARCH));
+    if (x < ZONE_GRID_X || y < ZONE_GRID_Y) return false;
+    int c = (x - ZONE_GRID_X) / ZONE_CELL, r = (y - ZONE_GRID_Y) / ZONE_CELL;
+    if (c > 3 || r > 2) return false;
+    int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + r * 4 + c);
+    if (!dex) return false;
+    return pressSet(t, ZONE_GRID_X + c * ZONE_CELL, ZONE_GRID_Y + r * ZONE_CELL, ZONE_CELL, ZONE_CELL, pressDexLabel(dex));
+  }
+  if (gameOpen || runOpen || dungeonOpen) return false;  // aiming, jumping, walking: no buttons
+
+  // --- everything else (same order as onTap) ---
+  if (pet.awaitingStarter()) {
+    for (int i = 0; i < 3; i++) {
+      int ry = STARTER_ROW_Y + i * (STARTER_ROW_H + STARTER_ROW_GAP);
+      if (pressIn(x, y, 70, ry, 326, STARTER_ROW_H)) return pressSet(t, 70, ry, 326, STARTER_ROW_H, dexName(STARTER_DEX[i]));
+    }
+    return false;
+  }
+  if (pet.awaitingEggPick()) {
+    if (eggPickDetail) {
+      if (y >= PICK_BTN_Y && y < PICK_BTN_Y + PICK_BTN_H && abs(x - CX) <= 110)
+        return pressSet(t, CX - 110, PICK_BTN_Y, 220, PICK_BTN_H, T(S_CHOOSE_BTN));
+      if (y >= PICK_BACK_Y && y < PICK_BACK_Y + PICK_BACK_H && abs(x - CX) <= 80)
+        return pressSet(t, CX - 80, PICK_BACK_Y, 160, PICK_BACK_H, T(S_BACK_BTN));
+      return false;
+    }
+    int16_t dex = ownedGridAt(x, y, eggPickPage);
+    if (!dex) return false;
+    return pressSet(t, GAL_X + (x - GAL_X) / GAL_CELL * GAL_CELL, GAL_Y + (y - GAL_Y) / GAL_CELL * GAL_CELL, GAL_CELL, GAL_CELL, dexName(dex));
+  }
+  if (buddyMenuOpen) {
+    if (abs(x - CX) > 130 || y < 216 || y >= 216 + 3 * 64) return false;
+    static const StrId L[3] = { S_BUDDY_BATTLE, S_BUDDY_TRADE, S_BACK_BTN };
+    int row = (y - 216) / 64;
+    return pressSet(t, CX - 130, 216 + row * 64, 260, 54, T(L[row]));
+  }
+  if (tradeOpen) {
+    if (trPhase == TR_PICK) {
+      int16_t dex = y < 72 ? 0 : ownedGridAt(x, y, trPage);
+      if (!dex) return false;
+      return pressSet(t, GAL_X + (x - GAL_X) / GAL_CELL * GAL_CELL, GAL_Y + (y - GAL_Y) / GAL_CELL * GAL_CELL, GAL_CELL, GAL_CELL, dexName(dex));
+    }
+    if (trPhase != TR_REVIEW) return false;
+    if (y >= PICK_BTN_Y - 40 && y < PICK_BTN_Y - 40 + PICK_BTN_H && abs(x - CX) <= 110)
+      return pressSet(t, CX - 110, PICK_BTN_Y - 40, 220, PICK_BTN_H, T(S_BUDDY_TRADE));
+    if (y >= PICK_BACK_Y - 40 && y < PICK_BACK_Y - 40 + PICK_BACK_H && abs(x - CX) <= 80)
+      return pressSet(t, CX - 80, PICK_BACK_Y - 40, 160, PICK_BACK_H, T(S_BACK_BTN));
+    return false;
+  }
+  if (galleryOpen) {
+    if (galleryDetail || x < GAL_X || y < GAL_Y) return false;
+    int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
+    int16_t dex = galleryPage * 16 + r * 4 + c + 1;
+    if (c > 3 || r > 3 || dex > 151) return false;
+    return pressSet(t, GAL_X + c * GAL_CELL, GAL_Y + r * GAL_CELL, GAL_CELL, GAL_CELL, pressDexLabel(dex));
+  }
+  if (kbOpen) {
+    if (x < KB_X || y < KB_Y) return false;
+    int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;
+    if (col >= KB_COLS || row >= 5) return false;
+    int i = row * KB_COLS + col;
+    if (i == 28) strlcpy(buf, "<-", sizeof(buf));
+    else if (i == 29) strlcpy(buf, "OK", sizeof(buf));
+    else { buf[0] = KB_KEYS[i]; buf[1] = 0; }
+    return pressSet(t, KB_X + col * KB_W, KB_Y + row * KB_H, KB_W - 6, KB_H - 6, buf);
+  }
+  if (clockOpen) {
+#ifdef BOARD_KNOMI_V2
+    if (clockPage == 1) {
+      WifiSetupState ws = wifiSetupState();
+      if (ws == WS_OFF && pressIn(x, y, 96, 236, 274, 48)) return pressSet(t, 96, 236, 274, 48, T(S_WIFI_CHANGE));
+      if (ws != WS_LIST) return false;  // the password keyboard has its own preview
+      int n = wifiSetupNetCount();
+      if (y >= WIFI_ROW_Y && y < WIFI_ROW_Y + WIFI_ROWS * WIFI_ROW_H) {
+        int r = (y - WIFI_ROW_Y) / WIFI_ROW_H, idx = wifiListPage * WIFI_ROWS + r;
+        if (idx >= n) return false;
+        return pressSet(t, 62, WIFI_ROW_Y + r * WIFI_ROW_H, 342, WIFI_ROW_H - 6, wifiSetupNet(idx));
+      }
+      if (y >= 334 && y <= 376) {
+        if (x < 170) return pressSet(t, 96, 334, 70, 40, "<");
+        if (x > 296) return pressSet(t, 300, 334, 70, 40, ">");
+        return pressSet(t, 176, 334, 114, 40, "SCAN");
+      }
+      if (y > 376 && y < 440) return pressSet(t, 150, 384, 166, 40, T(S_CANCEL));
+      return false;
+    }
+#endif
+    if (y >= 190 && y <= 248) {
+      static const int16_t BX[4] = { 104, 170, 252, 318 };
+      for (int i = 0; i < 4; i++) {
+        if (x < BX[i] || x >= BX[i] + 58) continue;
+        snprintf(buf, sizeof(buf), "%s %s", T(i < 2 ? S_HOUR : S_MIN), i % 2 ? "+" : "-");
+        return pressSet(t, BX[i], 190, 58, 58, buf);
+      }
+      return false;
+    }
+    if (y >= LANG_PILL_Y && y <= LANG_PILL_Y + LANG_PILL_H) {
+      if (x >= 34 && x < 130) return pressSet(t, 34, LANG_PILL_Y, 96, LANG_PILL_H, audioEnabled() ? T(S_SND_ON) : T(S_SND_OFF));
+      if (x >= LANG_PILL_X && x < LANG_PILL_X + LANG_PILL_W) {
+        snprintf(buf, sizeof(buf), "%s >", LANG_CODES[gLang]);
+        return pressSet(t, LANG_PILL_X, LANG_PILL_Y, LANG_PILL_W, LANG_PILL_H, buf);
+      }
+      return false;
+    }
+    if (pressIn(x, y, 133, 340, 200, 48)) return pressSet(t, 133, 340, 200, 48, "OK");
+    return false;
+  }
+  if (pet.ceremony) return false;
+  if (cardOpen) {
+#ifndef BOARD_KNOMI_V2
+    if (cardPage == 1 && pressIn(x, y, 96, 300, 274, 40)) return pressSet(t, 96, 300, 274, 40, T(S_BTL_START));
+#endif
+    return false;
+  }
+  if (choiceKind) {
+    const StrId *o;
+    static const StrId EVO[2] = { S_EVO_TAP, S_EVO_KEEP }, RESET[2] = { S_RESET_GO, S_RESET_KEEP },
+                       YESNO[2] = { S_YES, S_NO }, RUN[2] = { S_RUNAWAY_CARE, S_RUNAWAY_GO }, FAR[2] = { S_FAR_GO, S_FAR_STAY };
+    o = choiceKind == 1 ? EVO : choiceKind == 3 ? RESET : choiceKind == 5 ? YESNO : choiceKind == 4 ? RUN : FAR;
+    if (pressIn(x, y, 93, 206, 280, 52)) return pressSet(t, 93, 206, 280, 52, T(o[0]));
+    if (pressIn(x, y, 93, 268, 280, 52)) return pressSet(t, 93, 268, 280, 52, T(o[1]));
+    return false;
+  }
+  if (confirmUntil) {
+    if (pressIn(x, y, 118, 252, 100, 52)) return pressSet(t, 118, 252, 100, 52, T(S_YES));
+    if (pressIn(x, y, 248, 252, 100, 52)) return pressSet(t, 248, 252, 100, 52, T(S_NO));
+    return false;
+  }
+  if (feedMenuUntil) {
+    static const char *const *const ICON[4] = { SPR_ICON_FOOD, SPR_ICON_BERRY_B, SPR_ICON_BERRY_G, SPR_ICON_CANDY };
+    int count = pet.canHaveCandy() ? 4 : 3;
+    int x0 = CX - count * 33;
+    if (y < 288 || y > 352 || x < x0 || x > x0 + count * 66) return false;
+    int item = (x - x0) / 66;
+    if (item >= count) item = count - 1;
+    return pressSet(t, x0 + item * 66, 288, 66, 64, nullptr, ICON[item]);
+  }
+  if (pet.isEgg()) return false;
+  if (buddyVisible() && buddyHit(x, y)) {
+    if (y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6) return pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, buddyName());
+    return pressSet(t, VISIT_X - 60, PET_GROUND - 120, 120, 120, buddyName());
+  }
+  const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
+  if (pet.wantEvolveButton() && pressIn(x, y, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H))
+    return pressSet(t, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H, T(S_EVO_TAP));
+  if (pressIn(x, y, FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H) && (pet.canRunawayNow() || pet.wantFarewellButton())) {
+    snprintf(buf, sizeof(buf), T(pet.canRunawayNow() ? S_RUNAWAY_BTN : S_FAREWELL_BTN), nm);
+    return pressSet(t, FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H, buf);
+  }
+  for (int i = 0; i < 4; i++) {
+    int dx = x - buttons[i].cx, dy = y - buttons[i].cy;
+    if (dx * dx + dy * dy <= BTN_HIT * BTN_HIT)
+      return pressSet(t, buttons[i].cx - BTN_HALF, buttons[i].cy - BTN_HALF, 2 * BTN_HALF, 2 * BTN_HALF, nullptr, buttons[i].icon);
+  }
+  return false;
+}
+
+// Drawn last on every frame (from the canvas flush): the outline on the control and its
+// large copy beside the finger, in the Wi-Fi keyboard's colours.
+void pressOverlay() {
+  if (!pressOn) return;
+  const PressTarget &t = pressT;
+  const uint16_t ring = TYPE_ACCENT[TY_WATER];
+  for (int i = 0; i < 4; i++) gfx->drawRoundRect(t.x - 3 - i, t.y - 3 - i, t.w + 6 + 2 * i, t.h + 6 + 2 * i, 12 + i, ring);
+  if (t.icon) {
+    const int s = 5, side = 16 * s + 24;
+    PressBox b = pressPopupBox(tXl, tYl, side + 16, side + 16);
+    gfx->fillRoundRect(b.x, b.y, b.w, b.h, 16, ring);
+    gfx->fillRoundRect(b.x + 8, b.y + 8, side, side, 12, UI_WHITE);
+    drawMap(t.icon, 16, b.x + 20, b.y + 20, s, false);
+    return;
+  }
+  if (!t.label || !t.label[0]) return;
+  uint8_t size = 5;
+  setSize(size);
+  while (size > 2 && textW(t.label, size) > 340) setSize(--size);
+  int16_t tw = textW(t.label, size), th = (gCjkFont ? 16 : 8) * gTextSize;
+  PressBox b = pressPopupBox(tXl, tYl, tw + 40, th + 36);
+  gfx->fillRoundRect(b.x, b.y, b.w, b.h, 16, ring);
+  gfx->setTextColor(UI_WHITE);
+  setCur(b.x + (b.w - tw) / 2, b.y + 18);
+  printT(t.label);
 }

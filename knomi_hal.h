@@ -42,6 +42,8 @@ private:
   int8_t level = -1;
 };
 
+void pressOverlay();  // the sketch's press preview, drawn over every frame
+
 // Logical 466x466 canvas in PSRAM; flush() averages 2x2 onto the 240x240 panel, with the current rotation
 class ScaledCanvas : public Arduino_Canvas {
 public:
@@ -58,6 +60,7 @@ public:
   }
 
   void flush(bool = false) override {
+    pressOverlay();
     const RotBlit r = rotBlit(gPanelRot, PANEL_SIZE);
     for (int y = 0; y < PANEL_SIZE; y++) {
       const uint16_t *a = _framebuffer + (y * (LCD_HEIGHT - 1) / PANEL_SIZE) * LCD_WIDTH;
