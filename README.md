@@ -23,6 +23,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 
 You need a BTT Knomi V2, a USB-C data cable, and Chrome or Edge on a computer.
 
+Don't have a Knomi yet? **[Get the BIGTREETECH Knomi V2](https://www.awin1.com/pclick.php?p=43148197656&a=2034499&m=95665)**. This is an affiliate link from [deals.3dprintsos.com](https://deals.3dprintsos.com): buying through it supports this project at no extra cost to you.
+
 1. Plug in the Knomi.
 2. Open the **[web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)** and click **Install**.
 3. Pick the USB serial port and wait a few minutes.
