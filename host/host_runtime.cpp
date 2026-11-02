@@ -1,0 +1,264 @@
+// El "Arduino" del host: reloj, entrada, consola serie y el bucle de ticks.
+#include "host.h"
+#include "host_hal.h"
+#include "host_internal.h"
+#include <errno.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <Wire.h>
+#include <chrono>
+#include <deque>
+#include <mutex>
+#include <random>
+
+// Lo que pasa de un tick a otro como mucho. El reloj del juego se para si el proceso deja de correr
+// (Mac en reposo, pestana en segundo plano) y el juego ve el hueco como tiempo de ausencia, por
+// clockPoll() y syncClock(): si no, Pet::update() pasaria horas de golpe a ritmo de un minuto por tick.
+#define MAX_TICK_MS 250
+
+// ---- reloj ----
+static uint32_t gMillis = 0;
+static std::chrono::steady_clock::time_point gLastTick;
+static bool gTicking = false;
+
+uint32_t millis() { return gMillis; }
+uint32_t micros() { return gMillis * 1000u; }
+
+static uint32_t advanceClock() {
+  auto now = std::chrono::steady_clock::now();
+  uint32_t dt = 0;
+  if (gTicking) {
+    long long ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - gLastTick).count();
+    dt = ms > MAX_TICK_MS ? MAX_TICK_MS : (uint32_t)ms;
+    gLastTick += std::chrono::milliseconds(ms);
+    if (ms > MAX_TICK_MS) gLastTick = now;
+  } else {
+    gLastTick = now;
+    gTicking = true;
+  }
+  gMillis += dt;
+  return dt;
+}
+
+// ---- random ----
+static std::mt19937 gRng{std::random_device{}()};
+long random(long howbig) {
+  if (howbig <= 0) return 0;
+  return (long)(gRng() % (uint32_t)howbig);
+}
+long random(long howsmall, long howbig) {
+  if (howsmall >= howbig) return howsmall;
+  return howsmall + random(howbig - howsmall);
+}
+void randomSeed(unsigned long seed) { gRng.seed((uint32_t)seed); }
+uint32_t esp_random() { return gRng(); }
+
+// ---- String ----
+void String::trim() {
+  size_t a = s_.find_first_not_of(" \t\r\n");
+  if (a == std::string::npos) { s_.clear(); return; }
+  s_ = s_.substr(a, s_.find_last_not_of(" \t\r\n") - a + 1);
+}
+int String::indexOf(char c, unsigned from) const {
+  size_t p = s_.find(c, from);
+  return p == std::string::npos ? -1 : (int)p;
+}
+int String::indexOf(const char *t, unsigned from) const {
+  size_t p = s_.find(t, from);
+  return p == std::string::npos ? -1 : (int)p;
+}
+int String::lastIndexOf(char c) const {
+  size_t p = s_.rfind(c);
+  return p == std::string::npos ? -1 : (int)p;
+}
+String String::substring(unsigned left, unsigned right) const {
+  if (right > s_.size()) right = (unsigned)s_.size();
+  if (left >= right) return String("");
+  return String(s_.substr(left, right - left));
+}
+
+// ---- consola serie ----
+HostSerial Serial;
+static std::mutex gSerialMutex;
+static std::deque<std::string> gSerialIn;
+
+void hostSerialPush(const char *line) {
+  std::lock_guard<std::mutex> lock(gSerialMutex);
+  gSerialIn.push_back(line);
+}
+int HostSerial::available() {
+  std::lock_guard<std::mutex> lock(gSerialMutex);
+  return gSerialIn.empty() ? 0 : (int)gSerialIn.front().size() + 1;
+}
+String HostSerial::readStringUntil(char) {
+  std::lock_guard<std::mutex> lock(gSerialMutex);
+  if (gSerialIn.empty()) return String("");
+  String s(gSerialIn.front());
+  gSerialIn.pop_front();
+  return s;
+}
+int HostSerial::printf(const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  int n = vprintf(fmt, ap);
+  va_end(ap);
+  fflush(stdout);
+  return n;
+}
+void HostSerial::print(const char *s) { fputs(s, stdout); fflush(stdout); }
+void HostSerial::println(const char *s) { puts(s); fflush(stdout); }
+size_t HostSerial::write(const uint8_t *data, size_t len) {
+  size_t n = fwrite(data, 1, len, stdout);
+  fflush(stdout);
+  return n;
+}
+
+TwoWire Wire;
+HostEsp ESP;
+static bool gRestart = false;
+void HostEsp::restart() { gRestart = true; }
+bool hostRestartRequested(void) { return gRestart; }
+
+// ---- entrada ----
+static void (*gTouchIsr)() = nullptr;
+static int16_t gPointerX = 0, gPointerY = 0;
+static bool gPointerDown = false;
+static uint32_t gPointerHoldUntil = 0;
+static bool gButtonDown = false;
+static bool gTiltLeft = false, gTiltRight = false;
+static float gTilt = 0;
+
+// el juego sondea el tactil cada 20 ms y resuelve al levantar: un toque visto dos sondeos no se pierde
+#define POINTER_MIN_HOLD_MS 45
+// segundos para llegar al tope con la tecla pulsada, y para volver a recto al soltarla
+#define TILT_RAMP_S 0.12f
+#define TILT_RELEASE_S 0.06f
+
+void pinMode(uint8_t, uint8_t) {}
+void digitalWrite(uint8_t, uint8_t) {}
+int digitalRead(uint8_t pin) {
+  if (pin == KNOMI_BTN_PIN) return gButtonDown ? LOW : HIGH;
+  return HIGH;  // el INT del tactil, en reposo
+}
+void attachInterrupt(uint8_t pin, void (*fn)(), int) {
+  if (pin == TP_INT) gTouchIsr = fn;
+}
+
+void hostPointer(int x, int y, bool down) {
+  gPointerX = (int16_t)x;
+  gPointerY = (int16_t)y;
+  if (down && !gPointerDown) {
+    gPointerHoldUntil = millis() + POINTER_MIN_HOLD_MS;
+    if (gTouchIsr) gTouchIsr();
+  }
+  gPointerDown = down;
+}
+void hostPointerHover(void) { hostGameWake(); }
+void hostTiltKeys(bool left, bool right) { gTiltLeft = left; gTiltRight = right; }
+void hostButton(bool down) { gButtonDown = down; }
+
+bool hostPointerRead(int16_t *x, int16_t *y) {
+  *x = gPointerX;
+  *y = gPointerY;
+  return gPointerDown || (int32_t)(gPointerHoldUntil - millis()) > 0;
+}
+
+static void stepTilt(uint32_t dtMs) {
+  float target = (gTiltRight ? 1.0f : 0.0f) - (gTiltLeft ? 1.0f : 0.0f);
+  float span = target == 0 ? TILT_RELEASE_S : TILT_RAMP_S;
+  float step = dtMs / 1000.0f / span;
+  if (gTilt < target) gTilt = gTilt + step > target ? target : gTilt + step;
+  else if (gTilt > target) gTilt = gTilt - step < target ? target : gTilt - step;
+}
+float hostTiltValue() { return gTilt; }
+
+// ---- pantalla ----
+static bool gFrameDirty = false;
+static uint8_t gBrightness = 180;
+
+void hostPanelSetBrightness(uint8_t v) {
+  if (v != gBrightness) gFrameDirty = true;
+  gBrightness = v;
+}
+void hostCanvasFlushed() { gFrameDirty = true; }
+bool hostFrameDirty(void) { return gFrameDirty; }
+
+extern ScaledCanvas *gfx;
+
+// El brillo del juego protege el AMOLED de quemarse; aqui solo avisa de que esta en reposo, asi que
+// tiene un suelo: una mascota de escritorio no debe quedarse casi negra. 0 es pantalla apagada a mano.
+#define BRIGHTNESS_FULL 180
+#define BRIGHTNESS_FLOOR 0.45f
+void hostFrameRGBA(uint8_t *out) {
+  gFrameDirty = false;
+  const uint16_t *src = gfx->framebuffer();
+  float f = gBrightness >= BRIGHTNESS_FULL ? 1.0f : (float)gBrightness / BRIGHTNESS_FULL;
+  if (gBrightness == 0) f = 0;
+  else if (f < BRIGHTNESS_FLOOR) f = BRIGHTNESS_FLOOR;
+  uint32_t k = (uint32_t)(f * 256);
+  for (int i = 0; i < LCD_WIDTH * LCD_HEIGHT; i++) {
+    uint16_t c = src[i];
+    uint32_t r = (c >> 11) & 0x1F, g = (c >> 5) & 0x3F, b = c & 0x1F;
+    *out++ = (uint8_t)((((r << 3) | (r >> 2)) * k) >> 8);
+    *out++ = (uint8_t)((((g << 2) | (g >> 4)) * k) >> 8);
+    *out++ = (uint8_t)((((b << 3) | (b >> 2)) * k) >> 8);
+    *out++ = 255;
+  }
+}
+
+uint16_t *ScaledCanvas::panelBuffer() {
+  if (!panel_) panel_ = (uint16_t *)malloc(PANEL_SIZE * PANEL_SIZE * sizeof(uint16_t));
+  for (int y = 0; y < PANEL_SIZE; y++)
+    for (int x = 0; x < PANEL_SIZE; x++)
+      panel_[y * PANEL_SIZE + x] = framebuffer()[(y * LCD_HEIGHT / PANEL_SIZE) * LCD_WIDTH + x * LCD_WIDTH / PANEL_SIZE];
+  return panel_;
+}
+
+// ---- recursos ----
+const uint8_t *u8g2_font_unifont_t_japanese3 = nullptr;
+const uint8_t *u8g2_font_unifont_t_korean2 = nullptr;
+static std::string gResources;
+const char *hostResourcesDir() { return gResources.c_str(); }
+
+static const uint8_t *loadFont(const char *name) {
+  FILE *f = fopen((gResources + "/fonts/" + name).c_str(), "rb");
+  if (!f) { fprintf(stderr, "falta la fuente %s\n", name); return nullptr; }
+  fseek(f, 0, SEEK_END);
+  long n = ftell(f);
+  rewind(f);
+  uint8_t *data = (uint8_t *)malloc((size_t)n);
+  if (data && fread(data, 1, (size_t)n, f) != (size_t)n) { free(data); data = nullptr; }
+  fclose(f);
+  return data;
+}
+
+static bool makeDirs(const std::string &path) {
+  for (size_t i = 1; i <= path.size(); i++) {
+    if (i < path.size() && path[i] != '/') continue;
+    if (mkdir(path.substr(0, i).c_str(), 0755) != 0 && errno != EEXIST) return false;
+  }
+  return true;
+}
+
+// ---- ciclo de vida ----
+void hostInit(const char *resources, const char *saveDir) {
+  gResources = resources;
+  if (saveDir && !makeDirs(saveDir)) fprintf(stderr, "no se puede crear %s\n", saveDir);
+  hostPrefsSetDir(saveDir);
+  u8g2_font_unifont_t_japanese3 = loadFont("unifont_t_japanese3.u8g2");
+  u8g2_font_unifont_t_korean2 = loadFont("unifont_t_korean2.u8g2");
+  advanceClock();
+  hostGameSetup();
+  hostPrefsFlush();
+}
+
+void hostTick(void) {
+  stepTilt(advanceClock());
+  hostGameLoop();
+  hostPrefsFlush();
+}
+
+void hostFlushSave(void) {
+  hostGameSave();
+  hostPrefsFlush();
+}

@@ -160,6 +160,10 @@ Game rules run on your computer without a board:
 
 The code still supports the original Waveshare board that TamaPoke was made for. Its guide is in [`docs/TAMAPOKE-README.md`](docs/TAMAPOKE-README.md), and that document also explains the game's numbers in depth.
 
+## PokeMacGochi
+
+The same game runs as a small round window on a Mac desktop, with its own save and arrow keys for tilt. Run `mac/build_app.sh`, then open `build/mac/PokeMacGochi.app`. It is for personal use, and [host/README.md](host/README.md) explains how it works.
+
 ## Credits and license
 
 - **Game and original firmware:** [TamaPoke](https://github.com/socquique/TamaPoke) by Quique Tortosa and its contributors.

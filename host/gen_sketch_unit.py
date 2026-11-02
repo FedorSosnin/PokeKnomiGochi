@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Convierte TamaPoke.ino en una unidad C++ para compilar en el host.
+
+Hace lo que el IDE de Arduino hace antes de compilar un .ino: anadir los prototipos de sus
+funciones antes de la primera de ellas. Asi el sketch no cambia y el host no necesita arduino-cli
+ni ctags. Al final se incluye host_game.inc, la puerta de entrada al juego desde host.h.
+
+  python3 host/gen_sketch_unit.py TamaPoke.ino build/host/sketch_unit.cpp
+"""
+import os
+import re
+import sys
+
+NOT_FUNCTIONS = ('struct', 'class', 'enum', 'union', 'namespace', 'template', 'typedef', 'extern')
+HEADER = re.compile(r'^(?P<ret>[\w:<>\s\*&]+?[\s\*&])(?P<name>\w+)\s*\((?P<args>[^()]*)\)\s*(const\s*)?$')
+
+
+def blank_code(src):
+    """Quita comentarios, cadenas y directivas, conservando los saltos de linea."""
+    out = []
+    i, n = 0, len(src)
+    line_start = True
+    while i < n:
+        c = src[i]
+        if c == '\n':
+            out.append(c)
+            line_start = True
+            i += 1
+            continue
+        if line_start and c == '#':  # directiva, con sus continuaciones
+            while i < n and not (src[i] == '\n' and src[i - 1] != '\\'):
+                out.append('\n' if src[i] == '\n' else ' ')
+                i += 1
+            continue
+        if not c.isspace():
+            line_start = False
+        if src.startswith('//', i):
+            while i < n and src[i] != '\n':
+                i += 1
+            continue
+        if src.startswith('/*', i):
+            j = src.find('*/', i + 2) + 2
+            out.append(re.sub(r'[^\n]', ' ', src[i:j]))
+            i = j
+            continue
+        if c in '"\'':
+            j = i + 1
+            while src[j] != c:
+                j += 2 if src[j] == '\\' else 1
+            out.append(c + ' ' * (j - i - 1) + c)
+            i = j + 1
+            continue
+        out.append(c)
+        i += 1
+    return ''.join(out)
+
+
+def strip_defaults(args):
+    """El prototipo no puede repetir los valores por defecto de la definicion."""
+    return ', '.join(a.split('=')[0].strip() for a in args.split(','))
+
+
+def find_prototypes(src):
+    code = blank_code(src)
+    protos, first_line = [], None
+    depth = 0
+    start = 0  # donde empieza la declaracion en curso, a profundidad 0
+    for i, c in enumerate(code):
+        if c == '{':
+            if depth == 0:
+                head = ' '.join(code[start:i].split())
+                m = HEADER.match(head)
+                if m and m.group('ret').split()[0] not in NOT_FUNCTIONS and '=' not in m.group('ret'):
+                    protos.append('%s%s(%s);' % (m.group('ret'), m.group('name'), strip_defaults(m.group('args'))))
+                    if first_line is None:
+                        skipped = len(code[start:i]) - len(code[start:i].lstrip())
+                        first_line = code.count('\n', 0, start + skipped) + 1
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth == 0:
+                start = i + 1
+        elif c == ';' and depth == 0:
+            start = i + 1
+    return protos, first_line
+
+
+def main():
+    ino, out = sys.argv[1], sys.argv[2]
+    with open(ino, encoding='utf-8') as f:
+        src = f.read()
+    protos, first = find_prototypes(src)
+    lines = src.split('\n')
+    abs_ino = os.path.abspath(ino)
+    with open(out, 'w', encoding='utf-8') as f:
+        f.write('// Generado por host/gen_sketch_unit.py; no editar.\n')
+        f.write('#line 1 "%s"\n' % abs_ino)
+        f.write('\n'.join(lines[:first - 1]) + '\n')
+        f.write('\n'.join(protos) + '\n')
+        f.write('#line %d "%s"\n' % (first, abs_ino))
+        f.write('\n'.join(lines[first - 1:]) + '\n')
+        f.write('#include "host_game.inc"\n')
+    print('%s: %d prototipos antes de la linea %d' % (out, len(protos), first))
+
+
+if __name__ == '__main__':
+    main()

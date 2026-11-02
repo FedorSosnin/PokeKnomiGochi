@@ -12,7 +12,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "Arduino_GFX_Library.h"
-#ifdef BOARD_KNOMI_V2
+#ifdef BOARD_HOST  // Mac y otros: se compila como un Knomi con otro hardware debajo (ver host/README.md)
+#include "host/host_hal.h"
+#elif defined(BOARD_KNOMI_V2)
 #include "knomi_hal.h"
 #else
 #include "TouchDrvCSTXXX.hpp"
@@ -489,6 +491,9 @@ void loop() {
   audioSetIdle(!amplifierWanted(pc));  // el amplificador consume en reposo
   batSetPollMs(powerCacheMs(pc));
   uint32_t interval = frameIntervalMs(pc);
+#ifdef BOARD_HOST
+  if (interval > 150) interval = 150;  // sin bateria que cuidar, la mascota sigue viva en reposo
+#endif
   bool drewFrame = false;
   if (interval && now - lastRender >= interval) {
     lastRender = now;
@@ -965,7 +970,7 @@ void onSwipe(int dir) {
     return;
   }
   if (pet.awaitingStarter()) return;  // bloqueado durante la eleccion de inicial
-#ifdef BOARD_KNOMI_V2
+#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)  // en el host la wifi es cosa del sistema: no hay pagina
   if (clockOpen && wifiSetupState() == WS_OFF) {  // hora <-> ajustes; izquierda avanza
     uint8_t next = dir > 0 ? 0 : 1;
     if (next == 0 && clockPage != 0 && !clockEdited) clockLoadNow();  // ha podido sincronizarse en ajustes
@@ -1697,7 +1702,9 @@ float tiltRaw() {
 }
 
 void tiltZero() {
+#ifndef BOARD_HOST  // con flechas, recto es recto aunque la tecla ya este pulsada al empezar
   tiltBase = tiltRaw();
+#endif
   tiltSmooth = 0;
 }
 
@@ -3295,7 +3302,7 @@ void renderClock() {
   setSize(3);
   setCur(centerX(T(S_SET_TIME), 3), 44);
   printT(T(S_SET_TIME));
-#ifdef BOARD_KNOMI_V2
+#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
   drawClockDots();
 #endif
 

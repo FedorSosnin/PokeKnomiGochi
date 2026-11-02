@@ -8,6 +8,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **PokeMacGochi:** the same game as a small round window on a Mac desktop, in a Pokéball ring, with arrow keys for tilt and its own save. Build it with `mac/build_app.sh`; see `host/README.md`.
 - **Buddies:** other PokeKnomiGochis on the same Wi-Fi show up on your screen, and you can battle them or trade Pokédex entries. The Knomi stays connected to Wi-Fi to make this work.
 - **Joy is earned:** only the first 3 pets each hour add joy, though it still loves every one. Candy is limited to 2 a day and leaves the menu after that.
 - **Tilt Catch feeds your Pokémon:** it now gives +5 food and only costs energy.

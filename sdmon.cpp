@@ -1,6 +1,8 @@
 #include "sdmon.h"
 #include "pin_config.h"
-#ifdef BOARD_KNOMI_V2
+#ifdef BOARD_HOST
+#include "host/host_pak.h"
+#elif defined(BOARD_KNOMI_V2)
 #include "flashpak.h"
 #else
 #include <FS.h>

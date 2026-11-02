@@ -36,7 +36,8 @@ Huge thanks to that whole community for an enormous amount of work.
 | GFX Library for Arduino | [moononournation](https://github.com/moononournation/Arduino_GFX) |
 | SensorLib (CST9217 touch, PCF85063 RTC) | [Lewis He / lewisxhe](https://github.com/lewisxhe/SensorLib) |
 | XPowersLib (AXP2101 PMU) | [Lewis He / lewisxhe](https://github.com/lewisxhe/XPowersLib) |
-| U8g2 (CJK font data only) | [olikraus](https://github.com/olikraus/u8g2) |
+| U8g2 (CJK font data only; `host/fonts/` holds the two Unifont subsets the firmware uses) | [olikraus](https://github.com/olikraus/u8g2), [GNU Unifont](https://unifoundry.com/unifont/) |
+| Classic 5x7 font (`host/glcdfont.h`, BSD license) | [Adafruit GFX](https://github.com/adafruit/Adafruit-GFX-Library) |
 | Board and pinout | [Waveshare ESP32-S3-Touch-AMOLED-1.75](https://www.waveshare.com/wiki/ESP32-S3-Touch-AMOLED-1.75) |
 | Board | [BIGTREETECH Knomi V2](https://github.com/bigtreetech/KNOMI) |
 | Web installer | [ESP Web Tools](https://esphome.github.io/esp-web-tools/) (Nabu Casa) |

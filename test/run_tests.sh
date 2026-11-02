@@ -21,6 +21,10 @@ echo "== herramientas y ficheros generados (tools/) =="
 python3 test_tools.py || fail=1
 
 echo
+echo "== capa de host (host/: lienzo, guardado, sonido y el juego sin ventana) =="
+make --no-print-directory -C ../host test | tail -1 || fail=1
+
+echo
 if [[ $fail -eq 0 ]]; then
   echo "TODO OK"
 else
