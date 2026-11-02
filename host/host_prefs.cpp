@@ -1,7 +1,7 @@
-// Preferences sobre ficheros: <carpeta de guardado>/<espacio>.prefs, una linea "clave hex" por
-// entrada. Como la NVS, cada put vale ya para las lecturas; a disco se escribe al final del tick
-// (el juego escribe decenas de claves por guardado) y siempre por renombrado, para que un corte
-// a medias no deje una partida rota.
+// Preferences on files: <save folder>/<namespace>.prefs, one "key hex" line per
+// entry. Like the NVS, each put is immediately visible to reads; it is written to disk at the end of the tick
+// (the game writes dozens of keys per save) and always by renaming, so that a cut
+// halfway does not leave a broken save.
 #include "Preferences.h"
 #include "host_internal.h"
 #include <stdio.h>
@@ -36,7 +36,7 @@ static void loadNs(const std::string &ns) {
       if (hexVal(p[0]) < 0 || hexVal(p[1]) < 0) { v.clear(); break; }
       v.push_back((uint8_t)(hexVal(p[0]) << 4 | hexVal(p[1])));
     }
-    if (strcmp(hex, "-") == 0) v.clear();  // valor vacio
+    if (strcmp(hex, "-") == 0) v.clear();  // empty value
     kv[key] = v;
   }
   fclose(f);
@@ -55,7 +55,7 @@ void hostPrefsFlush() {
     for (const std::string &ns : gDirty) {
       std::string path = fileFor(ns), tmp = path + ".tmp";
       FILE *f = fopen(tmp.c_str(), "w");
-      if (!f) { fprintf(stderr, "no se puede guardar en %s\n", tmp.c_str()); continue; }
+      if (!f) { fprintf(stderr, "cannot save to %s\n", tmp.c_str()); continue; }
       bool ok = true;
       for (const auto &e : gStore[ns]) {
         ok = fprintf(f, "%s ", e.first.c_str()) > 0 && ok;
@@ -64,7 +64,7 @@ void hostPrefsFlush() {
       }
       ok = fclose(f) == 0 && ok;
       if (ok) ok = rename(tmp.c_str(), path.c_str()) == 0;
-      if (!ok) { remove(tmp.c_str()); fprintf(stderr, "fallo al guardar %s\n", path.c_str()); }
+      if (!ok) { remove(tmp.c_str()); fprintf(stderr, "failed to save %s\n", path.c_str()); }
     }
   }
   gDirty.clear();
@@ -140,7 +140,7 @@ size_t Preferences::getBytes(const char *k, void *buf, size_t maxLen) {
   if (!open_) return 0;
   KV &kv = gStore[ns_];
   KV::iterator it = kv.find(k);
-  if (it == kv.end()) return 0;  // como la NVS real: deja el buffer intacto
+  if (it == kv.end()) return 0;  // like the real NVS: leaves the buffer untouched
   size_t n = it->second.size() < maxLen ? it->second.size() : maxLen;
   if (n) memcpy(buf, it->second.data(), n);
   return n;

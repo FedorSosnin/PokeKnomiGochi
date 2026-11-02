@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Un PokeKnomiGochi de mentira en esta wifi, para probar el buddy con una sola placa.
+"""A fake PokeKnomiGochi on this wifi, to test the buddy feature with a single board.
 
-  python3 tools/fake_buddy.py                       saluda y acepta lo que le pidan
-  python3 tools/fake_buddy.py --invite battle       ademas invita a combatir
+  python3 tools/fake_buddy.py                       says hello and accepts whatever it is asked
+  python3 tools/fake_buddy.py --invite battle       also invites to battle
   python3 tools/fake_buddy.py --invite trade --give 25
-  python3 tools/fake_buddy.py --decline             dice que no a todo
+  python3 tools/fake_buddy.py --decline             says no to everything
 """
 import argparse
 import random
@@ -63,7 +63,7 @@ def main():
         if now - last_hello > 4:
             last_hello = now
             s.sendto(pack(HELLO, me, dex=a.dex, level=a.level, nick=nick, reg=bytes(reg)), ('255.255.255.255', PORT))
-        if a.invite and peer and not invited and now - last_invite > 0.4:  # como la placa: hasta tener respuesta
+        if a.invite and peer and not invited and now - last_invite > 0.4:  # like the board: until there is a reply
             last_invite = now
             session = session or random.getrandbits(31) | 1
             send(pack(INVITE, me, peer, session, kind=1 if a.invite == 'battle' else 2))

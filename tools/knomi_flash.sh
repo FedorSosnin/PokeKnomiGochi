@@ -1,7 +1,7 @@
 #!/bin/zsh
-# Compila TamaPoke para el BTT Knomi V2 y lo graba (firmware + sprites) por USB.
-# No borra la NVS: conserva la partida y la wifi guardada por el firmware anterior.
-#   tools/knomi_flash.sh [puerto]        build y flash
+# Builds TamaPoke for the BTT Knomi V2 and flashes it (firmware + sprites) over USB.
+# Does not erase the NVS: keeps the save game and the wifi stored by the previous firmware.
+#   tools/knomi_flash.sh [port]          build and flash
 #   tools/knomi_flash.sh --build-only
 set -e
 cd "${0:A:h}/.."

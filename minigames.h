@@ -1,9 +1,9 @@
 #pragma once
 #include <stdint.h>
-// Reglas de la captura, el quiz y la visita diaria, sin hardware (test/test_minigames.cpp).
+// Rules for the catch, the quiz and the daily visit, without hardware (test/test_minigames.cpp).
 
-#define CATCH_BALLS 3         // tiros por encuentro
-#define CATCH_RADIUS 48       // px logicos: el acierto tiene que ser directo, pero sin ser cruel
+#define CATCH_BALLS 3         // throws per encounter
+#define CATCH_RADIUS 48       // logical px: the hit has to be direct, but not cruel
 #define QUIZ_ROUNDS 5
 
 inline bool catchHit(float ballX, float foeX) {
@@ -11,16 +11,16 @@ inline bool catchHit(float ballX, float foeX) {
   return d > -CATCH_RADIUS && d < CATCH_RADIUS;
 }
 
-// salir de un juego: deslizar desde la mitad de abajo hacia arriba
+// exit a game: swipe from the bottom half upward
 inline bool swipeUpQuit(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint32_t ms) {
   int dx = x1 - x0;
   return y0 >= 233 && y0 - y1 >= 100 && dx > -90 && dx < 90 && ms < 1000;
 }
 
-// 0-23 a la hora del reloj de 12 horas: medianoche y mediodia son las 12
+// 0-23 to the 12-hour clock hour: midnight and noon are 12
 inline int clock12Hour(int h24) { return h24 % 12 == 0 ? 12 : h24 % 12; }
 
-// tres opciones distintas con la respuesta en la posicion pos. a y b son especies al azar.
+// three distinct options with the answer at position pos. a and b are random species.
 inline void quizChoices(int16_t answer, int16_t a, int16_t b, uint8_t pos, int16_t out[3]) {
   while (a == answer) a = a % 151 + 1;
   while (b == answer || b == a) b = b % 151 + 1;
@@ -30,7 +30,7 @@ inline void quizChoices(int16_t answer, int16_t a, int16_t b, uint8_t pos, int16
   out[(pos + 2) % 3] = b;
 }
 
-// la visita llega a una hora distinta cada dia, entre las 9 y las 18
+// the visit arrives at a different time each day, between 9 and 18
 inline uint8_t visitorHour(uint32_t day) { return 9 + ((day * 2654435761u) >> 28) % 10; }
 
 inline bool visitorDue(uint32_t day, uint8_t hour, uint32_t lastDay) {

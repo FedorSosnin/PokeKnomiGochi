@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include "zones.h"
 
-// Escenario de cada zona: un cuadro de 100x100 en RGB565, sin depender de la pantalla. El menu lo
-// dibuja tal cual en una ventana redonda y el combate lo amplia de fondo.
+// Scenery for each zone: a 100x100 RGB565 picture, independent of the screen. The menu
+// draws it as is in a round window and the battle scales it up as a background.
 #define ZONE_ART 100
 
 struct ZoneCanvas {

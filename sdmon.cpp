@@ -20,7 +20,7 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
   char path[28];
   snprintf(path, sizeof(path), "/mons/p%s%03u.bin", shiny ? "s" : "", dexNum);
   File f = SD_MMC.open(path, FILE_READ);
-  if (!f && shiny) {  // sin shiny PMD: usa el normal
+  if (!f && shiny) {  // no PMD shiny: use the normal one
     snprintf(path, sizeof(path), "/mons/p%03u.bin", dexNum);
     f = SD_MMC.open(path, FILE_READ);
   }
@@ -47,7 +47,7 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
     uint8_t id = p[0], w = p[1], h = p[2], nf = p[3];
     p += 4;
     if (id >= PMD_NACTS || nf > 24) { unload(); return false; }
-    // valida que ms[] y los datos del frame caben en el blob (archivo truncado)
+    // validates that ms[] and the frame data fit in the blob (truncated file)
     uint32_t bytes = (uint32_t)nf * 2 + (uint32_t)w * h * nf;
     if (w == 0 || h == 0 || nf == 0 || p + bytes > end) { unload(); return false; }
     PmdAct &a = acts[id];
@@ -56,12 +56,12 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
     a.frames = nf;
     for (uint8_t k = 0; k < nf; k++) {
       a.ms[k] = p[0] | (p[1] << 8);
-      if (a.ms[k] == 0) a.ms[k] = 100;  // nunca 0: pmdFrameAt() giraria sin avanzar
+      if (a.ms[k] == 0) a.ms[k] = 100;  // never 0: pmdFrameAt() would spin without advancing
       p += 2;
     }
     a.data = p;
     p += (uint32_t)w * h * nf;
-    // fila mas baja con contenido en cualquier frame: anclar por los pies
+    // lowest row with content in any frame: anchor by the feet
     uint8_t base = 1;
     for (uint8_t f = 0; f < nf; f++) {
       const uint8_t *fr = a.data + (uint32_t)f * w * h;
@@ -75,7 +75,7 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
     a.base = base;
   }
   loaded = true;
-  Serial.printf("cargado %s (%u KB)\n", path, size / 1024);
+  Serial.printf("loaded %s (%u KB)\n", path, size / 1024);
   return true;
 }
 
@@ -99,38 +99,38 @@ void SdThumbs::unload() {
 }
 
 bool SdThumbs::load() {
-  unload();  // recargar sin fugar el blob anterior
+  unload();  // reload without leaking the previous blob
   if (!sdReady) return false;
   File f = SD_MMC.open("/mons/thumbs.bin", FILE_READ);
   if (!f) {
-    Serial.println("sin thumbs.bin (galeria sin miniaturas)");
+    Serial.println("no thumbs.bin (gallery without thumbnails)");
     return false;
   }
   uint32_t sz = f.size();
-  // acota el tamano: evita un ps_malloc absurdo con un archivo corrupto
+  // bounds the size: avoids an absurd ps_malloc with a corrupt file
   if (sz < 10 || sz > 2UL * 1024 * 1024) {
-    Serial.println("thumbs.bin invalido (tamano)");
+    Serial.println("thumbs.bin invalid (size)");
     f.close();
     return false;
   }
   data = (uint8_t *)ps_malloc(sz);
   if (!data || f.read(data, sz) != sz || memcmp(data, "TPTH", 4) != 0) {
-    Serial.println("thumbs.bin invalido");
+    Serial.println("thumbs.bin invalid");
     if (data) { free(data); data = nullptr; }
     f.close();
     return false;
   }
   f.close();
   memcpy(&count, data + 4, 2);
-  // la tabla de offsets (uno por especie) debe caber entera en lo leido
+  // the offset table (one per species) must fit entirely in what was read
   if ((uint32_t)6 + 4UL * count > sz) {
-    Serial.println("thumbs.bin invalido (tabla de offsets)");
+    Serial.println("thumbs.bin invalid (offset table)");
     unload();
     return false;
   }
   size = sz;
   loaded = true;
-  Serial.printf("miniaturas cargadas: %u (%u KB)\n", count, sz / 1024);
+  Serial.printf("thumbnails loaded: %u (%u KB)\n", count, sz / 1024);
   return true;
 }
 
@@ -138,29 +138,29 @@ const uint8_t *SdThumbs::get(int16_t dex) const {
   if (!loaded || dex < 1 || dex > count) return nullptr;
   uint32_t off;
   memcpy(&off, data + 6 + 4 * (dex - 1), 4);
-  // el offset viene del fichero sin comprobar: sin esto, un thumbs.bin truncado
-  // o corrupto hacia leer fuera de la reserva de PSRAM
-  if (off > size - 3) return nullptr;  // la cabecera w,h,palCount debe caber (size >= 10 siempre)
+  // the offset comes from the file unchecked: without this, a truncated
+  // or corrupt thumbs.bin would read outside the PSRAM allocation
+  if (off > size - 3) return nullptr;  // the w,h,palCount header must fit (size >= 10 always)
   uint32_t need = 3 + (uint32_t)data[off + 2] * 2 + (uint32_t)data[off] * data[off + 1];
-  if (need > size || off > size - need) return nullptr;  // y el blob entero tambien
+  if (need > size || off > size - need) return nullptr;  // and the whole blob too
   return data + off;
 }
 
 #ifdef BOARD_KNOMI_V2
 bool sdBegin() {
   sdReady = PAK.begin();
-  Serial.println(sdReady ? "sprites en flash ok" : "sin sprites en flash (particion ffat vacia)");
+  Serial.println(sdReady ? "flash sprites ok" : "no flash sprites (ffat partition empty)");
   return sdReady;
 }
 #else
 bool sdBegin() {
   SD_MMC.setPins(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
-  sdReady = SD_MMC.begin("/sdcard", true /* modo 1-bit */, true /* formatea si no monta */);
+  sdReady = SD_MMC.begin("/sdcard", true /* 1-bit mode */, true /* format if mount fails */);
   if (sdReady) {
-    Serial.printf("SD montada: %llu MB\n", SD_MMC.cardSize() / (1024ULL * 1024ULL));
+    Serial.printf("SD mounted: %llu MB\n", SD_MMC.cardSize() / (1024ULL * 1024ULL));
     SD_MMC.mkdir("/mons");
   } else {
-    Serial.println("SD no detectada (el juego usa los sprites de flash)");
+    Serial.println("SD not detected (the game uses the flash sprites)");
   }
   return sdReady;
 }
@@ -174,12 +174,12 @@ bool SdMon::load(uint8_t dexNum, bool shiny) {
   char path[24];
   snprintf(path, sizeof(path), "/mons/%s%03u.bin", shiny ? "s" : "", dexNum);
   File f = SD_MMC.open(path, FILE_READ);
-  if (!f && shiny) {  // sin variante shiny: usa la normal
+  if (!f && shiny) {  // no shiny variant: use the normal one
     snprintf(path, sizeof(path), "/mons/%03u.bin", dexNum);
     f = SD_MMC.open(path, FILE_READ);
   }
   if (!f) {
-    Serial.printf("no existe %s\n", path);
+    Serial.printf("%s does not exist\n", path);
     return false;
   }
 
@@ -194,7 +194,7 @@ bool SdMon::load(uint8_t dexNum, bool shiny) {
   h = header[1];
   frames = header[2];
   frameMs = header[3];
-  // acota dimensiones: evita size desbordado o absurdo con archivo corrupto
+  // bounds dimensions: avoids overflowed or absurd size with a corrupt file
   if (f.read((uint8_t *)&palCount, 2) != 2 || palCount > 256 ||
       w == 0 || w > 256 || h == 0 || h > 256 || frames == 0 || frames > 64) {
     f.close();
@@ -208,24 +208,24 @@ bool SdMon::load(uint8_t dexNum, bool shiny) {
   uint32_t size = (uint32_t)w * h * frames;
   data = (uint8_t *)ps_malloc(size);
   if (!data) {
-    Serial.println("sin PSRAM para el sprite");
+    Serial.println("no PSRAM for the sprite");
     f.close();
     return false;
   }
   uint32_t got = f.read(data, size);
   f.close();
   if (got != size) {
-    Serial.printf("%s truncado (%u de %u)\n", path, got, size);
+    Serial.printf("%s truncated (%u of %u)\n", path, got, size);
     unload();
     return false;
   }
 
-  // zoom entero para que el bicho mida ~200 px de alto en pantalla
+  // integer zoom so the critter is ~200 px tall on screen
   scale = 200 / h;
   if (scale < 2) scale = 2;
   if (scale > 5) scale = 5;
 
-  Serial.printf("cargado %s: %ux%u x%u frames @%ums, escala %u\n",
+  Serial.printf("loaded %s: %ux%u x%u frames @%ums, scale %u\n",
                 path, w, h, frames, frameMs, scale);
   loaded = true;
   return true;
@@ -240,14 +240,14 @@ void SdMon::unload() {
 }
 
 // ---------------------------------------------------------------------------
-// Protocolo de carga por USB (para llenar la SD sin sacarla de la placa):
-//   PUT <ruta> <bytes>\n  + datos crudos   -> "OK" ... "DONE"
-//   LS\n                                   -> listado de /mons
-// Usar con tools/send_sd.py
+// Serial loading protocol over USB (to fill the SD without taking it out of the board):
+// PUT <path> <bytes>\n  + raw data   -> "OK" ... "DONE"
+// LS\n                                   -> listing of /mons
+// Use with tools/send_sd.py
 // ---------------------------------------------------------------------------
 
 #ifdef BOARD_KNOMI_V2
-bool sdSerialCommand(const String &) { return false; }  // sprites grabados con esptool
+bool sdSerialCommand(const String &) { return false; }  // sprites flashed with esptool
 #else
 bool sdSerialCommand(const String &line) {
   if (line.startsWith("PUT ")) {
@@ -259,18 +259,18 @@ bool sdSerialCommand(const String &line) {
       return true;
     }
     if (!path.startsWith("/")) path = "/" + path;
-    // acota la escritura a /mons/: la ruta llega tal cual de la linea serie, sin
-    // sanear, asi que un PUT manipulado podria escribir en cualquier sitio de la
-    // tarjeta. Los dos clientes reales (tools/send_sd.py y web/index.html) ya
-    // mandan nombres con el prefijo mons/.
+    // bounds the write to /mons/: the path arrives as is from the serial line, without
+    // sanitizing, so a tampered PUT could write anywhere on the
+    // card. The two real clients (tools/send_sd.py and web/index.html) already
+    // send names with the mons/ prefix.
     if (!path.startsWith("/mons/") || path.indexOf("..") >= 0) {
       Serial.println("ERR");
       return true;
     }
-    // FILE_WRITE ANADE al final si el fichero ya existe, asi que reintentar uno
-    // que quedo a medias lo alargaba en vez de reemplazarlo: quedaba un sprite
-    // corrupto y mas grande que el original. Importa mas desde que el instalador
-    // reanuda transferencias cortadas, porque reintenta justo los que fallaron.
+    // FILE_WRITE APPENDS at the end if the file already exists, so retrying one
+    // that was left half-done lengthened it instead of replacing it: a corrupt
+    // sprite was left, larger than the original. It matters more since the installer
+    // resumes interrupted transfers, because it retries exactly the ones that failed.
     if (SD_MMC.exists(path)) SD_MMC.remove(path);
     File f = SD_MMC.open(path, FILE_WRITE);
     if (!f) {
@@ -285,19 +285,19 @@ bool sdSerialCommand(const String &line) {
       size_t want = remaining > sizeof(buf) ? sizeof(buf) : remaining;
       size_t n = Serial.readBytes(buf, want);
       if (n == 0) break;  // timeout
-      // sin mirar el retorno, una tarjeta llena o con fallo de escritura daba
-      // DONE igualmente y dejaba el fichero truncado en la SD: justo la entrada
-      // corrupta contra la que hay que protegerse luego al cargar el sprite
+      // without checking the return, a full card or a write failure gave
+      // DONE anyway and left the file truncated on the SD: exactly the corrupt entry
+      // that must be guarded against later when loading the sprite
       if (f.write(buf, n) != n) break;
       remaining -= n;
-      Serial.println("#");  // ack: listo para el siguiente bloque
+      Serial.println("#");  // ack: ready for the next block
     }
     f.close();
     Serial.setTimeout(1000);
     sdDirty = (remaining == 0);
     Serial.println(remaining == 0 ? "DONE" : "ERR");
     return true;
-  } else if (line == "SDINFO") {  // diagnostico remoto de "no me reconoce la SD"
+  } else if (line == "SDINFO") {  // remote diagnosis of "it doesn't recognize my SD"
     Serial.printf("total=%llu used=%llu\n", SD_MMC.totalBytes(), SD_MMC.usedBytes());
     Serial.println("DONE");
     return true;

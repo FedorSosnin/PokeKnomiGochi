@@ -1,5 +1,5 @@
-// Preferences (NVS del ESP32) sobre un fichero por espacio de nombres en la carpeta de guardado
-// que indique hostInit(). Comparte almacen entre instancias, igual que la NVS real.
+// Preferences (the ESP32's NVS) on one file per namespace in the save folder
+// given to hostInit(). It shares storage between instances, like the real NVS.
 #pragma once
 #include <stddef.h>
 #include <stdint.h>

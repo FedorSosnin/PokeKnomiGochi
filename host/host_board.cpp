@@ -1,12 +1,12 @@
-// Lo que en el Knomi es rtcbat.cpp, wifi_setup.cpp y buddy_net.cpp.
+// What rtcbat.cpp, wifi_setup.cpp and buddy_net.cpp are on the Knomi.
 #include <Arduino.h>
 #include <time.h>
 #include "buddy_net.h"
 #include "rtcbat.h"
 #include "wifi_setup.h"
 
-// ---- hora: la del sistema. El juego usa la hora LOCAL como epoch (ver openClock) ----
-static int64_t gClockOffset = 0;  // lo que se haya ajustado a mano en la pantalla de hora
+// ---- time: the system's. The game uses LOCAL time as its epoch (see openClock) ----
+static int64_t gClockOffset = 0;  // whatever was adjusted by hand on the time screen
 
 static uint32_t localEpoch() {
   time_t now = time(nullptr);
@@ -19,8 +19,8 @@ bool rtcBegin() { return true; }
 uint32_t rtcEpoch() { return (uint32_t)((int64_t)localEpoch() + gClockOffset); }
 void rtcSetEpoch(uint32_t e) { gClockOffset = (int64_t)e - (int64_t)localEpoch(); }
 
-// Cada vez que el reloj real se adelanta al del juego (Mac en reposo), hay ausencia que aplicar.
-// Se compara el tiempo UTC: un cambio de hora no es una ausencia.
+// Every time the real clock gets ahead of the game's (Mac asleep), there is absence to apply.
+// UTC time is compared: a clock change is not an absence.
 #define CLOCK_GAP_S 120
 bool clockPoll() {
   static time_t lastReal = 0;
@@ -40,7 +40,7 @@ void clockSetWifiSsid(const char *) {}
 void clockPollPause(bool) {}
 bool clockWasSeed() { return false; }
 
-// ---- alimentacion: siempre enchufado ----
+// ---- power: always plugged in ----
 bool batBegin() { return false; }
 void pmuEnablePanel() {}
 void batSetPollMs(uint32_t) {}
@@ -54,7 +54,7 @@ bool usbPresentNow() { return true; }
 void pwrSetup() {}
 bool pwrShortPressed() { return false; }
 
-// ---- wifi: es cosa del sistema, el juego no la configura (ni muestra esa pagina en el host) ----
+// ---- wifi: handled by the system; the game does not configure it (nor show that page on the host) ----
 void wifiSetupStart() {}
 void wifiSetupStop() {}
 void wifiSetupPoll() {}
@@ -72,7 +72,7 @@ bool wifiSetupCanSubmit() { return false; }
 void wifiSetupSubmit() {}
 void wifiSetupTry(const char *, const char *) {}
 
-// ---- buddy: sin red todavia, el juego no ve a nadie ----
+// ---- buddy: no network yet, the game sees nobody ----
 uint32_t buddyNetId() { return 1; }
 bool buddyNetUp() { return false; }
 bool buddyNetPoll(BuddyMsg &) { return false; }

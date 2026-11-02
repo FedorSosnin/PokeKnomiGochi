@@ -37,14 +37,14 @@ int main(int argc, char **argv) {
       lastSuite = tc.suite;
     }
     gFailures.clear();
-    // estado limpio para cada test
+    // clean state for each test
     mockSetMillis(0);
     mockClearForcedRandom();
     randomSeed(0xC0FFEE);
     tc.fn();
     if (tc.knownIssue) {
       if (gFailures.empty()) {
-        printf("  \033[33mXPASS\033[0m %s  (ya no falla: quita TEST_KNOWN_ISSUE)\n", tc.name.c_str());
+        printf("  \033[33mXPASS\033[0m %s  (no longer fails: remove TEST_KNOWN_ISSUE)\n", tc.name.c_str());
         xpass++;
         fixedIssues.push_back(full);
       } else {
@@ -71,20 +71,20 @@ int main(int argc, char **argv) {
   printf("\n----------------------------------------\n");
   printf("%d tests, %d asserts, %d passed, %d failed", passed + failed + xfail + xpass,
          gAssertCount, passed, failed);
-  if (xfail) printf(", %d bugs conocidos", xfail);
-  if (xpass) printf(", %d bugs ya arreglados", xpass);
-  if (skipped) printf(", %d filtrados", skipped);
+  if (xfail) printf(", %d known bugs", xfail);
+  if (xpass) printf(", %d bugs already fixed", xpass);
+  if (skipped) printf(", %d filtered out", skipped);
   printf("\n");
   if (failed) {
-    printf("\nFallos:\n");
+    printf("\nFailures:\n");
     for (size_t i = 0; i < failedNames.size(); i++) printf("  - %s\n", failedNames[i].c_str());
   }
   if (xfail) {
-    printf("\nBugs conocidos (documentados, no rompen la suite):\n");
+    printf("\nKnown bugs (documented, they do not break the suite):\n");
     for (size_t i = 0; i < knownIssues.size(); i++) printf("  - %s\n", knownIssues[i].c_str());
   }
   if (xpass) {
-    printf("\nBugs conocidos que ya NO fallan (quita TEST_KNOWN_ISSUE):\n");
+    printf("\nKnown bugs that NO longer fail (remove TEST_KNOWN_ISSUE):\n");
     for (size_t i = 0; i < fixedIssues.size(); i++) printf("  - %s\n", fixedIssues[i].c_str());
   }
   return failed ? 1 : 0;

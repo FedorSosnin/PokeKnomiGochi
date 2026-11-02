@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Saca las dos fuentes CJK del firmware de la libreria U8g2 a host/fonts/*.u8g2.
+"""Extracts the two CJK fonts used by the firmware from the U8g2 library into host/fonts/*.u8g2.
 
-u8g2_fonts.c pesa 37 MB; el build del host solo necesita estas dos, y no debe depender
-de tener instaladas las librerias de Arduino. Solo hay que repetirlo si cambia la fuente.
+u8g2_fonts.c is 37 MB; the host build only needs these two, and must not depend on
+having the Arduino libraries installed. It only needs repeating if the font changes.
 
-  python3 host/extract_fonts.py [ruta/a/u8g2_fonts.c]
+  python3 host/extract_fonts.py [path/to/u8g2_fonts.c]
 """
 import os
 import re
@@ -15,7 +15,7 @@ DEFAULT = os.path.expanduser('~/Documents/Arduino/libraries/U8g2/src/clib/u8g2_f
 
 
 def decode_c_strings(text):
-    """Bytes de una secuencia de literales C adyacentes."""
+    """Bytes of a sequence of adjacent C literals."""
     out = bytearray()
     for lit in re.findall(r'"((?:[^"\\]|\\.)*)"', text):
         i = 0
@@ -41,7 +41,7 @@ def main():
     for name in FONTS:
         m = re.search(r'const uint8_t %s\[(\d+)\] U8G2_FONT_SECTION\("%s"\) =((?:\s*"(?:[^"\\]|\\.)*")+)\s*;' % (name, name), src)
         data = decode_c_strings(m.group(2))
-        # el tamano declarado incluye el 0 final que anade C al literal
+        # the declared size includes the trailing 0 that C appends to the literal
         assert len(data) + 1 == int(m.group(1)), (name, len(data), m.group(1))
         path = os.path.join(here, 'fonts', name.replace('u8g2_font_', '') + '.u8g2')
         with open(path, 'wb') as f:

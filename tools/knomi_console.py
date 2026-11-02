@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Consola serie del Knomi. Abrir el puerto reinicia la placa, asi que una sola sesion
-ejecuta todos los pasos en orden:
+"""Knomi serial console. Opening the port resets the board, so a single session
+runs all the steps in order:
 
   knomi_console.py "wait 40" "cmd STATS" "shot a.png" "cmd TAP 233 400" "wait 1" "shot b.png"
-  knomi_console.py "tapuntil 120 365 combate: gana" "shot fin.png"   toca hasta ver ese texto
+  knomi_console.py "tapuntil 120 365 battle: won" "shot fin.png"   taps until that text shows up
 """
 import glob
 import struct
@@ -41,7 +41,7 @@ def cmd(s, text):
             print(line, flush=True)
         if line == 'DONE':
             return
-    print('(sin DONE)', text)
+    print('(no DONE)', text)
 
 
 def shot(s, path):
@@ -52,7 +52,7 @@ def shot(s, path):
         if line.startswith(b'SHOT '):
             break
     else:
-        print('captura: sin respuesta')
+        print('screenshot: no response')
         return
     parts = line.split()
     w, h = int(parts[1]), int(parts[2])
@@ -61,13 +61,13 @@ def shot(s, path):
     s.timeout = 15
     raw = s.read(need)
     s.timeout = 0.2
-    s.read_until(b'DONE', 8)  # cierre de la captura: que no lo lea el comando siguiente
+    s.read_until(b'DONE', 8)  # end of the screenshot: so the next command does not read it
     if len(raw) != need:
         print(f'captura corta: {len(raw)} de {need}')
         return
     img = Image.new('RGB', (w, h))
     img.putdata([((c >> 8) & 0xF8, (c >> 3) & 0xFC, (c << 3) & 0xF8) for c in struct.unpack(f'<{w * h}H', raw)])
-    # el panel gira con la pantalla: la captura se guarda como se ve en la mano
+    # the panel rotates with the screen: the screenshot is saved as seen in the hand
     img.rotate(90 * rot).resize((w * 2, h * 2), Image.NEAREST).save(path)
     print('ok', path, flush=True)
 
@@ -84,7 +84,7 @@ def tap_until(s, x, y, text):
             print(line, flush=True)
         if text in line:
             return
-    print('(no aparecio)', text)
+    print('(did not appear)', text)
 
 
 def main():

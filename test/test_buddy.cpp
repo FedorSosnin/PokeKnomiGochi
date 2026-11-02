@@ -1,4 +1,4 @@
-// Protocolo y reglas del buddy (buddy.h).
+// Buddy protocol and rules (buddy.h).
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "../buddy.h"
@@ -17,16 +17,16 @@ static bool parseCopy(const BuddyMsg &in, BuddyMsg &out) {
   return buddyParse((const uint8_t *)&in, sizeof(in), out);
 }
 
-TEST(buddy, el_formato_no_cambia_sin_querer) { CHECK_EQ((int)sizeof(BuddyMsg), 65); }
+TEST(buddy, format_does_not_change_by_accident) { CHECK_EQ((int)sizeof(BuddyMsg), 65); }
 
-TEST(buddy, acepta_un_saludo_valido) {
+TEST(buddy, accepts_a_valid_hello) {
   BuddyMsg out;
   CHECK(parseCopy(hello(5, 25), out));
   CHECK_EQ(out.dex, (int16_t)25);
   CHECK(strcmp(out.nick, "SPARKY") == 0);
 }
 
-TEST(buddy, rechaza_lo_que_no_tiene_sentido) {
+TEST(buddy, rejects_nonsense) {
   BuddyMsg out, m = hello(5, 25);
   CHECK(!buddyParse((const uint8_t *)&m, sizeof(m) - 1, out));
   m = hello(5, 25); m.magic[0] = 'X';
@@ -46,7 +46,7 @@ TEST(buddy, rechaza_lo_que_no_tiene_sentido) {
 
   buddyInit(m, BM_FIGHTER, 5, 6, 1);
   m.dex = 25; m.level = 20; m.hp = 50; m.atk = 40; m.def = 0; m.spe = 40;
-  CHECK_MSG(!parseCopy(m, out), "defensa 0 dividiria entre 0");
+  CHECK_MSG(!parseCopy(m, out), "defense 0 would divide by 0");
   m.def = 40; m.atk = 60000;
   CHECK(!parseCopy(m, out));
   buddyInit(m, BM_MOVE, 5, 6, 1);
@@ -57,9 +57,9 @@ TEST(buddy, rechaza_lo_que_no_tiene_sentido) {
   CHECK(!parseCopy(m, out));
 }
 
-TEST(buddy, el_apodo_raro_no_llega_a_la_pantalla) {
+TEST(buddy, odd_nickname_does_not_reach_the_screen) {
   BuddyMsg out, m = hello(5, 25);
-  memset(m.nick, 'A', sizeof(m.nick));  // sin terminador
+  memset(m.nick, 'A', sizeof(m.nick));  // no terminator
   CHECK(parseCopy(m, out));
   CHECK_EQ((int)strlen(out.nick), (int)sizeof(out.nick) - 1);
   m = hello(5, 25);
@@ -68,7 +68,7 @@ TEST(buddy, el_apodo_raro_no_llega_a_la_pantalla) {
   CHECK_EQ((int)strlen(out.nick), 0);
 }
 
-TEST(buddy, llega_se_queda_y_se_va) {
+TEST(buddy, arrives_stays_and_leaves) {
   BuddyPeer p;
   BuddyMsg m = hello(5, 25);
   CHECK(buddyPeerHello(p, m, 1000));
@@ -80,7 +80,7 @@ TEST(buddy, llega_se_queda_y_se_va) {
   CHECK_EQ(p.id, (uint32_t)5);
 }
 
-TEST(buddy, la_pokedex_del_buddy) {
+TEST(buddy, the_buddys_pokedex) {
   uint8_t reg[19] = {};
   reg[0] = 1;
   reg[18] = 1 << 6;  // #151
@@ -91,19 +91,19 @@ TEST(buddy, la_pokedex_del_buddy) {
   CHECK(!buddyRegHas(reg, 152));
 }
 
-// las dos placas tienen que ver exactamente el mismo combate
-TEST(buddy, las_dos_placas_ven_el_mismo_combate) {
+// both boards must see exactly the same battle
+TEST(buddy, both_boards_see_the_same_battle) {
   for (uint32_t seed = 1; seed <= 300; seed++) {
     BtlFighter a = btlMakeWild(1 + seed % 151, 30, 90), b = btlMakeWild(1 + (seed * 7) % 151, 30, 90);
-    if (seed % 3 == 0) b.spe = a.spe;  // empates de velocidad
+    if (seed % 3 == 0) b.spe = a.spe;  // speed ties
     BtlMoves am = btlMovesFor(a.dex, a.level, b.dex), bm = btlMovesFor(b.dex, b.level, a.dex);
-    BtlFighter a1 = a, b1 = b, a2 = a, b2 = b;  // lo que ve cada placa
+    BtlFighter a1 = a, b1 = b, a2 = a, b2 = b;  // what each board sees
     uint32_t r1 = seed, r2 = seed, idA = 100, idB = 200;
     for (int turn = 0; turn < 300 && a1.hp && b1.hp; turn++) {
       uint8_t aPick = turn % am.count, bPick = turn % bm.count;
-      bool f1 = pvpMineFirst(a1.spe, b1.spe, idA, idB, r1);  // placa A: "mine" es a
-      bool f2 = pvpMineFirst(b2.spe, a2.spe, idB, idA, r2);  // placa B: "mine" es b
-      CHECK_MSG(f1 != f2, "una ataca primero en las dos");
+      bool f1 = pvpMineFirst(a1.spe, b1.spe, idA, idB, r1);  // board A: "mine" is a
+      bool f2 = pvpMineFirst(b2.spe, a2.spe, idB, idA, r2);  // board B: "mine" is b
+      CHECK_MSG(f1 != f2, "exactly one attacks first on both");
       for (int step = 0; step < 2 && a1.hp && b1.hp; step++) {
         bool aHits = (step == 0) == f1;
         uint8_t ra = pvpRoll(r1), rb = pvpRoll(r2);

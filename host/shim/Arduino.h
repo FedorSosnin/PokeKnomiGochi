@@ -1,5 +1,5 @@
-// Arduino.h del host: lo que el juego usa de la plataforma ESP32, sin hardware.
-// Lo implementa host_runtime.cpp; ver host/README.md.
+// The host's Arduino.h: what the game uses from the ESP32 platform, without hardware.
+// Implemented by host_runtime.cpp; see host/README.md.
 #pragma once
 #include <math.h>
 #include <stdarg.h>
@@ -25,14 +25,14 @@
 #define digitalPinToInterrupt(p) (p)
 
 using std::abs;
-// Con tipos mezclados: min(uint32_t, 800UL) es del mismo tipo en el ESP32 pero no aqui
+// With mixed types: min(uint32_t, 800UL) is the same type on the ESP32 but not here
 template <class A, class B> inline auto min(A a, B b) -> std::common_type_t<A, B> { return a < b ? a : b; }
 template <class A, class B> inline auto max(A a, B b) -> std::common_type_t<A, B> { return a > b ? a : b; }
 
-// reloj: avanza una vez por tick del host (ver hostTick), asi que es constante en un pase de loop()
+// clock: advances once per host tick (see hostTick), so it is constant within one pass of loop()
 uint32_t millis();
 uint32_t micros();
-// el juego corre por ticks y no puede bloquear (en WebAssembly no se puede): delay() no espera
+// the game runs in ticks and cannot block (it can't in WebAssembly): delay() does not wait
 inline void delay(uint32_t) {}
 inline void delayMicroseconds(uint32_t) {}
 
@@ -48,7 +48,7 @@ int digitalRead(uint8_t pin);
 void digitalWrite(uint8_t pin, uint8_t val);
 void attachInterrupt(uint8_t pin, void (*fn)(), int mode);
 
-// el subconjunto de String que usa la consola serie del sketch
+// the subset of String that the sketch's serial console uses
 class String {
 public:
   String(const char *s = "") : s_(s ? s : "") {}
@@ -69,7 +69,7 @@ private:
   std::string s_;
 };
 
-// La consola serie del Knomi: entra lo que pase hostSerialPush() y sale por stdout
+// The Knomi's serial console: input is whatever hostSerialPush() passes in, output goes to stdout
 class HostSerial {
 public:
   void begin(unsigned long) {}
@@ -88,6 +88,6 @@ class HostEsp {
 public:
   uint32_t getFreeHeap() { return 0; }
   uint32_t getMinFreeHeap() { return 0; }
-  void restart();  // lo atiende el front end al acabar el tick: ver hostRestartRequested()
+  void restart();  // handled by the front end at the end of the tick: see hostRestartRequested()
 };
 extern HostEsp ESP;

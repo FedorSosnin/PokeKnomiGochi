@@ -1,6 +1,6 @@
 #!/bin/bash
-# Regenera web/knomi/firmware/ (firmware + sprites) para el instalador web del Knomi.
-# Uso: bash tools/build_knomi_web.sh   (la carpeta del proyecto debe llamarse TamaPoke)
+# Regenerates web/knomi/firmware/ (firmware + sprites) for the Knomi web installer.
+# Usage: bash tools/build_knomi_web.sh   (the project folder must be named TamaPoke)
 set -e
 cd "$(dirname "$0")/.."
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=default,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"

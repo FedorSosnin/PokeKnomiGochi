@@ -8,7 +8,7 @@
 #include "rtcbat.h"
 #include "wifi_form.h"
 
-#define SETUP_TIMEOUT_MS (5UL * 60UL * 1000UL)  // nadie configura nada: se cierra sola
+#define SETUP_TIMEOUT_MS (5UL * 60UL * 1000UL)  // nobody configures anything: it closes itself
 #define TRY_TIMEOUT_MS 20000UL
 #define OK_SHOW_MS 4000UL
 #define FAIL_SHOW_MS 4000UL
@@ -36,7 +36,7 @@ static void setState(WifiSetupState s) {
   lastUse = stateT;
 }
 
-// la mas fuerte primero, sin repetir nombres (una red puede tener varios puntos de acceso)
+// strongest first, without repeating names (a network can have several access points)
 static void scan() {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect(false, false);
@@ -51,7 +51,7 @@ static void scan() {
     if (best < 0) break;
     used[best] = true;
     String name = WiFi.SSID(best);
-    if (name.length() == 0 || name.length() > 32) continue;  // oculta o invalida
+    if (name.length() == 0 || name.length() > 32) continue;  // hidden or invalid
     bool dup = false;
     for (int k = 0; k < netCount && !dup; k++) dup = name == nets[k];
     if (dup) continue;
@@ -59,7 +59,7 @@ static void scan() {
     strlcpy(nets[netCount++], name.c_str(), sizeof(nets[0]));
   }
   WiFi.scanDelete();
-  Serial.printf("wifi setup: %d redes a la vista\n", netCount);
+  Serial.printf("wifi setup: %d networks in view\n", netCount);
   setState(WS_LIST);
 }
 
@@ -67,7 +67,7 @@ void wifiSetupStart() {
   if (state != WS_OFF) return;
   clockPollPause(true);
   picked = false;
-  setState(WS_SCAN);  // busca en el siguiente sondeo: antes se pinta el aviso
+  setState(WS_SCAN);  // scans on the next poll: the notice is drawn first
 }
 
 void wifiSetupRescan() {
@@ -76,19 +76,19 @@ void wifiSetupRescan() {
 
 void wifiSetupStop() {
   if (state == WS_OFF) return;
-  esp_wifi_set_storage(WIFI_STORAGE_FLASH);  // por si se cancela con un intento en curso
+  esp_wifi_set_storage(WIFI_STORAGE_FLASH);  // in case it is cancelled with an attempt in progress
   WiFi.mode(WIFI_OFF);
   memset(tryPass, 0, sizeof(tryPass));
   memset(&oldCfg, 0, sizeof(oldCfg));
   passLen = 0;
   setState(WS_OFF);
-  clockPollPause(false);  // vuelve a poner la hora con la red que quede guardada
+  clockPollPause(false);  // sets the time again with whichever network remains saved
 }
 
 static void beginTry() {
   esp_wifi_get_config(WIFI_IF_STA, &oldCfg);
-  Serial.printf("wifi setup: probando '%s'\n", trySsid);
-  // en RAM hasta saber que funciona: ni un fallo ni un corte de luz tocan la red guardada
+  Serial.printf("wifi setup: trying '%s'\n", trySsid);
+  // in RAM until it is known to work: neither a failure nor a power cut touches the saved network
   esp_wifi_set_storage(WIFI_STORAGE_RAM);
   WiFi.begin(trySsid, tryPass);
   setState(WS_TRY);
@@ -141,8 +141,8 @@ void wifiSetupTry(const char *ssid, const char *pass) {
   beginTry();
 }
 
-// Vuelve a guardar en flash y escribe cfg (la configuracion activa si es nullptr). El driver
-// rechaza cambios mientras intenta conectar, asi que antes corta y espera a que pare.
+// Saves to flash again and writes cfg (the active configuration if nullptr). The driver
+// rejects changes while it is trying to connect, so it first disconnects and waits for it to stop.
 static bool writeStaConfig(wifi_config_t *cfg) {
   esp_err_t err = ESP_FAIL;
   for (int i = 0; i < 20 && err != ESP_OK; i++) {
@@ -161,14 +161,14 @@ static bool applyStaConfig(wifi_config_t *cfg) {
   }
   esp_wifi_disconnect();
   esp_wifi_set_storage(WIFI_STORAGE_FLASH);
-  // el driver puede saltarse la escritura si la configuracion no cambia respecto a la de RAM:
-  // pasando antes por una vacia, la buena siempre llega a la NVS
+  // the driver may skip the write if the configuration doesn't change relative to RAM's:
+  // going through an empty one first, the good one always reaches the NVS
   bool ok = writeStaConfig(&blank) && writeStaConfig(cfg);
   memset(&current, 0, sizeof(current));
   return ok;
 }
 
-// comprueba en la NVS que la red ha quedado guardada de verdad
+// checks in the NVS that the network was really saved
 static bool savedSsidIs(const char *ssid) {
   nvs_handle_t h;
   if (nvs_open("nvs.net80211", NVS_READONLY, &h) != ESP_OK) return false;
@@ -190,19 +190,19 @@ void wifiSetupPoll() {
     case WS_LIST:
     case WS_PASS:
       if (now - lastUse > SETUP_TIMEOUT_MS) {
-        Serial.println("wifi setup: sin uso, se cierra");
+        Serial.println("wifi setup: unused, closing");
         wifiSetupStop();
       }
       break;
     case WS_TRY:
       if (WiFi.status() == WL_CONNECTED) {
-        Serial.printf("wifi setup: conectado, ip=%s\n", WiFi.localIP().toString().c_str());
+        Serial.printf("wifi setup: connected, ip=%s\n", WiFi.localIP().toString().c_str());
         bool saved = applyStaConfig(nullptr) && savedSsidIs(trySsid);
-        Serial.println(saved ? "wifi setup: guardada y comprobada" : "wifi setup: no se pudo guardar");
+        Serial.println(saved ? "wifi setup: saved and verified" : "wifi setup: could not save");
         if (saved) clockSetWifiSsid(trySsid);
         setState(saved ? WS_OK : WS_FAIL);
       } else if (now - stateT > TRY_TIMEOUT_MS) {
-        Serial.println("wifi setup: fallo, se recupera la red anterior");
+        Serial.println("wifi setup: failed, restoring the previous network");
         applyStaConfig(&oldCfg);
         memset(&oldCfg, 0, sizeof(oldCfg));
         setState(WS_FAIL);
@@ -212,7 +212,7 @@ void wifiSetupPoll() {
       if (now - stateT > OK_SHOW_MS) wifiSetupStop();
       break;
     case WS_FAIL:
-      // vuelve al teclado con lo escrito: lo normal es corregir una errata
+      // back to the keyboard with what was typed: the usual case is fixing a typo
       if (now - stateT > FAIL_SHOW_MS) setState(picked && passLen ? WS_PASS : WS_LIST);
       break;
     default: break;
@@ -220,7 +220,7 @@ void wifiSetupPoll() {
 }
 
 #else
-// la Waveshare no usa wifi
+// the Waveshare does not use wifi
 void wifiSetupStart() {}
 void wifiSetupStop() {}
 void wifiSetupPoll() {}

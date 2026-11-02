@@ -2,19 +2,19 @@
 #include <stdint.h>
 #include "battle.h"
 
-// PokeDungeon: reglas por turnos sin hardware (test/test_dungeon.cpp). El jugador da un paso y
-// luego actua cada rival. Entrar en una casilla ocupada es atacar con el mejor ataque contra ese
-// rival, con la misma formula que el combate, asi que entrenar a la mascota se nota aqui.
+// PokeDungeon: turn-based rules without hardware (test/test_dungeon.cpp). The player takes a step and
+// then each rival acts. Moving into an occupied tile is attacking with the best move against that
+// rival, with the same formula as battle, so training the pet shows here.
 
 #define DN_W 21
 #define DN_H 15
-#define DN_ROOMS 6            // 3 x 2 sectores de 7 x 7
+#define DN_ROOMS 6            // 3 x 2 sectors of 7 x 7
 #define DN_MONS 8
 #define DN_BERRIES 3
-#define DN_ALERT 4            // casillas a las que un rival te persigue
-#define DN_HP_MULT 4          // aguantar varias peleas seguidas, no una
-#define DN_BERRY_PCT 35       // vida que cura una baya
-#define DN_FLOOR_PCT 25       // vida que se recupera al bajar
+#define DN_ALERT 4            // tiles within which a rival chases you
+#define DN_HP_MULT 4          // withstand several fights in a row, not just one
+#define DN_BERRY_PCT 35       // HP a berry heals
+#define DN_FLOOR_PCT 25       // HP recovered when descending
 
 enum DnTile : uint8_t { DN_WALL, DN_FLOOR, DN_STAIRS };
 
@@ -26,11 +26,11 @@ struct DnMon {
 
 struct DnItem { int8_t x, y; bool on; };
 
-// lo que paso en el ultimo turno, para pintarlo
+// what happened on the last turn, for drawing it
 struct DnHit {
   bool mine;
-  int8_t mon;       // el rival que golpea o recibe
-  uint8_t move;     // indice de MOVE_TBL
+  int8_t mon;       // the rival that hits or is hit
+  uint8_t move;     // MOVE_TBL index
   uint16_t dmg;
   uint8_t eff;
   bool ko;
@@ -50,7 +50,7 @@ struct DnState {
   uint8_t hitCount;
 };
 
-inline uint32_t dnRand(DnState &s, uint32_t n) {  // xorshift: partidas reproducibles en las pruebas
+inline uint32_t dnRand(DnState &s, uint32_t n) {  // xorshift: reproducible games in tests
   uint32_t x = s.rng;
   x ^= x << 13;
   x ^= x >> 17;
@@ -75,7 +75,7 @@ inline int dnBerryAt(const DnState &s, int x, int y) {
   return -1;
 }
 
-// mas hondo, rivales de mas nivel: la profundidad es lo que aprieta
+// deeper, higher-level rivals: depth is what tightens the screws
 inline uint8_t dnFoeLevel(uint8_t myLevel, uint8_t floor) {
   int l = (int)myLevel - 5 + floor / 2;
   return l < 2 ? 2 : (l > BTL_LEVEL_CAP ? BTL_LEVEL_CAP : (uint8_t)l);
@@ -84,14 +84,14 @@ inline uint8_t dnFoeLevel(uint8_t myLevel, uint8_t floor) {
 inline int16_t dnPickSpecies(DnState &s, uint8_t lvl) {
   for (int i = 0; i < 40; i++) {
     int16_t d = 1 + dnRand(s, DEX_COUNT);
-    if (DEX_TBL[d].rarity != R_LEGENDARIO && btlMinLevel(d) <= lvl) return d;
+    if (DEX_TBL[d].rarity != R_LEGENDARY && btlMinLevel(d) <= lvl) return d;
   }
-  return 16;  // Pidgey: forma base, sale a cualquier nivel
+  return 16;  // Pidgey: base form, appears at any level
 }
 
 struct DnRoom { int8_t x, y, w, h; };
 
-inline void dnCarve(DnState &s, int x0, int y0, int x1, int y1) {  // pasillo en L
+inline void dnCarve(DnState &s, int x0, int y0, int x1, int y1) {  // L-shaped corridor
   for (int x = x0; x != x1; x += x1 > x0 ? 1 : -1) s.map[y0][x] = DN_FLOOR;
   for (int y = y0; y != y1; y += y1 > y0 ? 1 : -1) s.map[y][x1] = DN_FLOOR;
   s.map[y1][x1] = DN_FLOOR;
@@ -102,13 +102,13 @@ inline void dnRoomSpot(DnState &s, const DnRoom &r, int8_t &x, int8_t &y) {
   y = r.y + dnRand(s, r.h);
 }
 
-// una planta: seis salas unidas en serpiente, asi que siempre se llega a la escalera
+// a floor: six rooms joined in a snake, so the stairs are always reachable
 inline void dnNewFloor(DnState &s) {
   for (int y = 0; y < DN_H; y++)
     for (int x = 0; x < DN_W; x++) s.map[y][x] = DN_WALL;
 
   DnRoom rooms[DN_ROOMS];
-  static const uint8_t SNAKE[DN_ROOMS] = { 0, 1, 2, 5, 4, 3 };  // 0 1 2 arriba, 3 4 5 abajo
+  static const uint8_t SNAKE[DN_ROOMS] = { 0, 1, 2, 5, 4, 3 };  // 0 1 2 top, 3 4 5 bottom
   for (int i = 0; i < DN_ROOMS; i++) {
     DnRoom &r = rooms[i];
     r.w = 3 + dnRand(s, 3);
@@ -123,7 +123,7 @@ inline void dnNewFloor(DnState &s) {
     dnCarve(s, a.x + a.w / 2, a.y + a.h / 2, b.x + b.w / 2, b.y + b.h / 2);
   }
 
-  // se empieza en un extremo de la serpiente y la escalera esta en el otro
+  // you start at one end of the snake and the stairs are at the other
   bool flip = dnRand(s, 2);
   const DnRoom &first = rooms[flip ? 3 : 0], &last = rooms[flip ? 0 : 3];
   dnRoomSpot(s, first, s.x, s.y);
@@ -157,7 +157,7 @@ inline void dnNewFloor(DnState &s) {
   }
 }
 
-// me ya trae nivel y estadisticas; la vida se multiplica aqui
+// me already brings level and stats; HP is multiplied here
 inline void dnStart(DnState &s, const BtlFighter &me, uint32_t seed) {
   s.me = me;
   s.me.maxHp = me.maxHp * DN_HP_MULT;
@@ -171,7 +171,7 @@ inline void dnStart(DnState &s, const BtlFighter &me, uint32_t seed) {
   dnNewFloor(s);
 }
 
-// el jugador no elige ataque: sale el que mas dana a ese rival
+// the player doesn't choose a move: the one that hurts that rival most is used
 inline uint8_t dnBestMove(const DnState &s, const BtlFighter &foe) {
   BtlMoves ms = btlMovesFor(s.me.dex, s.me.level, foe.dex);
   uint8_t best = ms.ids[0];
@@ -217,7 +217,7 @@ inline void dnFoesAct(DnState &s) {
   }
 }
 
-// un paso del jugador (dx, dy en -1..1, uno de los dos a 0). false si no gasta el turno (pared).
+// one player step (dx, dy in -1..1, one of them 0). false if it doesn't spend the turn (wall).
 inline bool dnStep(DnState &s, int8_t dx, int8_t dy) {
   if (s.dead) return false;
   int nx = s.x + dx, ny = s.y + dy;
@@ -239,7 +239,7 @@ inline bool dnStep(DnState &s, int8_t dx, int8_t dy) {
   } else {
     s.x = nx;
     s.y = ny;
-    if (s.map[ny][nx] == DN_STAIRS) {  // al bajar nadie te sigue
+    if (s.map[ny][nx] == DN_STAIRS) {  // nobody follows you when descending
       if (s.floor < 255) s.floor++;
       uint32_t heal = (uint32_t)s.me.maxHp * DN_FLOOR_PCT / 100;
       s.me.hp = s.me.hp + heal > s.me.maxHp ? s.me.maxHp : s.me.hp + heal;
@@ -259,8 +259,8 @@ inline bool dnStep(DnState &s, int8_t dx, int8_t dy) {
   return true;
 }
 
-// primer paso del camino mas corto a la escalera, pasando por encima de los rivales (se les
-// ataca al llegar). Para las pruebas y para ver partidas largas en la placa.
+// first step of the shortest path to the stairs, walking over rivals (they are
+// attacked on arrival). For tests and for watching long games on the board.
 inline bool dnBotDir(const DnState &s, int8_t &outX, int8_t &outY) {
   static int8_t fromX[DN_H][DN_W], fromY[DN_H][DN_W];
   static uint8_t seen[DN_H][DN_W];

@@ -1,4 +1,4 @@
-// El host no duerme: usbPresent() es siempre true y lightSleepAllowed() nunca deja llegar aqui.
+// The host never sleeps: usbPresent() is always true and lightSleepAllowed() never lets execution get here.
 #pragma once
 #include <stdint.h>
 

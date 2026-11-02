@@ -1,23 +1,23 @@
-// Reglas del combate (battle.h).
+// Battle rules (battle.h).
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "../battle.h"
 #include <stdlib.h>
 
-TEST(battle, tabla_de_tipos_de_gen_1) {
-  CHECK_EQ((int)btlEffect(TY_FUEGO, TY_PLANTA), 4);
-  CHECK_EQ((int)btlEffect(TY_AGUA, TY_FUEGO), 4);
-  CHECK_EQ((int)btlEffect(TY_PLANTA, TY_AGUA), 4);
-  CHECK_EQ((int)btlEffect(TY_FUEGO, TY_AGUA), 1);
-  CHECK_EQ((int)btlEffect(TY_NORMAL, TY_ROCA), 1);
-  CHECK_EQ((int)btlEffect(TY_NORMAL, TY_FANTASMA), 0);
-  CHECK_EQ((int)btlEffect(TY_ELECTRICO, TY_TIERRA), 0);
-  CHECK_EQ((int)btlEffect(TY_FANTASMA, TY_PSIQUICO), 0);  // el fallo famoso de gen 1
-  CHECK_EQ((int)btlEffect(TY_HIELO, TY_DRAGON), 4);
+TEST(battle, gen_1_type_chart) {
+  CHECK_EQ((int)btlEffect(TY_FIRE, TY_GRASS), 4);
+  CHECK_EQ((int)btlEffect(TY_WATER, TY_FIRE), 4);
+  CHECK_EQ((int)btlEffect(TY_GRASS, TY_WATER), 4);
+  CHECK_EQ((int)btlEffect(TY_FIRE, TY_WATER), 1);
+  CHECK_EQ((int)btlEffect(TY_NORMAL, TY_ROCK), 1);
+  CHECK_EQ((int)btlEffect(TY_NORMAL, TY_GHOST), 0);
+  CHECK_EQ((int)btlEffect(TY_ELECTRIC, TY_GROUND), 0);
+  CHECK_EQ((int)btlEffect(TY_GHOST, TY_PSYCHIC), 0);  // the famous gen 1 bug
+  CHECK_EQ((int)btlEffect(TY_ICE, TY_DRAGON), 4);
   CHECK_EQ((int)btlEffect(TY_NORMAL, TY_NORMAL), 2);
 }
 
-TEST(battle, tabla_completa_sin_valores_raros) {
+TEST(battle, full_chart_has_no_odd_values) {
   for (int a = 0; a < TY_COUNT; a++)
     for (int d = 0; d < TY_COUNT; d++) {
       int e = btlEffect(a, d);
@@ -31,30 +31,30 @@ static const char *moveName(int16_t dex, uint8_t lvl, uint8_t slot) {
 
 static bool sameName(const char *a, const char *b) { return strcmp(a, b) == 0; }
 
-TEST(battle, cada_especie_usa_sus_ataques_de_red_blue) {
-  CHECK_EQ((int)btlMovesFor(102, 20, 1).count, 1);  // Exeggcute solo tiene BARRAGE a ese nivel
+TEST(battle, each_species_uses_its_red_blue_moves) {
+  CHECK_EQ((int)btlMovesFor(102, 20, 1).count, 1);  // Exeggcute only has BARRAGE at that level
   CHECK(sameName(moveName(102, 20, 0), "BARRAGE"));
   CHECK_EQ((int)btlMovesFor(1, 5, 4).count, 1);
   CHECK(sameName(moveName(1, 5, 0), "TACKLE"));
   CHECK(sameName(moveName(1, 21, 0), "TACKLE"));
   CHECK(sameName(moveName(1, 21, 1), "VINE WHIP"));
   CHECK(sameName(moveName(4, 30, 0), "SLASH"));
-  CHECK(sameName(moveName(4, 30, 1), "EMBER"));  // no se queda sin ataque de su tipo
+  CHECK(sameName(moveName(4, 30, 1), "EMBER"));  // it is not left without a move of its own type
   CHECK(sameName(moveName(25, 1, 0), "THUNDERSHOCK"));
 }
 
-TEST(battle, sin_ataques_que_dañen_usa_struggle) {
-  CHECK(sameName(moveName(63, 50, 0), "STRUGGLE"));  // Abra solo tiene TELEPORT
-  CHECK(sameName(moveName(129, 14, 0), "STRUGGLE"));  // Magikarp: SPLASH no hace nada
+TEST(battle, no_damaging_moves_uses_struggle) {
+  CHECK(sameName(moveName(63, 50, 0), "STRUGGLE"));  // Abra only has TELEPORT
+  CHECK(sameName(moveName(129, 14, 0), "STRUGGLE"));  // Magikarp: SPLASH does nothing
   CHECK(sameName(moveName(129, 15, 0), "TACKLE"));
 }
 
-TEST(battle, conserva_lo_aprendido_antes_de_evolucionar) {
-  CHECK(sameName(moveName(11, 8, 0), "TACKLE"));  // Metapod, de cuando era Caterpie
+TEST(battle, keeps_what_was_learned_before_evolving) {
+  CHECK(sameName(moveName(11, 8, 0), "TACKLE"));  // Metapod, from when it was Caterpie
   CHECK(sameName(moveName(14, 8, 0), "POISON STING"));
 }
 
-TEST(battle, ditto_copia_los_ataques_del_rival) {
+TEST(battle, ditto_copies_the_rivals_moves) {
   BtlMoves m = btlMovesFor(DEX_DITTO, 30, 25);
   BtlMoves p = btlMovesFor(25, 30, 1);
   CHECK_EQ((int)m.ids[0], (int)p.ids[0]);
@@ -62,34 +62,34 @@ TEST(battle, ditto_copia_los_ataques_del_rival) {
   CHECK(sameName(MOVE_TBL[btlMovesFor(DEX_DITTO, 30, DEX_DITTO).ids[0]].name, "STRUGGLE"));
 }
 
-TEST(battle, aviso_de_ataque_nuevo_una_sola_vez) {
+TEST(battle, new_move_announced_only_once) {
   BtlMoves one = btlMovesFor(1, 5, 4), two = btlMovesFor(1, 13, 4);
-  CHECK_EQ((int)btlMoveToAnnounce(1, one), -1);  // mascota nueva: nada que anunciar
+  CHECK_EQ((int)btlMoveToAnnounce(1, one), -1);  // new pet: nothing to announce
   CHECK_EQ((int)btlMoveToAnnounce(1, two), (int)two.newest);
-  CHECK_EQ((int)btlMoveToAnnounce(2, two), -1);  // partida antigua que ya tenia dos
+  CHECK_EQ((int)btlMoveToAnnounce(2, two), -1);  // old save that already had two
   CHECK_EQ((int)btlMoveToAnnounce(btlMovesSeenValue(two), two), -1);
   CHECK_EQ((int)btlMoveToAnnounce(btlMovesSeenValue(one), two), (int)two.newest);
   CHECK(sameName(MOVE_TBL[two.newest].name, "VINE WHIP"));
 }
 
-TEST(battle, los_ataques_caben_en_el_boton) {
+TEST(battle, moves_fit_on_the_button) {
   for (size_t i = 0; i < sizeof(MOVE_TBL) / sizeof(MOVE_TBL[0]); i++) CHECK(strlen(MOVE_TBL[i].name) <= 13);
 }
 
-TEST(battle, dano_efectividad_y_stab) {
-  BtlMove ember = { "EMBER", TY_FUEGO, 60 };
+TEST(battle, damage_effectiveness_and_stab) {
+  BtlMove ember = { "EMBER", TY_FIRE, 60 };
   uint16_t base = btlDamage(20, ember, 50, 50, TY_NORMAL, TY_NORMAL, 100);
-  uint16_t stab = btlDamage(20, ember, 50, 50, TY_FUEGO, TY_NORMAL, 100);
-  uint16_t sup = btlDamage(20, ember, 50, 50, TY_NORMAL, TY_PLANTA, 100);
-  uint16_t weak = btlDamage(20, ember, 50, 50, TY_NORMAL, TY_AGUA, 100);
+  uint16_t stab = btlDamage(20, ember, 50, 50, TY_FIRE, TY_NORMAL, 100);
+  uint16_t sup = btlDamage(20, ember, 50, 50, TY_NORMAL, TY_GRASS, 100);
+  uint16_t weak = btlDamage(20, ember, 50, 50, TY_NORMAL, TY_WATER, 100);
   CHECK(stab > base);
   CHECK_EQ((int)sup, (int)base * 2);
   CHECK(weak < base);
   CHECK(weak >= 1);
-  CHECK_EQ((int)btlDamage(20, BtlMove{ "TACKLE", TY_NORMAL, 40 }, 50, 50, TY_NORMAL, TY_FANTASMA, 100), 0);
+  CHECK_EQ((int)btlDamage(20, BtlMove{ "TACKLE", TY_NORMAL, 40 }, 50, 50, TY_NORMAL, TY_GHOST, 100), 0);
 }
 
-TEST(battle, nivel_tope_y_rival_cercano) {
+TEST(battle, level_cap_and_nearby_rival) {
   CHECK_EQ((int)btlCapLevel(999), BTL_LEVEL_CAP);
   CHECK_EQ((int)btlWildLevel(1, 0), 2);
   CHECK_EQ((int)btlWildLevel(100, 3), 100);
@@ -99,7 +99,7 @@ TEST(battle, nivel_tope_y_rival_cercano) {
   }
 }
 
-// combate entero con la IA del rival, el jugador usa su mejor ataque
+// a whole battle with the rival's AI; the player uses their best move
 static bool simulate(int16_t mine, int16_t foeDex, uint8_t lvl, uint8_t trained) {
   const DexEntry &d = DEX_TBL[mine];
   BtlFighter me;
@@ -140,30 +140,30 @@ static int winRate(int16_t mine, uint8_t lvl, uint8_t trained) {
   int wins = 0, n = 0;
   for (int16_t foe = 1; foe <= 151; foe++)
     for (int i = 0; i < 10; i++) {
-      if (DEX_TBL[foe].rarity == R_LEGENDARIO || btlMinLevel(foe) > lvl) continue;
+      if (DEX_TBL[foe].rarity == R_LEGENDARY || btlMinLevel(foe) > lvl) continue;
       n++;
       if (simulate(mine, foe, lvl, trained)) wins++;
     }
   return wins * 100 / n;
 }
 
-TEST(battle, equilibrio_ni_regalado_ni_imposible) {
+TEST(battle, balance_neither_a_gift_nor_impossible) {
   for (int16_t mine : {1, 4, 7}) {
     int fresh = winRate(mine, 5, 0);
-    printf("  #%d: nivel 5 sin entrenar %d%%, nivel 30 +40 FUE %d%%\n", mine, fresh, winRate(mine, 30, 40));
-    CHECK_MSG(fresh >= 40 && fresh <= 85, "una mascota nueva debe poder ganar y perder");
+    printf("  #%d: level 5 untrained %d%%, level 30 +40 STR %d%%\n", mine, fresh, winRate(mine, 30, 40));
+    CHECK_MSG(fresh >= 40 && fresh <= 85, "a new pet must be able to win and lose");
   }
 }
 
-// una mascota evolucionada a su nivel normal, con entrenamiento moderado
-TEST(battle, evolucionar_se_nota) {
+// an evolved pet at its normal level, with moderate training
+TEST(battle, evolving_makes_a_difference) {
   for (int16_t mine : {3, 6, 9}) {
     int r = winRate(mine, 40, 30);
-    printf("  #%d: nivel 40 +30 FUE %d%%\n", mine, r);
+    printf("  #%d: level 40 +30 STR %d%%\n", mine, r);
     CHECK(r >= 60);
   }
 }
 
-TEST(battle, entrenar_se_nota) {
+TEST(battle, training_makes_a_difference) {
   CHECK(winRate(4, 30, 60) > winRate(4, 30, 0));
 }

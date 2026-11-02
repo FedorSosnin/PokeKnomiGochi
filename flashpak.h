@@ -1,6 +1,6 @@
 #pragma once
-// Sprites comprimidos en la particion "ffat" (formato en tools/pack_flash.py), con la
-// misma forma de uso que SD_MMC/File para que sdmon.cpp no cambie en las placas sin SD.
+// Compressed sprites in the "ffat" partition (format in tools/pack_flash.py), with the
+// same usage as SD_MMC/File so sdmon.cpp doesn't change on boards without SD.
 #include <Arduino.h>
 #include <esp_partition.h>
 #include "miniz.h"
@@ -40,7 +40,7 @@ public:
     return index && esp_partition_read(part, 8, index, count * sizeof(Entry)) == ESP_OK;
   }
 
-  // descomprime el fichero entero a PSRAM; se libera con close()
+  // decompresses the whole file to PSRAM; freed with close()
   PakFile open(const char *path, const char *) {
     const char *name = strrchr(path, '/');
     name = name ? name + 1 : path;
@@ -56,7 +56,7 @@ private:
   PakFile inflate(const Entry &e) {
     uint8_t *src = (uint8_t *)ps_malloc(e.comp);
     uint8_t *dst = (uint8_t *)ps_malloc(e.raw);
-    // ~11 KB de estado: en el heap, no cabe en la pila del loop
+    // ~11 KB of state: on the heap, doesn't fit on the loop stack
     tinfl_decompressor *d = (tinfl_decompressor *)ps_malloc(sizeof(tinfl_decompressor));
     bool ok = src && dst && d && esp_partition_read(part, e.off, src, e.comp) == ESP_OK;
     if (ok) {

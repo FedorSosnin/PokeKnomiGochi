@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Empaqueta tools/sdcard/mons/* en un blob para placas sin SD (BTT Knomi V2).
+"""Packs tools/sdcard/mons/* into a blob for boards without an SD card (BTT Knomi V2).
 
-Se graba en crudo en la particion "ffat" y lo lee flashpak.h. Formato (little endian):
+It is written raw to the "ffat" partition and read by flashpak.h. Format (little endian):
 
   char[4] "TPKZ"
   u32 nEntries
-  por entrada: char name[16], u32 offset, u32 rawSize, u32 compSize
-  datos zlib
+  per entry: char name[16], u32 offset, u32 rawSize, u32 compSize
+  zlib data
 
   python3 tools/pack_flash.py [salida]
 """
@@ -16,7 +16,7 @@ import sys
 import zlib
 
 SRC = os.path.join(os.path.dirname(__file__), 'sdcard', 'mons')
-LIMIT = 0x9E0000  # tamano de la particion ffat en app3M_fat9M_16MB
+LIMIT = 0x9E0000  # size of the ffat partition in app3M_fat9M_16MB
 
 
 def main():
@@ -34,13 +34,13 @@ def main():
         off += len(comp)
         raw_total += len(raw)
     if off > LIMIT:
-        sys.exit(f'{off} bytes no caben en la particion ({LIMIT})')
+        sys.exit(f'{off} bytes do not fit in the partition ({LIMIT})')
     os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
     with open(out, 'wb') as f:
         f.write(b'TPKZ' + struct.pack('<I', len(names)))
         f.write(b''.join(entries))
         f.write(b''.join(blobs))
-    print(f'{len(names)} ficheros, {raw_total / 1e6:.1f} MB -> {off / 1e6:.2f} MB: {out}')
+    print(f'{len(names)} files, {raw_total / 1e6:.1f} MB -> {off / 1e6:.2f} MB: {out}')
 
 
 if __name__ == '__main__':

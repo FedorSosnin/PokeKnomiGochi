@@ -33,7 +33,7 @@ bool buddyNetUp() {
 
 bool buddyNetPoll(BuddyMsg &out) {
   if (!listening) return false;
-  // no se atasca con basura: como mucho unos pocos paquetes por llamada
+  // doesn't get stuck on garbage: at most a few packets per call
   for (int i = 0; i < 4; i++) {
     int len = udp.parsePacket();
     if (len <= 0) return false;

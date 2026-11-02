@@ -1,4 +1,4 @@
-// El "Arduino" del host: reloj, entrada, consola serie y el bucle de ticks.
+// The host's "Arduino": clock, input, serial console and the tick loop.
 #include "host.h"
 #include "host_hal.h"
 #include "host_internal.h"
@@ -11,12 +11,12 @@
 #include <mutex>
 #include <random>
 
-// Lo que pasa de un tick a otro como mucho. El reloj del juego se para si el proceso deja de correr
-// (Mac en reposo, pestana en segundo plano) y el juego ve el hueco como tiempo de ausencia, por
-// clockPoll() y syncClock(): si no, Pet::update() pasaria horas de golpe a ritmo de un minuto por tick.
+// The most that passes from one tick to the next. The game's clock stops if the process stops running
+// (Mac asleep, tab in the background) and the game sees the gap as away time, through
+// clockPoll() and syncClock(): otherwise Pet::update() would run through hours at once at one minute per tick.
 #define MAX_TICK_MS 250
 
-// ---- reloj ----
+// ---- clock ----
 static uint32_t gMillis = 0;
 static std::chrono::steady_clock::time_point gLastTick;
 static bool gTicking = false;
@@ -77,7 +77,7 @@ String String::substring(unsigned left, unsigned right) const {
   return String(s_.substr(left, right - left));
 }
 
-// ---- consola serie ----
+// ---- serial console ----
 HostSerial Serial;
 static std::mutex gSerialMutex;
 static std::deque<std::string> gSerialIn;
@@ -119,7 +119,7 @@ static bool gRestart = false;
 void HostEsp::restart() { gRestart = true; }
 bool hostRestartRequested(void) { return gRestart; }
 
-// ---- entrada ----
+// ---- input ----
 static void (*gTouchIsr)() = nullptr;
 static int16_t gPointerX = 0, gPointerY = 0;
 static bool gPointerDown = false;
@@ -128,9 +128,9 @@ static bool gButtonDown = false;
 static bool gTiltLeft = false, gTiltRight = false;
 static float gTilt = 0;
 
-// el juego sondea el tactil cada 20 ms y resuelve al levantar: un toque visto dos sondeos no se pierde
+// the game polls the touch panel every 20 ms and resolves on release: a touch seen in two polls is not lost
 #define POINTER_MIN_HOLD_MS 45
-// segundos para llegar al tope con la tecla pulsada, y para volver a recto al soltarla
+// seconds to reach the limit with the key held, and to return to straight on release
 #define TILT_RAMP_S 0.12f
 #define TILT_RELEASE_S 0.06f
 
@@ -138,7 +138,7 @@ void pinMode(uint8_t, uint8_t) {}
 void digitalWrite(uint8_t, uint8_t) {}
 int digitalRead(uint8_t pin) {
   if (pin == KNOMI_BTN_PIN) return gButtonDown ? LOW : HIGH;
-  return HIGH;  // el INT del tactil, en reposo
+  return HIGH;  // the touch panel's INT, at rest
 }
 void attachInterrupt(uint8_t pin, void (*fn)(), int) {
   if (pin == TP_INT) gTouchIsr = fn;
@@ -172,7 +172,7 @@ static void stepTilt(uint32_t dtMs) {
 }
 float hostTiltValue() { return gTilt; }
 
-// ---- pantalla ----
+// ---- screen ----
 static bool gFrameDirty = false;
 static uint8_t gBrightness = 180;
 
@@ -185,8 +185,8 @@ bool hostFrameDirty(void) { return gFrameDirty; }
 
 extern ScaledCanvas *gfx;
 
-// El brillo del juego protege el AMOLED de quemarse; aqui solo avisa de que esta en reposo, asi que
-// tiene un suelo: una mascota de escritorio no debe quedarse casi negra. 0 es pantalla apagada a mano.
+// The game's brightness protects the AMOLED from burn-in; here it only signals that it is idle, so
+// it has a floor: a desktop pet must not go nearly black. 0 is a screen switched off by hand.
 #define BRIGHTNESS_FULL 180
 #define BRIGHTNESS_FLOOR 0.45f
 void hostFrameRGBA(uint8_t *out) {
@@ -214,7 +214,7 @@ uint16_t *ScaledCanvas::panelBuffer() {
   return panel_;
 }
 
-// ---- recursos ----
+// ---- resources ----
 const uint8_t *u8g2_font_unifont_t_japanese3 = nullptr;
 const uint8_t *u8g2_font_unifont_t_korean2 = nullptr;
 static std::string gResources;
@@ -222,7 +222,7 @@ const char *hostResourcesDir() { return gResources.c_str(); }
 
 static const uint8_t *loadFont(const char *name) {
   FILE *f = fopen((gResources + "/fonts/" + name).c_str(), "rb");
-  if (!f) { fprintf(stderr, "falta la fuente %s\n", name); return nullptr; }
+  if (!f) { fprintf(stderr, "missing font %s\n", name); return nullptr; }
   fseek(f, 0, SEEK_END);
   long n = ftell(f);
   rewind(f);
@@ -240,10 +240,10 @@ static bool makeDirs(const std::string &path) {
   return true;
 }
 
-// ---- ciclo de vida ----
+// ---- lifecycle ----
 void hostInit(const char *resources, const char *saveDir) {
   gResources = resources;
-  if (saveDir && !makeDirs(saveDir)) fprintf(stderr, "no se puede crear %s\n", saveDir);
+  if (saveDir && !makeDirs(saveDir)) fprintf(stderr, "cannot create %s\n", saveDir);
   hostPrefsSetDir(saveDir);
   u8g2_font_unifont_t_japanese3 = loadFont("unifont_t_japanese3.u8g2");
   u8g2_font_unifont_t_korean2 = loadFont("unifont_t_korean2.u8g2");

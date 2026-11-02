@@ -1,5 +1,5 @@
-// Pruebas de la capa de host, sin ventana. Las primeras son piezas sueltas; la ultima arranca el juego
-// entero contra los sprites reales y una partida en una carpeta temporal.
+// Tests for the host layer, without a window. The first ones are individual pieces; the last one starts the whole
+// game against the real sprites and a save in a temporary folder.
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -18,7 +18,7 @@ static int gFails = 0, gChecks = 0;
   do {                                                                  \
     gChecks++;                                                          \
     if (!(cond)) {                                                      \
-      printf("FALLO %s:%d: %s\n", __FILE__, __LINE__, #cond);           \
+      printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond);           \
       gFails++;                                                         \
     }                                                                   \
   } while (0)
@@ -59,27 +59,27 @@ static void testCanvas() {
   Arduino_Canvas c(466, 466);
   CHECK(c.begin());
   c.fillScreen(0);
-  c.fillRect(-5, -5, 10, 10, 0xFFFF);  // recortado a 5x5
+  c.fillRect(-5, -5, 10, 10, 0xFFFF);  // clipped to 5x5
   CHECK(countColor(c, 0xFFFF) == 25);
   c.fillScreen(0);
-  c.fillRect(460, 460, 100, 100, 0xFFFF);  // por la esquina opuesta
+  c.fillRect(460, 460, 100, 100, 0xFFFF);  // via the opposite corner
   CHECK(countColor(c, 0xFFFF) == 36);
 
   c.fillScreen(0);
   c.fillCircle(233, 233, 100, 0xF800);
   uint16_t *fb = c.framebuffer();
   CHECK(fb[233 * 466 + 233] == 0xF800);
-  CHECK(fb[233 * 466 + 133] == 0xF800);  // borde izquierdo
+  CHECK(fb[233 * 466 + 133] == 0xF800);  // left edge
   CHECK(fb[233 * 466 + 132] == 0);
-  CHECK(fb[133 * 466 + 133] == 0);       // la esquina del cuadrado queda fuera
+  CHECK(fb[133 * 466 + 133] == 0);       // the square's corner falls outside
   int area = countColor(c, 0xF800);
   CHECK(area > 31000 && area < 31800);   // pi * r^2 = 31416
 
   c.fillScreen(0);
   c.fillRoundRect(10, 10, 100, 50, 12, 0x07E0);
-  CHECK(fb[10 * 466 + 10] == 0);          // esquina redondeada
-  CHECK(fb[35 * 466 + 10] == 0x07E0);     // lado izquierdo
-  CHECK(fb[35 * 466 + 109] == 0x07E0);    // lado derecho, inclusive
+  CHECK(fb[10 * 466 + 10] == 0);          // rounded corner
+  CHECK(fb[35 * 466 + 10] == 0x07E0);     // left side
+  CHECK(fb[35 * 466 + 109] == 0x07E0);    // right side, inclusive
   CHECK(fb[35 * 466 + 110] == 0);
 
   c.fillScreen(0);
@@ -88,7 +88,7 @@ static void testCanvas() {
   CHECK(fb[200 * 466 + 150] == 0x001F);
   CHECK(fb[201 * 466 + 150] == 0);
 
-  // texto clasico: pixel a pixel con la tabla de la fuente, y la misma medida que usa textW()
+  // classic text: pixel by pixel against the font table, and the same measurement textW() uses
   c.fillScreen(0);
   c.setTextColor(0xFFFF);
   c.setTextSize(2);
@@ -120,10 +120,10 @@ static void testU8g2() {
   uint16_t w, h;
   c.setTextSize(1);
   c.getTextBounds("A", 0, 0, &x1, &y1, &w, &h);
-  CHECK(y1 < 0);  // ancladas en la linea base: applyLangFont() mide el ascenso asi
+  CHECK(y1 < 0);  // anchored at the baseline: applyLangFont() measures the ascent this way
   CHECK(w > 0 && h > 0);
   c.setCursor(100, 100);
-  c.print("\xE3\x81\x82");  // kana "a": de ancho completo en unifont
+  c.print("\xE3\x81\x82");  // kana "a": full width in unifont
   CHECK(c.getCursorX() == 116);
   int ink = countColor(c, 0xFFFF);
   CHECK(ink > 20 && ink < 16 * 16);
@@ -149,23 +149,23 @@ static void testPrefs() {
     p.putShort("s", -5);
     p.putUInt("ui", 4000000000u);
     p.putBool("b", true);
-    p.putString("str", "hola");
+    p.putString("str", "hey!");
     const uint8_t raw[3] = {1, 0, 255};
     p.putBytes("raw", raw, 3);
-    p.putBytes("nada", raw, 0);
+    p.putBytes("nothing", raw, 0);
     p.end();
     Preferences ro;
     ro.begin("ns", true);
-    CHECK(ro.putUChar("uc", 1) == 0);  // solo lectura
+    CHECK(ro.putUChar("uc", 1) == 0);  // read-only
     CHECK(ro.getUChar("uc") == 200);
     ro.end();
   }
-  CHECK(readFile(dir + "/ns.prefs").empty());  // a disco al vaciar, no en cada put
+  CHECK(readFile(dir + "/ns.prefs").empty());  // to disk on flush, not on every put
   hostPrefsFlush();
   CHECK(!readFile(dir + "/ns.prefs").empty());
   CHECK(readFile(dir + "/ns.prefs.tmp").empty());
 
-  hostPrefsSetDir(dir.c_str());  // como un arranque nuevo
+  hostPrefsSetDir(dir.c_str());  // like a fresh start
   {
     Preferences p;
     p.begin("ns");
@@ -174,12 +174,12 @@ static void testPrefs() {
     CHECK(p.getUInt("ui") == 4000000000u);
     CHECK(p.getBool("b"));
     char s[8];
-    CHECK(p.getString("str", s, sizeof s) == 4 && strcmp(s, "hola") == 0);
+    CHECK(p.getString("str", s, sizeof s) == 4 && strcmp(s, "hey!") == 0);
     uint8_t raw[4] = {9, 9, 9, 9};
     CHECK(p.getBytes("raw", raw, 4) == 3 && raw[0] == 1 && raw[1] == 0 && raw[2] == 255 && raw[3] == 9);
-    CHECK(p.isKey("nada"));
-    CHECK(p.getUChar("no-existe", 7) == 7);
-    CHECK(p.getUShort("uc", 7) == 7);  // otro tamano: el valor por defecto
+    CHECK(p.isKey("nothing"));
+    CHECK(p.getUChar("no-such-key", 7) == 7);
+    CHECK(p.getUShort("uc", 7) == 7);  // different size: the default value
     CHECK(p.remove("uc") && !p.isKey("uc"));
     p.clear();
     CHECK(!p.isKey("s"));
@@ -190,7 +190,7 @@ static void testPrefs() {
   {
     Preferences p;
     p.begin("ns");
-    CHECK(!p.isKey("s"));  // el borrado tambien llega a disco
+    CHECK(!p.isKey("s"));  // the removal reaches disk too
     p.end();
   }
   hostPrefsSetDir(nullptr);
@@ -212,14 +212,14 @@ static void testAudio() {
   CHECK(!anySound(256));
   sfxPlay(SFX_TAP);          // 880 Hz, 35 ms
   CHECK(anySound(HOST_AUDIO_RATE * 35 / 1000));
-  CHECK(!anySound(256));     // y se acaba
-  sfxPlay(SFX_COUNT);        // fuera de rango
+  CHECK(!anySound(256));     // and it ends
+  sfxPlay(SFX_COUNT);        // out of range
   CHECK(!anySound(256));
   audioSetEnabled(false);
   sfxPlay(SFX_TAP);
   CHECK(!anySound(256));
   audioSetEnabled(true);
-  audioSetSleeping(true);    // durmiendo no suena, como en la placa
+  audioSetSleeping(true);    // no sound while asleep, as on the board
   sfxPlay(SFX_TAP);
   CHECK(!anySound(256));
   audioSetSleeping(false);
@@ -232,12 +232,12 @@ static void runTicks(int ms) {
   }
 }
 
-// el juego de verdad, de principio a fin
+// the real game, from start to finish
 static void testGame() {
   std::string res = tempDir(), save = tempDir(), cwd = getcwd(nullptr, 0);
   CHECK(symlink((cwd + "/../tools/sdcard/mons").c_str(), (res + "/mons").c_str()) == 0);
   CHECK(symlink((cwd + "/fonts").c_str(), (res + "/fonts").c_str()) == 0);
-  std::string saveSub = save + "/a/b";  // tambien crea las carpetas intermedias
+  std::string saveSub = save + "/a/b";  // also creates the intermediate folders
   hostInit(res.c_str(), saveSub.c_str());
   CHECK(!readFile(saveSub + "/tamapoke.prefs").empty());
 
@@ -248,19 +248,19 @@ static void testGame() {
   CHECK(!hostFrameDirty());
   CHECK(rgba[3] == 255);
   int center = (HOST_CANVAS_SIZE * HOST_CANVAS_SIZE / 2 + HOST_CANVAS_SIZE / 2) * 4;
-  CHECK(rgba[center] > 200 && rgba[center + 1] > 200);  // el fondo claro de la eleccion de inicial
+  CHECK(rgba[center] > 200 && rgba[center + 1] > 200);  // the light background of the starter choice
 
-  // un tap mas corto que el sondeo del juego no se pierde
+  // a tap shorter than the game's polling interval is not lost
   hostPointer(233, 145, true);
   hostPointer(233, 145, false);
   int16_t x, y;
   CHECK(hostPointerRead(&x, &y) && x == 233 && y == 145);
   runTicks(150);
   CHECK(!hostPointerRead(&x, &y));
-  runTicks(150);  // ha elegido a Bulbasaur: el fondo pasa a ser el del huevo
+  runTicks(150);  // chose Bulbasaur: the background becomes the egg's
   CHECK(hostFrameDirty());
 
-  // las flechas son una rampa, con el signo que espera playerTilt()
+  // the arrow keys are a ramp, with the sign playerTilt() expects
   hostTiltKeys(false, true);
   runTicks(250);
   CHECK(hostTiltValue() == 1.0f);
@@ -297,6 +297,6 @@ int main() {
   testPrefs();
   testAudio();
   testGame();
-  printf("capa de host: %d comprobaciones, %d fallos\n", gChecks, gFails);
+  printf("host layer: %d checks, %d failures\n", gChecks, gFails);
   return gFails ? 1 : 0;
 }

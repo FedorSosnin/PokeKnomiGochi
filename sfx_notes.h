@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include "audio.h"
 
-// Los efectos de sonido como notas de tono cuadrado (estilo Game Boy); f == 0 es un silencio.
-// El orden de SFX coincide con el enum Sfx.
+// Sound effects as square-wave tone notes (Game Boy style); f == 0 is a rest.
+// The SFX order matches the Sfx enum.
 struct Note { uint16_t f, ms; };
 
 static const Note N_TAP[]    = {{880, 35}};

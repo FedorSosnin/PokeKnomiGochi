@@ -1,7 +1,7 @@
 #!/bin/zsh
-# Compila PokeMacGochi.app en build/mac/. Solo necesita las Command Line Tools de Xcode y python3.
-#   mac/build_app.sh           compila
-#   mac/build_app.sh --open    y la abre
+# Builds PokeMacGochi.app in build/mac/. It only needs Xcode's Command Line Tools and python3.
+#   mac/build_app.sh           builds
+#   mac/build_app.sh --open    and opens it
 set -e
 cd "${0:A:h}/.."
 
@@ -17,7 +17,7 @@ cp mac/Info.plist "$APP/Contents/Info.plist"
 cp host/fonts/*.u8g2 "$APP/Contents/Resources/fonts/"
 rsync -a --delete --include='*.bin' --exclude='*' tools/sdcard/mons/ "$APP/Contents/Resources/mons/"
 
-# Firma local (ad hoc): sin ella, un Mac con Apple silicon no la ejecuta. No es para distribuir.
+# Local (ad hoc) signing: without it, an Apple silicon Mac will not run it. Not for distribution.
 codesign --force --sign - "$APP"
 
 echo "OK -> $APP ($(du -sh "$APP" | cut -f1))"

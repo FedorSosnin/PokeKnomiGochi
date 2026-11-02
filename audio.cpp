@@ -2,7 +2,7 @@
 #include "pin_config.h"
 
 #ifdef BOARD_KNOMI_V2
-// El Knomi V2 no tiene codec ni altavoz: el juego llama igual y no suena nada.
+// The Knomi V2 has no codec or speaker: the game calls the same and nothing sounds.
 void audioBegin() {}
 void sfxPlay(uint8_t) {}
 void audioSetEnabled(bool) {}
@@ -18,11 +18,11 @@ void audioSetIdle(bool) {}
 #include "sfx_notes.h"
 
 // ---------------------------------------------------------------------------
-// Audio del TamaPoke: códec ES8311 (DAC -> amplificador PA -> altavoz) por I2S.
-// Init del ES8311 portado del driver oficial de Espressif (esp-bsp), fijado a
-// MCLK=4.096MHz (256*fs), 16kHz, 16-bit, esclavo I2S. Los efectos son tonos
-// cuadrados (estilo Game Boy) sintetizados en una tarea aparte para no
-// bloquear el loop de juego.
+// TamaPoke audio: ES8311 codec (DAC -> PA amplifier -> speaker) over I2S.
+// ES8311 init ported from Espressif's official driver (esp-bsp), fixed to
+// MCLK=4.096MHz (256*fs), 16kHz, 16-bit, I2S slave. The effects are square
+// tones (Game Boy style) synthesized in a separate task so as not to
+// block the game loop.
 // ---------------------------------------------------------------------------
 
 #define ES8311_ADDR 0x18
@@ -32,23 +32,23 @@ static I2SClass i2s;
 static bool gReady = false;
 static bool gOn = true;
 static bool gSleeping = false;
-static bool gIdle = false;          // sin interaccion reciente (ver power.h): el amplificador consume en reposo
-static uint32_t gAmpHoldUntil = 0;  // un efecto pedido en reposo mantiene el amplificador encendido hasta aqui
-static bool gAmpHold = false;       // (indicador aparte: asi la comparacion no falla al dar la vuelta millis())
-static uint32_t gAmpOnAt = 0;       // cuando se encendio el amplificador
+static bool gIdle = false;          // no recent interaction (see power.h): the amplifier draws power at idle
+static uint32_t gAmpHoldUntil = 0;  // an effect requested at idle keeps the amplifier on until here
+static bool gAmpHold = false;       // (separate flag: so the comparison doesn't fail when millis() wraps around)
+static uint32_t gAmpOnAt = 0;       // when the amplifier was turned on
 static QueueHandle_t gQ = nullptr;
 
-// El NS4150B tarda bastante mas de 8 ms en estabilizarse tras cada apagado, asi
-// que encenderlo justo antes de cada efecto se comia los cortos: el jingle de
-// arranque (440 ms) se oia y los pitidos de 35 ms no. Se deja encendido mientras
-// haya sonido y la mascota este despierta, como en el ejemplo verificado de
-// Waveshare, y solo se apaga al dormir o al silenciar.
+// The NS4150B takes well over 8 ms to settle after each power-off, so
+// turning it on right before each effect swallowed the short ones: the startup
+// jingle (440 ms) was heard and the 35 ms beeps were not. It is left on while
+// there is sound and the pet is awake, as in Waveshare's verified
+// example, and only turned off when sleeping or muting.
 static void updateAmplifierPower() {
-  // gReady evita encenderlo en una placa donde el codec no arranco: ahi el
-  // amplificador solo aportaria siseo, porque no va a sonar nada.
+  // gReady avoids turning it on on a board where the codec didn't start: there the
+  // amplifier would only add hiss, because nothing is going to sound.
   if (gAmpHold && (int32_t)(gAmpHoldUntil - millis()) <= 0) gAmpHold = false;
   bool idleOff = gIdle && !gAmpHold;
-  static int last = -1;  // solo se escribe el pin si cambia
+  static int last = -1;  // the pin is only written if it changes
   int want = (gReady && gOn && !gSleeping && !idleOff) ? HIGH : LOW;
   if (want != last) {
     last = want;
@@ -57,7 +57,7 @@ static void updateAmplifierPower() {
   }
 }
 
-// ---- I2C del códec ----
+// ---- codec I2C ----
 static bool esW(uint8_t reg, uint8_t val) {
   Wire.beginTransmission(ES8311_ADDR);
   Wire.write(reg);
@@ -72,24 +72,24 @@ static uint8_t esR(uint8_t reg) {
   return Wire.available() ? Wire.read() : 0;
 }
 
-// Secuencia de init VERIFICADA EN ESTA PLACA (proyecto PlaneRadar2.0, misma
-// Waveshare 1.75). Clave: reloj DERIVADO DEL BCLK (reg01=0xBF, sin MCLK externo)
-// y referencia interna que alimenta el DAC (reg44=0x58); sin esos dos el codec
-// respondia por I2C pero no salia audio. 16kHz, 16-bit, esclavo I2S.
+// INIT sequence VERIFIED ON THIS BOARD (PlaneRadar2.0 project, same
+// Waveshare 1.75). Key: clock DERIVED FROM BCLK (reg01=0xBF, no external MCLK)
+// and internal reference feeding the DAC (reg44=0x58); without those two the codec
+// answered over I2C but no audio came out. 16kHz, 16-bit, I2S slave.
 static bool es8311Init() {
   Wire.beginTransmission(ES8311_ADDR);
   if (Wire.endTransmission() != 0) return false;
 
   // open()
-  esW(0x0D, 0xFA); esW(0x44, 0x08); esW(0x44, 0x08);  // power up + quirk de 1a escritura
+  esW(0x0D, 0xFA); esW(0x44, 0x08); esW(0x44, 0x08);  // power up + first-write quirk
   esW(0x01, 0x30); esW(0x02, 0x00); esW(0x03, 0x10); esW(0x16, 0x24);
   esW(0x04, 0x10); esW(0x05, 0x00); esW(0x0B, 0x00); esW(0x0C, 0x00);
   esW(0x10, 0x1F); esW(0x11, 0x7F);
-  esW(0x00, 0x80); esW(0x00, 0x80);                   // reset clock, esclavo
-  esW(0x01, 0xBF);                                    // clk src = BCLK (sin MCLK externo)
-  { uint8_t r = esR(0x06); r &= ~0x20; esW(0x06, r); }  // SCLK no invertido
+  esW(0x00, 0x80); esW(0x00, 0x80);                   // reset clock, slave
+  esW(0x01, 0xBF);                                    // clk src = BCLK (no external MCLK)
+  { uint8_t r = esR(0x06); r &= ~0x20; esW(0x06, r); }  // SCLK not inverted
   esW(0x13, 0x10); esW(0x1B, 0x0A); esW(0x1C, 0x6A);
-  esW(0x44, 0x58);                                    // referencia interna -> alimenta el DAC
+  esW(0x44, 0x58);                                    // internal reference -> feeds the DAC
 
   // config_sample(): BCLK*8 = DIG_MCLK
   esW(0x02, 0x18); esW(0x05, 0x00); esW(0x03, 0x10); esW(0x04, 0x20);
@@ -97,27 +97,27 @@ static bool es8311Init() {
   esW(0x08, 0xFF);
   { uint8_t r = esR(0x06); r &= 0xE0; r |= 0x03; esW(0x06, r); }  // bclk_div=4
 
-  // formato I2S 16-bit
+  // 16-bit I2S format
   esW(0x09, 0x0C); esW(0x0A, 0x0C);
 
-  // start() DAC esclavo
+  // start() DAC slave
   esW(0x00, 0x80); esW(0x01, 0xBF); esW(0x09, 0x0C); esW(0x0A, 0x0C);
   esW(0x17, 0xBF); esW(0x0E, 0x02); esW(0x12, 0x00); esW(0x14, 0x1A);
   esW(0x0D, 0x01); esW(0x15, 0x40); esW(0x37, 0x08); esW(0x45, 0x00);
 
-  // volumen + unmute
-  esW(0x32, 0xBF);                                    // volumen DAC ~0 dB
+  // volume + unmute
+  esW(0x32, 0xBF);                                    // DAC volume ~0 dB
   { uint8_t r = esR(0x31); r &= 0x9F; esW(0x31, r); }  // unmute
   return true;
 }
 
-// ---- sintetizador de tono cuadrado ----
-static int16_t buf[256 * 2];  // estéreo intercalado (L=R)
+// ---- square-wave tone synthesizer ----
+static int16_t buf[256 * 2];  // interleaved stereo (L=R)
 
-// reproduce un tono (o silencio si f==0) con rampa de ataque/caida anti-click
+// plays a tone (or silence if f==0) with an anti-click attack/decay ramp
 static void playTone(uint16_t f, uint16_t ms) {
   int total = SAMPLE_RATE * ms / 1000;
-  int half = f ? (SAMPLE_RATE / (2 * f)) : 0;  // medio periodo en muestras
+  int half = f ? (SAMPLE_RATE / (2 * f)) : 0;  // half period in samples
   const int16_t amp = 5000;
   int phase = 0, done = 0;
   bool high = true;
@@ -128,8 +128,8 @@ static void playTone(uint16_t f, uint16_t ms) {
       if (f) {
         s = high ? amp : -amp;
         int idx = done + i;
-        if (idx < 64) s = (int16_t)(s * idx / 64);                 // ataque
-        else if (idx > total - 96) s = (int16_t)(s * (total - idx) / 96);  // caida
+        if (idx < 64) s = (int16_t)(s * idx / 64);                 // attack
+        else if (idx > total - 96) s = (int16_t)(s * (total - idx) / 96);  // decay
         if (++phase >= half) { phase = 0; high = !high; }
       }
       buf[i * 2] = s; buf[i * 2 + 1] = s;
@@ -145,7 +145,7 @@ static void audioTask(void *) {
     if (xQueueReceive(gQ, &id, portMAX_DELAY) && gOn && !gSleeping && gReady &&
         id < SFX_COUNT) {
       const SfxDef &d = SFX[id];
-      // el NS4150B tarda mas de 8 ms en estabilizarse: si se acaba de encender, el efecto espera
+      // the NS4150B takes more than 8 ms to settle: if it was just turned on, the effect waits
       int32_t since = (int32_t)(millis() - gAmpOnAt);
       if (since >= 0 && since < 50) vTaskDelay(pdMS_TO_TICKS(50 - since));
       for (uint8_t i = 0; i < d.len; i++) playTone(d.n[i].f, d.n[i].ms);
@@ -154,17 +154,17 @@ static void audioTask(void *) {
 }
 
 void audioBegin() {
-  // I2S primero: arranca el MCLK que necesita el códec para engancharse
+  // I2S first: starts the MCLK the codec needs to lock on
   pinMode(PA, OUTPUT);
-  digitalWrite(PA, LOW);   // hasta saber si el sonido esta activado
+  digitalWrite(PA, LOW);   // until we know whether sound is enabled
 
   i2s.setPins(I2S_BCK_IO, I2S_WS_IO, I2S_DO_IO, I2S_DI_IO, I2S_MCK_IO);
   if (!i2s.begin(I2S_MODE_STD, SAMPLE_RATE, I2S_DATA_BIT_WIDTH_16BIT,
                  I2S_SLOT_MODE_STEREO, I2S_STD_SLOT_BOTH)) {
-    Serial.println("I2S begin fallo");
+    Serial.println("I2S begin failed");
     return;
   }
-  if (!es8311Init()) { Serial.println("ES8311 no responde (audio off)"); return; }
+  if (!es8311Init()) { Serial.println("ES8311 not responding (audio off)"); return; }
 
   Preferences p;
   p.begin("tamapoke", true);
@@ -175,19 +175,19 @@ void audioBegin() {
   updateAmplifierPower();
   gQ = xQueueCreate(8, sizeof(uint8_t));
   xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 1, nullptr, 0);
-  sfxPlay(SFX_HATCH);  // jingle de arranque (confirma que suena)
+  sfxPlay(SFX_HATCH);  // startup jingle (confirms it sounds)
 }
 
 bool audioBusy() { return gAmpHold && (int32_t)(gAmpHoldUntil - millis()) > 0; }
 
 void sfxPlay(uint8_t id) {
   if (gReady && gOn && gQ) {
-    if (gIdle) {  // un aviso en reposo (p. ej. "listo para evolucionar") tiene que oirse
+    if (gIdle) {  // an alert at idle (e.g. "ready to evolve") has to be heard
       gAmpHoldUntil = millis() + 4000;
       gAmpHold = true;
       updateAmplifierPower();
     }
-    xQueueSend(gQ, &id, 0);  // descarta si la cola esta llena
+    xQueueSend(gQ, &id, 0);  // drops if the queue is full
   }
 }
 
@@ -204,12 +204,12 @@ bool audioEnabled() { return gOn; }
 void audioSetSleeping(bool sleeping) {
   if (gSleeping == sleeping) return;
   gSleeping = sleeping;
-  updateAmplifierPower();  // durmiendo no hay efectos: amp apagado, sin consumo
+  updateAmplifierPower();  // asleep there are no effects: amp off, no power draw
 }
 
 void audioSetIdle(bool idle) {
   gIdle = idle;
-  updateAmplifierPower();  // tambien cuando vence el mantenimiento de un aviso
+  updateAmplifierPower();  // also when an alert's hold expires
 }
 
 #endif  // BOARD_KNOMI_V2

@@ -1,11 +1,11 @@
 #pragma once
-// El hardware del Knomi tal como lo ve el sketch (misma interfaz que knomi_hal.h), sin hardware.
-// El host se compila con BOARD_HOST y BOARD_KNOMI_V2: es un Knomi con otra cosa por debajo.
+// The Knomi hardware as the sketch sees it (same interface as knomi_hal.h), without hardware.
+// The host is built with BOARD_HOST and BOARD_KNOMI_V2: it is a Knomi with something else underneath.
 #include <Arduino.h>
 #include "Arduino_GFX_Library.h"
 #include "pin_config.h"
 
-// Internos del host (host_runtime.cpp): el estado que ponen los hostXxx() de host.h
+// Host internals (host_runtime.cpp): the state set by the hostXxx() functions of host.h
 void hostPanelSetBrightness(uint8_t v);
 void hostCanvasFlushed();
 bool hostPointerRead(int16_t *x, int16_t *y);
@@ -21,7 +21,7 @@ class ScaledCanvas : public Arduino_Canvas {
 public:
   explicit ScaledCanvas(KnomiPanel *) : Arduino_Canvas(LCD_WIDTH, LCD_HEIGHT) {}
   void flush(bool = false) override { hostCanvasFlushed(); }
-  // para el comando SHOT de la consola: lo que veria el panel del Knomi
+  // for the console's SHOT command: what the Knomi's panel would show
   uint16_t *panelBuffer();
 private:
   uint16_t *panel_ = nullptr;
@@ -35,7 +35,7 @@ public:
   void setMaxCoordinates(int, int) {}
   void setMirrorXY(bool, bool) {}
 
-  // toque simulado desde la consola serie, en coordenadas logicas
+  // simulated touch from the serial console, in logical coordinates
   void inject(int16_t x, int16_t y, uint32_t ms) { swipe(x, y, x, y, ms); }
   void swipe(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint32_t ms) {
     ix = x0; iy = y0; jx = x1; jy = y1; iMs = ms ? ms : 1; iUntil = millis() + iMs; iOn = true;
@@ -61,7 +61,7 @@ private:
   bool iOn = false;
 };
 
-// Las flechas hacen de acelerometro: -1..1 son los 30 grados a los que el juego llega al tope
+// The arrow keys act as the accelerometer: -1..1 is the 30 degrees at which the game reaches its limit
 class KnomiAccel {
 public:
   template <class W> bool begin(W &) { return true; }

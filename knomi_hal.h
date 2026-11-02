@@ -1,6 +1,6 @@
 #pragma once
-// Hardware del BTT Knomi V2, con la misma interfaz que usa el juego en la Waveshare: el
-// lienzo sigue siendo de 466x466 (coordenadas y toques no cambian) y se reduce al panel.
+// BTT Knomi V2 hardware, with the same interface the game uses on the Waveshare: the
+// canvas is still 466x466 (coordinates and touches don't change) and is scaled down to the panel.
 #include <Arduino.h>
 #include <Wire.h>
 #include "Arduino_GFX_Library.h"
@@ -10,7 +10,7 @@
 #include <soc/usb_serial_jtag_reg.h>
 #include <soc/soc.h>
 
-// GC9A01 con retroiluminacion AW9346: 16 niveles que se bajan a pulsos (driver de BTT)
+// GC9A01 with AW9346 backlight: 16 levels stepped down by pulses (BTT driver)
 class KnomiPanel : public Arduino_GC9A01 {
 public:
   using Arduino_GC9A01::Arduino_GC9A01;
@@ -20,16 +20,16 @@ public:
     pinMode(LCD_BL, OUTPUT);
     if (to == 0) {
       digitalWrite(LCD_BL, LOW);
-      delay(3);  // >2.5 ms = apagado del AW9346
+      delay(3);  // >2.5 ms = AW9346 off
       level = 0;
       return;
     }
     if (level <= 0) {
       digitalWrite(LCD_BL, HIGH);
-      delayMicroseconds(25);  // >20 us para encender: arranca al maximo
+      delayMicroseconds(25);  // >20 us to turn on: starts at maximum
       level = 16;
     }
-    int8_t pulses = level >= to ? level - to : level + 16 - to;  // el contador da la vuelta
+    int8_t pulses = level >= to ? level - to : level + 16 - to;  // the counter wraps around
     for (int8_t i = 0; i < pulses; i++) {
       digitalWrite(LCD_BL, LOW);
       delayMicroseconds(1);
@@ -42,13 +42,13 @@ private:
   int8_t level = -1;
 };
 
-// Lienzo logico 466x466 en PSRAM; flush() promedia 2x2 sobre el panel de 240x240, con el giro actual
+// Logical 466x466 canvas in PSRAM; flush() averages 2x2 onto the 240x240 panel, with the current rotation
 class ScaledCanvas : public Arduino_Canvas {
 public:
   ScaledCanvas(Arduino_G *out) : Arduino_Canvas(LCD_WIDTH, LCD_HEIGHT, out) {}
 
   bool begin(int32_t speed = GFX_NOT_DEFINED) override {
-    // GPIO19/20 son tambien el USB interno del S3: hay que soltarlos para usarlos como SPI
+    // GPIO19/20 are also the S3's internal USB: they must be released to use them as SPI
     CLEAR_PERI_REG_MASK(USB_SERIAL_JTAG_CONF0_REG, USB_SERIAL_JTAG_USB_PAD_ENABLE);
     if (!Arduino_Canvas::begin(speed)) return false;
     size_t s = PANEL_SIZE * PANEL_SIZE * 2;
@@ -79,7 +79,7 @@ private:
   uint16_t *panel = nullptr;
 };
 
-// CST816S por registros, con la interfaz de TouchDrvCST92xx que usa handleTouch()
+// CST816S by registers, with the TouchDrvCST92xx interface that handleTouch() uses
 class KnomiTouch {
 public:
   void setPins(int rst, int irq) { (void)irq; rstPin = rst; }
@@ -96,16 +96,16 @@ public:
     delay(10);
     digitalWrite(rstPin, HIGH);
     delay(100);
-    writeReg(0xEC, 0x00);  // sin gestos del chip
-    writeReg(0xFA, 0x60);  // INT al tocar y al cambiar, tambien al levantar
-    writeReg(0xFB, 0x00);  // sin auto-reset
-    writeReg(0xFC, 0x00);  // sin reset por pulsacion larga
-    writeReg(0xFE, 0x01);  // sin auto-sleep: el chip contesta siempre por I2C
+    writeReg(0xEC, 0x00);  // no chip gestures
+    writeReg(0xFA, 0x60);  // INT on touch and on change, also on release
+    writeReg(0xFB, 0x00);  // no auto-reset
+    writeReg(0xFC, 0x00);  // no reset on long press
+    writeReg(0xFE, 0x01);  // no auto-sleep: the chip always answers over I2C
   }
-  void setMaxCoordinates(int, int) {}  // fijas: el panel es de 240
-  void setMirrorXY(bool, bool) {}      // el giro del Knomi va en getPoint() (la Waveshare usa esto)
+  void setMaxCoordinates(int, int) {}  // fixed: the panel is 240
+  void setMirrorXY(bool, bool) {}      // the Knomi's rotation is handled in getPoint() (the Waveshare uses this)
 
-  // toque simulado desde la consola serie, en coordenadas logicas
+  // simulated touch from the serial console, in logical coordinates
   void inject(int16_t x, int16_t y, uint32_t ms) { swipe(x, y, x, y, ms); }
   void swipe(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint32_t ms) {
     ix = x0; iy = y0; jx = x1; jy = y1; iMs = ms ? ms : 1; iUntil = millis() + iMs; iOn = true;
@@ -151,21 +151,21 @@ private:
   bool iOn = false;
 };
 
-// LIS2DW12 (0x19, mismo bus I2C). Se lee la gravedad para inclinar; el juego fija el cero al empezar.
+// LIS2DW12 (0x19, same I2C bus). Gravity is read for tilting; the game sets zero at start.
 #define KNOMI_ACC_ADDR 0x19
 class KnomiAccel {
 public:
   bool begin(TwoWire &w) {
     wire = &w;
     if (readReg(0x0F) != 0x44) return false;  // WHO_AM_I
-    writeReg(0x20, 0x54);  // 100 Hz, alto rendimiento
-    writeReg(0x21, 0x0C);  // BDU y autoincremento
-    writeReg(0x25, 0x04);  // +-2 g, bajo ruido
+    writeReg(0x20, 0x54);  // 100 Hz, high performance
+    writeReg(0x21, 0x0C);  // BDU and auto-increment
+    writeReg(0x25, 0x04);  // +-2 g, low noise
     ok = true;
     return true;
   }
   bool ready() const { return ok; }
-  // gravedad en g por eje
+  // gravity in g per axis
   bool read(float g[3]) {
     if (!ok) return false;
     wire->beginTransmission(KNOMI_ACC_ADDR);

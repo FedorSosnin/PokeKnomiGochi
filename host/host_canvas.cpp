@@ -1,4 +1,4 @@
-// Lienzo de software: Arduino_Canvas (ver shim/Arduino_GFX_Library.h).
+// Software canvas: Arduino_Canvas (see shim/Arduino_GFX_Library.h).
 #include <Arduino.h>
 #include "Arduino_GFX_Library.h"
 #include "glcdfont.h"
@@ -43,7 +43,7 @@ void Arduino_Canvas::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, ui
   }
 }
 
-// writeEllipseHelper() de la libreria con rx == ry
+// the library's writeEllipseHelper() with rx == ry
 void Arduino_Canvas::ellipseCorners(int32_t x, int32_t y, int32_t r, uint8_t corners, uint16_t c) {
   if (r <= 0) return;
   int32_t xt = 0, yt = r, i = -1, r2 = r * r;
@@ -73,7 +73,7 @@ void Arduino_Canvas::ellipseCorners(int32_t x, int32_t y, int32_t r, uint8_t cor
   } while (r2 * yt <= r2 * xt);
 }
 
-// writeFillEllipseHelper() de la libreria con rx == ry
+// the library's writeFillEllipseHelper() with rx == ry
 void Arduino_Canvas::fillCorners(int32_t x, int32_t y, int32_t r, uint8_t corners, int16_t delta, uint16_t c) {
   if (r <= 0) return;
   int32_t r2 = r * r, xt = r, yt = 0, i = 0;
@@ -165,7 +165,7 @@ void Arduino_Canvas::draw16bitRGBBitmap(int16_t x, int16_t y, const uint16_t *bi
     }
 }
 
-// ---- texto ----
+// ---- text ----
 
 void Arduino_Canvas::setFont(const uint8_t *f) {
   font_ = f;
@@ -186,7 +186,7 @@ void Arduino_Canvas::drawGlcdChar(int16_t x, int16_t y, uint8_t ch) {
   }
 }
 
-// cabecera de una fuente U8g2 (u8g2_read_font_info)
+// header of a U8g2 font (u8g2_read_font_info)
 enum { U8_BITS0 = 2, U8_BITS1 = 3, U8_BITS_W = 4, U8_BITS_H = 5, U8_BITS_X = 6, U8_BITS_Y = 7, U8_BITS_DX = 8,
        U8_MAX_H = 10, U8_POS_A = 17, U8_POS_a = 19, U8_POS_UNI = 21, U8_HEADER = 23 };
 
@@ -283,7 +283,7 @@ void Arduino_Canvas::drawU8g2Glyph(const Glyph &g, int16_t x, int16_t y) {
       ly++;
     }
   };
-  bitPtr_ = g.data;  // findGlyph lo dejo justo despues de la cabecera del glifo, pero charBounds puede moverlo
+  bitPtr_ = g.data;  // findGlyph left it right after the glyph header, but charBounds may move it
   for (;;) {
     uint8_t a = bitsU(bits0), b = bitsU(bits1);
     do {
@@ -318,7 +318,7 @@ void Arduino_Canvas::write(uint8_t c) {
     cursorX_ = 0;
     cursorY_ += textSize_ * 8;
   } else if (c != '\r') {
-    if (cursorX_ + textSize_ * 6 - 1 > w_ - 1) {  // la libreria parte la linea al salirse por la derecha
+    if (cursorX_ + textSize_ * 6 - 1 > w_ - 1) {  // the library wraps the line when it runs off the right edge
       cursorX_ = 0;
       cursorY_ += textSize_ * 8;
     }

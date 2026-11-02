@@ -1,6 +1,6 @@
 #pragma once
-// La misma forma de uso que SD_MMC/File (y que flashpak.h), leyendo la carpeta de sprites.
-// Las rutas del juego son "/mons/p001.bin", relativas a los recursos de hostInit().
+// The same usage as SD_MMC/File (and flashpak.h), reading the sprites folder.
+// The game's paths are "/mons/p001.bin", relative to hostInit()'s resources.
 #include <Arduino.h>
 
 #define FILE_READ "r"

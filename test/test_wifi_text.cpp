@@ -1,4 +1,4 @@
-// Datos curiosos, reparto de lineas y formulario de wifi.
+// Fun facts, line wrapping and the wifi form.
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "../textwrap.h"
@@ -8,7 +8,7 @@
 #include "../dexfacts.h"
 #include <string.h>
 
-TEST(facts, las_151_tienen_dato_y_caben_en_cuatro_lineas) {
+TEST(facts, all_151_have_a_fact_and_fit_in_four_lines) {
   for (int d = 1; d <= 151; d++) {
     const char *p = DEX_FACT[d];
     CHECK(strlen(p) > 10);
@@ -20,19 +20,19 @@ TEST(facts, las_151_tienen_dato_y_caben_en_cuatro_lineas) {
       p += skip;
       lines++;
     }
-    CHECK_MSG(lines <= 4, "no cabe en la vista detalle");
+    CHECK_MSG(lines <= 4, "does not fit in the detail view");
   }
 }
 
-TEST(facts, cada_tipo_tiene_nombre) {
+TEST(facts, every_type_has_a_name) {
   for (int t = 0; t < TY_COUNT; t++) CHECK(strlen(TYPE_NAME[t]) > 0);
 }
 
-TEST(wrap, corta_por_espacios_y_parte_palabras_largas) {
+TEST(wrap, breaks_at_spaces_and_splits_long_words) {
   int skip;
-  CHECK_EQ(wrapNext("hola mundo", 7, skip), 4);
+  CHECK_EQ(wrapNext("good world", 7, skip), 4);
   CHECK_EQ(skip, 5);
-  CHECK_EQ(wrapNext("hola", 7, skip), 4);
+  CHECK_EQ(wrapNext("hell", 7, skip), 4);
   CHECK_EQ(skip, 4);
   CHECK_EQ(wrapNext("abcd efgh", 4, skip), 4);
   CHECK_EQ(skip, 5);
@@ -40,28 +40,28 @@ TEST(wrap, corta_por_espacios_y_parte_palabras_largas) {
   CHECK_EQ(skip, 4);
 }
 
-TEST(wifi, valida_nombre_y_clave) {
-  CHECK(wifiFormValid("Casa", "12345678"));
-  CHECK(wifiFormValid("Abierta", ""));
+TEST(wifi, validates_name_and_password) {
+  CHECK(wifiFormValid("Home", "12345678"));
+  CHECK(wifiFormValid("Open", ""));
   CHECK(!wifiFormValid("", "12345678"));
-  CHECK(!wifiFormValid("Casa", "corta"));
+  CHECK(!wifiFormValid("Home", "short"));
   CHECK(!wifiFormValid("123456789012345678901234567890123", "12345678"));
-  char larga[70];
-  memset(larga, 'a', 64);
-  larga[64] = 0;
-  CHECK(!wifiFormValid("Casa", larga));
+  char tooLong[70];
+  memset(tooLong, 'a', 64);
+  tooLong[64] = 0;
+  CHECK(!wifiFormValid("Home", tooLong));
 }
 
-TEST(wifi, el_teclado_cubre_todo_el_ascii_imprimible) {
+TEST(wifi, keyboard_covers_all_printable_ascii) {
   for (int c = 0x20; c <= 0x7E; c++) {
     bool found = false;
     for (int l = 0; l < KB_LAYER_COUNT && !found; l++)
       for (int i = 0; i < KB_CHAR_KEYS && !found; i++) found = kbLayerChar(l, i) == (char)c;
-    CHECK_MSG(found, "falta un caracter en el teclado");
+    CHECK_MSG(found, "a character is missing from the keyboard");
   }
 }
 
-TEST(wifi, ninguna_capa_se_sale_de_sus_teclas) {
+TEST(wifi, no_layer_exceeds_its_keys) {
   for (int l = 0; l < KB_LAYER_COUNT; l++) {
     CHECK((int)strlen(KB_LAYERS[l]) <= KB_CHAR_KEYS);
     CHECK_EQ((int)kbLayerChar(l, KB_CHAR_KEYS), 0);

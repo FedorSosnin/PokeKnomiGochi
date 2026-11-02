@@ -1,5 +1,5 @@
-// PokeMacGochi: la ventana redonda del juego en el escritorio de un Mac. Solo la ventana; el juego
-// y todo lo demas viven en host/ (ver host/host.h).
+// PokeMacGochi: the game's round window on a Mac desktop. Only the window; the game
+// and everything else live in host/ (see host/host.h).
 #import <AppKit/AppKit.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <QuartzCore/QuartzCore.h>
@@ -10,26 +10,26 @@
 
 #define APP_NAME "PokeMacGochi"
 #define TICK_S (1.0 / 60.0)
-// El marco de Pokeball que rodea la pantalla, en puntos
+// The Pokeball frame around the screen, in points
 #define RING 6.0
 #define RING_OUTLINE 1.0
-#define RING_LINE 20.0  // la franja negra de en medio
-// El marco y el borde del circulo (fuera de esta fraccion del radio) arrastran la ventana. La interfaz
-// del juego acaba antes: sus botones mas alejados del centro llegan a ~208 de 233.
+#define RING_LINE 20.0  // the black band in the middle
+// The frame and the edge of the circle (outside this fraction of the radius) drag the window. The game's
+// interface ends sooner: its buttons farthest from the center reach ~208 of 233.
 #define DRAG_RIM 0.92
-static const CGFloat kSizes[] = {190, 240, 300};  // lado de la ventana, marco incluido
+static const CGFloat kSizes[] = {190, 240, 300};  // side of the window, frame included
 #define DEFAULT_SIZE 240.0
 
-static bool gConsole = false;  // --console: lanzada para pruebas
+static bool gConsole = false;  // --console: launched for testing
 static char **gArgv;
 
 static NSString *const kPrefSize = @"windowSize";
 static NSString *const kPrefOriginX = @"windowX";
 static NSString *const kPrefOriginY = @"windowY";
 
-// ---- sonido: pide PCM a la capa de host desde el hilo de audio ----
+// ---- sound: requests PCM from the host layer on the audio thread ----
 #define AUDIO_BUFFERS 3
-#define AUDIO_FRAMES 512  // ~32 ms por bufer a 16 kHz
+#define AUDIO_FRAMES 512  // ~32 ms per buffer at 16 kHz
 
 static void audioCallback(void *, AudioQueueRef q, AudioQueueBufferRef buf) {
   hostAudioRender((int16_t *)buf->mAudioData, AUDIO_FRAMES);
@@ -48,7 +48,7 @@ static void startAudio(void) {
   fmt.mBytesPerFrame = fmt.mBytesPerPacket = sizeof(int16_t);
   AudioQueueRef q;
   if (AudioQueueNewOutput(&fmt, audioCallback, NULL, NULL, NULL, 0, &q) != noErr) {
-    NSLog(@"sin salida de audio: el juego sigue sin sonido");
+    NSLog(@"no audio output: the game continues without sound");
     return;
   }
   for (int i = 0; i < AUDIO_BUFFERS; i++) {
@@ -58,7 +58,7 @@ static void startAudio(void) {
   AudioQueueStart(q, NULL);
 }
 
-// ---- ventana ----
+// ---- window ----
 @interface RoundWindow : NSWindow
 @end
 @implementation RoundWindow
@@ -72,7 +72,7 @@ static void startAudio(void) {
 - (void)fillMenu:(NSMenu *)menu;
 @end
 
-// El marco: una Pokeball con la pantalla del juego dentro. Se agarra para mover la ventana.
+// The frame: a Pokeball with the game screen inside. Grab it to move the window.
 @interface RingView : NSView
 @end
 
@@ -89,14 +89,14 @@ static void startAudio(void) {
   [NSColor.blackColor setFill];
   NSRectFill(NSMakeRect(0, mid - RING_LINE / 2, b.size.width, RING_LINE));
   [NSGraphicsContext restoreGraphicsState];
-  // el contorno de la bola: sin el, la mitad blanca se pierde sobre un fondo claro
+  // the ball's outline: without it, the white half gets lost against a light background
   NSBezierPath *edge = [NSBezierPath bezierPathWithOvalInRect:NSInsetRect(b, RING_OUTLINE / 2, RING_OUTLINE / 2)];
   edge.lineWidth = RING_OUTLINE;
   [NSColor.blackColor setStroke];
   [edge stroke];
 }
 
-// fuera del circulo la ventana no existe: el clic pasa a lo que haya debajo
+// outside the circle the window does not exist: the click passes through to whatever is underneath
 - (NSView *)hitTest:(NSPoint)point {
   NSPoint p = [self.superview convertPoint:point toView:self];
   CGFloat r = self.bounds.size.width / 2;
@@ -146,7 +146,7 @@ static void startAudio(void) {
 }
 
 - (BOOL)acceptsFirstResponder { return YES; }
-- (BOOL)acceptsFirstMouse:(NSEvent *)event { return YES; }  // el primer clic ya es un toque
+- (BOOL)acceptsFirstMouse:(NSEvent *)event { return YES; }  // the first click is already a touch
 
 - (void)showFrame {
   hostFrameRGBA(_rgba);
@@ -155,7 +155,7 @@ static void startAudio(void) {
   CGImageRef img = CGImageCreate(HOST_CANVAS_SIZE, HOST_CANVAS_SIZE, 8, 32, HOST_CANVAS_SIZE * 4, cs,
                                  kCGBitmapByteOrderDefault | kCGImageAlphaNoneSkipLast, prov, NULL, false,
                                  kCGRenderingIntentDefault);
-  // copia para que la capa no dependa del bufer que sobreescribe el siguiente frame
+  // a copy so the layer does not depend on the buffer that the next frame overwrites
   CGImageRef owned = CGImageCreateCopy(img);
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
@@ -167,7 +167,7 @@ static void startAudio(void) {
   CGColorSpaceRelease(cs);
 }
 
-// punto del evento en coordenadas del lienzo
+// event point in canvas coordinates
 - (NSPoint)canvasPoint:(NSEvent *)event {
   NSPoint p = [self convertPoint:event.locationInWindow fromView:nil];
   CGFloat k = HOST_CANVAS_SIZE / self.bounds.size.width;
@@ -180,7 +180,7 @@ static void startAudio(void) {
   return hypot(p.x - r, p.y - r) / r;
 }
 
-// dentro del marco, lo que quede fuera del circulo es del marco
+// inside the frame, whatever falls outside the circle belongs to the frame
 - (NSView *)hitTest:(NSPoint)point {
   NSPoint p = [self.superview convertPoint:point toView:self];
   CGFloat r = self.bounds.size.width / 2;
@@ -227,7 +227,7 @@ static void startAudio(void) {
 
 - (void)mouseExited:(NSEvent *)event { [NSCursor.arrowCursor set]; }
 
-// El mismo menu con clic derecho y en la barra de menus
+// The same menu on right-click and in the menu bar
 - (void)fillMenu:(NSMenu *)menu {
   [menu removeAllItems];
   menu.autoenablesItems = NO;
@@ -259,7 +259,7 @@ static void startAudio(void) {
   [NSMenu popUpContextMenu:menu withEvent:event forView:self];
 }
 
-// oculta sigue viva: el juego no para, como un Knomi con la pantalla apagada
+// while hidden it stays alive: the game keeps running, like a Knomi with the screen off
 - (void)toggleWindow:(id)sender {
   if (self.window.isVisible) {
     [self.window orderOut:nil];
@@ -290,9 +290,9 @@ static void startAudio(void) {
 
 - (bool)handleKey:(NSEvent *)event down:(bool)down {
   switch (event.keyCode) {
-    case 123: _left = down; [self applyKeys]; return true;   // flecha izquierda
-    case 124: _right = down; [self applyKeys]; return true;  // flecha derecha
-    case 49: hostButton(down); return true;                  // espacio
+    case 123: _left = down; [self applyKeys]; return true;   // left arrow
+    case 124: _right = down; [self applyKeys]; return true;  // right arrow
+    case 49: hostButton(down); return true;                  // space
   }
   return false;
 }
@@ -306,7 +306,7 @@ static void startAudio(void) {
   if (![self handleKey:event down:false]) [super keyUp:event];
 }
 
-// sin foco no llega el keyUp: la tecla se quedaria pulsada para siempre
+// without focus keyUp never arrives: the key would stay pressed forever
 - (void)releaseKeys {
   _left = _right = false;
   [self applyKeys];
@@ -316,7 +316,7 @@ static void startAudio(void) {
 - (void)dealloc { free(_rgba); }
 @end
 
-// ---- aplicacion ----
+// ---- application ----
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate>
 @end
 
@@ -327,7 +327,7 @@ static void startAudio(void) {
   NSStatusItem *_statusItem;
 }
 
-// Icono de la barra de menus: una Pokeball en plantilla, para que siga el tema del sistema
+// Menu bar icon: a template Pokeball, so that it follows the system theme
 static NSImage *statusIcon(void) {
   NSImage *img = [NSImage imageWithSize:NSMakeSize(18, 18) flipped:NO drawingHandler:^BOOL(NSRect r) {
     NSRect ball = NSInsetRect(r, 1.5, 1.5);
@@ -335,7 +335,7 @@ static NSImage *statusIcon(void) {
     edge.lineWidth = 1.5;
     [edge stroke];
     [[NSBezierPath bezierPathWithRect:NSMakeRect(NSMinX(ball), NSMidY(r) - 0.75, ball.size.width, 1.5)] fill];
-    // la mitad de arriba rellena, y el boton del centro
+    // the top half filled, and the button in the center
     NSBezierPath *top = [NSBezierPath bezierPath];
     [top appendBezierPathWithArcWithCenter:NSMakePoint(NSMidX(r), NSMidY(r)) radius:ball.size.width / 2 startAngle:0 endAngle:180];
     [top closePath];
@@ -358,7 +358,7 @@ static NSRect initialFrame(void) {
   if (size < kSizes[0] || size > kSizes[2]) size = DEFAULT_SIZE;
   if ([d objectForKey:kPrefOriginX]) {
     NSRect f = NSMakeRect([d doubleForKey:kPrefOriginX], [d doubleForKey:kPrefOriginY], size, size);
-    for (NSScreen *s in NSScreen.screens)  // un monitor que ya no esta no se lleva la ventana
+    for (NSScreen *s in NSScreen.screens)  // a monitor that is no longer there does not take the window with it
       if (NSIntersectsRect(s.visibleFrame, f)) return f;
   }
   NSRect vis = NSScreen.mainScreen.visibleFrame;
@@ -366,7 +366,7 @@ static NSRect initialFrame(void) {
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)note {
-  NSMenu *bar = [[NSMenu alloc] init];  // sin esto no hay Cmd-Q en una app sin Dock
+  NSMenu *bar = [[NSMenu alloc] init];  // without this there is no Cmd-Q in an app without a Dock icon
   NSMenu *appMenu = [[NSMenu alloc] init];
   [appMenu addItemWithTitle:@"Quit " APP_NAME action:@selector(terminate:) keyEquivalent:@"q"];
   [bar addItemWithTitle:@"" action:nil keyEquivalent:@""].submenu = appMenu;
@@ -403,20 +403,20 @@ static NSRect initialFrame(void) {
   _statusItem.menu.delegate = self;
   [_view fillMenu:_statusItem.menu];
 
-  if (!gConsole) [NSApp activateIgnoringOtherApps:YES];  // con consola, sin robarle el foco a quien prueba
+  if (!gConsole) [NSApp activateIgnoringOtherApps:YES];  // with the console, without stealing focus from whoever is testing
 
-  // Fuera del Dock y tapada, macOS la echaria a dormir (App Nap) y el juego se atrasaria
+  // Outside the Dock and covered up, macOS would put it to sleep (App Nap) and the game would fall behind
   _activity = [NSProcessInfo.processInfo beginActivityWithOptions:NSActivityUserInitiatedAllowingIdleSystemSleep
-                                                           reason:@"el juego corre en tiempo real"];
+                                                           reason:@"the game runs in real time"];
   [NSWorkspace.sharedWorkspace.notificationCenter addObserver:self
                                                      selector:@selector(willSleep:)
                                                          name:NSWorkspaceWillSleepNotification
                                                        object:nil];
   NSTimer *timer = [NSTimer timerWithTimeInterval:TICK_S target:self selector:@selector(tick:) userInfo:nil repeats:YES];
   timer.tolerance = TICK_S / 4;
-  // tambien mientras se arrastra la ventana o esta abierto el menu
+  // also while the window is being dragged or the menu is open
   [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
-  // arrancar el dispositivo de audio puede tardar segundos: que no pare el juego
+  // starting the audio device can take seconds: don't stall the game
   dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{ startAudio(); });
 }
 
@@ -426,7 +426,7 @@ static NSRect initialFrame(void) {
   if (hostRestartRequested()) {
     hostFlushSave();
     execv(NSBundle.mainBundle.executablePath.fileSystemRepresentation, gArgv);
-    [NSApp terminate:nil];  // no deberia llegar aqui
+    [NSApp terminate:nil];  // should not get here
   }
 }
 
@@ -436,8 +436,8 @@ static NSRect initialFrame(void) {
 - (void)applicationWillTerminate:(NSNotification *)note { hostFlushSave(); }
 @end
 
-// Pruebas: "MOUSE down|drag|up|right x y" y "KEY down|up codigo", en coordenadas del lienzo, entran por la
-// cola de eventos de AppKit como los reales, sin tocar el raton de verdad. "MENU n" acciona la entrada n del menu.
+// Testing: "MOUSE down|drag|up|right x y" and "KEY down|up code", in canvas coordinates, enter through the
+// AppKit event queue like real ones, without touching the real mouse. "MENU n" triggers menu entry n.
 static void postTestEvent(const char *line) {
   char what[8] = "";
   int a = 0, b = 0;
@@ -468,7 +468,7 @@ static void postTestEvent(const char *line) {
   }
 }
 
-// --console: lee comandos de la consola serie por stdin, como con el Knomi por USB
+// --console: reads serial console commands from stdin, like with the Knomi over USB
 static void startConsole(void) {
   [NSThread detachNewThreadWithBlock:^{
     char line[256];
@@ -483,7 +483,7 @@ static void startConsole(void) {
   }];
 }
 
-// Dos procesos sobre la misma partida se pisarian los guardados
+// Two processes on the same save would overwrite each other's saves
 static bool lockSave(NSString *saveDir) {
   [NSFileManager.defaultManager createDirectoryAtPath:saveDir withIntermediateDirectories:YES attributes:nil error:nil];
   int fd = open([saveDir stringByAppendingPathComponent:@".lock"].fileSystemRepresentation, O_CREAT | O_RDWR | O_CLOEXEC, 0644);
@@ -499,7 +499,7 @@ int main(int argc, char **argv) {
       saveDir = [support stringByAppendingPathComponent:@APP_NAME];
     }
     if (!lockSave(saveDir)) {
-      fprintf(stderr, APP_NAME " ya esta abierto\n");
+      fprintf(stderr, APP_NAME " is already open\n");
       return 0;
     }
     hostInit(NSBundle.mainBundle.resourcePath.fileSystemRepresentation, saveDir.fileSystemRepresentation);
@@ -511,7 +511,7 @@ int main(int argc, char **argv) {
     AppDelegate *delegate = [[AppDelegate alloc] init];
     app.delegate = delegate;
 
-    // un kill normal tambien guarda
+    // a normal kill saves too
     signal(SIGTERM, SIG_IGN);
     dispatch_source_t term = dispatch_source_create(DISPATCH_SOURCE_TYPE_SIGNAL, SIGTERM, 0, dispatch_get_main_queue());
     dispatch_source_set_event_handler(term, ^{ [NSApp terminate:nil]; });

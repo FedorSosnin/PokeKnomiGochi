@@ -12,14 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: TamaPoke  # arduino-cli exige que la carpeta se llame como el sketch
+          path: TamaPoke  # arduino-cli requires the folder to be named like the sketch
 
       - name: Install arduino-cli
         uses: arduino/setup-arduino-cli@v2
 
-      # Fijado a la version del core verificada para compilar este sketch. Subirla
-      # a mano y a proposito: alguna version nueva del core ha roto librerias de
-      # terceros antes.
+      # Pinned to the core version verified to compile this sketch. Bump it
+      # by hand and on purpose: new core versions have broken third-party
+      # libraries before.
       - name: Install ESP32 core
         run: |
           arduino-cli config init --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
@@ -60,9 +60,9 @@ jobs:
           python3 tools/gen_facts.py
           python3 tools/sprites.py emit
 
-      # dex.h y species.h llevan "GENERADO - no editar" en su cabecera; esto pilla
-      # a quien edite la salida en vez del generador, o se olvide de regenerar
-      # tras tocar los datos de origen.
+      # dex.h and species.h carry "GENERATED - do not edit" in their header; this catches
+      # anyone who edits the output instead of the generator, or forgets to regenerate
+      # after touching the source data.
       - name: Fail if regenerating produced a diff
         run: git diff --exit-code -- dex.h moves.h species.h dexfacts.h
 
@@ -85,10 +85,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      # pet.cpp / i18n.cpp / dex.h compilan y corren en el PC contra unos shims
-      # de Arduino, con millis() y random() falsos y una NVS en memoria. Aqui es
-      # donde se han roto las cosas: los tres bugs de la v1.3, v1.4 y v1.8 eran
-      # logica pura y estos tests los pillan sin tocar la placa.
+      # pet.cpp / i18n.cpp / dex.h compile and run on the PC against Arduino
+      # shims, with fake millis() and random() and an in-memory NVS. This is
+      # where things have broken: the three bugs in v1.3, v1.4 and v1.8 were
+      # pure logic and these tests catch them without touching the board.
       - name: Run the suite (plus AddressSanitizer + UBSan)
         run: ./test/run_tests.sh --asan
 

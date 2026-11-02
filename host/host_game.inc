@@ -1,15 +1,15 @@
-// Se incluye al final del sketch (ver gen_sketch_unit.py): la puerta de entrada al juego desde
-// el host, con acceso a sus variables globales.
+// Included at the end of the sketch (see gen_sketch_unit.py): the host's entry point into the game,
+// with access to its global variables.
 #include "host_internal.h"
 
 void hostGameSetup() { setup(); }
 void hostGameLoop() { loop(); }
 
 void hostGameSave() {
-  pet.setClock(rtcEpoch());  // guarda, y el tiempo de ausencia de la proxima vez se cuenta desde aqui
+  pet.setClock(rtcEpoch());  // saves, and next time's away time is counted from here
 }
 
-// como un toque que despierta la pantalla, pero sin tragarse el siguiente toque
+// like a touch that wakes the screen, but without swallowing the next touch
 void hostGameWake() {
   if (!screenOff && dimStage != DIM_AWAKE) wakeUI();
 }

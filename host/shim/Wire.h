@@ -1,4 +1,4 @@
-// Bus I2C del host: no hay nada colgado, pero todo contesta (el sketch comprueba el tactil antes de leerlo).
+// The host's I2C bus: nothing is attached, but everything answers (the sketch checks the touch panel before reading it).
 #pragma once
 #include <stdint.h>
 

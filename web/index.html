@@ -85,12 +85,12 @@
      Pokémon is a ™ of Nintendo / Game Freak. Non-commercial project.</p>
 </div>
 
-<!-- version exacta (no el rango flotante @10) con Subresource Integrity, para
-     que un fichero del CDN alterado o cambiado sin avisar no se ejecute en
-     silencio. Ojo: el SRI solo cubre este fichero de entrada; los import()
-     dinamicos que el hace de sus propios chunks no quedan cubiertos, y cerrar
-     eso del todo obligaria a hospedar el arbol entero de esp-web-tools.
-     Al subir de version hay que recalcular el hash:
+<!-- Exact version (not the floating @10 range) with Subresource Integrity, so
+     a CDN file that is tampered with or silently changed doesn't run.
+     Note: SRI only covers this entry file. The dynamic import() calls it makes
+     for its own chunks are not covered, and closing that gap fully would mean
+     hosting the whole esp-web-tools tree.
+     When you bump the version, recompute the hash:
        curl -s https://unpkg.com/esp-web-tools@X.Y.Z/dist/web/install-button.js \
          | openssl dgst -sha384 -binary | openssl base64 -A -->
 <script type="module" crossorigin="anonymous"
@@ -158,9 +158,9 @@ function parsePak(buf) {
   return items;
 }
 
-// reanudacion: recuerda que ficheros se confirmaron (nombre+tamano, para que un
-// bundle regenerado con distinto contenido bajo el mismo nombre no se salte sin
-// avisar), asi una recarga tras un corte no repite los ~40 MB / ~10 min enteros
+// resume: remembers which files were confirmed (name+size, so a regenerated
+// bundle with different content under the same name isn't skipped silently),
+// so a reload after an interruption doesn't resend the whole ~40 MB / ~10 min
 const RESUME_KEY = 'tamapoke_sent_files';
 const loadResumeSet = () => { try { return new Set(JSON.parse(localStorage.getItem(RESUME_KEY) || '[]')); } catch { return new Set(); } };
 const saveResumeSet = (s) => { try { localStorage.setItem(RESUME_KEY, JSON.stringify([...s])); } catch {} };
@@ -186,7 +186,7 @@ async function sendAll(items) {
     fill.style.width = (done / items.length * 100) + '%';
   }
   if (skipped) log(`Resumed: skipped ${skipped} already-sent file(s) from an earlier attempt.`);
-  if (fail === 0) clearResumeSet();  // todo confirmado: la proxima vez no se salta nada
+  if (fail === 0) clearResumeSet();  // everything confirmed: next time nothing is skipped
   log(`Done (${done - fail}/${items.length}). Restart the board (PWR button).`);
 }
 
@@ -210,7 +210,7 @@ document.getElementById('auto').onclick = async () => {
   log('Downloading sprite bundle (~58 MB)...');
   let items;
   try {
-    // sprites.pak servido desde el mismo origen (GitHub Pages) -> sin lios de CORS
+    // sprites.pak is served from the same origin (GitHub Pages), so no CORS trouble
     const resp = await fetch('sprites.pak');
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     items = parsePak(await resp.arrayBuffer());

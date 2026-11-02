@@ -1,9 +1,9 @@
 #pragma once
 #include "buddy.h"
 
-// La radio del buddy. En placas sin wifi del juego todo esto no hace nada.
-bool buddyNetUp();                       // conectado a la wifi y escuchando
-uint32_t buddyNetId();                   // identificador de esta placa, nunca 0
-bool buddyNetPoll(BuddyMsg &out);        // siguiente mensaje valido de otra placa, si lo hay
-void buddyNetSend(const BuddyMsg &m);    // a la IP del buddy si se conoce; si no, a toda la red
-void buddyNetSetPeer(uint32_t id);       // 0 = ninguno
+// The buddy radio. On boards without the game's wifi all of this does nothing.
+bool buddyNetUp();                       // connected to wifi and listening
+uint32_t buddyNetId();                   // this board's identifier, never 0
+bool buddyNetPoll(BuddyMsg &out);        // next valid message from another board, if any
+void buddyNetSend(const BuddyMsg &m);    // to the buddy's IP if known; otherwise to the whole network
+void buddyNetSetPeer(uint32_t id);       // 0 = none

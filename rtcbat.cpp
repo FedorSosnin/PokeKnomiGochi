@@ -2,15 +2,15 @@
 #include "pin_config.h"  // define XPOWERS_CHIP_AXP2101
 
 #ifdef BOARD_KNOMI_V2
-// Sin RTC ni PMU. La hora es un reloj por software que se pone en hora por NTP con la wifi
-// que el Knomi ya tenia guardada en la NVS (WiFi.begin() sin credenciales), asi que el
-// firmware no maneja la contrasena. Sin red, setup() siembra con la ultima hora guardada.
+// No RTC or PMU. The time is a software clock set via NTP over the wifi
+// the Knomi already had saved in the NVS (WiFi.begin() without credentials), so the
+// firmware doesn't handle the password. Without a network, setup() seeds with the last saved time.
 #include <WiFi.h>
 #include <esp_sntp.h>
 #include <esp_wifi.h>
 #include <time.h>
 
-// Nueva York; el juego usa la hora LOCAL como epoch (ver openClock), no hay zonas horarias
+// New York; the game uses LOCAL time as the epoch (see openClock), there are no time zones
 #ifndef KNOMI_TZ
 #define KNOMI_TZ "EST5EDT,M3.2.0,M11.1.0"
 #endif
@@ -25,13 +25,13 @@ bool rtcBegin() { return true; }
 uint32_t rtcEpoch() { return baseEpoch ? baseEpoch + (millis() - baseMs) / 1000 : 0; }
 void rtcSetEpoch(uint32_t e) { baseEpoch = e; baseMs = millis(); }
 
-// Si el reloj aun venia de la semilla fija de setup(), el salto a la hora de red no mide ninguna
-// ausencia: aplicarlo envejeceria a la mascota hasta el tope de 2 semanas.
-#define CLOCK_REAL_MIN 1790000000UL  // septiembre de 2026, muy por encima de la semilla
+// If the clock was still on setup()'s fixed seed, the jump to network time measures no
+// absence: applying it would age the pet up to the 2-week cap.
+#define CLOCK_REAL_MIN 1790000000UL  // September 2026, well above the seed
 static bool wasSeed = false;
 bool clockWasSeed() { return wasSeed; }
 
-// segundos desde 1970 de una fecha civil, sin pasar por la zona horaria (dias de Hinnant)
+// seconds since 1970 of a civil date, without going through the time zone (Hinnant's days)
 static uint32_t civilEpoch(const struct tm &t) {
   int y = t.tm_year + 1900, m = t.tm_mon + 1;
   y -= m <= 2;
@@ -46,24 +46,24 @@ enum { CLK_IDLE, CLK_CONNECTING, CLK_WAIT_NTP };
 static uint8_t st = CLK_IDLE;
 static uint32_t t0 = 0, lastTry = 0, wait = 0;
 static bool first = true, paused = false;
-static bool stayedOn = false;   // la wifi sigue encendida tras la ultima hora de red
-static uint8_t wifiStatus = 0;  // 0 sin intentar, 1 ultima hora de red correcta, 2 sin conexion
+static bool stayedOn = false;   // wifi stays on after the last network time
+static uint8_t wifiStatus = 0;  // 0 not tried, 1 last network time correct, 2 no connection
 static char savedSsid[33] = "";
-static volatile uint8_t lastReason = 0;  // ultimo motivo de desconexion: dice si es la clave o la cobertura
+static volatile uint8_t lastReason = 0;  // last disconnect reason: tells whether it's the password or the coverage
 
 const char *clockWifiSsid() { return savedSsid; }
 uint8_t clockWifiStatus() { return wifiStatus; }
 void clockSetWifiSsid(const char *s) { strlcpy(savedSsid, s, sizeof(savedSsid)); wifiStatus = 0; }
 
-// la pantalla de cambio de wifi manda sobre la radio; al terminar se reintenta enseguida
+// the wifi change screen takes priority over the radio; when it ends it retries right away
 void clockPollPause(bool p) {
   paused = p;
   st = CLK_IDLE;
   if (!p) first = true;
 }
 
-// Maquina de estados sin bloqueos: conecta, espera NTP y repite cada 24 h. La wifi se queda
-// encendida si hubo red (el buddy la necesita, y el Knomi siempre va enchufado por USB).
+// Non-blocking state machine: connects, waits for NTP and repeats every 24 h. The wifi stays
+// on if there was a network (the buddy needs it, and the Knomi is always plugged in via USB).
 bool clockPoll() {
   if (paused) return false;
   enum { IDLE = CLK_IDLE, CONNECTING = CLK_CONNECTING, WAIT_NTP = CLK_WAIT_NTP };
@@ -72,12 +72,12 @@ bool clockPoll() {
     case IDLE:
       if (stayedOn && WiFi.status() == WL_CONNECTED) {
         if (now - lastTry < wait) return false;
-        lastTry = t0 = now;  // sigue conectada: basta con volver a preguntar la hora
+        lastTry = t0 = now;  // still connected: just ask for the time again
         configTzTime(KNOMI_TZ, "pool.ntp.org", "time.google.com");
         st = WAIT_NTP;
         return false;
       }
-      // se cayo la red (router reiniciado...): se reconecta pronto, sin esperar al NTP
+      // the network dropped (router restarted...): reconnects soon, without waiting for NTP
       if (!first && now - lastTry < (stayedOn ? WIFI_RECONNECT_MS : wait)) return false;
       first = false;
       stayedOn = false;
@@ -91,7 +91,7 @@ bool clockPoll() {
             lastReason = i.wifi_sta_disconnected.reason;
           }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
         }
-        // lo guardado por el firmware anterior, pasado de nuevo para limpiar canal/BSSID viejos
+        // what the previous firmware saved, passed through again to clear old channel/BSSID
         wifi_config_t cfg = {};
         esp_wifi_get_config(WIFI_IF_STA, &cfg);
         strlcpy(savedSsid, (const char *)cfg.sta.ssid, sizeof(savedSsid));
@@ -109,7 +109,7 @@ bool clockPoll() {
       } else if (now - t0 > WIFI_TIMEOUT_MS) {
         wifi_config_t cfg = {};
         esp_wifi_get_config(WIFI_IF_STA, &cfg);
-        Serial.printf("wifi: sin conexion (motivo %u, estado %d, ssid guardado '%s', clave de %u caracteres), sigue con el reloj interno\n",
+        Serial.printf("wifi: no connection (reason %u, state %d, saved ssid '%s', password of %u characters), continuing with the internal clock\n",
                       lastReason, (int)WiFi.status(), (const char *)cfg.sta.ssid, (unsigned)strlen((const char *)cfg.sta.password));
         WiFi.mode(WIFI_OFF);
         wait = NTP_RETRY_MS;
@@ -126,10 +126,10 @@ bool clockPoll() {
       if (ok) {
         wasSeed = rtcEpoch() < CLOCK_REAL_MIN;
         rtcSetEpoch(civilEpoch(tmv));
-        Serial.printf("NTP ok, hora local %02d:%02d\n", tmv.tm_hour, tmv.tm_min);
-      } else Serial.println("NTP: sin respuesta");
+        Serial.printf("NTP ok, local time %02d:%02d\n", tmv.tm_hour, tmv.tm_min);
+      } else Serial.println("NTP: no response");
       stayedOn = WiFi.status() == WL_CONNECTED;
-      if (stayedOn) WiFi.setSleep(false);  // con ahorro se pierden mensajes a toda la red
+      if (stayedOn) WiFi.setSleep(false);  // with power saving, network-wide messages are lost
       else WiFi.mode(WIFI_OFF);
       wait = ok ? NTP_RESYNC_MS : NTP_RETRY_MS;
       wifiStatus = ok ? 1 : 2;
@@ -168,14 +168,14 @@ static bool pmuOk = false;
 
 bool rtcBegin() {
   rtcOk = rtc.begin(Wire, IIC_SDA, IIC_SCL);
-  if (!rtcOk) Serial.println("PCF85063 no detectado");
+  if (!rtcOk) Serial.println("PCF85063 not detected");
   return rtcOk;
 }
 
 uint32_t rtcEpoch() {
   if (!rtcOk) return 0;
   RTC_DateTime t = rtc.getDateTime();
-  if (t.getYear() < 2025 || t.getYear() > 2120) return 0;  // sin hora valida
+  if (t.getYear() < 2025 || t.getYear() > 2120) return 0;  // no valid time
   struct tm tmv = {};
   tmv.tm_year = t.getYear() - 1900;
   tmv.tm_mon = t.getMonth() - 1;
@@ -183,7 +183,7 @@ uint32_t rtcEpoch() {
   tmv.tm_hour = t.getHour();
   tmv.tm_min = t.getMinute();
   tmv.tm_sec = t.getSecond();
-  time_t e = mktime(&tmv);  // TZ por defecto = UTC, consistente con gmtime_r
+  time_t e = mktime(&tmv);  // default TZ = UTC, consistent with gmtime_r
   return e > 0 ? (uint32_t)e : 0;
 }
 
@@ -198,27 +198,27 @@ void rtcSetEpoch(uint32_t e) {
 
 bool batBegin() {
   pmuOk = pmu.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
-  if (!pmuOk) { Serial.println("AXP2101 no detectado"); return false; }
+  if (!pmuOk) { Serial.println("AXP2101 not detected"); return false; }
   pmu.enableBattVoltageMeasure();
-  pmu.setSysPowerDownVoltage(BAT_HW_CUTOFF_MV);  // respaldo: el PMU corta solo si el firmware no llega a tiempo
+  pmu.setSysPowerDownVoltage(BAT_HW_CUTOFF_MV);  // backup: the PMU cuts off on its own if the firmware doesn't make it in time
   return true;
 }
 
-// Enciende la alimentacion de la AMOLED. En la Waveshare 1.75 el panel (OLED VDD)
-// cuelga del rail BLDO1 a 3.3V del AXP2101. El firmware daba por hecho que estaba
-// encendido; si el PMU se resetea (drenaje total), BLDO1 queda OFF y la pantalla
-// se ve negra aunque el resto funcione. Hay que llamarla ANTES de gfx->begin().
+// Powers the AMOLED supply. On the Waveshare 1.75 the panel (OLED VDD)
+// hangs off the AXP2101's 3.3V BLDO1 rail. The firmware assumed it was
+// on; if the PMU resets (total drain), BLDO1 stays OFF and the screen
+// looks black even though everything else works. Must be called BEFORE gfx->begin().
 void pmuEnablePanel() {
   if (!pmu.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
-    Serial.println("AXP2101 no detectado (pmuEnablePanel)");
+    Serial.println("AXP2101 not detected (pmuEnablePanel)");
     return;
   }
   pmu.setBLDO1Voltage(3300);   // OLED VDD
   pmu.enableBLDO1();
 }
 
-// el estado de energia (I2C) se cachea ~2 s: leerlo en cada frame del loop
-// metia trafico I2C inutil y podia oscilar (parpadeo de brillo)
+// power status (I2C) is cached ~2 s: reading it every loop frame
+// added useless I2C traffic and could oscillate (brightness flicker)
 static uint32_t powerCacheT = 0;
 static int cachedPct = -1;
 static bool cachedCharging = false, cachedUsb = true;
@@ -236,17 +236,17 @@ static void refreshPower() {
   bool conn = pmu.isBatteryConnect();
   cachedCharging = pmu.isCharging();
   cachedUsb = pmu.isVbusIn();
-  // En descarga el porcentaje sale de la curva de una celda LiPo (batcurve.h); con USB o cargando
-  // la tension sube por la carga y no vale, y se usa la del PMU.
+  // In discharge the percentage comes from a single-cell LiPo curve (batcurve.h); with USB or charging
+  // the voltage rises from the charge and is no good, so the PMU's is used.
   bool discharging = conn && !cachedUsb && !cachedCharging;
   if (discharging != monDischarging) {
     mon.reset();
-    mon.seed(cachedPct);  // al desenchufar el porcentaje no sube (la tension sigue inflada por la carga)
+    mon.seed(cachedPct);  // on unplugging the percentage doesn't rise (the voltage is still inflated by the charge)
     monDischarging = discharging;
   }
   if (discharging) cachedPct = mon.sample((int)pmu.getBattVoltage(), now);
   else cachedPct = conn ? pmu.getBatteryPercent() : -1;
-  if (cachedPct < 0 && conn) cachedPct = pmu.getBatteryPercent();  // sin lectura de tension
+  if (cachedPct < 0 && conn) cachedPct = pmu.getBatteryPercent();  // no voltage reading
 }
 
 int batPercent() { refreshPower(); return cachedPct; }
@@ -254,7 +254,7 @@ bool batCharging() { refreshPower(); return cachedCharging; }
 bool batShouldShutdown() { refreshPower(); return monDischarging && mon.shutdownNeeded(millis()); }
 void batPowerOff() {
   if (pmuOk) pmu.shutdown();
-  mon.reset();  // si sigue vivo (p. ej. se enchufo USB justo ahora) tiene que volver a cumplirse todo el tiempo
+  mon.reset();  // if it is still alive (e.g. USB was just plugged in) everything must hold again for the whole time
 }
 int batMillivolts() { return pmuOk ? (int)pmu.getBattVoltage() : 0; }
 bool usbPresent() { refreshPower(); return cachedUsb; }

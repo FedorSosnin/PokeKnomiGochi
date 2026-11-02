@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Datos curiosos breves de la Pokedex, escritos para este proyecto (en ingles).
+"""Short Pokedex trivia facts, written for this project (in English).
 
-Maximo 84 caracteres ASCII: es lo que cabe en 3-4 lineas de la vista detalle.
+Maximum 84 ASCII characters: that is what fits in 3-4 lines of the detail view.
 """
 
 FACTS = {

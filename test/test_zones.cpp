@@ -1,4 +1,4 @@
-// Zonas de Combate (zones.h, zones_art.h, Pet::pickZoneSpecies).
+// Battle zones (zones.h, zones_art.h, Pet::pickZoneSpecies).
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "shim/Preferences.h"
@@ -15,7 +15,7 @@ static void zoneCatchAllBut(Pet &p, uint8_t z, int16_t keep) {
   }
 }
 
-TEST(Zones, cubren_las_151_una_vez) {
+TEST(Zones, cover_all_151_exactly_once) {
   std::set<int16_t> seen;
   int total = 0;
   for (uint8_t z = 0; z < ZONE_COUNT; z++) {
@@ -32,11 +32,11 @@ TEST(Zones, cubren_las_151_una_vez) {
   CHECK_EQ(total, 151);
 }
 
-TEST(Zones, un_legendario_al_final_de_cada_una) {
+TEST(Zones, one_legendary_at_the_end_of_each) {
   std::set<int16_t> legends;
   for (uint8_t z = 0; z < ZONE_COUNT; z++) {
     int16_t l = ZONE_LEGEND[z];
-    CHECK(DEX_TBL[l].rarity == R_LEGENDARIO);
+    CHECK(DEX_TBL[l].rarity == R_LEGENDARY);
     CHECK(zoneOf(l) == z);
     CHECK_EQ(zoneMember(z, zoneSize(z) - 1), l);
     legends.insert(l);
@@ -44,7 +44,7 @@ TEST(Zones, un_legendario_al_final_de_cada_una) {
   CHECK_EQ((int)legends.size(), (int)ZONE_COUNT);
 }
 
-TEST(Zones, tamanos_del_plan) {
+TEST(Zones, planned_sizes) {
   CHECK_EQ(zoneSize(Z_FOREST), 41);
   CHECK_EQ(zoneSize(Z_BEACH), 30);
   CHECK_EQ(zoneSize(Z_CAVE), 31);
@@ -52,7 +52,7 @@ TEST(Zones, tamanos_del_plan) {
   CHECK_EQ(zoneSize(Z_FIELD), 28);
 }
 
-TEST(Zones, el_rival_es_de_la_zona_y_respeta_el_nivel) {
+TEST(Zones, rival_belongs_to_zone_and_respects_level) {
   Pet p;
   for (uint8_t z = 0; z < ZONE_COUNT; z++)
     for (uint8_t lvl : { 5, 20, 60 })
@@ -64,29 +64,29 @@ TEST(Zones, el_rival_es_de_la_zona_y_respeta_el_nivel) {
       }
 }
 
-TEST(Zones, prefiere_lo_que_falta) {
+TEST(Zones, prefers_what_is_missing) {
   Pet p;
-  zoneCatchAllBut(p, Z_BEACH, 129);  // solo falta Magikarp
+  zoneCatchAllBut(p, Z_BEACH, 129);  // only Magikarp is missing
   int hits = 0, N = 2000;
   for (int i = 0; i < N; i++) hits += p.pickZoneSpecies(Z_BEACH, 60) == 129;
   CHECK(hits > N * (ZONE_NEW_PCT - 10) / 100);
 }
 
-TEST(Zones, legendario_solo_con_la_zona_completa) {
+TEST(Zones, legendary_only_with_complete_zone) {
   Pet p;
-  zoneCatchAllBut(p, Z_MANSION, 92);  // falta Gastly: el legendario no sale
+  zoneCatchAllBut(p, Z_MANSION, 92);  // Gastly is missing: the legendary does not appear
   for (int i = 0; i < 2000; i++) CHECK(p.pickZoneSpecies(Z_MANSION, 60) != 150);
   p.catchWild(92);
   int hits = 0, N = 2000;
   for (int i = 0; i < N; i++) hits += p.pickZoneSpecies(Z_MANSION, 60) == 150;
   CHECK(hits > N * (ZONE_LEGEND_NEW_PCT - 8) / 100 && hits < N * (ZONE_LEGEND_NEW_PCT + 8) / 100);
-  p.catchWild(150);  // atrapado: raro, pero no desaparece
+  p.catchWild(150);  // caught: rare, but does not disappear
   hits = 0;
   for (int i = 0; i < N; i++) hits += p.pickZoneSpecies(Z_MANSION, 60) == 150;
   CHECK(hits > 0 && hits < N * (ZONE_LEGEND_SEEN_PCT + 5) / 100);
 }
 
-TEST(Zones, el_escenario_cabe_y_cada_uno_es_distinto) {
+TEST(Zones, scene_fits_and_each_is_distinct) {
   static uint16_t art[ZONE_COUNT][ZONE_ART * ZONE_ART];
   for (uint8_t z = 0; z < ZONE_COUNT; z++) {
     zoneArtDraw(art[z], z);

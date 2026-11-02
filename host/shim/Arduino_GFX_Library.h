@@ -1,5 +1,5 @@
-// El subconjunto de Arduino_GFX que usa el juego, sobre un framebuffer RGB565 en memoria.
-// Los algoritmos son los de la libreria (v1.6.5) para que cada pixel caiga en el mismo sitio.
+// The subset of Arduino_GFX that the game uses, over an in-memory RGB565 framebuffer.
+// The algorithms are the library's (v1.6.5) so that every pixel lands in the same place.
 #pragma once
 #include <stdint.h>
 
@@ -56,7 +56,7 @@ private:
   void ellipseCorners(int32_t x, int32_t y, int32_t r, uint8_t corners, uint16_t c);
   void fillCorners(int32_t x, int32_t y, int32_t r, uint8_t corners, int16_t delta, uint16_t c);
   void drawGlcdChar(int16_t x, int16_t y, uint8_t ch);
-  // U8g2: decodifica un byte de UTF-8 y busca el glifo; false si aun no hay caracter completo
+  // U8g2: decodes a UTF-8 byte and looks up the glyph; false if there is no complete character yet
   bool nextGlyph(uint8_t c, Glyph &g, bool &newline);
   bool findGlyph(uint32_t enc, Glyph &g);
   void drawU8g2Glyph(const Glyph &g, int16_t x, int16_t y);

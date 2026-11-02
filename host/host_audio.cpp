@@ -1,6 +1,6 @@
-// Efectos del juego como PCM: los mismos tonos cuadrados que suenan en la Waveshare (sfx_notes.h),
-// para quien los quiera tocar. El hilo de audio llama a hostAudioRender(); la cola es de un solo
-// productor y un solo consumidor, asi que no hacen falta bloqueos en ese hilo.
+// Game effects as PCM: the same square-wave tones that play on the Waveshare (sfx_notes.h),
+// for whoever wants to play them. The audio thread calls hostAudioRender(); the queue has a single
+// producer and a single consumer, so no locks are needed on that thread.
 #include "audio.h"
 #include "host.h"
 #include "sfx_notes.h"
@@ -25,7 +25,7 @@ void audioBegin() {
 void sfxPlay(uint8_t id) {
   if (!gOn || gSleeping || id >= SFX_COUNT) return;
   uint32_t head = gHead.load(std::memory_order_relaxed);
-  if (head - gTail.load(std::memory_order_acquire) >= QUEUE_LEN) return;  // descarta si esta llena
+  if (head - gTail.load(std::memory_order_acquire) >= QUEUE_LEN) return;  // drop if full
   gQueue[head % QUEUE_LEN] = id;
   gHead.store(head + 1, std::memory_order_release);
 }
@@ -42,7 +42,7 @@ void audioSetSleeping(bool sleeping) { gSleeping = sleeping; }
 bool audioBusy() { return false; }
 void audioSetIdle(bool) {}
 
-// ---- sintetizador (hilo de audio) ----
+// ---- synthesizer (audio thread) ----
 static const SfxDef *gDef = nullptr;
 static uint8_t gNote = 0;
 static int gDone = 0, gTotal = 0, gHalf = 0, gPhase = 0;
@@ -73,8 +73,8 @@ extern "C" void hostAudioRender(int16_t *out, int frames) {
     if (gHalf) {
       const int16_t amp = 5000;
       s = gHigh ? amp : -amp;
-      if (gDone < 64) s = (int16_t)(s * gDone / 64);                                // ataque
-      else if (gDone > gTotal - 96) s = (int16_t)(s * (gTotal - gDone) / 96);       // caida
+      if (gDone < 64) s = (int16_t)(s * gDone / 64);                                // attack
+      else if (gDone > gTotal - 96) s = (int16_t)(s * (gTotal - gDone) / 96);       // decay
       if (++gPhase >= gHalf) { gPhase = 0; gHigh = !gHigh; }
     }
     out[i] = s;

@@ -1,6 +1,6 @@
 #pragma once
-// Fuente clasica 5x7 (CP437) de Adafruit_GFX, la misma tabla que usa Arduino_GFX.
-// Licencia BSD: ver CREDITS.md.
+// Classic 5x7 font (CP437) from Adafruit_GFX, the same table Arduino_GFX uses.
+// BSD license: see CREDITS.md.
 #include <stdint.h>
 static const uint8_t GLCD_FONT[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x3E, 0x5B, 0x4F, 0x5B, 0x3E, 0x3E, 0x6B, 0x4F, 0x6B, 0x3E,

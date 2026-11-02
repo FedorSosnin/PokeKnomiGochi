@@ -1,13 +1,13 @@
-# La capa de host del juego: una biblioteca sin dependencias de plataforma que un front end
-# (mac/, en el futuro uno de WebAssembly) enlaza junto con su ventana. Ver README.md.
+# The game's host layer: a platform-independent library that a front end
+# (mac/, and a WebAssembly one in the future) links together with its window. See README.md.
 #   make        -> build/host/libpokehost.a
-#   make test   -> compila y ejecuta las pruebas de la capa
+#   make test   -> builds and runs the layer's tests
 CXX      ?= c++
 ROOT     := ..
 BUILD    := $(ROOT)/build/host
 LIB      := $(BUILD)/libpokehost.a
 
-# Es un Knomi con otro hardware debajo: el juego, los menus y el boton son los del Knomi
+# It is a Knomi with different hardware underneath: the game, the menus and the button are the Knomi's
 DEFS     := -DBOARD_HOST -DBOARD_KNOMI_V2
 INCLUDES := -I. -I shim -I $(ROOT)
 CXXFLAGS ?= -std=c++17 -O2 -g -Wall -Wextra -Wno-unused-parameter

@@ -1,4 +1,4 @@
-// Reglas de PokeDungeon (dungeon.h).
+// PokeDungeon rules (dungeon.h).
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "shim/Preferences.h"
@@ -20,7 +20,7 @@ static BtlFighter fighter(int16_t dex, uint8_t lvl, uint8_t trained) {
   return f;
 }
 
-// juega con el camino mas corto hasta caer; devuelve la planta alcanzada
+// plays along the shortest path until it falls; returns the floor reached
 static int botDepth(int16_t dex, uint8_t lvl, uint8_t trained, uint32_t seed) {
   static DnState s;
   dnStart(s, fighter(dex, lvl, trained), seed);
@@ -38,7 +38,7 @@ static int medianDepth(int16_t dex, uint8_t lvl, uint8_t trained) {
   return d[50];
 }
 
-TEST(dungeon, siempre_se_llega_a_la_escalera) {
+TEST(dungeon, stairs_are_always_reachable) {
   static DnState s;
   for (uint32_t seed = 1; seed <= 500; seed++) {
     dnStart(s, fighter(1, 20, 0), seed * 2654435761u);
@@ -50,7 +50,7 @@ TEST(dungeon, siempre_se_llega_a_la_escalera) {
   }
 }
 
-TEST(dungeon, los_rivales_salen_lejos_y_en_el_suelo) {
+TEST(dungeon, rivals_spawn_far_away_and_on_the_floor) {
   static DnState s;
   for (uint32_t seed = 1; seed <= 200; seed++) {
     dnStart(s, fighter(25, 30, 0), seed * 2654435761u);
@@ -58,13 +58,13 @@ TEST(dungeon, los_rivales_salen_lejos_y_en_el_suelo) {
       if (!m.on) continue;
       CHECK(dnWalkable(s, m.x, m.y));
       CHECK(abs(m.x - s.x) + abs(m.y - s.y) >= 4);
-      CHECK(DEX_TBL[m.f.dex].rarity != R_LEGENDARIO);
+      CHECK(DEX_TBL[m.f.dex].rarity != R_LEGENDARY);
       CHECK(btlMinLevel(m.f.dex) <= m.f.level);
     }
   }
 }
 
-TEST(dungeon, la_pared_no_gasta_el_turno) {
+TEST(dungeon, walls_do_not_use_up_the_turn) {
   static DnState s;
   dnStart(s, fighter(1, 20, 0), 7);
   for (auto &m : s.mon) m.on = false;
@@ -74,7 +74,7 @@ TEST(dungeon, la_pared_no_gasta_el_turno) {
   CHECK_EQ((int)s.x, x);
 }
 
-TEST(dungeon, atacar_entrando_en_la_casilla_del_rival) {
+TEST(dungeon, attack_by_entering_the_rivals_tile) {
   static DnState s;
   dnStart(s, fighter(4, 30, 0), 11);
   for (auto &m : s.mon) m.on = false;
@@ -90,17 +90,17 @@ TEST(dungeon, atacar_entrando_en_la_casilla_del_rival) {
   CHECK_EQ(s.hits[0].mine, true);
   CHECK(!s.mon[0].on || s.mon[0].f.hp < hp);
   CHECK_MSG(strcmp(MOVE_TBL[s.hits[0].move].name, "EMBER") == 0 || strcmp(MOVE_TBL[s.hits[0].move].name, "SLASH") == 0,
-            "usa su mejor ataque");
+            "uses its best move");
 }
 
-TEST(dungeon, el_rival_adyacente_golpea) {
+TEST(dungeon, adjacent_rival_hits) {
   static DnState s;
   dnStart(s, fighter(4, 30, 0), 11);
   for (auto &m : s.mon) m.on = false;
   s.mon[0].f = btlMakeWild(1, 30, 80);
   s.mon[0].x = s.x;
   s.mon[0].y = s.y;
-  s.mon[0].on = true;  // misma casilla no; se recoloca abajo
+  s.mon[0].on = true;  // not the same tile; it is repositioned below
   s.map[s.y][s.x + 1] = DN_FLOOR;
   s.mon[0].x = s.x + 1;
   uint16_t hp = s.me.hp;
@@ -108,7 +108,7 @@ TEST(dungeon, el_rival_adyacente_golpea) {
   CHECK(s.me.hp < hp);
 }
 
-TEST(dungeon, la_baya_cura_y_la_escalera_baja) {
+TEST(dungeon, berry_heals_and_stairs_descend) {
   static DnState s;
   dnStart(s, fighter(7, 20, 0), 3);
   for (auto &m : s.mon) m.on = false;
@@ -127,17 +127,17 @@ TEST(dungeon, la_baya_cura_y_la_escalera_baja) {
   CHECK(s.me.hp > hp);
 }
 
-TEST(dungeon, entrenar_y_evolucionar_llega_mas_hondo) {
+TEST(dungeon, training_and_evolving_reaches_deeper) {
   int fresh = medianDepth(1, 5, 0), mid = medianDepth(2, 20, 20), strong = medianDepth(3, 40, 40), wrecked = medianDepth(129, 5, 0);
-  printf("  medianas: nuevo %d, medio %d, fuerte %d, magikarp %d\n", fresh, mid, strong, wrecked);
+  printf("  medians: new %d, mid %d, strong %d, magikarp %d\n", fresh, mid, strong, wrecked);
   CHECK_RANGE(fresh, 2, 12);
   CHECK_RANGE(mid, 4, 20);
   CHECK_RANGE(strong, 5, 30);
   CHECK(strong >= fresh);
-  CHECK_MSG(medianDepth(1, 20, 60) > medianDepth(1, 20, 0), "entrenar se nota");
+  CHECK_MSG(medianDepth(1, 20, 60) > medianDepth(1, 20, 0), "training makes a difference");
 }
 
-TEST(dungeon, el_record_se_guarda_y_lo_viejo_no_cambia) {
+TEST(dungeon, record_is_saved_and_old_saves_unchanged) {
   mockNvsReset();
   Pet p;
   p.begin();

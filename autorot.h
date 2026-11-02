@@ -1,18 +1,18 @@
 #pragma once
 #include <stdint.h>
 
-// Giro automatico de la pantalla del Knomi. rot = cuartos de vuelta a la derecha de la imagen sobre
-// el panel. El juego siempre ve un lienzo recto: aqui solo se traducen pixeles, toques e inclinacion.
-// Ejes del acelerometro respecto al panel sin girar: +X a la derecha, +Y hacia abajo; el eje que
-// apunta hacia arriba lee +1 g.
-#define ROT_MIN_G 0.6f       // por debajo esta casi plano: se queda como estaba
-#define ROT_MARGIN_G 0.2f    // en diagonal tampoco cambia, para que no parpadee entre dos lados
-#define ROT_STABLE_MS 600UL  // tiene que mantenerse asi este rato
+// Automatic rotation of the Knomi screen. rot = quarter turns clockwise of the image over
+// the panel. The game always sees a straight canvas: here only pixels, touches and tilt are translated.
+// Accelerometer axes relative to the unrotated panel: +X to the right, +Y down; the axis that
+// points up reads +1 g.
+#define ROT_MIN_G 0.6f       // below this it is nearly flat: it stays as it was
+#define ROT_MARGIN_G 0.2f    // on a diagonal it doesn't change either, so it doesn't flicker between two sides
+#define ROT_STABLE_MS 600UL  // it must hold this way for a while
 
 #ifdef BOARD_HOST
-inline uint8_t gPanelRot = 0;  // una ventana no gira
+inline uint8_t gPanelRot = 0;  // a window doesn't rotate
 #else
-inline uint8_t gPanelRot = 1;  // al arrancar: en la mano derecha, con el cable a la izquierda
+inline uint8_t gPanelRot = 1;  // at boot: in the right hand, with the cable on the left
 #endif
 
 inline uint8_t rotFromGravity(float x, float y, uint8_t cur) {
@@ -27,7 +27,7 @@ struct RotFilter {
   int8_t candidate = -1;
   uint32_t since = 0;
   void reset() { candidate = -1; }
-  // true si hay que cambiar a *rot: el lado nuevo lleva ya ROT_STABLE_MS sin moverse
+  // true if it must switch to *rot: the new side has already been still for ROT_STABLE_MS
   bool update(float x, float y, uint32_t now, uint8_t *rot) {
     uint8_t want = rotFromGravity(x, y, *rot);
     if (want == *rot) {
@@ -46,7 +46,7 @@ struct RotFilter {
   }
 };
 
-// donde cae en el panel el pixel (x, y) de la imagen: indice = base + x * dx + y * dy
+// where pixel (x, y) of the image lands on the panel: index = base + x * dx + y * dy
 struct RotBlit { int32_t base, dx, dy; };
 inline RotBlit rotBlit(uint8_t rot, int32_t size) {
   switch (rot & 3) {
@@ -57,7 +57,7 @@ inline RotBlit rotBlit(uint8_t rot, int32_t size) {
   }
 }
 
-// de un punto del panel (px, py) al punto de la imagen que se ve ahi
+// from a panel point (px, py) to the image point seen there
 inline void rotTouch(uint8_t rot, int32_t px, int32_t py, int32_t size, int32_t *x, int32_t *y) {
   switch (rot & 3) {
     case 1: *x = py; *y = size - 1 - px; break;
@@ -67,7 +67,7 @@ inline void rotTouch(uint8_t rot, int32_t px, int32_t py, int32_t size, int32_t 
   }
 }
 
-// inclinar a la izquierda de la imagen es negativo, sea cual sea el lado que hace de arriba
+// tilting to the left of the image is negative, whichever side is acting as up
 inline float rotTilt(const float g[3], uint8_t rot) {
   switch (rot & 3) {
     case 1: return -g[1];
