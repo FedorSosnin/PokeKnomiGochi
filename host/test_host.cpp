@@ -216,8 +216,12 @@ static void testAudio() {
   sfxPlay(SFX_COUNT);        // out of range
   CHECK(!anySound(256));
   audioSetEnabled(false);
+  CHECK(!hostSoundEnabled());  // the Mac's Mute Sound item reads the game's own setting
   sfxPlay(SFX_TAP);
   CHECK(!anySound(256));
+  hostSetSoundEnabled(true);
+  CHECK(audioEnabled());
+  hostSetSoundEnabled(false);
   audioSetEnabled(true);
   audioSetSleeping(true);    // no sound while asleep, as on the board
   sfxPlay(SFX_TAP);

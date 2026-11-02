@@ -14,11 +14,12 @@ clang++ -std=c++17 -fobjc-arc -O2 -Wall -Wextra -Wno-unused-parameter \
   -framework AppKit -framework AudioToolbox -framework QuartzCore \
   -o "$APP/Contents/MacOS/PokeMacGochi"
 cp mac/Info.plist "$APP/Contents/Info.plist"
+cp mac/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp host/fonts/*.u8g2 "$APP/Contents/Resources/fonts/"
 rsync -a --delete --include='*.bin' --exclude='*' tools/sdcard/mons/ "$APP/Contents/Resources/mons/"
 
 # Local (ad hoc) signing: without it, an Apple silicon Mac will not run it. Not for distribution.
-codesign --force --sign - "$APP"
+codesign --force --deep --sign - "$APP"
 
 echo "OK -> $APP ($(du -sh "$APP" | cut -f1))"
 [[ "$1" == "--open" ]] && open "$APP"

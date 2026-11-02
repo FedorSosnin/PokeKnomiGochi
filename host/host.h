@@ -39,6 +39,10 @@ void hostButton(bool down);
 // A line for the game's serial console (the same commands as on the Knomi)
 void hostSerialPush(const char *line);
 
+// The game's sound setting (the SND button on the clock screen), saved with the game
+bool hostSoundEnabled(void);
+void hostSetSoundEnabled(bool on);
+
 // Audio: 16-bit mono PCM at HOST_AUDIO_RATE. Always fills frames samples (silence if nothing is playing).
 #define HOST_AUDIO_RATE 16000
 void hostAudioRender(int16_t *out, int frames);

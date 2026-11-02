@@ -177,9 +177,21 @@ Game rules run on your computer without a board:
 
 The code still supports the original Waveshare board that TamaPoke was made for. Its guide is in [`docs/TAMAPOKE-README.md`](docs/TAMAPOKE-README.md), and that document also explains the game's numbers in depth.
 
-## PokeMacGochi
+## PokeMacGochi (Mac)
 
-The same game runs as a small round window on a Mac desktop, with its own save and arrow keys for tilt. Run `mac/build_app.sh`, then open `build/mac/PokeMacGochi.app`. It is for personal use, and [host/README.md](host/README.md) explains how it works.
+The same game as a small round window on your Mac desktop, in a Poké Ball ring. It has no Dock icon; it lives in the menu bar.
+
+1. Download `PokeMacGochi.dmg` from the [latest release](https://github.com/FedorSosnin/PokeKnomiGochi/releases), open it and drag **PokeMacGochi** to **Applications**.
+2. Open it once. macOS warns that it can't check the app, because it isn't signed by an Apple developer account. Click **Done**.
+3. Go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to PokeMacGochi. After that it opens normally.
+
+   Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/PokeMacGochi.app`
+
+**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Tilt Catch and throwing Poké Balls. Space is the Knomi's button, for a wild battle. Drag the ring to move the window. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound and Quit.
+
+Your pet is saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi.
+
+To build it yourself, run `mac/build_dmg.sh` (needs Xcode's Command Line Tools). [host/README.md](host/README.md) explains how it works.
 
 ## Credits and license
 

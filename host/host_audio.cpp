@@ -38,6 +38,8 @@ void audioSetEnabled(bool on) {
   p.end();
 }
 bool audioEnabled() { return gOn; }
+bool hostSoundEnabled(void) { return gOn; }
+void hostSetSoundEnabled(bool on) { audioSetEnabled(on); }
 void audioSetSleeping(bool sleeping) { gSleeping = sleeping; }
 bool audioBusy() { return false; }
 void audioSetIdle(bool) {}

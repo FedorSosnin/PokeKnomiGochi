@@ -32,7 +32,9 @@ The game runs in ticks: the front end calls `hostTick()`, one pass of `loop()`, 
 ## Build and test
 
 ```bash
-mac/build_app.sh
+mac/build_app.sh     # build/mac/PokeMacGochi.app
+mac/build_dmg.sh     # build/mac/PokeMacGochi.dmg, for a release
+mac/make_icon.sh     # regenerates mac/AppIcon.icns from a frame of the game (throwaway save)
 ```
 
 This produces `build/mac/PokeMacGochi.app`. It needs the Xcode Command Line Tools and python3. There is no App Store build and no signing beyond a local ad hoc signature.
@@ -53,7 +55,7 @@ The save lives in `~/Library/Application Support/PokeMacGochi`, separate from an
 | Left and right arrows | Tilt |
 | Space | The Knomi's button: tap for a wild battle, 1-3 s for screen off, 10 s to ask about erasing the save |
 | Drag the Pokéball ring, or Option-drag | Move the window |
-| Right-click, or the Pokéball in the menu bar | Show/Hide, Size and Quit |
+| Right-click, or the Pokéball in the menu bar | About, Show/Hide, Size, Mute Sound (the game's own sound setting) and Quit |
 | Cmd-Q | Quit |
 
 For testing, launching with `--console` keeps the app from taking keyboard focus and reads the Knomi's serial commands from stdin (`HEALTH`, `GAMES`, `WILD 25`...). It also takes `MOUSE down|drag|up|right x y` and `KEY down|up code`, which go through AppKit's event queue, and `MENU n`, which triggers menu item n. `POKEMACGOCHI_SAVE_DIR` points the app at another save folder.

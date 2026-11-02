@@ -9,6 +9,10 @@
 #include "host.h"
 
 #define APP_NAME "PokeMacGochi"
+// About box
+#define AUTHOR_EMAIL "fedor@3dprintsos.com"
+#define GITHUB_URL "https://github.com/FedorSosnin/PokeKnomiGochi"
+#define YOUTUBE_URL ""
 #define TICK_S (1.0 / 60.0)
 // The Pokeball frame around the screen, in points
 #define RING 6.0
@@ -231,6 +235,9 @@ static void startAudio(void) {
 - (void)fillMenu:(NSMenu *)menu {
   [menu removeAllItems];
   menu.autoenablesItems = NO;
+  NSMenuItem *about = [menu addItemWithTitle:@"About " APP_NAME action:@selector(showAbout:) keyEquivalent:@""];
+  about.target = self;
+  [menu addItem:NSMenuItem.separatorItem];
   NSMenuItem *show = [menu addItemWithTitle:self.window.isVisible ? @"Hide " APP_NAME : @"Show " APP_NAME
                                      action:@selector(toggleWindow:)
                               keyEquivalent:@""];
@@ -245,6 +252,10 @@ static void startAudio(void) {
     it.state = self.window.frame.size.width == kSizes[i] ? NSControlStateValueOn : NSControlStateValueOff;
   }
   sizes.submenu = sub;
+  // the same setting as the game's SND button on the clock screen, saved with the game
+  NSMenuItem *mute = [menu addItemWithTitle:@"Mute Sound" action:@selector(toggleMute:) keyEquivalent:@""];
+  mute.target = self;
+  mute.state = hostSoundEnabled() ? NSControlStateValueOff : NSControlStateValueOn;
   [menu addItem:NSMenuItem.separatorItem];
   [menu addItemWithTitle:@"Drag the ring to move" action:nil keyEquivalent:@""].enabled = NO;
   [menu addItemWithTitle:@"\u2190 \u2192 tilt  \u00b7  Space: wild battle" action:nil keyEquivalent:@""].enabled = NO;
@@ -257,6 +268,38 @@ static void startAudio(void) {
   NSMenu *menu = [[NSMenu alloc] init];
   [self fillMenu:menu];
   [NSMenu popUpContextMenu:menu withEvent:event forView:self];
+}
+
+- (void)toggleMute:(id)sender { hostSetSoundEnabled(!hostSoundEnabled()); }
+
+static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *url) {
+  NSMutableAttributedString *s = [[NSMutableAttributedString alloc] initWithString:label];
+  [s appendAttributedString:[[NSAttributedString alloc] initWithString:text attributes:@{NSLinkAttributeName : [NSURL URLWithString:url]}]];
+  [s appendAttributedString:[[NSAttributedString alloc] initWithString:@"\n"]];
+  return s;
+}
+
+- (void)showAbout:(id)sender {
+  NSMutableAttributedString *credits = [[NSMutableAttributedString alloc] init];
+  [credits appendAttributedString:aboutLine(@"By ", @AUTHOR_EMAIL, @"mailto:" AUTHOR_EMAIL)];
+  [credits appendAttributedString:aboutLine(@"", @"PokeKnomiGochi on GitHub", @GITHUB_URL)];
+  if (strlen(YOUTUBE_URL)) [credits appendAttributedString:aboutLine(@"", @"YouTube channel", @YOUTUBE_URL)];
+  [credits appendAttributedString:[[NSAttributedString alloc]
+                                      initWithString:@"\nBased on TamaPoke by Quique Tortosa. Sprites from PMDCollab (CC BY-NC). "
+                                                     @"Pok\u00e9mon \u00a9 Nintendo / Game Freak / The Pok\u00e9mon Company."]];
+  NSMutableParagraphStyle *centered = [[NSMutableParagraphStyle alloc] init];
+  centered.alignment = NSTextAlignmentCenter;
+  [credits addAttributes:@{NSParagraphStyleAttributeName : centered, NSFontAttributeName : [NSFont systemFontOfSize:11]}
+                   range:NSMakeRange(0, credits.length)];
+  if (!gConsole) [NSApp activateIgnoringOtherApps:YES];
+  [NSApp orderFrontStandardAboutPanelWithOptions:@{NSAboutPanelOptionCredits : credits}];
+  // the round window floats: the panel has to as well, or it opens behind it. And on the pet's screen.
+  NSRect screen = (self.window.screen ?: NSScreen.mainScreen).visibleFrame;
+  for (NSWindow *w in NSApp.windows)
+    if (![w isKindOfClass:RoundWindow.class] && w.isVisible) {
+      w.level = NSFloatingWindowLevel + 1;
+      [w setFrameOrigin:NSMakePoint(NSMidX(screen) - w.frame.size.width / 2, NSMidY(screen) - w.frame.size.height / 2)];
+    }
 }
 
 // while hidden it stays alive: the game keeps running, like a Knomi with the screen off
@@ -368,6 +411,7 @@ static NSRect initialFrame(void) {
 - (void)applicationDidFinishLaunching:(NSNotification *)note {
   NSMenu *bar = [[NSMenu alloc] init];  // without this there is no Cmd-Q in an app without a Dock icon
   NSMenu *appMenu = [[NSMenu alloc] init];
+  [appMenu addItemWithTitle:@"About " APP_NAME action:@selector(orderFrontStandardAboutPanel:) keyEquivalent:@""];
   [appMenu addItemWithTitle:@"Quit " APP_NAME action:@selector(terminate:) keyEquivalent:@"q"];
   [bar addItemWithTitle:@"" action:nil keyEquivalent:@""].submenu = appMenu;
   NSApp.mainMenu = bar;
