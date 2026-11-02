@@ -137,8 +137,8 @@ enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE };
 ZoneScreen zoneScreen = ZS_NONE;
 uint8_t zoneCur = 0, zonePage = 0;
 int8_t bZone = -1;                  // this battle is in a zone; -1 = random
-uint32_t zoneUntil = 0, zoneNoteUntil = 0;
-const char *zoneNote = nullptr;
+uint32_t zoneUntil = 0;
+int16_t zoneDetail = 0;             // the entry opened from the zone's grid (0 = the grid)
 uint16_t *zoneArt = nullptr;        // the 5 frames, painted the first time the menu opens
 uint16_t *zoneBg = nullptr;         // the current battle's one, scaled up to the screen
 uint32_t gamesMenuUntil = 0;
@@ -2149,6 +2149,7 @@ void knomiAskReset() {
   if (runOpen) closeRun();
   if (dungeonOpen) closeDungeon();
   gamesMenuOpen = false;
+  zoneDetailClose();
   zoneScreen = ZS_NONE;
   if (galleryOpen) { galleryOpen = false; galleryPmd.unload(); }
   wifiSetupStop();
@@ -3870,15 +3871,15 @@ void drawDexInfo(int16_t dex, bool withFact = true) {
   }
 }
 
-void renderGallery() {
-  if (galleryDetail) {  // detail view: always redrawn (animated)
+// a Pokedex entry, full screen (the Pokedex and the zones' grids); galleryPmd holds its sprite
+void renderDexDetail(int16_t dex) {
     gfx->fillScreen(RGB565_BLACK);
     gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
-    const DexEntry &d = DEX_TBL[galleryDetail];
-    bool reg = pet.isRegistered(galleryDetail);
+    const DexEntry &d = DEX_TBL[dex];
+    bool reg = pet.isRegistered(dex);
     char head[32];
-    snprintf(head, sizeof(head), "N.%03d %s%s", galleryDetail,
-             pet.isShinyRegistered(galleryDetail) ? "*" : "", reg ? dexName(galleryDetail) : "???");
+    snprintf(head, sizeof(head), "N.%03d %s%s", dex,
+             pet.isShinyRegistered(dex) ? "*" : "", reg ? dexName(dex) : "???");
     gfx->setTextColor(reg ? d.accent : UI_INK);
     // auto-shrink long names (they don't fit at t3), measuring instead of counting
     // bytes; 13 characters at size 3 are the 234 px from before.
@@ -3889,11 +3890,11 @@ void renderGallery() {
     printT(head);
     if (reg) {
       if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 240, millis(), true, false, 4);
-      else if (const uint8_t *t = thumbs.get(galleryDetail)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
-      drawDexInfo(galleryDetail);
+      else if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
+      drawDexInfo(dex);
     } else if (galleryPmd.loaded) {
       drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, 0, true, true, 6);  // static silhouette ("?" style)
-    } else if (const uint8_t *t = thumbs.get(galleryDetail)) {
+    } else if (const uint8_t *t = thumbs.get(dex)) {
       drawThumb(t, CX - GAL_CELL, 135, 4, true);
     }
     gfx->setTextColor(UI_INK);
@@ -3901,6 +3902,11 @@ void renderGallery() {
     setCur(centerX(T(S_DETAIL_BACK), 2), 408);
     printT(T(S_DETAIL_BACK));
     gfx->flush();
+}
+
+void renderGallery() {
+  if (galleryDetail) {  // detail view: always redrawn (animated)
+    renderDexDetail(galleryDetail);
     return;
   }
 
@@ -4574,9 +4580,19 @@ void openZones() {
   zoneUntil = millis() + ZONE_IDLE_MS;
 }
 
+// the entry opened from a zone's grid, like the Pokedex's (0 = the grid)
+void zoneDetailClose() {
+  if (!zoneDetail) return;
+  zoneDetail = 0;
+  galleryPmd.unload();
+}
+
 void zoneBack() {
   sfxPlay(SFX_TAP);
-  if (zoneScreen == ZS_ZONE) {
+  if (zoneDetail) {
+    zoneDetailClose();
+    zoneUntil = millis() + ZONE_IDLE_MS;
+  } else if (zoneScreen == ZS_ZONE) {
     zoneScreen = ZS_PICK;
     zoneUntil = millis() + ZONE_IDLE_MS;
   } else {
@@ -4587,7 +4603,7 @@ void zoneBack() {
 
 void zoneTurnPage(int dir) {
   zoneUntil = millis() + ZONE_IDLE_MS;
-  if (zoneScreen != ZS_ZONE) return;
+  if (zoneScreen != ZS_ZONE || zoneDetail) return;
   int pages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
   int np = (int)zonePage + dir;
   if (np >= 0 && np < pages) zonePage = np;
@@ -4625,6 +4641,10 @@ void zoneBattleEnded() {
 
 void zoneTap(int16_t x, int16_t y) {
   zoneUntil = millis() + ZONE_IDLE_MS;
+  if (zoneDetail) {  // tap anywhere: back to the zone
+    zoneDetailClose();
+    return;
+  }
   if (zoneScreen == ZS_PICK) {
     for (uint8_t z = 0; z < ZONE_COUNT; z++) {
       int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
@@ -4632,7 +4652,6 @@ void zoneTap(int16_t x, int16_t y) {
         sfxPlay(SFX_TAP);
         zoneCur = z;
         zonePage = 0;
-        zoneNoteUntil = 0;
         zoneScreen = ZS_ZONE;
         return;
       }
@@ -4649,8 +4668,8 @@ void zoneTap(int16_t x, int16_t y) {
   int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + r * 4 + c);
   if (!dex) return;
   sfxPlay(SFX_TAP);
-  zoneNote = pet.isRegistered(dex) ? dexName(dex) : T(S_ZONE_MISSING);
-  zoneNoteUntil = millis() + 1600;
+  zoneDetail = dex;
+  galleryPmd.load(dex, pet.isShinyRegistered(dex));
 }
 
 void zoneDrawIcon(uint8_t z) {
@@ -4668,7 +4687,11 @@ void zoneDrawIcon(uint8_t z) {
 }
 
 void renderZones() {
-  if (!timeLeft(zoneUntil) || pet.sleeping || pet.ceremony || pet.isEgg()) { zoneScreen = ZS_NONE; return; }
+  if (!timeLeft(zoneUntil) || pet.sleeping || pet.ceremony || pet.isEgg()) { zoneDetailClose(); zoneScreen = ZS_NONE; return; }
+  if (zoneDetail) {
+    renderDexDetail(zoneDetail);
+    return;
+  }
   char b[32];
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
@@ -4701,12 +4724,7 @@ void renderZones() {
   printT(T(ZONE_NAME[zoneCur]));
   setSize(2);
   const char *line = b;
-  if (timeLeft(zoneNoteUntil)) {
-    line = zoneNote;
-    gfx->setTextColor(ZONE_COLOR[zoneCur]);
-  } else {
-    snprintf(b, sizeof(b), T(S_ZONE_CAUGHT_FMT), pet.zoneCaught(zoneCur), zoneSize(zoneCur));
-  }
+  snprintf(b, sizeof(b), T(S_ZONE_CAUGHT_FMT), pet.zoneCaught(zoneCur), zoneSize(zoneCur));
   setCur(centerX(line, 2), 54);
   printT(line);
   for (int i = 0; i < ZONE_PAGE; i++) {
@@ -5409,6 +5427,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (zoneScreen) {
+    if (zoneDetail) return false;  // an entry: tap anywhere to go back
     if (y >= ZONE_BTN_Y && y < ZONE_BTN_Y + ZONE_BTN_H && x >= ZONE_BTN_X && x < ZONE_BTN_X + ZONE_BTN_W)
       return pressSet(t, ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, T(S_ZONE_SEARCH));
     return false;  // Pokedex grids (here and below) swipe between pages: a slow swipe must not pick a square
