@@ -1160,6 +1160,41 @@ TEST(save, state_survives_a_reboot) {
   CHECK(!b.awaitingStarter());
 }
 
+// trainer medals past the 16th (MED_PLAYMATE) survive a reboot, and a save from before they
+// existed (only the 16-bit "trmedal") still loads every medal it had
+TEST(save, trainer_medals_past_16_and_older_saves) {
+  Pet a;
+  makePet(a, 25);
+  a.trainerMedals = MED_SHINY | MED_BUDDY | MED_PLAYMATE;
+  a.rename("MEDALS");  // rename persists the whole state
+  a.flushSave();
+  Pet b;
+  b.begin();
+  CHECK_EQ(b.trainerMedals, (uint32_t)(MED_SHINY | MED_BUDDY | MED_PLAYMATE));
+  CHECK(b.hasMedal(MED_PLAYMATE));
+
+  Preferences p;  // an older firmware's save: no 32-bit key
+  p.begin("tamapoke", false);
+  p.remove("trmed32");
+  p.putUShort("trmedal", MED_DEX10 | MED_PARTY);
+  p.end();
+  Pet c;
+  c.begin();
+  CHECK_EQ(c.trainerMedals, (uint32_t)(MED_DEX10 | MED_PARTY));
+}
+
+TEST(save, showdown_rewards_both_and_gives_the_medal_once) {
+  Pet a;
+  makePet(a, 25);
+  a.joy = 40;
+  a.showdownResult(3, 2);  // won
+  CHECK(a.joy > 40 + 12);
+  CHECK(a.hasMedal(MED_PLAYMATE));
+  uint16_t total = a.totalMedals;
+  a.showdownResult(1, 4);  // lost: still fun, no second medal
+  CHECK_EQ(a.totalMedals, total);
+}
+
 TEST(save, nickname_is_truncated_to_11_characters) {
   Pet p;
   makePet(p, 4);
