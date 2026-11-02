@@ -8,6 +8,8 @@
 #include <vector>
 #include "host.h"
 
+void randomSeed(unsigned long seed);  // host_runtime.cpp
+
 static void run(int ms) {
   for (int i = 0; i < ms / 10; i++) {
     hostTick();
@@ -22,6 +24,7 @@ int main(int argc, char **argv) {
   int img = dup(1);
   freopen("/dev/null", "w", stdout);
   hostInit(argv[1], argv[2]);
+  randomSeed(1);  // the same pose every time: the pet facing front, centred (make_icon.py crops on it)
   run(300);
   hostPointer(233, 145, true);  // Bulbasaur, the first starter
   hostPointer(233, 145, false);
