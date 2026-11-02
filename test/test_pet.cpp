@@ -917,6 +917,34 @@ TEST(medals, total_accumulates_across_pets) {
   CHECK_MSG(p.totalMedals == 2, "the player's total is kept");
 }
 
+TEST(medals, trainer_medals_come_from_the_dex_and_outlive_the_pet) {
+  Pet p;
+  makePet(p, 4);
+  for (int d = 1; d <= 10; d++) p.dexReg[(d - 1) >> 3] |= (uint8_t)(1 << ((d - 1) & 7));
+  p.dexShinyReg[0] |= 1;
+  advance(p, 1);
+  CHECK(p.hasMedal(MED_DEX10));
+  CHECK(p.hasMedal(MED_SHINY));
+  CHECK(!p.hasMedal(MED_DEX50));
+  CHECK(!p.hasMedal(MED_LV100));
+  uint16_t total = p.totalMedals;
+  p.newEgg();
+  p.chooseStarter(144);
+  p.eggTap(); p.eggTap(); p.eggTap();
+  CHECK_MSG(p.hasMedal(MED_DEX10) && p.hasMedal(MED_SHINY), "the trainer's medals are kept");
+  CHECK_MSG(p.totalMedals == total + 1, "only the new pet's own medal counts again");
+}
+
+TEST(medals, level_100_is_a_trainer_medal) {
+  Pet p;
+  makePet(p, 4);
+  p.ageMinutes = 99 * MINUTES_PER_LEVEL;
+  advance(p, 1);
+  CHECK_EQ(p.level(), (uint16_t)100);
+  CHECK(p.hasMedal(MED_LV100));
+  CHECK(p.trainerMedals & MED_LV100);
+}
+
 // ---------------------------------------------------------------- ceremonies
 TEST(ceremony, farewell_only_in_final_form_and_after_3_days) {
   Pet p;

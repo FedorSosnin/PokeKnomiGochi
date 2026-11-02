@@ -191,7 +191,7 @@ The same game as a small round window on your Mac desktop, in a Poké Ball ring.
 
 **Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Tilt Catch and throwing Poké Balls. Space is the Knomi's button, for a wild battle. Drag the ring to move the window. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound and Quit.
 
-Your pet is saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi.
+Your pet, sound setting and window size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 
 To build it yourself, run `mac/build_dmg.sh` (needs Xcode's Command Line Tools). [host/README.md](host/README.md) explains how it works.
 

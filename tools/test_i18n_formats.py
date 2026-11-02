@@ -139,7 +139,7 @@ def main():
     i18n_hpp = os.path.join(HERE, '..', 'i18n.h')
 
     str_count = count_enumerators(i18n_hpp, 'StrId', 'STR_COUNT')
-    med_count = 8  # MED_COUNT, #define'd in include/pet.hpp
+    med_count = 14  # MED_COUNT, #define'd in include/pet.hpp
 
     errors = []
     errors += check_table(

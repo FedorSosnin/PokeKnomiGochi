@@ -108,7 +108,8 @@ bool cardOpen = false;        // pet card (vertical swipe)
 bool kbOpen = false;          // keyboard for renaming the pet
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
-uint8_t cardPage = 0;         // 0 profile, 1 stats+medals
+uint8_t cardPage = 0;         // 0 profile, 1 stats, 2 medals, 3 trainer medals, 4 progress
+#define CARD_PAGES 5
 uint8_t clockPage = 0;        // 0 time, 1 settings (Knomi only)
 uint8_t wifiListPage = 0, wifiKbLayer = 0;
 int8_t wifiKbHover = -1;      // key under the finger: typed on release
@@ -514,6 +515,9 @@ PowerCtx powerCtx(uint32_t now) {
   c.idleMs = idleSince(now, lastInteract);
   c.screenOff = screenOff;
   c.sleeping = pet.sleeping;
+#ifdef BOARD_HOST
+  if (!c.sleeping) c.idleMs = 0;  // a desktop window has no panel to protect: only the pet's sleep dims it
+#endif
   c.gameOpen = gameOpen || battleOpen || quizOpen || runOpen || dungeonOpen;
   c.arcadeOpen = runOpen || dungeonOpen;
   c.usb = usbPresent();
@@ -990,7 +994,7 @@ void onSwipe(int dir) {
   if (gameOpen || kbOpen || clockOpen) return;
   if (cardOpen) {  // inside the card: switch between the 4 pages
     int p = (int)cardPage + (dir > 0 ? -1 : 1);  // left advances
-    cardPage = p < 0 ? 0 : (p > 3 ? 3 : p);
+    cardPage = p < 0 ? 0 : (p > CARD_PAGES - 1 ? CARD_PAGES - 1 : p);
     return;
   }
   if (!galleryOpen) {
@@ -3543,12 +3547,12 @@ void renderCardProfile() {
   printT(T(S_RENAME_HINT));
 }
 
-// page 1: battle (4 bars + train button)
+// page 1: stats (4 bars + train button)
 void renderCardStats() {
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(T(S_BATTLE), 3), 48);
-  printT(T(S_BATTLE));
+  printT(T(S_BATTLE));  // the page's title: "STATS"
 
   drawCardStat(118, T(S_STAT_ATK), pet.atkStat(), 260, UI_BAR_BAD);
   drawCardStat(160, T(S_STAT_DEF), pet.defStat(), 260, 0x4C98);
@@ -3570,20 +3574,21 @@ void renderCardStats() {
   printT(wins);
 }
 
-// page 2: medals with descriptive label
-void renderCardMedals() {
+// pages 2 and 3: the pet's medals, then the trainer's, with descriptive label
+void renderCardMedals(int first, int count, StrId headFmt) {
   int got = 0;
-  for (int i = 0; i < MED_COUNT; i++)
+  for (int i = first; i < first + count; i++)
     if (pet.hasMedal(1 << i)) got++;
-  char head[24];
-  snprintf(head, sizeof(head), T(S_MEDALS_FMT), got, MED_COUNT);
+  char head[40];
+  snprintf(head, sizeof(head), T(headFmt), got, count);
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(head, 3), 48);
   printT(head);
 
-  for (int i = 0; i < MED_COUNT; i++) {
-    int x = 28 + (i % 2) * 206, y = 104 + (i / 2) * 54;
+  int rowsTop = 104 + (4 - (count + 1) / 2) * 27;  // fewer rows: centred in the same space
+  for (int i = first; i < first + count; i++) {
+    int x = 28 + ((i - first) % 2) * 206, y = rowsTop + ((i - first) / 2) * 54;
     bool g = pet.hasMedal(1 << i);
     gfx->fillRoundRect(x, y, 196, 44, 10, g ? UI_BAR_OK : UI_TRACK);
     if (g) {  // earned mark
@@ -3600,7 +3605,7 @@ void renderCardMedals() {
   }
 }
 
-// page 3: progress (level, evolution, mistakes) — surfaces mechanics
+// page 4: progress (level, evolution, mistakes) — surfaces mechanics
 // that used to be invisible (how long until level-up/evolution and why)
 void renderCardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
@@ -3665,13 +3670,15 @@ void renderCard() {
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   if (cardPage == 0) renderCardProfile();
   else if (cardPage == 1) renderCardStats();
-  else if (cardPage == 2) renderCardMedals();
+  else if (cardPage == 2) renderCardMedals(0, MED_PET_COUNT, S_MEDALS_FMT);
+  else if (cardPage == 3) renderCardMedals(MED_PET_COUNT, MED_COUNT - MED_PET_COUNT, S_TRAINER_FMT);
   else renderCardProgress();
 
-  // 4-page indicator + help
-  for (int i = 0; i < 4; i++) {
-    if (i == cardPage) gfx->fillCircle(194 + i * 26, 374, 5, UI_INK);
-    else gfx->drawCircle(194 + i * 26, 374, 4, UI_INK);
+  // page indicator + help
+  for (int i = 0; i < CARD_PAGES; i++) {
+    int dx = CX + (2 * i - (CARD_PAGES - 1)) * 13;
+    if (i == cardPage) gfx->fillCircle(dx, 374, 5, UI_INK);
+    else gfx->drawCircle(dx, 374, 4, UI_INK);
   }
   gfx->setTextColor(UI_TRACK);
   setSize(2);

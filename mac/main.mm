@@ -7,6 +7,7 @@
 #include <sys/file.h>
 #include <unistd.h>
 #include "host.h"
+#include "shim/Preferences.h"  // the save folder's storage, as the game uses it
 
 #define APP_NAME "PokeMacGochi"
 // About box
@@ -25,9 +26,13 @@ static const CGFloat kSizes[] = {190, 240, 300};  // side of the window, frame i
 #define DEFAULT_SIZE 240.0
 
 static bool gConsole = false;  // --console: launched for testing
+static bool gOwnSave = true;   // false with POKEMACGOCHI_SAVE_DIR: another save than the user's
 static char **gArgv;
 
-static NSString *const kPrefSize = @"windowSize";
+// The window's size and place live in the save folder (namespace "mac"), next to the game they
+// belong to: a copy launched on another save (tests, POKEMACGOCHI_SAVE_DIR) can't move this one.
+#define PREFS_NS "mac"
+static NSString *const kPrefSize = @"windowSize";  // where 1.0 kept them, in the app's user defaults
 static NSString *const kPrefOriginX = @"windowX";
 static NSString *const kPrefOriginY = @"windowY";
 
@@ -323,10 +328,12 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
 
 - (void)saveWindowPlace {
   NSRect f = self.window.frame;
-  NSUserDefaults *d = NSUserDefaults.standardUserDefaults;
-  [d setDouble:f.size.width forKey:kPrefSize];
-  [d setDouble:f.origin.x forKey:kPrefOriginX];
-  [d setDouble:f.origin.y forKey:kPrefOriginY];
+  Preferences p;
+  p.begin(PREFS_NS);
+  p.putInt("size", (int32_t)lround(f.size.width));
+  p.putInt("x", (int32_t)lround(f.origin.x));
+  p.putInt("y", (int32_t)lround(f.origin.y));
+  p.end();
 }
 
 - (void)applyKeys { hostTiltKeys(_left, _right); }
@@ -395,12 +402,23 @@ static NSImage *statusIcon(void) {
 
 - (void)menuNeedsUpdate:(NSMenu *)menu { [_view fillMenu:menu]; }
 
-static NSRect initialFrame(void) {
+static NSRect initialFrame(bool ownSave) {
+  Preferences p;
+  p.begin(PREFS_NS, true);
+  bool known = p.isKey("x");
+  CGFloat size = p.getInt("size", 0), x = p.getInt("x", 0), y = p.getInt("y", 0);
+  p.end();
+  // first launch after 1.0: take the place it kept in the user defaults (only for the real save)
   NSUserDefaults *d = NSUserDefaults.standardUserDefaults;
-  CGFloat size = [d doubleForKey:kPrefSize];
+  if (!known && ownSave && [d objectForKey:kPrefOriginX]) {
+    known = true;
+    size = [d doubleForKey:kPrefSize];
+    x = [d doubleForKey:kPrefOriginX];
+    y = [d doubleForKey:kPrefOriginY];
+  }
   if (size < kSizes[0] || size > kSizes[2]) size = DEFAULT_SIZE;
-  if ([d objectForKey:kPrefOriginX]) {
-    NSRect f = NSMakeRect([d doubleForKey:kPrefOriginX], [d doubleForKey:kPrefOriginY], size, size);
+  if (known) {
+    NSRect f = NSMakeRect(x, y, size, size);
     for (NSScreen *s in NSScreen.screens)  // a monitor that is no longer there does not take the window with it
       if (NSIntersectsRect(s.visibleFrame, f)) return f;
   }
@@ -416,7 +434,7 @@ static NSRect initialFrame(void) {
   [bar addItemWithTitle:@"" action:nil keyEquivalent:@""].submenu = appMenu;
   NSApp.mainMenu = bar;
 
-  _window = [[RoundWindow alloc] initWithContentRect:initialFrame()
+  _window = [[RoundWindow alloc] initWithContentRect:initialFrame(gOwnSave)
                                            styleMask:NSWindowStyleMaskBorderless
                                              backing:NSBackingStoreBuffered
                                                defer:NO];
@@ -481,17 +499,19 @@ static NSRect initialFrame(void) {
 @end
 
 // Testing: "MOUSE down|drag|up|right x y" and "KEY down|up code", in canvas coordinates, enter through the
-// AppKit event queue like real ones, without touching the real mouse. "MENU n" triggers menu entry n.
+// AppKit event queue like real ones, without touching the real mouse. "MENU n [m]" triggers menu entry n (or m in its submenu).
 static void postTestEvent(const char *line) {
   char what[8] = "";
   int a = 0, b = 0;
   NSWindow *w = nil;
   for (NSWindow *candidate in NSApp.windows)
     if ([candidate isKindOfClass:RoundWindow.class]) w = candidate;
-  if (sscanf(line, "MENU %d", &a) == 1) {
+  int n = sscanf(line, "MENU %d %d", &a, &b);
+  if (n >= 1) {
     NSMenu *menu = [[NSMenu alloc] init];
     [(GameView *)w.contentView.subviews.firstObject fillMenu:menu];
-    [menu performActionForItemAtIndex:a];
+    if (n == 2) [[menu itemAtIndex:a].submenu performActionForItemAtIndex:b];  // "MENU n m": entry m of its submenu
+    else [menu performActionForItemAtIndex:a];
     return;
   }
   if (sscanf(line, "MOUSE %7s %d %d", what, &a, &b) == 3) {
@@ -538,12 +558,21 @@ int main(int argc, char **argv) {
   gArgv = argv;
   @autoreleasepool {
     NSString *saveDir = NSProcessInfo.processInfo.environment[@"POKEMACGOCHI_SAVE_DIR"];
+    gOwnSave = saveDir == nil;
     if (!saveDir) {
       NSString *support = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES)[0];
       saveDir = [support stringByAppendingPathComponent:@APP_NAME];
     }
     if (!lockSave(saveDir)) {
       fprintf(stderr, APP_NAME " is already open\n");
+      if (gOwnSave) {  // opened again by hand: say where the running one is instead of doing nothing
+        NSApplication.sharedApplication.activationPolicy = NSApplicationActivationPolicyAccessory;
+        [NSApp activateIgnoringOtherApps:YES];
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = @APP_NAME " is already open";
+        alert.informativeText = @"It's the round window on your desktop. If it is hidden, use the Pok\u00e9ball in the menu bar to show it.";
+        [alert runModal];
+      }
       return 0;
     }
     hostInit(NSBundle.mainBundle.resourcePath.fileSystemRepresentation, saveDir.fileSystemRepresentation);

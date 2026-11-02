@@ -318,7 +318,7 @@ void Pet::addBond(uint8_t amt) {
 
 void Pet::checkMedals() {
   if (isEgg()) return;
-  uint16_t before = medals;
+  uint16_t before = medals | trainerMedals;
   if (level() >= 10) medals |= MED_LV10;
   if (level() >= 25) medals |= MED_LV25;
   if (level() >= 50) medals |= MED_LV50;
@@ -327,7 +327,16 @@ void Pet::checkMedals() {
   if (bond >= 100) medals |= MED_BOND;
   if (DEX_TBL[speciesId].evolvesTo == 0) medals |= MED_FINAL;
   if (weight == 0 && level() >= 5 && careMistakes == 0) medals |= MED_FIT;
-  uint16_t gained = medals & ~before;
+  bool anyShiny = shiny;
+  for (uint8_t b : dexShinyReg) anyShiny |= b != 0;
+  uint16_t caught = registeredCount();
+  if (anyShiny) trainerMedals |= MED_SHINY;
+  if (caught >= 10) trainerMedals |= MED_DEX10;
+  if (caught >= 50) trainerMedals |= MED_DEX50;
+  if (caught >= 100) trainerMedals |= MED_DEX100;
+  if (caught >= 151) trainerMedals |= MED_DEX151;
+  if (level() >= 100) trainerMedals |= MED_LV100;
+  uint16_t gained = (medals | trainerMedals) & ~before;
   if (gained) {
     for (uint16_t m = gained; m; m &= (m - 1)) totalMedals++;
     newMedal = gained;
@@ -758,6 +767,7 @@ void Pet::save() {
   prefs.putUChar("bond", bond);
   prefs.putUShort("medal", medals);
   prefs.putUShort("tmedal", totalMedals);
+  prefs.putUShort("trmedal", trainerMedals);
   prefs.putUShort("mstone", lastMilestone);
   prefs.putUShort("ghi", gameHi);
   prefs.putUShort("rhi", runHi);
@@ -817,6 +827,7 @@ void Pet::load() {
   bond = prefs.getUChar("bond", 0);
   medals = prefs.getUShort("medal", 0);
   totalMedals = prefs.getUShort("tmedal", 0);
+  trainerMedals = prefs.getUShort("trmedal", 0);
   lastMilestone = prefs.getUShort("mstone", 0);
   gameHi = prefs.getUShort("ghi", 0);
   runHi = prefs.getUShort("rhi", 0);

@@ -49,8 +49,12 @@ enum : uint16_t {
   MED_LV10 = 1 << 0, MED_LV25 = 1 << 1, MED_LV50 = 1 << 2,
   MED_BERRY = 1 << 3, MED_STREAK7 = 1 << 4, MED_BOND = 1 << 5,
   MED_FINAL = 1 << 6, MED_FIT = 1 << 7,
+  // the trainer's: kept across every pet raised (trainerMedals)
+  MED_SHINY = 1 << 8, MED_DEX10 = 1 << 9, MED_DEX50 = 1 << 10, MED_DEX100 = 1 << 11,
+  MED_DEX151 = 1 << 12, MED_LV100 = 1 << 13,
 };
-#define MED_COUNT 8
+#define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer
+#define MED_COUNT 14
 
 class Pet {
 public:
@@ -84,6 +88,7 @@ public:
   char nick[12] = "";    // nickname (empty = species name)
   // medals: the individual's + cumulative counter across all raisings
   uint16_t medals = 0, totalMedals = 0;
+  uint16_t trainerMedals = 0;  // MED_SHINY..MED_LV100: never reset by a new pet
   uint16_t newMedal = 0;   // just earned, to celebrate
   uint16_t lastMilestone = 0;  // streak milestone already celebrated
   uint16_t gameHi = 0;     // minigame record (the player's)
@@ -197,7 +202,7 @@ public:
 
   // streak / bond / medals / name
   void rename(const char *name);
-  bool hasMedal(uint16_t m) const { return medals & m; }
+  bool hasMedal(uint16_t m) const { return (medals | trainerMedals) & m; }
   bool showMedal() const { return timeLeft(medalUntil) > 0; }
   bool showMilestone() const { return timeLeft(milestoneUntil) > 0; }
   int careBonus() const;  // egg improvement from streak + bond

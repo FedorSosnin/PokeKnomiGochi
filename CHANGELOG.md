@@ -8,6 +8,9 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Trainer medals:** a new card page with medals that stay with you across every Pokémon you raise: find a shiny, register 10, 50, 100 and all 151 in the Pokédex, and raise a Pokémon to level 100.
+- **Stats page:** the card's second page is now called Stats instead of Battle.
+- **PokeMacGochi:** the window no longer dims when you leave it alone; only a sleeping pet dims it. Its size and place are kept with your save, and opening it a second time says where the running one is.
 - **PokeMacGochi:** the same game as a small round window on a Mac desktop, in a Pokéball ring, with arrow keys for tilt and its own save. Build it with `mac/build_app.sh`; see `host/README.md`.
 - **Buddies:** other PokeKnomiGochis on the same Wi-Fi show up on your screen, and you can battle them or trade Pokédex entries. The Knomi stays connected to Wi-Fi to make this work.
 - **3D-printed case:** a Poké Ball case for the Knomi, with the print file and recommended colors.

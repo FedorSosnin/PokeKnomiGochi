@@ -57,6 +57,7 @@ static const ExpectedFmt EXPECTED[] = {
   { S_STREAK_FMT,      "%u,%u" },
   { S_INFO_FMT,        "%s,%lu" },
   { S_MEDALS_FMT,      "%d,%d" },
+  { S_TRAINER_FMT,     "%d,%d" },
   { S_REC_FMT,         "%u" },
   { S_LVL_FMT,         "%u" },
   { S_NEXT_LVL_FMT,    "%u,%u" },
