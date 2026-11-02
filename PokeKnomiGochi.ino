@@ -50,7 +50,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.20"
+#define FW_VERSION "1.21"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -867,9 +867,9 @@ void handleSerial() {
 // ---------- touch input ----------
 
 bool inPetZone(int16_t x, int16_t y) {
-  int n = partyBuddies();
-  if (n >= 2)  // in the row: yours is the first one
-    return abs(x - partySlotX(n, 0)) < (PARTY_RIGHT - PARTY_LEFT) / n / 2 && y > PET_GROUND - 90 && y < 310;
+  int n = partyOthers();
+  if (n)  // with others around, yours stands in the middle
+    return abs(x - PARTY_MINE_X) < (n <= 2 ? 72 : 56) && y > PET_GROUND - (n <= 2 ? 150 : 115) && y < 310;
   return x > 110 && x < 356 && y > 95 && y < 310;
 }
 
@@ -2086,7 +2086,7 @@ void renderQuiz() {
 #define VISIT_ENTER_MS 2500UL
 #define VISIT_HANG_MS 40000UL
 #define VISIT_LEAVE_MS 3500UL
-#define VISIT_X 356
+#define VISIT_X 368  // where the visitor stands: a buddy's place (partyBuddyX(1, 1))
 
 void startVisitWith(int16_t dex) {
   if (visitPhase != VP_NONE || buddyCount(bPeers) || pet.isEgg() || pet.sleeping || pet.ceremony) return;
@@ -2166,8 +2166,8 @@ void drawVisitor(uint32_t now) {
   } else if ((t / 6000) % 2 && visitPmd.has(PMD_HOP)) {
     act = PMD_HOP;
   }
-  drawPmdActM(visitPmd, act, x, PET_GROUND, now - visitT, true, false, 4);
-  if (visitPhase == VP_HANG && (t / 900) % 4 == 0) drawMap(SPR_HEART, 32, x - 90, PET_GROUND - 160, 1, false);
+  drawPmdActM(visitPmd, act, x, PET_GROUND, now - visitT, true, false, partyOthersScale(1));
+  if (visitPhase == VP_HANG && (t / 900) % 4 == 0) drawMap(SPR_HEART, 32, 286, PET_GROUND - 150, 1, false);
   if (visitPhase == VP_LEAVE) {
     char b[40];
     snprintf(b, sizeof(b), T(S_VISIT_BYE_FMT), dexName(visitDex));
@@ -4546,6 +4546,14 @@ bool buddyVisible() {
 // buddies on the main screen right now (0 = none): with 2 or more everyone stands in a row
 int partyBuddies() { return buddyVisible() ? buddyCount(bPeers) : 0; }
 
+// others on the main screen (buddies, or the daily visitor while it is here): then yours stands
+// in the middle, bigger (partyBuddyX / partyScale in buddy.h)
+int partyOthers() {
+  int n = partyBuddies();
+  if (!n && (visitPhase == VP_ENTER || visitPhase == VP_HANG || visitPhase == VP_LEAVE)) n = 1;
+  return n;
+}
+
 // the buddy the menu, battles and trades are about; direct messages go to it
 void buddySelect(int i) {
   bCur = i;
@@ -4559,9 +4567,9 @@ void drawBuddyPet(uint32_t now) {
     k++;  // party slot: in arrival-slot order, after yours
     if (!buddyPmd[i].loaded) continue;
     uint8_t act = ((now + i * 1300) / 5000) % 2 && buddyPmd[i].has(PMD_HOP) ? PMD_HOP : PMD_IDLE;
-    drawPmdActM(buddyPmd[i], act, partySlotX(n, k), PET_GROUND, now, true, false, partyScale(n, false));
+    drawPmdActM(buddyPmd[i], act, partyBuddyX(n, k), PET_GROUND, now, true, false, partyOthersScale(n));
   }
-  if (n == 1 && (now / 900) % 4 == 0) drawMap(SPR_HEART, 32, VISIT_X - 90, PET_GROUND - 160, 1, false);  // they get along
+  if (n == 1 && (now / 900) % 4 == 0) drawMap(SPR_HEART, 32, 286, PET_GROUND - 150, 1, false);  // they get along
 }
 
 // the buddy notice and, on top of everything, the notes about what happened
@@ -4586,10 +4594,6 @@ void drawBuddyTop() {
   }
 }
 
-// half the width each Pokemon has on the ground, and how tall it stands, with n buddies
-static int partyHalf(int n) { return n <= 1 ? 60 : (PARTY_RIGHT - PARTY_LEFT) / n / 2; }
-static int partyTall(int n) { return n <= 1 ? 120 : 90; }
-
 // the buddy under a touch on the main screen (its notice counts too), -1 if none
 int buddyAt(int16_t x, int16_t y) {
   int n = partyBuddies(), k = 0;
@@ -4598,7 +4602,7 @@ int buddyAt(int16_t x, int16_t y) {
   for (int i = 0; i < BUDDY_MAX; i++) {
     if (!bPeers[i].on) continue;
     k++;
-    if (abs(x - partySlotX(n, k)) < partyHalf(n) && y > PET_GROUND - partyTall(n) && y < PET_GROUND) return i;
+    if (abs(x - partyBuddyX(n, k)) < partyHalf(n) && y > PET_GROUND - partyTall(n) && y < PET_GROUND) return i;
   }
   return -1;
 }
@@ -5325,6 +5329,20 @@ void drawPmdAct(uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool 
   drawPmdActM(pmd, actId, cx, groundY, t, loop, sil, maxS);
 }
 
+// With others on screen (n), yours is always a size step bigger than them, whatever the species:
+// sprites are capped by height, so a tall buddy of the same species would otherwise come out the
+// same size as yours. Yours at least step 3; theirs one step below, down to the smallest (2).
+uint8_t partyMineScale(int n) {
+  uint8_t s = pmd.acts[PMD_IDLE].h ? 170 / pmd.acts[PMD_IDLE].h : 5;
+  if (s < 3) s = 3;
+  uint8_t cap = partyScale(n, true);
+  return s > cap ? cap : s;
+}
+uint8_t partyOthersScale(int n) {
+  uint8_t s = partyScale(n, false), mine = partyMineScale(n);
+  return s >= mine ? (mine > 2 ? mine - 1 : 2) : s;
+}
+
 // picks the pet's next whim when it is happy
 void behNext() {
   uint32_t now = millis();
@@ -5378,7 +5396,7 @@ void drawPetPMD() {
   } else {
     // happy: the planner decides (idle / walk / gesture); in a row of buddies it stays put
     if (now > beh.until) behNext();
-    if (partyBuddies() >= 2 && beh.mode == 1) beh.mode = 0;
+    if (partyOthers() && beh.mode == 1) beh.mode = 0;
     if (beh.mode != 1) walkLast = 0;  // when walking again, the time stopped isn't counted
     if (beh.mode == 1) {
       float d = beh.targetX - beh.x;
@@ -5404,11 +5422,13 @@ void drawPetPMD() {
     if (!pmd.has(act)) act = PMD_IDLE;
   }
 
-  int n = partyBuddies();
-  int px = n >= 2 ? partySlotX(n, 0) : (int)beh.x;
+  int n = partyOthers();
+  int px = n ? PARTY_MINE_X : (int)beh.x;
+  if (n) gPmdForceScale = partyMineScale(n);
   drawPmdAct(act, px, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, partyScale(n, true));
+  gPmdForceScale = 0;
 
-  if (pet.showHeart()) drawMap(SPR_HEART, 32, px + (n >= 2 ? 20 : 50), PET_GROUND - (n >= 2 ? 120 : 190), n >= 2 ? 1 : 2, false);
+  if (pet.showHeart()) drawMap(SPR_HEART, 32, px + (n > 2 ? 20 : 50), PET_GROUND - (n > 2 ? 140 : 190), n > 2 ? 1 : 2, false);
   drawVisitor(now);
 }
 
@@ -5738,7 +5758,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     for (int i = 0; i <= bt; i++) k += bPeers[i].on;
     const char *nm = buddyNameOf(bt);
     if (y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6) return pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, nm);
-    return pressSet(t, partySlotX(n, k) - partyHalf(n), PET_GROUND - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
+    return pressSet(t, partyBuddyX(n, k) - partyHalf(n), PET_GROUND - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
   }
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   if (pet.wantEvolveButton() && pressIn(x, y, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H))

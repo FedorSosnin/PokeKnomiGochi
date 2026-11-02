@@ -8,6 +8,10 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.21] - 2026-11-02
+
+- **Yours stands out:** whenever buddies or a daily visitor are on screen, your Pokémon stands in the middle and a size bigger than everyone else, even next to buddies of the same species. Buddies and visitors stand at the sides.
+
 ## [1.20] - 2026-11-02
 
 - **PokeWebGochi:** the game in any browser at https://pokewebgochi.3dprintsos.com, the Knomi screen centered on a black page. It saves in the browser by itself, with **Export save** and **Import save** for backups, plays in one tab at a time, has Small, Medium and Large sizes, and uses a phone's own tilt. It updates itself: a tab left open offers the new version.

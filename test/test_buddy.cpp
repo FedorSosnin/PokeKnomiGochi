@@ -153,13 +153,16 @@ TEST(buddy, several_buddies_get_their_own_slots) {
   CHECK_EQ(buddyFind(ps, 12), -1);
 }
 
-TEST(buddy, the_party_fits_across_the_ground) {
-  CHECK_EQ(partySlotX(1, 0), 233);  // one buddy: as before
-  CHECK_EQ(partySlotX(1, 1), 356);
-  for (int n = 2; n <= BUDDY_MAX; n++) {
-    CHECK_EQ(partySlotX(n, 0), PARTY_LEFT);
-    CHECK_EQ(partySlotX(n, n), PARTY_RIGHT);
-    for (int i = 1; i <= n; i++) CHECK(partySlotX(n, i) - partySlotX(n, i - 1) >= 70);  // room for a 2x sprite
-    CHECK(partyScale(n, true) < partyScale(1, true));
+TEST(buddy, yours_stands_in_the_middle_and_bigger) {
+  CHECK_EQ(partyScale(0, true), (uint8_t)5);  // alone: as always
+  for (int n = 1; n <= BUDDY_MAX; n++) {
+    CHECK(partyScale(n, true) > partyScale(n, false));  // never mistaken for a buddy
+    for (int k = 1; k <= n; k++) {
+      int x = partyBuddyX(n, k);
+      CHECK(x - partyHalf(n) >= 13 && x + partyHalf(n) <= 453);   // inside the round screen at ground level
+      CHECK(abs(x - PARTY_MINE_X) >= 90);                          // clear of yours in the middle
+      if (k > 1) CHECK(x - partyBuddyX(n, k - 1) >= 2 * partyHalf(n));  // and of each other
+    }
   }
+  CHECK(partyBuddyX(2, 1) < PARTY_MINE_X && partyBuddyX(2, 2) > PARTY_MINE_X);  // one on each side
 }

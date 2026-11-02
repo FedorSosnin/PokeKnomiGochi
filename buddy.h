@@ -143,19 +143,26 @@ inline int buddyHello(BuddyPeer *ps, const BuddyMsg &m, uint32_t now, bool *arri
   return i;
 }
 
-// Where each Pokemon stands on the main screen with n buddies (slot 0 is yours) and how big:
-// with one buddy, as always (yours walks around, the buddy on the right); with more, everyone
-// in a row across the ground, smaller the more there are.
-#define PARTY_LEFT 78
-#define PARTY_RIGHT 388
-inline int16_t partySlotX(int n, int slot) {
-  if (n <= 1) return slot ? 356 : 233;
-  return PARTY_LEFT + (PARTY_RIGHT - PARTY_LEFT) * slot / n;
+// Where each Pokemon stands on the main screen when others are there (n = buddies on screen, or 1
+// for the daily visitor). Yours always stands in the middle, a size bigger than the rest, so it is
+// never mistaken for a buddy of the same species; the others stand at the sides, smaller the more
+// there are. Alone, yours walks around as always.
+#define PARTY_MINE_X 233
+inline int16_t partyBuddyX(int n, int k) {  // k = 1..n: the buddies in slot order
+  static const int16_t ONE[] = { 368 }, TWO[] = { 98, 368 }, THREE[] = { 108, 332, 410 }, FOUR[] = { 56, 136, 330, 410 };
+  const int16_t *xs = n <= 1 ? ONE : n == 2 ? TWO : n == 3 ? THREE : FOUR;
+  int i = k - 1;
+  if (i < 0) i = 0;
+  if (i > (n < 1 ? 0 : n > 4 ? 3 : n - 1)) i = n < 1 ? 0 : (n > 4 ? 3 : n - 1);
+  return xs[i];
 }
 inline uint8_t partyScale(int n, bool mine) {
-  if (n <= 1) return mine ? 5 : 4;
-  return n == 2 ? 3 : 2;
+  if (n <= 0) return 5;  // alone: as always
+  if (mine) return n <= 2 ? 4 : 3;
+  return n <= 2 ? 3 : 2;
 }
+inline int16_t partyHalf(int n) { return n <= 2 ? 56 : 38; }   // half the ground a buddy takes
+inline int16_t partyTall(int n) { return n <= 2 ? 110 : 80; }  // how tall it stands, for touches
 
 // battle between two: both boards draw the same numbers from the same seed (the session)
 inline uint32_t pvpRand(uint32_t &r) {
