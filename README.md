@@ -2,6 +2,8 @@
 
 A Pokémon tamagotchi for the **BTT Knomi V2**, the little round screen made for 3D printers. Raise any of the original 151, battle wild Pokémon, catch them to fill your Pokédex, and play mini games by tapping and tilting.
 
+<p align="center"><img src="docs/images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a Knomi in its printed Poké Ball case" width="420"></p>
+
 This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) by Quique Tortosa, who created the game and did the hard work. PokeKnomiGochi brings it to the Knomi and adds battles, catching and new games. Please give the original a star.
 
 | | | |
@@ -112,8 +114,10 @@ A Poké Ball case for the Knomi, ready to print in three colors. It's a remix: t
 
 | | |
 |:--:|:--:|
+| ![The printed case in hand](docs/images/knomi-in-hand.jpg) | ![The printed case on a desk](docs/images/knomi-on-desk.jpg) |
+| **Printed and in hand** | **On the desk** |
 | ![The finished case](docs/images/case.png) | ![The parts laid out by color](docs/images/case-parts.png) |
-| **Finished case** | **Parts in their recommended colors** |
+| **Render** | **Parts in their recommended colors** |
 
 | Part | Recommended color | Size |
 |---|---|---|
