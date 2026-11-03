@@ -27,7 +27,7 @@ Everything your Pokémon needs, what each action does, and how to fill the Poké
 | 🛁 **Bath** | | | | Full | +1 | | Also clears every poop |
 | 🌙 **Sleep** | | | +6 a minute | | | | Turn the light off, then back on to wake it |
 
-Each Pokémon has one favorite berry color. Try them to find out which it is.
+There are three berries, a Razz, an Oran and a Pinap Berry, and each Pokémon has one favorite. Try them to find out which: once found, it shows on the Pokémon's card.
 
 ## Games
 

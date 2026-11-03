@@ -8,6 +8,18 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.25] - 2026-11-03
+
+- **New look for the home screen:** the four buttons are bigger pixel-art icons without boxes: a Razz Berry, a Poké Ball, a crescent moon and a bubble.
+- **New food:** the berries are now a Razz, an Oran and a Pinap Berry, with a new wrapped candy. Each Pokémon still loves the same one as before, and its card now shows that berry's icon once you've found it.
+- **Catch rings:** while you aim, rings show around the Pokémon. Land the ball in the small green circle and it always holds, in the bold ring three times in four, in the faint outer ring one time in four. The catch uses the home screen's Poké Ball.
+- **Attack effects:** every move shows a little of its type: flames, splashing water, leaves, sparks, ice crystals, bubbles, mind rings, pebbles, gusts or an impact burst.
+- **A lost battle earns nothing:** no training and no bond, but your Pokémon is still tired out.
+- **Renaming is easy to find:** a pencil sits beside the name on the card, and the name is centered above the Pokémon.
+- **Zone Pokédex:** says "Swipe up to go back" at the bottom.
+- **Mac:** the ring grows when the mouse is over the window, and only the ring moves it: the whole screen is for touching. Over the screen the mouse is a pointing finger that presses when you click. The app icon is now Gengar.
+- **Mac and web:** all four arrow keys walk in PokeDungeon. In the browser, too, the mouse is a finger.
+
 ## [1.24] - 2026-11-03
 
 - **Shiny Pokémon in the wild:** about 1 wild battle in 50 brings a shiny, in its official shiny colors with gold sparkles twinkling around it. The battle opens with "Shiny ...!". Beat it and you get Poké Balls even if you already have the regular one.

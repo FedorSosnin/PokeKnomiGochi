@@ -10,8 +10,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 
 | | | |
 |:--:|:--:|:--:|
-| ![Your Pokémon at home](docs/images/home.png) | ![A wild battle](docs/images/battle.png) | ![Throwing a Poké Ball](docs/images/catch.png) |
-| **Raise your Pokémon** | **Battle wild Pokémon** | **Lean to aim your Poké Ball** |
+| ![Gengar at home](docs/images/home.png) | ![Charizard's fire attack on a wild Pikachu](docs/images/battle.png) | ![Aiming a Poké Ball inside the catch rings](docs/images/catch.png) |
+| **Raise your Pokémon** | **Battle wild Pokémon** | **Aim for the green circle** |
 | ![A successful catch](docs/images/caught.png) | ![The Pokédex](docs/images/pokedex.png) | ![A Pokédex entry](docs/images/pokedex-entry.png) |
 | **Catch what you beat** | **Fill the Pokédex** | **Read about what you've caught** |
 | ![Games menu](docs/images/games.png) | ![PokeRun](docs/images/pokerun.png) | ![Who's That Pokémon?](docs/images/quiz.png) |
@@ -20,10 +20,12 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 | **Choose where to hunt** | **See what's missing** | **Battle in that zone** |
 | ![The answer revealed](docs/images/quiz-reveal.png) | ![Tilt Catch](docs/images/tilt-catch.png) | ![A daily visitor](docs/images/visitor.png) |
 | **Guess the silhouette** | **Tilt Catch** | **A visitor drops by each day** |
-| ![A buddy visiting from another Knomi](docs/images/buddy.png) | ![Battle or trade with a buddy](docs/images/buddy-menu.png) | ![The button under your finger, shown large](docs/images/press.png) |
-| **A buddy visits from another Knomi** | **Battle or trade with them** | **Press and slide to choose** |
+| ![Pikachu and Charizard visiting Gengar](docs/images/buddy.png) | ![Battle or trade with a buddy](docs/images/buddy-menu.png) | ![The button under your finger, shown large](docs/images/press.png) |
+| **Buddies come to visit** | **Battle or trade with them** | **Press and slide to choose** |
 | ![Play together](docs/images/play.png) | ![Who's That? Showdown](docs/images/showdown.png) | ![Poké Ball Volley](docs/images/volley.png) |
 | **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
+| ![Razz, Oran and Pinap Berries and a candy](docs/images/food.png) | ![The card, with the favorite berry](docs/images/card.png) | ![Pikachu and shiny Pikachu side by side](docs/images/shiny.png) |
+| **Feed it berries and candy** | **Its card and favorite berry** | **Catch the shiny ones too** |
 
 ## Install
 
@@ -67,7 +69,8 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | **Tap the Pokémon** | Pet it |
 | **Tap the bottom icons** | Feed it, open games, turn the light off for bed, or give it a bath |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
-| **Swipe up** | See its stats |
+| **Swipe up** | See its card, stats and medals |
+| **Tap its name on the card** (✏️) | Rename it |
 | **Swipe left or right** | Open the Pokédex |
 | **Swipe down** | Set the clock, then swipe left for settings |
 | **Press the button** | Start a wild battle |
@@ -80,9 +83,9 @@ A fully evolved Pokémon that is at least 3 days old offers a goodbye, which you
 
 ### Battles and catching
 
-Press the button to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up.
+Press the button to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up, and each move shows a little of its type: flames, splashing water, leaves, sparks, ice and more.
 
-Winning trains your Pokémon. Losing leaves it nearly out of energy, so it has to sleep before it can fight again.
+Winning trains your Pokémon. Losing earns nothing and leaves it nearly out of energy, so it has to sleep before it can fight again.
 
 About 1 wild Pokémon in 50 is **shiny**: official shiny colors with gold sparkles around it. The Pokédex keeps shiny and regular forms apart, shows both side by side once you have both, and each can be traded on its own. Catching everything in a zone earns that zone's medal.
 
@@ -206,7 +209,7 @@ The code still supports the original Waveshare board that TamaPoke was made for.
 
 - **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser.
 - **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.
-- **Controls:** tap, hold and swipe the screen. On a phone, tilt it to aim (iPhones ask permission once). On a computer, the left and right arrows tilt and Space is the Knomi's button.
+- **Controls:** tap, hold and swipe the screen. On a phone, tilt it to aim (iPhones ask permission once). On a computer, the mouse is a finger that presses when you click, the left and right arrows tilt, all four arrows walk in PokeDungeon, and Space is the Knomi's button.
 - **Size:** Small (the default), Medium or Large, like the Mac app. On a small screen it shrinks to fit.
 - **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and PokeMacGochi use it too, so all three meet each other.
 - **Updates:** it updates itself: reload to get the newest version, and a tab left open says when there is one.
@@ -223,7 +226,7 @@ The same game as a small round window on your Mac desktop, in a Poké Ball ring.
 
    Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/PokeMacGochi.app`
 
-**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Tilt Catch and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle. Drag the red and white ring to move the window: it grows when the mouse is over it, so it's easy to grab, and the screen inside is only for touching. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound, Check for Updates and Quit.
+**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Tilt Catch and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle. Drag the red and white ring to move the window: it grows when the mouse is over it, so it's easy to grab, and the screen inside is only for touching, with the mouse as a finger. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound, Check for Updates and Quit.
 
 Your pet, sound setting and window size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 

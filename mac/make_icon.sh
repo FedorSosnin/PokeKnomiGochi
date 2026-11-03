@@ -12,7 +12,8 @@ ln -s "$PWD/host/fonts" "$TMP/res/fonts"
 clang++ -std=c++17 -O2 -I host mac/icon_shot.cpp build/host/libpokehost.a -o "$TMP/icon_shot"
 # midday today, as the game counts it (local time as epoch)
 NOON=$(python3 -c "import time; t=time.time()+time.localtime().tm_gmtoff; print(int(t//86400*86400+12*3600))")
-"$TMP/icon_shot" "$TMP/res" "$TMP/save" "$NOON" > "$TMP/frame.rgba"
+# a port of its own: no buddy on the network wanders into the icon
+POKEMACGOCHI_BUDDY_PORT=47919 "$TMP/icon_shot" "$TMP/res" "$TMP/save" "$NOON" > "$TMP/frame.rgba"
 python3 -I mac/make_icon.py "$TMP/frame.rgba" "$TMP/icon_1024.png"
 for s in 16 32 128 256 512; do
   sips -z $s $s "$TMP/icon_1024.png" --out "$TMP/AppIcon.iconset/icon_${s}x${s}.png" >/dev/null

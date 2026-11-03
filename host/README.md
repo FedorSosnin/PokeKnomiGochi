@@ -53,12 +53,13 @@ The save lives in `~/Library/Application Support/PokeMacGochi`, separate from an
 |---|---|
 | Click, hold, swipe | Touch |
 | Left and right arrows | Tilt |
+| All four arrows | Walk in PokeDungeon |
 | Space | The Knomi's button: tap for a wild battle, 1-3 s for screen off, 10 s to ask about erasing the save |
-| Drag the Pokéball ring, or Option-drag | Move the window |
+| Drag the Pokéball ring | Move the window (the ring grows under the mouse; the screen is only for touching, with the mouse as a finger) |
 | Right-click, or the Pokéball in the menu bar | About, Show/Hide, Size, Mute Sound (the game's own sound setting) and Quit |
 | Cmd-Q | Quit |
 
-For testing, launching with `--console` keeps the app from taking keyboard focus and reads the Knomi's serial commands from stdin (`HEALTH`, `GAMES`, `WILD 25`...). It also takes `MOUSE down|drag|up|right x y` and `KEY down|up code`, which go through AppKit's event queue, and `MENU n`, which triggers menu item n. `POKEMACGOCHI_SAVE_DIR` points the app at another save folder.
+For testing, launching with `--console` keeps the app from taking keyboard focus and reads the Knomi's serial commands from stdin (`HEALTH`, `GAMES`, `WILD 25`...). It also takes `MOUSE down|drag|up|right x y` and `KEY down|up code`, which go through AppKit's event queue, `MENU n`, which triggers menu item n, and `HOVER on|off`, which grows or shrinks the ring as the mouse would. `POKEMACGOCHI_SAVE_DIR` points the app at another save folder.
 
 ## Buddies
 

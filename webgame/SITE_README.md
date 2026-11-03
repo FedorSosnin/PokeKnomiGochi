@@ -8,14 +8,16 @@
 
 | | | |
 |:--:|:--:|:--:|
-| ![Your Pokémon at home](images/home.png) | ![A wild battle](images/battle.png) | ![Throwing a Poké Ball](images/catch.png) |
+| ![Gengar at home](images/home.png) | ![Charizard's fire attack on a wild Pikachu](images/battle.png) | ![Aiming a Poké Ball inside the catch rings](images/catch.png) |
 | **Raise your Pokémon** | **Battle wild Pokémon** | **Catch what you beat** |
 | ![Five zones to hunt in](images/zones.png) | ![The Pokédex](images/pokedex.png) | ![Mini games](images/games.png) |
 | **Choose where to hunt** | **Fill the Pokédex** | **Play mini games** |
-| ![A buddy visiting](images/buddy.png) | ![Battle or trade with a buddy](images/buddy-menu.png) | ![The button under your finger, shown large](images/press.png) |
+| ![Pikachu and Charizard visiting Gengar](images/buddy.png) | ![Battle or trade with a buddy](images/buddy-menu.png) | ![The button under your finger, shown large](images/press.png) |
 | **Buddies come to play** | **Battle or trade with them** | **Press and slide to choose** |
 | ![Play together](images/play.png) | ![Who's That? Showdown](images/showdown.png) | ![Poké Ball Volley](images/volley.png) |
 | **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
+| ![Razz, Oran and Pinap Berries and a candy](images/food.png) | ![The card, with the favorite berry](images/card.png) | ![Pikachu and shiny Pikachu side by side](images/shiny.png) |
+| **Feed it berries and candy** | **Its card and favorite berry** | **Catch the shiny ones too** |
 
 ## On your phone
 
@@ -28,9 +30,9 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 ## How to play
 
 - **Tap your Pokémon** to pet it. The buttons along the bottom feed it, open the games, turn off the light at bedtime and give it a bath.
-- **Swipe up** for its stats and medals, **left or right** for the Pokédex, and **down** for the clock and settings.
-- **Battle** from the games menu: pick a zone, search, and catch what you beat to fill your Pokédex.
-- On a computer, the **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
+- **Swipe up** for its card, stats and medals (tap its name there to rename it), **left or right** for the Pokédex, and **down** for the clock and settings.
+- **Battle** from the games menu: pick a zone, search, and catch what you beat to fill your Pokédex. Land the Poké Ball in the small green circle and the catch is sure.
+- On a computer, the mouse is a finger: it presses when you click. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
 
 ## Your save
 
