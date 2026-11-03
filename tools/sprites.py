@@ -38,6 +38,9 @@ PALETTE = {
     'L': '#6f7cb8',  # lavender shade
     's': '#aab0bc',  # cannon gray
     'S': '#787e8c',  # gray shade
+    'u': '#73baf0',  # the Oran Berry's bright blues
+    'v': '#2a7ad8',
+    'V': '#1a529a',
 }
 
 W = H = 32
@@ -433,16 +436,6 @@ def heart():
 
 # ------------------------------------------------------------ button icons
 
-def icon_food():
-    g = G(16)
-    g.disk(8, 9.5, 5.2, 4.8, 'r', 'R')
-    g.px(8, 3, 'C'); g.px(8, 4, 'C')
-    g.px(10, 3, 'g'); g.px(11, 3, 'g'); g.px(11, 2, 'g')
-    g.outline()
-    g.px(6, 7, 'w'); g.px(5, 8, 'w')
-    return g.rows()
-
-
 def icon_play():
     g = G(16)
     g.disk(8, 8, 6.2, 6.2, 'r', 'R')
@@ -455,55 +448,163 @@ def icon_play():
     return g.rows()
 
 
-def icon_light():
-    g = G(16)
-    g.disk(8, 8, 5.8, 5.8, 'f')
-    g.erase(11, 5.5, 4.6, 4.6)
-    g.outline()
-    g.px(12, 3, 'f'); g.px(13, 5, 'f')
-    return g.rows()
-
-
-def icon_berry_blue():
-    g = G(16)
-    g.disk(8, 9.5, 5.2, 4.8, 'b', 'B')
-    g.px(8, 3, 'C'); g.px(8, 4, 'C')
-    g.px(10, 3, 'g'); g.px(11, 2, 'g')
-    g.outline()
-    g.px(6, 7, 'w'); g.px(5, 8, 'w')
-    return g.rows()
-
-
-def icon_berry_green():
-    g = G(16)
-    g.disk(8, 9.5, 5.2, 4.8, 'g', 'G')
-    g.px(8, 3, 'C'); g.px(8, 4, 'C')
-    g.px(10, 3, 't'); g.px(11, 2, 't')
-    g.outline()
-    g.px(6, 7, 'w'); g.px(5, 8, 'w')
-    return g.rows()
-
-
-def icon_candy():
-    g = G(16)
-    g.disk(8, 8, 4.4, 3.6, 'p', 'P')
-    # wrapper: points on the sides
-    g.px(2, 6, 'p'); g.px(2, 8, 'p'); g.px(2, 10, 'p'); g.rect(3, 7, 3, 9, 'p')
-    g.px(13, 6, 'p'); g.px(13, 8, 'p'); g.px(13, 10, 'p'); g.rect(12, 7, 12, 9, 'p')
-    g.outline()
-    g.px(7, 6, 'w'); g.px(6, 7, 'w')
-    g.px(8, 8, 'P'); g.px(9, 9, 'P')
-    return g.rows()
-
-
-def icon_clean():
-    g = G(16)
-    g.disk(7, 10, 4.6, 4.4, 'b', 'B')
-    g.disk(12, 4.5, 2.2, 2.2, 'b', 'B')
-    g.disk(3.5, 4, 1.4, 1.4, 'b')
-    g.outline()
-    g.px(5, 8, 'w'); g.px(6, 9, 'w'); g.px(11, 4, 'w')
-    return g.rows()
+# The home screen's buttons, the food and the card's pencil: hand-drawn pixel art, kept as drawn
+# (18x18 drawn at 3x without a box; the pencil 10x10)
+HAND_ICONS = {
+    "PENCIL": [
+        ".......kk.",
+        "......kppk",
+        ".....kfkpk",
+        "....kffkk.",
+        "...kffYk..",
+        "..kffYk...",
+        ".kcfYk....",
+        ".kcck.....",
+        "kkkk......",
+        "..........",
+    ],
+    "HOME_FOOD": [
+        "........kkkkgkk...",
+        ".......krrrkGkgk..",
+        "......krwrrRkgGkkk",
+        "....kkkrrrrRkkkkgG",
+        "...krrrkrrRkrrrkkk",
+        "..krwrrRkkkrwrrRk.",
+        "..krrrrkrrrkrrrRk.",
+        "..krrrkrwrrRkrRRkk",
+        "...kkkkrrrrRkkkkk.",
+        "..kpppkrrrRkpppk..",
+        ".kpwppPkkkkpwppPk.",
+        ".kppppkpppkppppPk.",
+        ".kpppkpwppPkppPPk.",
+        "..kPPkppppPkPPPk..",
+        "...kkkpppPPkkkk...",
+        "......kPPPk.......",
+        ".......kkk........",
+        "..................",
+    ],
+    "BERRY_ORAN": [
+        "..................",
+        "..........kk......",
+        ".....kkkkkGGkk....",
+        "...kkvvvvkGggGk...",
+        "..kvvvvvvkGgtgGk..",
+        ".kvvuuvvvkGgtggk..",
+        ".kvuuuuvvvkGggGGk.",
+        "kvvuuwuvvvvkkGGk..",
+        "kvvvuuvvvvvvvkkVk.",
+        "kvvvvvvvvvvVvvvVk.",
+        "kvvvVvvvvvvvvvVVk.",
+        ".kvvvvvvVvvvvVVVk.",
+        ".kvvvvvvvvvvVVVVk.",
+        "..kvvvvvvvvVVVVk..",
+        "..kvvvvVvvVVVVVk..",
+        "...kkVVvvVVVVVk...",
+        ".....kVVVVVVkk....",
+        "......kkkkkk......",
+    ],
+    "BERRY_PINAP": [
+        ".......k.kgk.k....",
+        "......kgkkgkkgk...",
+        ".......kgkgkgGkk..",
+        ".......kgdGgGkkgk.",
+        ".......kgGGGgggk..",
+        "......kkkGGGGdkkkk",
+        ".....kfYfYGggggggG",
+        "....kfyYfYfdGGkkkk",
+        "...kYwYffffYkk....",
+        "..kfYyffYYfYk.....",
+        "..kyyffYfffYCk....",
+        ".kfyfYfYfYCYYk....",
+        ".kYYYffYfCYYk.....",
+        ".kYfffYYYYYYk.....",
+        "..kfYYfYYCCk......",
+        "..kYYfYCCCYk......",
+        "...kYCYCYYk.......",
+        "....kkkkkk........",
+    ],
+    "CANDY": [
+        "............kk....",
+        "...........kllk...",
+        "...........kllkk..",
+        "......kkkkkkllllk.",
+        ".....kllllllNllLkk",
+        "....klllLlllLNLLLL",
+        "...kllwwlLlllLkkkk",
+        "...klllllLlllLk...",
+        "...klllllLllLLk...",
+        "...kllllllLLLLk...",
+        "...kllllllLLLLk...",
+        "kkkklllllLLLLLk...",
+        "LLLLNLllLLLLLk....",
+        "kkLllNLLLLLLk.....",
+        ".kllllkkkkkk......",
+        "..kkllk...........",
+        "...kllk...........",
+        "....kk............",
+    ],
+    "HOME_BALL": [
+        "......kkkkkk......",
+        "....kkrrrrrrkk....",
+        "...kwwrrrrrrrRk...",
+        "..kwwrrrrrrrrRRk..",
+        ".krwrrrrrrrrrrRRk.",
+        ".krrrrrrrrrrrrRRk.",
+        "krrrrrkkkkkkrrRRRk",
+        "kkkkkkkwwwskkkkkkk",
+        "kkkkkkkwwwskkkkkkk",
+        "kwwwwwkwssskwwwwSk",
+        "kwwwwwkkkkkkwwwSSk",
+        ".kwwwwwwwwwwwwwSk.",
+        ".kwwwwwwwwwwwwSSk.",
+        "..kwwwwwwwwwwSSk..",
+        "...kSwwwwwwwSSk...",
+        "....kkSSSSSSkk....",
+        "......kkkkkk......",
+        "..................",
+    ],
+    "HOME_MOON": [
+        "............k.....",
+        "......kk...kfk....",
+        "....kkffk.kfffk...",
+        "...kfffyk..kfk....",
+        "..kffyyyk...k...k.",
+        ".kffyyyk.......kfk",
+        ".kfyyyfk......kfff",
+        "kffyyfffk......kfk",
+        "kfyyffffk.......k.",
+        "kfywfffffkk..kkk..",
+        "kffffffffffkkYYYk.",
+        "kfffffffffYYYYYYk.",
+        ".kfffffffYYYYYYk..",
+        ".kfYffffYYYYYYYk..",
+        "..kYYffYYYYYYYk...",
+        "...kYYYYYYYYYk....",
+        "....kkYYYYYkk.....",
+        "......kkkkk.......",
+    ],
+    "HOME_BUBBLE": [
+        "..............kk..",
+        ".............kwbk.",
+        "..kkk........kbBk.",
+        ".kwbbk........kk..",
+        ".kbbBk...kkkkk....",
+        "..kkk..kkbbbbbkk..",
+        "......kbwwbbbbbBk.",
+        ".....kbwwbbbbbbbBk",
+        ".....kbwbbbbbbbbBk",
+        "....kbbbbbbbbbbbBk",
+        "....kbbbbbbbbbbbBk",
+        "....kbbbbbbbbbbBBk",
+        "....kbbbbbbbbbbBBk",
+        ".....kbbbbbbbbBBk.",
+        ".....kBbbbbbbBBBk.",
+        "......kkBBBBBBkk..",
+        "........kkkkkk....",
+        "..................",
+    ],
+}
+HOME_ICON_N = 18
 
 
 SPRITES = {
@@ -516,13 +617,8 @@ SPRITES = {
     "SQUIRTLE": squirtle(),
     "WARTORTLE": wartortle(),
     "BLASTOISE": blastoise(),
-    "ICON_FOOD": icon_food(),
     "ICON_PLAY": icon_play(),
-    "ICON_LIGHT": icon_light(),
-    "ICON_CLEAN": icon_clean(),
-    "ICON_BERRY_B": icon_berry_blue(),
-    "ICON_BERRY_G": icon_berry_green(),
-    "ICON_CANDY": icon_candy(),
+    **HAND_ICONS,
     "EGG": egg(),
     "POOP": poop(),
     "HEART": heart(),
@@ -645,6 +741,7 @@ def emit_c(path="species.h"):
     for ch, hexcol in PALETTE.items():
         out.append(f"    case '{ch}': return 0x{rgb565(hexcol):04X};  // {hexcol}\n")
     out.append("    default: return 0;\n  }\n}\n\n")
+    out.append(f"#define HOME_ICON_N {HOME_ICON_N}  // the home buttons and the food: {HOME_ICON_N}x{HOME_ICON_N}, drawn at 3x\n\n")
     for name, rows in SPRITES.items():
         out.append(f"static const char* const SPR_{name}[{len(rows)}] = {{  // {len(rows)}x{len(rows)}\n")
         for row in rows:

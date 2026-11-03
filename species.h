@@ -74,12 +74,14 @@ static inline uint16_t spriteColor(char ch) {
     case 'L': return 0x6BF7;  // #6f7cb8
     case 's': return 0xAD97;  // #aab0bc
     case 'S': return 0x7BF1;  // #787e8c
-    case 'u': return 0x75DE;  // #73baf0  the Oran Berry's bright blues
+    case 'u': return 0x75DE;  // #73baf0
     case 'v': return 0x2BDB;  // #2a7ad8
     case 'V': return 0x1A93;  // #1a529a
     default: return 0;
   }
 }
+
+#define HOME_ICON_N 18  // the home buttons and the food: 18x18, drawn at 3x
 
 static const char* const SPR_CHARMANDER[32] = {  // 32x32
   "................................",
@@ -415,9 +417,20 @@ static const char* const SPR_ICON_PLAY[16] = {  // 16x16
   "................",
 };
 
-// the home screen's four buttons and the food menu: drawn at 3x without a box, in the sprites' style
-#define HOME_ICON_N 18
-static const char* const SPR_HOME_FOOD[HOME_ICON_N] = {  // 18x18, a Razz Berry: also the food menu's first
+static const char* const SPR_PENCIL[10] = {  // 10x10
+  ".......kk.",
+  "......kppk",
+  ".....kfkpk",
+  "....kffkk.",
+  "...kffYk..",
+  "..kffYk...",
+  ".kcfYk....",
+  ".kcck.....",
+  "kkkk......",
+  "..........",
+};
+
+static const char* const SPR_HOME_FOOD[18] = {  // 18x18
   "........kkkkgkk...",
   ".......krrrkGkgk..",
   "......krwrrRkgGkkk",
@@ -437,7 +450,8 @@ static const char* const SPR_HOME_FOOD[HOME_ICON_N] = {  // 18x18, a Razz Berry:
   ".......kkk........",
   "..................",
 };
-static const char* const SPR_BERRY_ORAN[HOME_ICON_N] = {  // 18x18, an Oran Berry
+
+static const char* const SPR_BERRY_ORAN[18] = {  // 18x18
   "..................",
   "..........kk......",
   ".....kkkkkGGkk....",
@@ -457,7 +471,8 @@ static const char* const SPR_BERRY_ORAN[HOME_ICON_N] = {  // 18x18, an Oran Berr
   ".....kVVVVVVkk....",
   "......kkkkkk......",
 };
-static const char* const SPR_BERRY_PINAP[HOME_ICON_N] = {  // 18x18, a Pinap Berry
+
+static const char* const SPR_BERRY_PINAP[18] = {  // 18x18
   ".......k.kgk.k....",
   "......kgkkgkkgk...",
   ".......kgkgkgGkk..",
@@ -477,7 +492,8 @@ static const char* const SPR_BERRY_PINAP[HOME_ICON_N] = {  // 18x18, a Pinap Ber
   "...kYCYCYYk.......",
   "....kkkkkk........",
 };
-static const char* const SPR_CANDY[HOME_ICON_N] = {  // 18x18, a candy
+
+static const char* const SPR_CANDY[18] = {  // 18x18
   "............kk....",
   "...........kllk...",
   "...........kllkk..",
@@ -497,21 +513,8 @@ static const char* const SPR_CANDY[HOME_ICON_N] = {  // 18x18, a candy
   "...kllk...........",
   "....kk............",
 };
-// a pencil beside the name on the card: the name can be changed
-static const char* const SPR_PENCIL[10] = {  // 10x10
-  ".......kk.",
-  "......kppk",
-  ".....kfkpk",
-  "....kffkk.",
-  "...kffYk..",
-  "..kffYk...",
-  ".kcfYk....",
-  ".kcck.....",
-  "kkkk......",
-  "..........",
-};
 
-static const char* const SPR_HOME_BALL[HOME_ICON_N] = {  // 18x18
+static const char* const SPR_HOME_BALL[18] = {  // 18x18
   "......kkkkkk......",
   "....kkrrrrrrkk....",
   "...kwwrrrrrrrRk...",
@@ -531,7 +534,8 @@ static const char* const SPR_HOME_BALL[HOME_ICON_N] = {  // 18x18
   "......kkkkkk......",
   "..................",
 };
-static const char* const SPR_HOME_MOON[HOME_ICON_N] = {  // 18x18, a crescent and two stars
+
+static const char* const SPR_HOME_MOON[18] = {  // 18x18
   "............k.....",
   "......kk...kfk....",
   "....kkffk.kfffk...",
@@ -551,7 +555,8 @@ static const char* const SPR_HOME_MOON[HOME_ICON_N] = {  // 18x18, a crescent an
   "....kkYYYYYkk.....",
   "......kkkkk.......",
 };
-static const char* const SPR_HOME_BUBBLE[HOME_ICON_N] = {  // 18x18
+
+static const char* const SPR_HOME_BUBBLE[18] = {  // 18x18
   "..............kk..",
   ".............kwbk.",
   "..kkk........kbBk.",
