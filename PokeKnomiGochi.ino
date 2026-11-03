@@ -1790,7 +1790,7 @@ bool render() {
       int x0 = CX - count * 33;
       gfx->fillRoundRect(x0, 288, count * 66, 64, 14, UI_WHITE);
       gfx->drawRoundRect(x0, 288, count * 66, 64, 14, inkColor());
-      static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_NANAB, SPR_BERRY_PINAP, SPR_CANDY };
+      static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
       for (int i = 0; i < count; i++) drawMap(FOOD[i], HOME_ICON_N, x0 + 6 + 66 * i, 293, 3, false);
     }
   }
@@ -6563,7 +6563,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (feedMenuUntil) {
-    static const char *const *const ICON[4] = { SPR_HOME_FOOD, SPR_BERRY_NANAB, SPR_BERRY_PINAP, SPR_CANDY };
+    static const char *const *const ICON[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
     int count = pet.canHaveCandy() ? 4 : 3;
     int x0 = CX - count * 33;
     if (y < 288 || y > 352 || x < x0 || x > x0 + count * 66) return false;
