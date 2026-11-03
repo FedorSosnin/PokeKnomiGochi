@@ -1267,3 +1267,32 @@ TEST(play, tilt_catch_feeds_and_only_costs_energy) {
   CHECK_EQ(p.fullness, (uint8_t)55);
   CHECK_EQ(p.energy, (uint8_t)68);
 }
+
+TEST(trade, yours_leaves_theirs_arrives) {
+  Pet p;
+  makePet(p, 25);  // raising a Pikachu
+  p.catchWild(1);
+  p.catchWild(4);
+  CHECK(p.isRegistered(25) && p.isRegistered(1) && p.isRegistered(4));
+  CHECK(p.tradeAway(1, 7));  // Bulbasaur for Squirtle: new
+  CHECK(!p.isRegistered(1));
+  CHECK(p.isRegistered(7));
+  CHECK(!p.tradeAway(4, 7));  // Charmander for a Squirtle it has: not new, Charmander still gone
+  CHECK(!p.isRegistered(4));
+  CHECK(p.isRegistered(7));
+}
+
+TEST(trade, the_one_you_raise_stays) {
+  Pet p;
+  makePet(p, 25);
+  CHECK(p.isRegistered(25));
+  CHECK_EQ(p.tradeableCount(), (uint16_t)0);  // only the partner: nothing to trade
+  CHECK(!p.canTrade(25));
+  CHECK(!p.tradeAway(25, 7));
+  CHECK(p.isRegistered(25));
+  CHECK(!p.isRegistered(7));
+  p.catchWild(1);
+  CHECK_EQ(p.tradeableCount(), (uint16_t)1);
+  CHECK(p.tradeAway(1, 1) == false);  // the same species both ways: kept, nothing new
+  CHECK(p.isRegistered(1));
+}

@@ -41,7 +41,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Combate", "Bosque", "Playa", "Cueva", "Mansi\242n", "Campo", "Buscar", "%d/%d atrapados", "Sin atrapar", "Desliza arriba: volver",
     "ENTRENADOR %d/%d",
     "BUSCAR ACTUALIZACION", "Ya est\240 al d\241a", "ACTUALIZAR A v%s", "Actualizando %u%%", "Fall\242 la actualizaci\242n", "%u amigos aqu\241!",
-    "Jugar", "Jugar juntos", "Duelo: Qui\202n es?", "%s quiere jugar!", "Prep\240rate...", "T\243", "Lo tienes!", "%s lo tiene!", "Nadie acert\242", "Ganaste!", "Gana %s!", "Empate!",
+    "Jugar", "Jugar juntos", "Duelo: Qui\202n es?", "%s quiere jugar!", "Prep\240rate...", "T\243", "Lo tienes!", "%s lo tiene!", "Nadie acert\242", "Ganaste!", "Gana %s!", "Empate!", "%s se escap\242!",
   },
   // ---------------- EN ----------------
   {
@@ -77,7 +77,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Battle", "Forest", "Beach", "Cave", "Mansion", "Field", "Search", "%d/%d caught", "Not caught yet", "Swipe up to go back",
     "TRAINER %d/%d",
     "CHECK FOR UPDATE", "Up to date", "UPDATE TO v%s", "Updating %u%%", "Update failed", "%u buddies are here!",
-    "Play", "Play together", "Who's That? Showdown", "%s wants to play!", "Get ready...", "You", "You got it!", "%s got it!", "Nobody got it", "You win!", "%s wins!", "It's a draw!",
+    "Play", "Play together", "Who's That? Showdown", "%s wants to play!", "Get ready...", "You", "You got it!", "%s got it!", "Nobody got it", "You win!", "%s wins!", "It's a draw!", "%s got away!",
   },
   // ---------------- FR ----------------
   {
@@ -113,7 +113,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Combat", "For\210t", "Plage", "Grotte", "Manoir", "Champ", "Chercher", "%d/%d captur\202s", "Pas encore captur\202", "Glisse en haut: retour",
     "DRESSEUR %d/%d",
     "MISE \205 JOUR ?", "D\202j\205 \205 jour", "INSTALLER v%s", "Mise \205 jour %u%%", "\220chec de mise \205 jour", "%u copains sont l\205 !",
-    "Jouer", "Jouer ensemble", "Duel: Qui est-ce?", "%s veut jouer!", "Pr\202pare-toi...", "Toi", "Trouv\202!", "%s a trouv\202!", "Personne n\'a trouv\202", "Gagn\202!", "%s gagne!", "Egalit\202!",
+    "Jouer", "Jouer ensemble", "Duel: Qui est-ce?", "%s veut jouer!", "Pr\202pare-toi...", "Toi", "Trouv\202!", "%s a trouv\202!", "Personne n\'a trouv\202", "Gagn\202!", "%s gagne!", "Egalit\202!", "%s s\'est enfui!",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -154,7 +154,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Kampf", "Wald", "Strand", "H\224hle", "Spukhaus", "Wiese", "Suchen", "%d/%d gefangen", "Noch nicht gefangen", "Hochwischen: zur\201ck",
     "TRAINER %d/%d",
     "NACH UPDATE SUCHEN", "Aktuell", "UPDATE AUF v%s", "Update l\204uft %u%%", "Update fehlgeschlagen", "%u Kumpel sind da!",
-    "Spielen", "Zusammen spielen", "Duell: Wer ist das?", "%s will spielen!", "Mach dich bereit...", "Du", "Richtig!", "%s war schneller!", "Niemand wusste es", "Gewonnen!", "%s gewinnt!", "Unentschieden!",
+    "Spielen", "Zusammen spielen", "Duell: Wer ist das?", "%s will spielen!", "Mach dich bereit...", "Du", "Richtig!", "%s war schneller!", "Niemand wusste es", "Gewonnen!", "%s gewinnt!", "Unentschieden!", "%s ist entkommen!",
   },
   // ---------------- IT ----------------
   {
@@ -190,7 +190,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Lotta", "Foresta", "Spiaggia", "Grotta", "Villa", "Prato", "Cerca", "%d/%d presi", "Non ancora preso", "Scorri su: indietro",
     "ALLENATORE %d/%d",
     "CERCA AGGIORNAMENTI", "Gi\205 aggiornato", "AGGIORNA A v%s", "Aggiornamento %u%%", "Aggiornamento fallito", "%u amici sono qui!",
-    "Gioca", "Giochiamo insieme", "Sfida: Chi \212?", "%s vuole giocare!", "Pronti...", "Tu", "Indovinato!", "%s ha indovinato!", "Nessuno l\'ha preso", "Hai vinto!", "Vince %s!", "Pareggio!",
+    "Gioca", "Giochiamo insieme", "Sfida: Chi \212?", "%s vuole giocare!", "Pronti...", "Tu", "Indovinato!", "%s ha indovinato!", "Nessuno l\'ha preso", "Hai vinto!", "Vince %s!", "Pareggio!", "%s \212 scappato!",
   },
   // ---------------- PT ----------------
   {
@@ -226,7 +226,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Combate", "Floresta", "Praia", "Caverna", "Solar", "Campo", "Procurar", "%d/%d apanhados", "Ainda por apanhar", "Desliza acima: voltar",
     "TREINADOR %d/%d",
     "PROCURAR ATUALIZACAO", "J\240 est\240 atualizado", "ATUALIZAR PARA v%s", "A atualizar %u%%", "Falhou a atualizacao", "%u amigos aqui!",
-    "Jogar", "Jogar juntos", "Duelo: Quem \202?", "%s quer jogar!", "Prepara-te...", "Tu", "Acertaste!", "%s acertou!", "Ningu\202m acertou", "Ganhaste!", "%s ganha!", "Empate!",
+    "Jogar", "Jogar juntos", "Duelo: Quem \202?", "%s quer jogar!", "Prepara-te...", "Tu", "Acertaste!", "%s acertou!", "Ningu\202m acertou", "Ganhaste!", "%s ganha!", "Empate!", "%s escapou!",
   },
   // ---------------- JA ----------------
   {
@@ -285,7 +285,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "バトル", "もり", "うみべ", "どうくつ", "やかた", "のはら", "さがす", "%d/%d つかまえた", "まだつかまえてない", "うえにスワイプでもどる",
     "トレーナー %d/%d",
     "アップデート", "さいしんです", "v%s にする", "アップデート %u%%", "しっぱいしました", "ともだち %u にん!",
-    "あそぶ", "いっしょに あそぶ", "だれだ? たいけつ", "%sが あそびたいって!", "よーい...", "きみ", "せいかい!", "%sが せいかい!", "だれも わからなかった", "きみの かち!", "%sの かち!", "ひきわけ!",
+    "あそぶ", "いっしょに あそぶ", "だれだ? たいけつ", "%sが あそびたいって!", "よーい...", "きみ", "せいかい!", "%sが せいかい!", "だれも わからなかった", "きみの かち!", "%sの かち!", "ひきわけ!", "%sに にげられた!",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -326,7 +326,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "배틀", "숲", "해변", "동굴", "저택", "들판", "찾기", "%d/%d 잡음", "아직 못 잡음", "위로 밀면 뒤로",
     "트레이너 %d/%d",
     "업데이트 확인", "최신 버전", "v%s 로 업데이트", "업데이트 중 %u%%", "업데이트 실패", "친구 %u명이 왔어요!",
-    "놀기", "함께 놀기", "누구일까? 대결", "%s: 같이 놀래요!", "준비...", "나", "정답!", "%s 정답!", "아무도 못 맞췄어요", "내가 이겼다!", "%s 승리!", "무승부!",
+    "놀기", "함께 놀기", "누구일까? 대결", "%s: 같이 놀래요!", "준비...", "나", "정답!", "%s 정답!", "아무도 못 맞췄어요", "내가 이겼다!", "%s 승리!", "무승부!", "%s: 도망쳤다!",
   },
 };
 

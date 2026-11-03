@@ -64,6 +64,7 @@ static const ExpectedFmt EXPECTED[] = {
   { S_BUDDY_INV_PLAY_FMT, "%s" },
   { S_SD_THEY_GOT_FMT, "%s" },
   { S_SD_LOSE_FMT,     "%s" },
+  { S_GOT_AWAY_FMT,    "%s" },
   { S_REC_FMT,         "%u" },
   { S_LVL_FMT,         "%u" },
   { S_NEXT_LVL_FMT,    "%u,%u" },

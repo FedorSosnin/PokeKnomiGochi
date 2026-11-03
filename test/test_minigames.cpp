@@ -122,3 +122,16 @@ TEST(clock, 12_hour_clock) {
   CHECK_EQ(clock12Hour(13), 1);
   CHECK_EQ(clock12Hour(23), 11);
 }
+
+TEST(catch_, three_shakes_hold_three_times_in_four) {
+  int held = 0, at[4] = {};
+  for (int roll = 0; roll < 100; roll++)
+    for (int r3 = 0; r3 < 3; r3++) {
+      uint8_t b = catchBreakAt(roll, r3);
+      CHECK(b <= CATCH_SHAKES);
+      at[b]++;
+      held += b == 0;
+    }
+  CHECK_EQ(held, CATCH_CHANCE * 3);           // 75% of the throws that hit
+  CHECK(at[1] == at[2] && at[2] == at[3]);   // a break-out on any of the three shakes alike
+}

@@ -609,6 +609,18 @@ bool Pet::catchWild(int16_t dex) {
   return true;
 }
 
+bool Pet::tradeAway(int16_t give, int16_t get) {
+  if (!canTrade(give) || get < 1 || get > 151) return false;
+  if (give != get) {  // the same species both ways: nothing changes hands
+    dexReg[(give - 1) >> 3] &= ~(1 << ((give - 1) & 7));
+    dexShinyReg[(give - 1) >> 3] &= ~(1 << ((give - 1) & 7));
+  }
+  bool isNew = !isRegistered(get);
+  dexReg[(get - 1) >> 3] |= (1 << ((get - 1) & 7));
+  save();
+  return isNew;
+}
+
 void Pet::quizResult(uint8_t correct) {
   if (ceremony != CER_NONE || isEgg()) return;
   joy = clamp100(joy + 3 + correct * 3);

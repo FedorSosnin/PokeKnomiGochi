@@ -16,7 +16,7 @@
 #define BUDDY_REPLY_MS 20000UL    // reply to an invitation or move, before giving up
 #define BUDDY_MAX_STAT 1000
 // Who's That? Showdown: the inviter (the host) runs the rounds and referees them
-#define SD_ROUNDS 5
+#define SD_ROUNDS 10
 #define SD_NO_PICK 3        // ANSWER.move: answered nothing (yet)
 #define SD_NOBODY 0         // RESULT.move: who took the round
 #define SD_HOST 1
@@ -125,6 +125,13 @@ inline bool buddyPeerHello(BuddyPeer &p, const BuddyMsg &m, uint32_t now) {
   memcpy(p.nick, m.nick, sizeof(p.nick));
   memcpy(p.reg, m.reg, sizeof(p.reg));
   return arrived;
+}
+
+// what a buddy could trade: its pokedex minus the one it is raising (sent in its greetings)
+inline int buddyTradeable(const BuddyPeer &p) {
+  int n = 0;
+  for (int d = 1; d <= 151; d++) n += buddyRegHas(p.reg, d);
+  return n - (buddyRegHas(p.reg, p.dex) ? 1 : 0);
 }
 
 inline bool buddyPeerGone(const BuddyPeer &p, uint32_t now) { return p.on && now - p.seen > BUDDY_TIMEOUT_MS; }

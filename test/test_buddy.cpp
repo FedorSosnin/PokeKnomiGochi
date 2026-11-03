@@ -209,3 +209,12 @@ TEST(buddy, showdown_messages_are_checked) {
   memcpy(buf, &m, sizeof(m));
   CHECK(buddyParse(buf, sizeof(buf), m));
 }
+
+TEST(buddy, what_a_buddy_can_trade) {
+  BuddyPeer b;
+  b.dex = 25;  // raising a Pikachu
+  b.reg[(25 - 1) >> 3] |= 1 << ((25 - 1) & 7);
+  CHECK_EQ(buddyTradeable(b), 0);  // only its partner
+  b.reg[0] |= 1;  // Bulbasaur too
+  CHECK_EQ(buddyTradeable(b), 1);
+}

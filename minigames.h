@@ -3,6 +3,14 @@
 // Rules for the catch, the quiz and the daily visit, without hardware (test/test_minigames.cpp).
 
 #define CATCH_BALLS 3         // throws per encounter
+#define CATCH_CHANCE 75       // % of balls that hit and then hold through the three shakes
+#define CATCH_SHAKES 3
+#define CATCH_SHAKE_MS 900    // one rock to the side, with its tone
+
+// a ball that hit: 0 = it holds (caught), or the shake (1..3) the Pokemon breaks out on
+inline uint8_t catchBreakAt(uint8_t roll100, uint8_t roll3) {
+  return roll100 < CATCH_CHANCE ? 0 : 1 + roll3 % CATCH_SHAKES;
+}
 #define CATCH_RADIUS 48       // logical px: the hit has to be direct, but not cruel
 #define QUIZ_ROUNDS 5
 

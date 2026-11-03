@@ -133,6 +133,11 @@ public:
   // battle: trains ATK and tires. Returns the ATK gain.
   uint8_t battleResult(bool won);
   bool catchWild(int16_t dex);           // catch: registers in the pokedex; true if new
+  // trading with a buddy: yours leaves the pokedex, theirs comes in (true if new). The one you
+  // are raising can't be traded.
+  bool canTrade(int16_t dex) const { return isRegistered(dex) && dex != speciesId; }
+  uint16_t tradeableCount() const { return registeredCount() - (isRegistered(speciesId) ? 1 : 0); }
+  bool tradeAway(int16_t give, int16_t get);
   void quizResult(uint8_t correct);      // who's that pokemon
   void showdownResult(uint8_t mine, uint8_t theirs);  // Who's That? Showdown with a buddy
   bool visitorDueNow() const;            // a visit is due today

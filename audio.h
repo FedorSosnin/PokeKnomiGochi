@@ -14,6 +14,9 @@ enum Sfx : uint8_t {
   SFX_DENY,     // action not allowed
   SFX_BYE,      // goodbye
   SFX_LEVEL,    // levels up
+  SFX_SHAKE1,   // the ball rocks: one...
+  SFX_SHAKE2,   // ...two...
+  SFX_SHAKE3,   // ...three
   SFX_COUNT
 };
 

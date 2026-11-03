@@ -226,7 +226,7 @@ bool gameNewHi = false;
 
 // battle against a wild foe (trains strength and fills the pokedex)
 enum BattlePhase : uint8_t { BP_TIRED, BP_INTRO, BP_LEARNED, BP_CHOOSE, BP_WAIT, BP_ATTACK, BP_HIT, BP_EFFECT, BP_RAN, BP_END,
-                            BP_AIM, BP_THROW, BP_MISS, BP_CAUGHT, BP_FLED };
+                            BP_AIM, BP_THROW, BP_MISS, BP_SHAKE, BP_BROKE, BP_CAUGHT, BP_FLED };
 bool battleOpen = false;
 BattlePhase bPhase = BP_INTRO;
 uint32_t bPhaseT = 0;
@@ -751,6 +751,9 @@ void handleSerial() {
       p.seen = millis();
       buddyFake = true;
     }
+    Serial.println("DONE");
+  } else if (line.startsWith("CATCH ") && pet.noSave) {  // "CATCH dex": into the Pokedex (testing trades)
+    pet.catchWild(line.substring(6).toInt());
     Serial.println("DONE");
   } else if (line.startsWith("SDTEST") && pet.noSave && buddyFake) {  // "SDTEST [session]": a Showdown against the stand-in buddy, for screenshots
     bsId = line.length() > 7 ? (uint32_t)line.substring(7).toInt() | 1 : esp_random() | 1;
@@ -2414,6 +2417,9 @@ void battleAfterEnd() {
   }
 }
 
+uint8_t bBreakAt = 0, bShakesHeard = 0;  // the throw that hit: when it breaks out (0 = holds), tones played
+float bCatchX = CX;                      // where the ball landed: the foe stops swaying in it
+
 // the foe sways side to side so you have to aim
 float battleFoeSway(uint32_t now) { return CX + 110.0f * sinf(now * 6.28318f / 4500.0f); }
 
@@ -2427,11 +2433,12 @@ void battleThrowStep(uint32_t now) {
   if (bBallX < 70) bBallX = 70;
   if (bBallX > 396) bBallX = 396;
   if (now - bBallT < 1500) return;
-  if (catchHit(bBallX, battleFoeSway(now))) {
-    bool isNew = pet.catchWild(bFoe.dex);
-    Serial.printf("catch: #%d new=%d\n", bFoe.dex, isNew);
-    sfxPlay(SFX_MEDAL);
-    battleSetPhase(BP_CAUGHT);
+  if (catchHit(bBallX, battleFoeSway(now))) {  // in the ball: now the three shakes
+    bCatchX = battleFoeSway(now);
+    bBreakAt = catchBreakAt(random(100), random(CATCH_SHAKES));
+    bShakesHeard = 0;
+    Serial.printf("catch: in the ball (%s)\n", bBreakAt ? "will break out" : "holds");
+    battleSetPhase(BP_SHAKE);
   } else {
     bBalls--;
     Serial.printf("catch: miss, %u left\n", bBalls);
@@ -2512,6 +2519,25 @@ void battleStep() {
     case BP_MISS:
       if (t > 2000) battleSetPhase(bBalls ? BP_AIM : BP_FLED);
       break;
+    case BP_BROKE: if (t > 3000) closeBattle(); break;  // it broke out and ran off: no more throws
+    case BP_SHAKE: {  // a rock and a tone per count; it may pop out halfway through one
+      uint8_t shake = t / CATCH_SHAKE_MS;  // 0..2 while counting
+      if (shake < CATCH_SHAKES && bShakesHeard <= shake) {
+        bShakesHeard = shake + 1;
+        sfxPlay((Sfx)(SFX_SHAKE1 + shake));
+      }
+      if (bBreakAt && t > (bBreakAt - 1) * CATCH_SHAKE_MS + CATCH_SHAKE_MS * 3 / 5) {
+        Serial.printf("catch: broke out on %u and got away\n", bBreakAt);
+        sfxPlay(SFX_DENY);
+        battleSetPhase(BP_BROKE);
+      } else if (!bBreakAt && t > CATCH_SHAKES * CATCH_SHAKE_MS + 250) {
+        bool isNew = pet.catchWild(bFoe.dex);
+        Serial.printf("catch: #%d new=%d\n", bFoe.dex, isNew);
+        sfxPlay(SFX_MEDAL);
+        battleSetPhase(BP_CAUGHT);
+      }
+      break;
+    }
     case BP_CAUGHT: if (t > 5000) closeBattle(); break;
     case BP_FLED: if (t > 3500) closeBattle(); break;
   }
@@ -2577,13 +2603,20 @@ static const uint16_t ZONE_GROUND[ZONE_COUNT] = { C565(0x4f, 0x9a, 0x4a), C565(0
 void renderCatch() {
   uint32_t now = millis();
   drawGameScene();
-  float foeX = battleFoeSway(now);
+  bool held = bPhase == BP_SHAKE || bPhase == BP_CAUGHT;  // in the ball, where it landed
+  float foeX = held ? bCatchX : battleFoeSway(now);
   bFoeX = foeX;
   uint8_t bio = DEX_TBL[bFoe.dex].biome;
   uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
   if (sceneHour() < 6 || sceneHour() >= 20) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
   if (!zoneBg) gfx->fillRect(0, 216, 466, BTL_BAND_Y - 216, soil);
-  if (bPhase != BP_CAUGHT && bPhase != BP_FLED) {
+  if (bPhase == BP_BROKE) {  // out of the ball and off it runs
+    uint32_t t = now - bPhaseT;
+    int dir = bCatchX < CX ? -1 : 1;
+    int x = (int)bCatchX + dir * (int)(t > 400 ? (t - 400) * 0.25f : 0);
+    uint8_t act = dir > 0 ? PMD_WALKR : PMD_WALKL;
+    drawPmdActM(wildPmd, wildPmd.has(act) && t > 400 ? act : PMD_IDLE, x, 216, t, true, false, 3);
+  } else if (bPhase != BP_CAUGHT && bPhase != BP_FLED && bPhase != BP_SHAKE) {
     drawPmdActM(wildPmd, PMD_IDLE, (int)foeX, 216, now - bPhaseT, true, false, 3);
   }
   if (bPhase == BP_THROW) {
@@ -2595,9 +2628,14 @@ void renderCatch() {
     float k = (now - bPhaseT) / 700.0f;
     if (k > 1) k = 1;
     drawMap(SPR_ICON_PLAY, 16, (int)(bBallX + (bBallX < foeX ? -70 : 70) * k) - 16, 144 + (int)(200 * k * k), 2, false);
+  } else if (bPhase == BP_SHAKE) {  // on the ground, rocking to one side on each count
+    uint32_t t = now - bPhaseT;
+    uint32_t in = t % CATCH_SHAKE_MS;
+    float k = in < 420 ? sinf(in * 3.14159f / 420) : 0;  // a rock, then still until the next count
+    int side = (t / CATCH_SHAKE_MS) % 2 ? 1 : -1;
+    drawMap(SPR_ICON_PLAY, 16, (int)bCatchX - 24 + (int)(side * 14 * k), 168 + (int)(4 * k), 3, false);
   } else if (bPhase == BP_CAUGHT) {
-    int wob = (int)(10 * sinf((now - bPhaseT) * 0.012f));
-    drawMap(SPR_ICON_PLAY, 16, (int)bFoeX - 24 + wob, 150, 3, false);
+    drawMap(SPR_ICON_PLAY, 16, (int)bFoeX - 24, 168, 3, false);
   }
 
   gfx->fillRect(0, BTL_BAND_Y, 466, 466 - BTL_BAND_Y, UI_BG_DAY);
@@ -2617,6 +2655,22 @@ void renderCatch() {
     case BP_MISS:
       catchBanner(T(S_MISSED), C565(0xb8, 0x2e, 0x2a));
       for (uint8_t i = 0; i < bBalls; i++) gfx->fillCircle(CX + (i * 2 - (bBalls - 1)) * 12, 416, 6, UI_BAR_BAD);
+      break;
+    case BP_SHAKE: {  // the count to three, big
+      uint32_t t = millis() - bPhaseT;
+      uint8_t n = t / CATCH_SHAKE_MS + 1;
+      if (n > CATCH_SHAKES) n = CATCH_SHAKES;
+      char c[8];
+      snprintf(c, sizeof(c), n == 1 ? "1" : n == 2 ? "1  2" : "1  2  3");
+      setSize(5);
+      setCur(centerX(c, 5), 362);
+      printT(c);
+      setSize(2);
+      break;
+    }
+    case BP_BROKE:
+      snprintf(b, sizeof(b), T(S_GOT_AWAY_FMT), dexName(bFoe.dex));
+      catchBanner(b, C565(0x55, 0x55, 0x60));
       break;
     case BP_CAUGHT:
       snprintf(b, sizeof(b), T(S_CAUGHT_FMT), dexName(bFoe.dex));
@@ -4163,12 +4217,13 @@ void renderEggPick() {
 
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
-  drawOwnedGrid(T(S_CHOOSE_POKEMON), eggPickPage);
+  drawOwnedGrid(T(S_CHOOSE_POKEMON), eggPickPage, 0);
   gfx->flush();
 }
 
 // grid of what is registered, without gaps
-void drawOwnedGrid(const char *title, int page) {
+// locked: shown grey and can't be picked (the one you are raising, when trading); 0 = none
+void drawOwnedGrid(const char *title, int page, int16_t locked) {
   gfx->setTextColor(UI_INK);
   setSize(2);
   setCur(centerX(title, 2), 50);
@@ -4176,7 +4231,7 @@ void drawOwnedGrid(const char *title, int page) {
   for (int i = 0; i < 16; i++) {
     int16_t dex = pet.registeredAt(page * 16 + i);
     if (!dex) break;
-    if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, GAL_X + (i % 4) * GAL_CELL, GAL_Y + (i / 4) * GAL_CELL, 2, false);
+    if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, GAL_X + (i % 4) * GAL_CELL, GAL_Y + (i / 4) * GAL_CELL, 2, dex == locked);
   }
   int pages = (pet.registeredCount() + 15) / 16;
   if (pages > 1) {
@@ -4418,7 +4473,8 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
 
   if (m.type == BM_INVITE) {
     if (bsState == BS_IDLE) {
-      bool free = onMainScreen() && !pet.isEgg() && !pet.sleeping && !pet.ceremony && !choiceKind;
+      bool free = onMainScreen() && !pet.isEgg() && !pet.sleeping && !pet.ceremony && !choiceKind &&
+                  (m.kind != BK_TRADE || pet.tradeableCount() > 0);  // nothing to trade: no
       if (!free) {
         bsId = m.session;
         buddyNetSend(buddyMsg(BM_DECLINE));
@@ -4508,7 +4564,7 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
 }
 
 void tradeFinish() {
-  bool isNew = pet.catchWild(trTheirs);  // copied: nobody loses what they already have in their Pokedex
+  bool isNew = pet.tradeAway(trMine, trTheirs);  // yours leaves your Pokedex, theirs comes in
   Serial.printf("buddy: trade, gives #%d receives #%d new=%d\n", trMine, trTheirs, isNew);
   sfxPlay(SFX_MEDAL);
   trPhase = TR_DONE;
@@ -4544,7 +4600,7 @@ void buddyTick(uint32_t now) {
       buddyPmdDex[i] = bPeers[i].dex;
     }
   }
-  pet.buddiesOnScreen(buddyVisible() ? buddyCount(bPeers) : 0);
+  pet.buddiesOnScreen(partyBuddies());
   if (!bPeers[bCur].on) {
     buddyNetSetPeer(0);
     buddyMenuOpen = playMenuOpen = false;
@@ -4603,7 +4659,12 @@ bool buddyVisible() {
 }
 
 // buddies on the main screen right now (0 = none): with 2 or more everyone stands in a row
-int partyBuddies() { return buddyVisible() ? buddyCount(bPeers) : 0; }
+// buddies standing on the main screen, for where everyone stands: they stay while yours sleeps
+// (only tapping them and their notice wait until it wakes up: buddyVisible)
+int partyBuddies() {
+  bool shown = buddyCount(bPeers) && visitPhase == VP_NONE && !pet.isEgg() && !pet.ceremony;
+  return shown ? buddyCount(bPeers) : 0;
+}
 
 // others on the main screen (buddies, or the daily visitor while it is here): then yours stands
 // in the middle, bigger (partyBuddyX / partyScale in buddy.h)
@@ -4621,6 +4682,7 @@ void buddySelect(int i) {
 
 void drawBuddyPet(uint32_t now) {
   int n = partyBuddies(), k = 0;
+  if (!n) return;  // not standing on the main screen right now (an egg, a farewell, a visitor)
   for (int i = 0; i < BUDDY_MAX; i++) {
     if (!bPeers[i].on) continue;
     k++;  // party slot: in arrival-slot order, after yours
@@ -4656,7 +4718,7 @@ void drawBuddyTop() {
 // the buddy under a touch on the main screen (its notice counts too), -1 if none
 int buddyAt(int16_t x, int16_t y) {
   int n = partyBuddies(), k = 0;
-  if (!n) return -1;
+  if (!n || !buddyVisible()) return -1;  // asleep: they are there, but not for playing
   if (y >= BUDDY_PILL_Y - 6 && y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6 && x >= 60 && x <= 406) return bCur;
   for (int i = 0; i < BUDDY_MAX; i++) {
     if (!bPeers[i].on) continue;
@@ -4696,18 +4758,30 @@ void renderBuddyMenu() {
   }
   for (int i = 0; i < BUDDY_ROWS; i++) {
     int y = BUDDY_ROW_Y + i * BUDDY_ROW_STEP;
-    gfx->fillRoundRect(CX - 130, y, 260, BUDDY_ROW_H, 14, BUDDY_ROW_COLOR[i]);
-    gfx->setTextColor(i == BUDDY_ROWS - 1 ? UI_INK : UI_WHITE);
+    bool off = i == 1 && !buddyTradeOk();  // Trade: nothing to trade on one side
+    gfx->fillRoundRect(CX - 130, y, 260, BUDDY_ROW_H, 14, off ? UI_TRACK : BUDDY_ROW_COLOR[i]);
+    gfx->setTextColor(i == BUDDY_ROWS - 1 ? UI_INK : off ? 0x8410 : UI_WHITE);
     setCur(centerX(T(BUDDY_ROW_LABEL[i]), 2), y + 17);
     printT(T(BUDDY_ROW_LABEL[i]));
   }
   gfx->flush();
 }
 
+// both have something to trade: a Pokemon other than the one each is raising
+bool buddyTradeOk() { return pet.tradeableCount() > 0 && buddyTradeable(bPeers[bCur]) > 0; }
+
 void buddyMenuTap(int16_t x, int16_t y) {
-  buddyMenuOpen = false;
-  if (abs(x - CX) > 130 || y < BUDDY_ROW_Y) return;
+  if (abs(x - CX) > 130 || y < BUDDY_ROW_Y) {
+    buddyMenuOpen = false;
+    return;
+  }
   int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
+  if (row == 1 && !buddyTradeOk()) {  // greyed out: the menu stays
+    sfxPlay(SFX_DENY);
+    Serial.println("buddy: nothing to trade");
+    return;
+  }
+  buddyMenuOpen = false;
   sfxPlay(SFX_TAP);
   if (row == 0) buddyInvite(BK_BATTLE);
   else if (row == 1) buddyInvite(BK_TRADE);
@@ -5008,7 +5082,7 @@ void renderTrade() {
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   if (trPhase == TR_PICK) {
-    drawOwnedGrid(T(S_TRADE_PICK), trPage);
+    drawOwnedGrid(T(S_TRADE_PICK), trPage, pet.speciesId);  // yours can't be traded
     for (int i = 0; i < 16; i++) {  // green dot: the buddy is missing this one
       int16_t dex = pet.registeredAt(trPage * 16 + i);
       if (!dex) break;
@@ -5070,6 +5144,10 @@ void tradeTap(int16_t x, int16_t y) {
     }
     int16_t dex = ownedGridAt(x, y, trPage);
     if (!dex) return;
+    if (!pet.canTrade(dex)) {  // the one you are raising stays
+      sfxPlay(SFX_DENY);
+      return;
+    }
     sfxPlay(SFX_TAP);
     trMine = dex;
     trT = millis();
