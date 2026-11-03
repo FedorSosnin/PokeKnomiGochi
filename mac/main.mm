@@ -15,14 +15,16 @@
 #define GITHUB_URL "https://github.com/FedorSosnin/PokeKnomiGochi"
 #define YOUTUBE_URL "https://youtube.com/3dprintsos"
 #define TICK_S (1.0 / 60.0)
-// The Pokeball frame around the screen, in points
+// The Pokeball frame around the screen, in points. Only the frame drags the window: the screen is all
+// touch. With the mouse over the window it grows outward to RING_HOVER, easier to grab; the window keeps
+// a clear margin of RING_PAD for that, which clicks pass through.
 #define RING 6.0
+#define RING_HOVER 12.0
+#define RING_PAD (RING_HOVER - RING)
+#define RING_ANIM_S 0.15  // the grow and shrink
 #define RING_OUTLINE 1.0
 #define RING_LINE 20.0  // the black band in the middle
-// The frame and the edge of the circle (outside this fraction of the radius) drag the window. The game's
-// interface ends sooner: its buttons farthest from the center reach ~208 of 233.
-#define DRAG_RIM 0.92
-static const CGFloat kSizes[] = {190, 240, 300};  // side of the window, frame included
+static const CGFloat kSizes[] = {190, 240, 300};  // side of the window at rest, frame included
 #define DEFAULT_SIZE 240.0
 
 // New versions: the newest "mac-v*" release on GitHub. Checked at launch and once a day; the
@@ -153,22 +155,61 @@ static void startAudio(void) {
 - (void)fillMenu:(NSMenu *)menu;
 @end
 
+// the window at rest (what the size menu and the saved place mean) and the window with its margin
+static NSRect restFrame(NSRect windowFrame) { return NSInsetRect(windowFrame, RING_PAD, RING_PAD); }
+static NSRect windowFrameFor(NSRect rest) { return NSInsetRect(rest, -RING_PAD, -RING_PAD); }
+
 // The frame: a Pokeball with the game screen inside. Grab it to move the window.
 @interface RingView : NSView
+- (void)setHover:(bool)hover;
 @end
 
-@implementation RingView
+@implementation RingView {
+  CGFloat _ring;  // the frame's width right now: RING at rest, RING_HOVER with the mouse over it
+  bool _hover;
+  NSTimer *_anim;
+}
+
+- (instancetype)initWithFrame:(NSRect)frame {
+  if ((self = [super initWithFrame:frame])) _ring = RING;
+  return self;
+}
+
+// the ball's circle right now, in this view
+- (CGFloat)radius { return self.bounds.size.width / 2 - (RING_HOVER - _ring); }
+- (CGFloat)distance:(NSEvent *)event {
+  NSPoint p = [self convertPoint:event.locationInWindow fromView:nil];
+  return hypot(p.x - NSMidX(self.bounds), p.y - NSMidY(self.bounds));
+}
+
+- (void)setHover:(bool)hover {
+  if (hover == _hover) return;
+  _hover = hover;
+  if (_anim) return;
+  _anim = [NSTimer scheduledTimerWithTimeInterval:1.0 / 60 repeats:YES block:^(NSTimer *t) {
+    CGFloat target = self->_hover ? RING_HOVER : RING, step = (RING_HOVER - RING) / (RING_ANIM_S * 60);
+    self->_ring = self->_ring < target ? fmin(target, self->_ring + step) : fmax(target, self->_ring - step);
+    self.needsDisplay = YES;
+    [self.window invalidateShadow];
+    if (self->_ring == target) {
+      [t invalidate];
+      self->_anim = nil;
+    }
+  }];
+  [NSRunLoop.currentRunLoop addTimer:_anim forMode:NSRunLoopCommonModes];  // also while dragging
+}
+
 - (void)drawRect:(NSRect)dirty {
-  NSRect b = self.bounds;
+  NSRect b = NSInsetRect(self.bounds, RING_HOVER - _ring, RING_HOVER - _ring);
   CGFloat mid = NSMidY(b);
   [NSGraphicsContext saveGraphicsState];
   [[NSBezierPath bezierPathWithOvalInRect:b] addClip];
   [NSColor.whiteColor setFill];
-  NSRectFill(NSMakeRect(0, 0, b.size.width, mid));
+  NSRectFill(NSMakeRect(NSMinX(b), NSMinY(b), b.size.width, mid - NSMinY(b)));
   [[NSColor colorWithSRGBRed:0.87 green:0.13 blue:0.13 alpha:1] setFill];
-  NSRectFill(NSMakeRect(0, mid, b.size.width, mid));
+  NSRectFill(NSMakeRect(NSMinX(b), mid, b.size.width, NSMaxY(b) - mid));
   [NSColor.blackColor setFill];
-  NSRectFill(NSMakeRect(0, mid - RING_LINE / 2, b.size.width, RING_LINE));
+  NSRectFill(NSMakeRect(NSMinX(b), mid - RING_LINE / 2, b.size.width, RING_LINE));
   [NSGraphicsContext restoreGraphicsState];
   // the ball's outline: without it, the white half gets lost against a light background
   NSBezierPath *edge = [NSBezierPath bezierPathWithOvalInRect:NSInsetRect(b, RING_OUTLINE / 2, RING_OUTLINE / 2)];
@@ -180,20 +221,31 @@ static void startAudio(void) {
 // outside the circle the window does not exist: the click passes through to whatever is underneath
 - (NSView *)hitTest:(NSPoint)point {
   NSPoint p = [self.superview convertPoint:point toView:self];
-  CGFloat r = self.bounds.size.width / 2;
-  if (hypot(p.x - r, p.y - r) > r) return nil;
+  if (hypot(p.x - NSMidX(self.bounds), p.y - NSMidY(self.bounds)) > [self radius]) return nil;
   return [super hitTest:point] ?: self;
 }
 
 - (void)mouseDown:(NSEvent *)event {
   if (!gConsole) [NSApp activateIgnoringOtherApps:YES];
   [self.window makeKeyWindow];
+  [NSCursor.closedHandCursor set];
   [self.window performWindowDragWithEvent:event];
   [(GameView *)self.subviews.firstObject saveWindowPlace];
 }
 
 - (void)rightMouseDown:(NSEvent *)event { [self.subviews.firstObject rightMouseDown:event]; }
-- (void)mouseMoved:(NSEvent *)event { [NSCursor.openHandCursor set]; }
+// over the ball it grows; the hand only on the frame, the screen is for touching
+- (void)mouseMoved:(NSEvent *)event {
+  CGFloat d = [self distance:event];
+  [self setHover:d <= [self radius]];
+  if (d > self.bounds.size.width / 2 - RING_HOVER && d <= [self radius]) [NSCursor.openHandCursor set];
+  else [NSCursor.arrowCursor set];
+}
+- (void)mouseEntered:(NSEvent *)event { [self mouseMoved:event]; }
+- (void)mouseExited:(NSEvent *)event {
+  [self setHover:false];
+  [NSCursor.arrowCursor set];
+}
 - (BOOL)acceptsFirstMouse:(NSEvent *)event { return YES; }
 @end
 
@@ -255,11 +307,6 @@ static void startAudio(void) {
   return NSMakePoint(p.x * k, (self.bounds.size.height - p.y) * k);
 }
 
-- (double)radialFraction:(NSEvent *)event {
-  NSPoint p = [self convertPoint:event.locationInWindow fromView:nil];
-  CGFloat r = self.bounds.size.width / 2;
-  return hypot(p.x - r, p.y - r) / r;
-}
 
 // inside the frame, whatever falls outside the circle belongs to the frame
 - (NSView *)hitTest:(NSPoint)point {
@@ -271,11 +318,6 @@ static void startAudio(void) {
 - (void)mouseDown:(NSEvent *)event {
   if (!gConsole) [NSApp activateIgnoringOtherApps:YES];
   [self.window makeKeyWindow];
-  if ([self radialFraction:event] >= DRAG_RIM || (event.modifierFlags & NSEventModifierFlagOption)) {
-    [self.window performWindowDragWithEvent:event];
-    [self saveWindowPlace];
-    return;
-  }
   if (event.modifierFlags & NSEventModifierFlagControl) {
     [self rightMouseDown:event];
     return;
@@ -299,14 +341,7 @@ static void startAudio(void) {
 }
 
 - (void)mouseEntered:(NSEvent *)event { hostPointerHover(); }
-
-- (void)mouseMoved:(NSEvent *)event {
-  hostPointerHover();
-  if ([self radialFraction:event] >= DRAG_RIM) [NSCursor.openHandCursor set];
-  else [NSCursor.arrowCursor set];
-}
-
-- (void)mouseExited:(NSEvent *)event { [NSCursor.arrowCursor set]; }
+- (void)mouseMoved:(NSEvent *)event { hostPointerHover(); }  // the frame's tracking sets the cursor
 
 // The same menu on right-click and in the menu bar
 - (void)fillMenu:(NSMenu *)menu {
@@ -326,7 +361,7 @@ static void startAudio(void) {
     NSMenuItem *it = [sub addItemWithTitle:names[i] action:@selector(pickSize:) keyEquivalent:@""];
     it.target = self;
     it.tag = (NSInteger)kSizes[i];
-    it.state = self.window.frame.size.width == kSizes[i] ? NSControlStateValueOn : NSControlStateValueOff;
+    it.state = restFrame(self.window.frame).size.width == kSizes[i] ? NSControlStateValueOn : NSControlStateValueOff;
   }
   sizes.submenu = sub;
   // the same setting as the game's SND button on the clock screen, saved with the game
@@ -396,13 +431,13 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
   NSRect f = self.window.frame;
   CGFloat s = item.tag;
   NSPoint c = NSMakePoint(NSMidX(f), NSMidY(f));
-  [self.window setFrame:NSMakeRect(c.x - s / 2, c.y - s / 2, s, s) display:YES];
+  [self.window setFrame:windowFrameFor(NSMakeRect(c.x - s / 2, c.y - s / 2, s, s)) display:YES];
   [self.window invalidateShadow];
   [self saveWindowPlace];
 }
 
 - (void)saveWindowPlace {
-  NSRect f = self.window.frame;
+  NSRect f = restFrame(self.window.frame);
   Preferences p;
   p.begin(PREFS_NS);
   p.putInt("size", (int32_t)lround(f.size.width));
@@ -512,7 +547,7 @@ static NSRect initialFrame(bool ownSave) {
   [bar addItemWithTitle:@"" action:nil keyEquivalent:@""].submenu = appMenu;
   NSApp.mainMenu = bar;
 
-  _window = [[RoundWindow alloc] initWithContentRect:initialFrame(gOwnSave)
+  _window = [[RoundWindow alloc] initWithContentRect:windowFrameFor(initialFrame(gOwnSave))
                                            styleMask:NSWindowStyleMaskBorderless
                                              backing:NSBackingStoreBuffered
                                                defer:NO];
@@ -524,13 +559,14 @@ static NSRect initialFrame(bool ownSave) {
   _window.delegate = self;
   CGFloat side = _window.frame.size.width;
   RingView *ring = [[RingView alloc] initWithFrame:NSMakeRect(0, 0, side, side)];
-  _view = [[GameView alloc] initWithFrame:NSInsetRect(ring.bounds, RING, RING)];
+  _view = [[GameView alloc] initWithFrame:NSInsetRect(ring.bounds, RING_HOVER, RING_HOVER)];
   _view.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
   [ring addSubview:_view];
   _window.contentView = ring;
   [ring addTrackingArea:[[NSTrackingArea alloc]
                             initWithRect:NSZeroRect
-                                 options:NSTrackingMouseMoved | NSTrackingActiveAlways | NSTrackingInVisibleRect
+                                 options:NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved |
+                                         NSTrackingActiveAlways | NSTrackingInVisibleRect
                                    owner:ring
                                 userInfo:nil]];
   [_view showFrame];
@@ -648,7 +684,7 @@ static NSRect initialFrame(bool ownSave) {
 - (void)applicationWillTerminate:(NSNotification *)note { hostFlushSave(); }
 @end
 
-// Testing: "MOUSE down|drag|up|right x y" and "KEY down|up code", in canvas coordinates, enter through the
+// Testing: "MOUSE down|drag|up|right x y", "KEY down|up code" and "HOVER on|off", in canvas coordinates, enter through the
 // AppKit event queue like real ones, without touching the real mouse. "MENU n [m]" triggers menu entry n (or m in its submenu).
 static void postTestEvent(const char *line) {
   char what[8] = "";
@@ -664,12 +700,16 @@ static void postTestEvent(const char *line) {
     else [menu performActionForItemAtIndex:a];
     return;
   }
+  if (sscanf(line, "HOVER %7s", what) == 1) {  // "HOVER on|off": the mouse over the window, for the frame
+    [(RingView *)w.contentView setHover:!strcmp(what, "on")];
+    return;
+  }
   if (sscanf(line, "MOUSE %7s %d %d", what, &a, &b) == 3) {
-    CGFloat k = (w.frame.size.width - 2 * RING) / HOST_CANVAS_SIZE;
+    CGFloat k = (w.frame.size.width - 2 * RING_HOVER) / HOST_CANVAS_SIZE;
     NSEventType t = !strcmp(what, "down") ? NSEventTypeLeftMouseDown
                     : !strcmp(what, "drag") ? NSEventTypeLeftMouseDragged
                     : !strcmp(what, "right") ? NSEventTypeRightMouseDown : NSEventTypeLeftMouseUp;
-    NSPoint p = NSMakePoint(RING + a * k, w.frame.size.height - RING - b * k);
+    NSPoint p = NSMakePoint(RING_HOVER + a * k, w.frame.size.height - RING_HOVER - b * k);
     [NSApp postEvent:[NSEvent mouseEventWithType:t location:p modifierFlags:0 timestamp:0 windowNumber:w.windowNumber
                                          context:nil eventNumber:0 clickCount:1 pressure:1]
              atStart:NO];
@@ -687,7 +727,7 @@ static void startConsole(void) {
   [NSThread detachNewThreadWithBlock:^{
     char line[256];
     while (fgets(line, sizeof line, stdin)) {
-      if (!strncmp(line, "MOUSE ", 6) || !strncmp(line, "KEY ", 4) || !strncmp(line, "MENU ", 5)) {
+      if (!strncmp(line, "MOUSE ", 6) || !strncmp(line, "KEY ", 4) || !strncmp(line, "MENU ", 5) || !strncmp(line, "HOVER ", 6)) {
         NSString *copy = @(line);
         dispatch_async(dispatch_get_main_queue(), ^{ postTestEvent(copy.UTF8String); });
       } else {
