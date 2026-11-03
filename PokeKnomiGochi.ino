@@ -116,6 +116,7 @@ bool cardOpen = false;        // pet card (vertical swipe)
 bool kbOpen = false;          // keyboard for renaming the pet
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
+int cardNameBottom = 84;      // where the card's name (and the species under a nickname) ends: tapping above renames
 uint8_t cardPage = 0;         // 0 profile, 1 stats, 2 medals, 3 trainer medals, 4 zone medals, 5 progress
 #define CARD_PAGES 6
 uint8_t clockPage = 0;        // 0 time, 1 settings (Knomi only)
@@ -1217,7 +1218,7 @@ void onTap(int16_t x, int16_t y) {
   }
   if (pet.ceremony) return;  // no buttons during the farewell
   if (cardOpen) {
-    if (cardPage == 0 && y < 84) openKeyboard();  // tap the name = rename
+    if (cardPage == 0 && y < cardNameBottom + 12) openKeyboard();  // tap the name (or its pencil) = rename
 #ifndef BOARD_KNOMI_V2  // on the Knomi, battle opens with the physical button
     else if (cardPage == 1 && y >= 300 && y <= 340 && x >= 96 && x <= 370) {
       cardOpen = false;            // battle button
@@ -2735,6 +2736,143 @@ void renderCatch() {
   gfx->flush();
 }
 
+// ---------- attack effects ----------
+// A little of the move's element: a few on their way during the lunge for the moves that fly
+// (fire, water, leaves, ice, sparks, the mind), then a small burst on the target as it lands.
+static const uint16_t FX_WHITE = 0xFFFF, FX_YELLOW = 0xFECB, FX_ORANGE = 0xF427, FX_BLUE = 0x4C98,
+                      FX_LIGHT_BLUE = 0x7E3D, FX_GREEN = 0x5DCD, FX_DARK_GREEN = 0x3C49, FX_ICE = 0xBF7F,
+                      FX_PURPLE = 0x8A73, FX_PINK = 0xF454, FX_BROWN = 0x7AA6, FX_TAN = 0xB3C8;
+
+static bool fxFlies(uint8_t ty) {
+  return ty == TY_FIRE || ty == TY_WATER || ty == TY_GRASS || ty == TY_ICE || ty == TY_ELECTRIC ||
+         ty == TY_PSYCHIC || ty == TY_POISON || ty == TY_GHOST || ty == TY_DRAGON;
+}
+
+// one piece of the element at (x, y); i tells the pieces apart, k is its age 0..1
+static void fxPiece(uint8_t ty, int x, int y, int i, float k) {
+  int r = (int)(5 - 2 * k);
+  switch (ty) {
+    case TY_FIRE:
+    case TY_DRAGON: {  // a flame: round below, pointed above
+      uint16_t out = ty == TY_FIRE ? FX_ORANGE : FX_PURPLE, in = ty == TY_FIRE ? FX_YELLOW : FX_PINK;
+      gfx->fillCircle(x, y, r + 1, out);
+      gfx->fillTriangle(x - r - 1, y, x + r + 1, y, x, y - 3 * r - 2, out);
+      gfx->fillCircle(x, y + 1, r - 2 > 0 ? r - 2 : 1, in);
+      break;
+    }
+    case TY_WATER:  // a drop with a glint
+      gfx->fillCircle(x, y, r, i % 2 ? FX_BLUE : FX_LIGHT_BLUE);
+      gfx->fillRect(x - 1, y - r + 1, 2, 2, FX_WHITE);
+      break;
+    case TY_GRASS: {  // a leaf, turning as it goes
+      int dx = (i + (int)(k * 6)) % 2 ? 3 : -3;
+      gfx->fillCircle(x - dx / 2, y, 3, FX_GREEN);
+      gfx->fillCircle(x + dx / 2, y - 1, 3, FX_GREEN);
+      gfx->drawLine(x - dx, y + 1, x + dx, y - 2, FX_DARK_GREEN);
+      break;
+    }
+    case TY_BUG:
+      gfx->fillCircle(x, y, 2, i % 2 ? FX_GREEN : FX_DARK_GREEN);
+      break;
+    case TY_ELECTRIC: {  // a short zigzag spark
+      if ((millis() / 70 + i) % 3 == 0) break;  // they flicker
+      int z = i % 2 ? 5 : -5;
+      for (int o = -1; o <= 2; o++) {  // thick, with a dark edge, so it shows against a light sky
+        uint16_t c = o == 2 ? FX_ORANGE : FX_YELLOW;
+        gfx->drawLine(x + o, y - 10, x + z + o, y - 3, c);
+        gfx->drawLine(x + z + o, y - 3, x - z + o, y + 3, c);
+        gfx->drawLine(x - z + o, y + 3, x + o, y + 10, c);
+      }
+      gfx->drawLine(x, y - 10, x + z, y - 3, FX_WHITE);
+      break;
+    }
+    case TY_ICE:  // a little crystal
+      gfx->fillTriangle(x - r, y, x + r, y, x, y - r - 2, FX_ICE);
+      gfx->fillTriangle(x - r, y, x + r, y, x, y + r + 2, FX_ICE);
+      gfx->fillRect(x, y - 1, 1, 1, FX_WHITE);
+      break;
+    case TY_POISON:
+    case TY_GHOST:  // bubbles
+      gfx->drawCircle(x, y, r, FX_PURPLE);
+      gfx->fillCircle(x, y, r - 2 > 0 ? r - 2 : 1, ty == TY_POISON ? 0xC2F0 : 0x6AD3);
+      break;
+    case TY_ROCK:
+    case TY_GROUND:  // pebbles
+      gfx->fillRoundRect(x - 3, y - 3, 7, 6, 2, i % 2 ? FX_BROWN : FX_TAN);
+      break;
+    case TY_FLYING:  // a gust
+      gfx->fillRect(x - 8, y, 16, 1, FX_WHITE);
+      gfx->fillRect(x - 4, y + 3, 10, 1, FX_WHITE);
+      break;
+    default:  // NORMAL, FIGHTING, PSYCHIC on its way: an impact star
+      gfx->drawLine(x - r - 2, y, x + r + 2, y, i % 2 ? FX_WHITE : FX_YELLOW);
+      gfx->drawLine(x, y - r - 2, x, y + r + 2, i % 2 ? FX_WHITE : FX_YELLOW);
+      gfx->drawLine(x - r, y - r, x + r, y + r, FX_WHITE);
+      break;
+  }
+}
+
+// the burst on the target: k 0..1 over the hit
+static void fxBurst(uint8_t ty, int cx, int cy, float k) {
+  if (ty == TY_PSYCHIC) {  // the mind: rings spreading out
+    for (int j = 0; j < 3; j++) {
+      float kk = k * 1.4f - j * 0.2f;
+      if (kk <= 0 || kk >= 1) continue;
+      int rr = 8 + (int)(44 * kk);
+      gfx->drawCircle(cx, cy, rr, FX_PINK);
+      gfx->drawCircle(cx, cy, rr + 1, FX_PINK);
+    }
+    return;
+  }
+  const int n = 8;
+  for (int i = 0; i < n; i++) {
+    float a = i * 6.28318f / n + 0.4f;
+    float dist = 10 + 40 * k;
+    int x = cx + (int)(cosf(a) * dist), y = cy + (int)(sinf(a) * dist * 0.75f);
+    switch (ty) {
+      case TY_FIRE: case TY_DRAGON: case TY_POISON: case TY_GHOST:
+        y -= (int)(26 * k);  // they rise
+        break;
+      case TY_WATER: case TY_GRASS:
+        y += (int)(38 * k * k) - 8;  // thrown out, then they fall
+        if (ty == TY_GRASS) x += (int)(6 * sinf(k * 9 + i));
+        break;
+      case TY_ROCK: case TY_GROUND:  // dropped on it from above
+        x = cx + (i - n / 2) * 11;
+        y = cy - 70 + (int)(80 * k * k) + (i % 3) * 6;
+        break;
+      case TY_ELECTRIC:
+        dist = 14 + 20 * k;
+        x = cx + (int)(cosf(a) * dist);
+        y = cy + (int)(sinf(a) * dist);
+        break;
+      default: break;
+    }
+    fxPiece(ty, x, y, i, k);
+  }
+}
+
+// the move being made right now, if any: its effect for this frame
+void drawMoveFx(int meX, int meY, int foeX, int foeY) {
+  if (bPhase != BP_ATTACK && bPhase != BP_HIT) return;
+  bool mine = bTurn[bStep].mine;
+  uint8_t ty = MOVE_TBL[(mine ? bMeMoves : bFoeMoves).ids[bTurn[bStep].move]].type;
+  int ax = mine ? meX : foeX, ay = mine ? meY : foeY, tx = mine ? foeX : meX, ty_ = mine ? foeY : meY;
+  uint32_t t = millis() - bPhaseT;
+  if (bPhase == BP_ATTACK) {
+    if (t < 420 || !fxFlies(ty)) return;
+    float k = (t - 420) / 380.0f;
+    for (int j = 0; j < 3; j++) {  // a few on their way
+      float kk = k - j * 0.14f;
+      if (kk < 0 || kk > 1) continue;
+      fxPiece(ty == TY_PSYCHIC ? TY_NORMAL : ty, ax + (int)((tx - ax) * kk), ay + (int)((ty_ - ay) * kk) - (int)(18 * sinf(kk * 3.14159f)), j, 0);
+    }
+    return;
+  }
+  if (bLastEff == 0 || t > 700) return;  // no effect on an immune target
+  fxBurst(ty, tx, ty_, t / 700.0f);
+}
+
 void renderBattle() {
   if (pet.ceremony) { closeBattle(); return; }  // the farewell takes priority
   battleStep();
@@ -2761,6 +2899,8 @@ void renderBattle() {
     bShownFoe += (bFoe.hp - bShownFoe) * 0.28f;
     drawBattleFighter(wildPmd, false, BTL_FOE_X, BTL_FOE_GROUND, 3);
     drawBattleFighter(pmd, true, BTL_ME_X, BTL_ME_GROUND, 4);
+    drawMoveFx(BTL_ME_X, (BTL_ME_GROUND + pmdTopY(pmd, BTL_ME_GROUND, 4)) / 2,
+               BTL_FOE_X, (BTL_FOE_GROUND + pmdTopY(wildPmd, BTL_FOE_GROUND, 3)) / 2);
     drawBattlePanel(72, 64, bFoe, bShownFoe, false);
     drawBattlePanel(226, 256, bMe, bShownMe, true);
   } else {
@@ -3814,6 +3954,20 @@ void drawMedalBadge(int x, int y, int i) {
 }
 
 // page 0: profile (large portrait, identity, streak, bond, berry)
+// how high a sprite reaches when drawn on groundY: the top of what it fills, at drawPmdActM's scale
+int pmdTopY(const PmdMon &m, int groundY, uint8_t maxS) {
+  const PmdAct &a = m.acts[PMD_IDLE];
+  if (!a.frames) return groundY - 120;
+  uint8_t s = a.h ? 170 / a.h : 5;
+  s = s < 2 ? 2 : s > maxS ? maxS : s;
+  while (s > 2 && a.h * s > 250) s--;
+  int top = a.h;
+  for (int r = 0; r < a.h && top == a.h; r++)
+    for (int c = 0; c < a.w; c++)
+      if (a.data[r * a.w + c] != 0xFF) { top = r; break; }
+  return groundY - ((a.base ? a.base : a.h) - top) * s;
+}
+
 void renderCardProfile() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
@@ -3828,18 +3982,24 @@ void renderCardProfile() {
   // the six Latin languages (11 characters at size 3 are those 198 px).
   setSize(3);
   int hts = (textW(head, 3) <= 198) ? 3 : 2;
+  // the name sits halfway between the top of the circle and the top of the Pokemon
+  int blockH = 8 * hts + (pet.nick[0] ? 26 : 0);
+  int spriteTop = pmd.loaded ? pmdTopY(pmd, 206, 4) : 120;
+  int ny = (24 + spriteTop - 10 - blockH) / 2;
+  if (ny < 34) ny = 34;
   setSize(hts);
   int hw = textW(head, hts);
-  setCur(CX - (hw + 24) / 2, hts == 3 ? 34 : 40);  // room for the pencil after it
+  setCur(CX - (hw + 24) / 2, ny);  // room for the pencil after it
   printT(head);
-  drawMap(SPR_PENCIL, 10, CX + (hw + 24) / 2 - 20, hts == 3 ? 34 : 38, 2, false);  // the name can be changed
+  drawMap(SPR_PENCIL, 10, CX + (hw + 24) / 2 - 20, ny + 8 * hts / 2 - 10, 2, false);  // the name can be changed
+  cardNameBottom = ny + blockH;
   if (pet.nick[0]) {  // real species under the nickname
     const char *sp = dexName(pet.speciesId);
     char par[32];
     snprintf(par, sizeof(par), "(%s)", sp);
     gfx->setTextColor(UI_TRACK);
     setSize(2);
-    setCur(centerX(par, 2), 64);   // measured, not counted in bytes
+    setCur(centerX(par, 2), ny + 8 * hts + 6);   // measured, not counted in bytes
     printT(par);
   }
 
@@ -3877,12 +4037,6 @@ void renderCardProfile() {
     setCur(centerX(info, 2), 296);
   }
   printT(info);
-
-  // how to rename, plainly: the pencil by the name, and this
-  int rw = textW(T(S_RENAME_HINT), 2);
-  drawMap(SPR_PENCIL, 10, CX - (rw + 26) / 2, 330, 2, false);
-  setCur(CX - (rw + 26) / 2 + 26, 332);
-  printT(T(S_RENAME_HINT));
 }
 
 // page 1: stats (4 bars + train button)

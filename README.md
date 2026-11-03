@@ -6,7 +6,7 @@ A Pokémon tamagotchi for the **BTT Knomi V2**, the little round screen made for
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac).
 
-This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) by Quique Tortosa, who created the game and did the hard work. PokeKnomiGochi brings it to the Knomi and adds battles, catching and new games. Please give the original a star.
+This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) by Quique Tortosa, who created the original game. PokeKnomiGochi brings it to the Knomi and adds battles, catching and new games. Please give the original a star.
 
 | | | |
 |:--:|:--:|:--:|
