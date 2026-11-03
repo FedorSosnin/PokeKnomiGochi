@@ -100,6 +100,7 @@ struct {
 uint32_t walkLast = 0;  // time of the last walk step (0 = none yet)
 #define PET_GROUND 304  // pet ground line
 PmdMon galleryPmd;  // large sprite for the gallery detail view (PMD/TPK2, legal)
+PmdMon galleryShinyPmd;  // the entry's shiny, next to the regular one when both are caught
 
 // pokedex gallery
 bool galleryOpen = false;
@@ -115,8 +116,8 @@ bool cardOpen = false;        // pet card (vertical swipe)
 bool kbOpen = false;          // keyboard for renaming the pet
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
-uint8_t cardPage = 0;         // 0 profile, 1 stats, 2 medals, 3 trainer medals, 4 progress
-#define CARD_PAGES 5
+uint8_t cardPage = 0;         // 0 profile, 1 stats, 2 medals, 3 trainer medals, 4 zone medals, 5 progress
+#define CARD_PAGES 6
 uint8_t clockPage = 0;        // 0 time, 1 settings (Knomi only)
 uint8_t wifiListPage = 0, wifiKbLayer = 0;
 int8_t wifiKbHover = -1;      // key under the finger: typed on release
@@ -219,6 +220,7 @@ uint8_t bPvpFoeMove = 0;
 bool tradeOpen = false;
 TradePhase trPhase = TR_PICK;
 int16_t trMine = 0, trTheirs = 0;
+bool trMineShiny = false, trTheirsShiny = false;  // which form of each is traded
 int trPage = 0;
 bool trTheirConfirm = false;
 uint32_t trT = 0;
@@ -253,6 +255,8 @@ BtlMoves bMeMoves, bFoeMoves;
 uint8_t bLearned = 0;  // the move announced by BP_LEARNED
 float bBallX = 233, bFoeX = 233;  // capture: position of the throw and of the foe
 uint8_t bBalls = 0;
+bool bFoeShiny = false;     // a shiny wild one: catching it registers the shiny form
+bool bNextShiny = false;    // WILD <dex> S (testing): the next wild one is shiny
 uint32_t bBallT = 0;
 
 // the 9 species with their own sprite in flash (fallback without SD): dex -> index
@@ -767,8 +771,8 @@ void handleSerial() {
   } else if (line == "VBBOT" && pet.noSave) {  // Poke Ball Volley plays by itself (testing)
     vbBot = !vbBot;
     Serial.println("DONE");
-  } else if (line.startsWith("CATCH ") && pet.noSave) {  // "CATCH dex": into the Pokedex (testing trades)
-    pet.catchWild(line.substring(6).toInt());
+  } else if (line.startsWith("CATCH ") && pet.noSave) {  // "CATCH dex [S]": into the Pokedex (testing)
+    pet.catchWild(line.substring(6).toInt(), line.indexOf(" S") > 0);
     Serial.println("DONE");
   } else if (line.startsWith("SDTEST") && pet.noSave && buddyFake) {  // "SDTEST [session]": a Showdown against the stand-in buddy, for screenshots
     bsId = line.length() > 7 ? (uint32_t)line.substring(7).toInt() | 1 : esp_random() | 1;
@@ -798,7 +802,8 @@ void handleSerial() {
   } else if (line == "ZONES") {
     openZones();
     Serial.println("DONE");
-  } else if (line.startsWith("WILD ")) {  // specific foe (testing)
+  } else if (line.startsWith("WILD ")) {  // specific foe (testing); "WILD 25 S": a shiny one
+    bNextShiny = line.indexOf(" S") > 0 && pet.noSave;
     startBattleWith(line.substring(5).toInt());
     Serial.println("DONE");
   } else if (line == "HATCH") {
@@ -832,7 +837,7 @@ void handleSerial() {
     galleryOpen = !galleryOpen;
     galleryDetail = 0;
     galleryDirty = true;
-    if (!galleryOpen) galleryPmd.unload();
+    if (!galleryOpen) galleryUnload();
     Serial.println("DONE");
   } else if (line == "EGGS") {
     // simulates 20 egg rolls (doesn't change the game state)
@@ -1112,7 +1117,7 @@ void onSwipe(int dir) {
     return;
   }
   if (tradeOpen) {
-    int pages = (pet.registeredCount() + 15) / 16;
+    int pages = (pet.formCount() + 15) / 16;
     int np = trPage - dir;
     if (trPhase == TR_PICK && np >= 0 && np < pages) trPage = np;
     return;
@@ -1152,14 +1157,14 @@ void onSwipe(int dir) {
   }
   if (galleryDetail) {  // in detail: back to the grid
     galleryDetail = 0;
-    galleryPmd.unload();
+    galleryUnload();
     galleryDirty = true;
     return;
   }
   int np = galleryPage - dir;  // swiping left advances a page
   if (np < 0) {                // going back from the first = exit
     galleryOpen = false;
-    galleryPmd.unload();
+    galleryUnload();
     return;
   }
   if (np > 9) np = 9;
@@ -2264,7 +2269,7 @@ void knomiAskReset() {
   gamesMenuOpen = playMenuOpen = false;
   zoneDetailClose();
   zoneScreen = ZS_NONE;
-  if (galleryOpen) { galleryOpen = false; galleryPmd.unload(); }
+  if (galleryOpen) { galleryOpen = false; galleryUnload(); }
   wifiSetupStop();
   gameOpen = cardOpen = kbOpen = clockOpen = false;
   confirmUntil = 0;
@@ -2338,7 +2343,9 @@ void startBattleWith(int16_t dex) {
   }
   uint8_t foeLvl = btlWildLevel(lvl, random(4));
   if (dex < 1 || dex > DEX_COUNT) dex = bZone >= 0 ? pet.pickZoneSpecies(bZone, foeLvl) : pet.pickWildSpecies(foeLvl);
-  wildPmd.load(dex, false);
+  bFoeShiny = bNextShiny || random(100) < WILD_SHINY_PCT;
+  bNextShiny = false;
+  wildPmd.load(dex, bFoeShiny);
   if (!wildPmd.loaded) return;  // without a sprite there is no foe to show
 
   bMe = petFighter(lvl);
@@ -2351,8 +2358,8 @@ void startBattleWith(int16_t dex) {
   bGain = 0;
   battleOpen = true;
   battleSetPhase(BP_INTRO);
-  sfxPlay(SFX_PLAY);
-  Serial.printf("battle: foe #%d Lv.%u %s/%s vs %s/%s\n", dex, foeLvl,
+  sfxPlay(bFoeShiny ? SFX_MEDAL : SFX_PLAY);
+  Serial.printf("battle: foe #%d%s Lv.%u %s/%s vs %s/%s\n", dex, bFoeShiny ? " shiny" : "", foeLvl,
                 MOVE_TBL[bFoeMoves.ids[0]].name, MOVE_TBL[bFoeMoves.ids[1]].name,
                 MOVE_TBL[bMeMoves.ids[0]].name, MOVE_TBL[bMeMoves.ids[1]].name);
 }
@@ -2430,7 +2437,7 @@ void battleFinish(bool won) {
 
 // after the result: if it is a new species, a capture can be attempted
 void battleAfterEnd() {
-  if (!bPvp && bWon && !pet.isRegistered(bFoe.dex)) {
+  if (!bPvp && bWon && !pet.hasForm(bFoe.dex, bFoeShiny)) {
     bBalls = CATCH_BALLS;
     battleSetPhase(BP_AIM);
   } else {
@@ -2552,8 +2559,8 @@ void battleStep() {
         sfxPlay(SFX_DENY);
         battleSetPhase(BP_BROKE);
       } else if (!bBreakAt && t > CATCH_SHAKES * CATCH_SHAKE_MS + 250) {
-        bool isNew = pet.catchWild(bFoe.dex);
-        Serial.printf("catch: #%d new=%d\n", bFoe.dex, isNew);
+        bool isNew = pet.catchWild(bFoe.dex, bFoeShiny);
+        Serial.printf("catch: #%d%s new=%d\n", bFoe.dex, bFoeShiny ? " shiny" : "", isNew);
         sfxPlay(SFX_MEDAL);
         battleSetPhase(BP_CAUGHT);
       }
@@ -2748,7 +2755,7 @@ void renderBattle() {
     case BP_TIRED: battleCenterLine(T(S_BTL_TIRED), 380); break;
     case BP_INTRO:
       if (bPvp) snprintf(b, sizeof(b), "VS %s!", buddyName());
-      else snprintf(b, sizeof(b), T(S_BTL_WILD), dexName(bFoe.dex));
+      else snprintf(b, sizeof(b), T(bFoeShiny ? S_SHINY_WILD_FMT : S_BTL_WILD), dexName(bFoe.dex));
       battleCenterLine(b, 380);
       break;
     case BP_LEARNED:
@@ -3863,7 +3870,7 @@ void renderCardStats() {
 void renderCardMedals(int first, int count, StrId headFmt) {
   int got = 0;
   for (int i = first; i < first + count; i++)
-    if (pet.hasMedal(1 << i)) got++;
+    if (pet.hasMedal(1UL << i)) got++;
   char head[40];
   snprintf(head, sizeof(head), T(headFmt), got, count);
   gfx->setTextColor(UI_INK);
@@ -3874,7 +3881,7 @@ void renderCardMedals(int first, int count, StrId headFmt) {
   int rowsTop = 104 + (4 - (count + 1) / 2) * 27;  // fewer rows: centred in the same space
   for (int i = first; i < first + count; i++) {
     int x = 28 + ((i - first) % 2) * 206, y = rowsTop + ((i - first) / 2) * 54;
-    bool g = pet.hasMedal(1 << i);
+    bool g = pet.hasMedal(1UL << i);
     gfx->fillRoundRect(x, y, 196, 44, 10, g ? UI_BAR_OK : UI_TRACK);
     if (g) {  // earned mark
       gfx->fillCircle(x + 22, y + 22, 11, UI_BG_DAY);
@@ -3956,7 +3963,8 @@ void renderCard() {
   if (cardPage == 0) renderCardProfile();
   else if (cardPage == 1) renderCardStats();
   else if (cardPage == 2) renderCardMedals(0, MED_PET_COUNT, S_MEDALS_FMT);
-  else if (cardPage == 3) renderCardMedals(MED_PET_COUNT, MED_COUNT - MED_PET_COUNT, S_TRAINER_FMT);
+  else if (cardPage == 3) renderCardMedals(MED_PET_COUNT, MED_FIRST_ZONE - MED_PET_COUNT, S_TRAINER_FMT);
+  else if (cardPage == 4) renderCardMedals(MED_FIRST_ZONE, MED_COUNT - MED_FIRST_ZONE, S_ZONE_MEDALS_FMT);
   else renderCardProgress();
 
   // page indicator + help
@@ -4093,6 +4101,20 @@ void drawDexInfo(int16_t dex, bool withFact = true) {
   }
 }
 
+// a Pokedex entry's sprites: the regular one, and the shiny beside it when both are caught (a
+// shiny alone takes galleryPmd's place)
+void dexDetailLoad(int16_t dex) {
+  bool regular = pet.hasForm(dex, false), shiny = pet.hasForm(dex, true);
+  galleryPmd.load(dex, shiny && !regular);
+  if (regular && shiny) galleryShinyPmd.load(dex, true);
+  else galleryShinyPmd.unload();
+}
+
+void galleryUnload() {
+  galleryPmd.unload();
+  galleryShinyPmd.unload();
+}
+
 // a Pokedex entry, full screen (the Pokedex and the zones' grids); galleryPmd holds its sprite
 void renderDexDetail(int16_t dex) {
     gfx->fillScreen(RGB565_BLACK);
@@ -4100,8 +4122,7 @@ void renderDexDetail(int16_t dex) {
     const DexEntry &d = DEX_TBL[dex];
     bool reg = pet.isRegistered(dex);
     char head[32];
-    snprintf(head, sizeof(head), "N.%03d %s%s", dex,
-             pet.isShinyRegistered(dex) ? "*" : "", reg ? dexName(dex) : "???");
+    snprintf(head, sizeof(head), "N.%03d %s", dex, reg ? dexName(dex) : "???");
     gfx->setTextColor(reg ? d.accent : UI_INK);
     // auto-shrink long names (they don't fit at t3), measuring instead of counting
     // bytes; 13 characters at size 3 are the 234 px from before.
@@ -4110,7 +4131,13 @@ void renderDexDetail(int16_t dex) {
     setSize(gts);
     setCur(centerX(head, gts), gts == 3 ? 56 : 60);
     printT(head);
-    if (reg) {
+    if (reg && galleryPmd.loaded && galleryShinyPmd.loaded) {  // both forms, side by side
+      uint8_t s = min(pmdFitScale(galleryPmd, PMD_IDLE, 150, 150), pmdFitScale(galleryShinyPmd, PMD_IDLE, 150, 150));
+      if (s > 3) s = 3;
+      drawPmdActM(galleryPmd, PMD_IDLE, CX - 84, 240, millis(), true, false, s);
+      drawPmdActM(galleryShinyPmd, PMD_IDLE, CX + 84, 240, millis(), true, false, s);
+      drawDexInfo(dex);
+    } else if (reg) {
       if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 240, millis(), true, false, 4);
       else if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
       drawDexInfo(dex);
@@ -4124,6 +4151,13 @@ void renderDexDetail(int16_t dex) {
     setCur(centerX(T(S_DETAIL_BACK), 2), 408);
     printT(T(S_DETAIL_BACK));
     gfx->flush();
+}
+
+// a square of the Pokedex with the shiny form caught: it glows gold, with a sparkle
+void drawShinyGlow(int x, int y, int cell) {
+  gfx->fillRoundRect(x + 2, y + 2, cell - 4, cell - 4, 14, C565(0xff, 0xe7, 0x8c));
+  gfx->fillRoundRect(x + 6, y + 6, cell - 12, cell - 12, 11, C565(0xff, 0xf5, 0xcf));
+  drawSparkle(x + cell - 12, y + 12, 7);
 }
 
 void renderGallery() {
@@ -4151,13 +4185,8 @@ void renderGallery() {
       int x = GAL_X + c * GAL_CELL, y = GAL_Y + r * GAL_CELL;
       const uint8_t *t = thumbs.get(dex);
       if (t) {
+        if (pet.isShinyRegistered(dex)) drawShinyGlow(x, y, GAL_CELL);
         drawThumb(t, x, y, 2, !pet.isRegistered(dex));
-        if (pet.isShinyRegistered(dex)) {
-          gfx->setTextColor(UI_BAR_WARN);
-          setSize(2);
-          setCur(x + 62, y + 4);
-          printT("*");
-        }
       } else {
         char num[6];
         snprintf(num, sizeof(num), "%d", dex);
@@ -4179,13 +4208,13 @@ void renderGallery() {
 void galleryTap(int16_t x, int16_t y) {
   if (galleryDetail) {  // back to the grid
     galleryDetail = 0;
-    galleryPmd.unload();
+    galleryUnload();
     galleryDirty = true;
     return;
   }
   if (y < 72) {  // tap the header = exit
     galleryOpen = false;
-    galleryPmd.unload();
+    galleryUnload();
     return;
   }
   // same reason as in the keyboard: filter before dividing
@@ -4195,7 +4224,7 @@ void galleryTap(int16_t x, int16_t y) {
   int16_t dex = galleryPage * 16 + r * 4 + c + 1;
   if (dex > 151) return;
   galleryDetail = dex;
-  galleryPmd.load(dex, pet.isShinyRegistered(dex));
+  dexDetailLoad(dex);
 }
 
 // ---------- egg choice ----------
@@ -4284,7 +4313,7 @@ void eggPickTap(int16_t x, int16_t y) {
     eggPickDetail = 0;
     eggPickPage = 0;
     eggPickDirty = true;
-    galleryPmd.unload();
+    galleryUnload();
     return;
   }
   int16_t dex = ownedGridAt(x, y, eggPickPage);
@@ -4351,6 +4380,7 @@ void buddySendMove(uint8_t turn, uint8_t move, bool ack) {
 void buddySendTrade(BuddyType type, int16_t dex, bool ack) {
   BuddyMsg m = buddyMsg(type);
   m.dex = dex;
+  m.shiny = dex == trMine && trMineShiny;  // the form offered (older versions send 0: regular)
   m.ack = ack;
   buddyNetSend(m);
 }
@@ -4399,6 +4429,7 @@ void buddyStartSession() {
   tradeOpen = true;
   trPhase = TR_PICK;
   trMine = trTheirs = 0;
+  trMineShiny = trTheirsShiny = false;
   trPage = 0;
   trTheirConfirm = false;
   trT = millis();
@@ -4418,6 +4449,7 @@ void buddyDeclineInvite() {
 
 // the buddy's data arrives: the battle begins. HP is that of a full battle on both boards.
 void buddyStartBattle(const BuddyMsg &m) {
+  bFoeShiny = m.shiny;
   wildPmd.load(m.dex, m.shiny);
   if (!wildPmd.loaded) {
     buddyNetSend(buddyMsg(BM_LEAVE));
@@ -4583,6 +4615,7 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
       if (bsState == BS_INVITING) buddyStartSession();
       if (!tradeOpen || !buddyRegHas(bPeers[bCur].reg, m.dex)) break;
       trTheirs = m.dex;
+      trTheirsShiny = m.shiny != 0;
       if (!m.ack && trMine) buddySendTrade(BM_OFFER, trMine, true);
       if (trPhase == TR_WAIT) trPhase = TR_REVIEW;
       break;
@@ -4596,8 +4629,9 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
 }
 
 void tradeFinish() {
-  bool isNew = pet.tradeAway(trMine, trTheirs);  // yours leaves your Pokedex, theirs comes in
-  Serial.printf("buddy: trade, gives #%d receives #%d new=%d\n", trMine, trTheirs, isNew);
+  bool isNew = pet.tradeAway(trMine, trTheirs, trMineShiny, trTheirsShiny);  // yours leaves, theirs comes in
+  Serial.printf("buddy: trade, gives #%d%s receives #%d%s new=%d\n", trMine, trMineShiny ? " shiny" : "", trTheirs,
+                trTheirsShiny ? " shiny" : "", isNew);
   sfxPlay(SFX_MEDAL);
   trPhase = TR_DONE;
   trT = millis();
@@ -5356,11 +5390,26 @@ void renderTrade() {
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   if (trPhase == TR_PICK) {
-    drawOwnedGrid(T(S_TRADE_PICK), trPage, pet.speciesId);  // yours can't be traded
-    for (int i = 0; i < 16; i++) {  // green dot: the buddy is missing this one
-      int16_t dex = pet.registeredAt(trPage * 16 + i);
+    // every form you have, a shiny one glowing; yours can't be traded. Green dot: the buddy
+    // is missing that species
+    gfx->setTextColor(UI_INK);
+    setSize(2);
+    setCur(centerX(T(S_TRADE_PICK), 2), 50);
+    printT(T(S_TRADE_PICK));
+    for (int i = 0; i < 16; i++) {
+      bool shiny;
+      int16_t dex = pet.formAt(trPage * 16 + i, shiny);
       if (!dex) break;
-      if (!buddyRegHas(bPeers[bCur].reg, dex)) gfx->fillCircle(GAL_X + (i % 4) * GAL_CELL + 66, GAL_Y + (i / 4) * GAL_CELL + 14, 7, UI_BAR_OK);
+      int x = GAL_X + (i % 4) * GAL_CELL, y = GAL_Y + (i / 4) * GAL_CELL;
+      if (shiny) drawShinyGlow(x, y, GAL_CELL);
+      if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, x, y, 2, !pet.canTrade(dex, shiny));
+      if (!buddyRegHas(bPeers[bCur].reg, dex)) gfx->fillCircle(x + 66, y + 66, 7, UI_BAR_OK);
+    }
+    int pages = (pet.formCount() + 15) / 16;
+    for (int i = 0; pages > 1 && i < pages; i++) {
+      int dotX = CX + (i * 2 - (pages - 1)) * 7;
+      if (i == trPage) gfx->fillCircle(dotX, 436, 4, UI_INK);
+      else gfx->drawCircle(dotX, 436, 3, UI_INK);
     }
     gfx->flush();
     return;
@@ -5370,6 +5419,7 @@ void renderTrade() {
   if (trPhase == TR_DONE) {
     char b[44];
     snprintf(b, sizeof(b), T(S_TRADE_GOT_FMT), dexName(trTheirs));
+    if (trTheirsShiny) drawShinyGlow(CX - 84, 116, 168);
     if (const uint8_t *t = thumbs.get(trTheirs)) drawThumb(t, CX - GAL_CELL / 2 - 40, 120, 4, false);
     catchBanner(b, C565(0x1e, 0x7d, 0x3c));
     gfx->flush();
@@ -5380,10 +5430,12 @@ void renderTrade() {
   printT(T(S_TRADE_GIVE));
   setCur(330 - textW(T(S_TRADE_GET), 2) / 2, 92);
   printT(T(S_TRADE_GET));
+  if (trMineShiny) drawShinyGlow(136 - 62, 120, 124);
   if (const uint8_t *t = thumbs.get(trMine)) drawThumb(t, 136 - GAL_CELL / 2, 124, 3, false);
   setCur(136 - textW(dexName(trMine), 2) / 2, 216);
   printT(dexName(trMine));
   if (trTheirs) {
+    if (trTheirsShiny) drawShinyGlow(330 - 62, 120, 124);
     if (const uint8_t *t = thumbs.get(trTheirs)) drawThumb(t, 330 - GAL_CELL / 2, 124, 3, false);
     setCur(330 - textW(dexName(trTheirs), 2) / 2, 216);
     printT(dexName(trTheirs));
@@ -5416,14 +5468,19 @@ void tradeTap(int16_t x, int16_t y) {
       tradeClose(true);
       return;
     }
-    int16_t dex = ownedGridAt(x, y, trPage);
+    if (x < GAL_X || y < GAL_Y) return;
+    int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
+    if (c > 3 || r > 3) return;
+    bool shiny;
+    int16_t dex = pet.formAt(trPage * 16 + r * 4 + c, shiny);
     if (!dex) return;
-    if (!pet.canTrade(dex)) {  // the one you are raising stays
+    if (!pet.canTrade(dex, shiny)) {  // the one you are raising stays
       sfxPlay(SFX_DENY);
       return;
     }
     sfxPlay(SFX_TAP);
     trMine = dex;
+    trMineShiny = shiny;
     trT = millis();
     bsResendT = 0;
     trPhase = trTheirs ? TR_REVIEW : TR_WAIT;
@@ -5472,7 +5529,7 @@ void openZones() {
 void zoneDetailClose() {
   if (!zoneDetail) return;
   zoneDetail = 0;
-  galleryPmd.unload();
+  galleryUnload();
 }
 
 void zoneBack() {
@@ -5557,7 +5614,7 @@ void zoneTap(int16_t x, int16_t y) {
   if (!dex) return;
   sfxPlay(SFX_TAP);
   zoneDetail = dex;
-  galleryPmd.load(dex, pet.isShinyRegistered(dex));
+  dexDetailLoad(dex);
 }
 
 void zoneDrawIcon(uint8_t z) {
@@ -5619,6 +5676,7 @@ void renderZones() {
     int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + i);
     if (!dex) break;
     int x = ZONE_GRID_X + (i % 4) * ZONE_CELL, y = ZONE_GRID_Y + (i / 4) * ZONE_CELL;
+    if (pet.isShinyRegistered(dex)) drawShinyGlow(x, y, ZONE_CELL);
     if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, x, y, 2, !pet.isRegistered(dex));
     if (dex == ZONE_LEGEND[zoneCur]) {  // star: the legendary waits here
       gfx->setTextColor(UI_BAR_WARN);
@@ -6012,6 +6070,27 @@ uint8_t pmdFitScale(const PmdMon &m, uint8_t actId, int maxW, int maxH) {
   return fit < 2 ? 2 : (fit > 8 ? 8 : fit);
 }
 
+// a shiny's sparkles: four little gold stars around it (the box it fills on screen), each
+// twinkling on its own beat
+#define SPARKLE_GOLD C565(0xff, 0xcd, 0x28)
+void drawSparkle(int x, int y, int r) {
+  if (r < 2) return;
+  gfx->fillRect(x - 1, y - r, 3, 2 * r + 1, SPARKLE_GOLD);
+  gfx->fillRect(x - r, y - 1, 2 * r + 1, 3, SPARKLE_GOLD);
+  gfx->fillRect(x - 1, y - 1, 3, 3, UI_WHITE);
+}
+void drawSparkles(int left, int top, int right, int bottom, uint32_t now) {
+  int w = right - left, h = bottom - top;
+  if (w <= 0 || h <= 0) return;
+  int big = h < 60 ? 7 : 10;
+  const int8_t spot[4][2] = { { -10, 10 }, { 104, -4 }, { 108, 70 }, { 0, 90 } };  // % of the box
+  for (int i = 0; i < 4; i++) {
+    uint32_t beat = (now + i * 370) % 1400;  // grows, holds, fades, rests
+    int r = beat < 300 ? big * beat / 300 : beat < 600 ? big : beat < 900 ? big * (900 - beat) / 300 : 0;
+    drawSparkle(left + w * spot[i][0] / 100, top + h * spot[i][1] / 100, r);
+  }
+}
+
 // draws an action of a specific PmdMon (m); drawPmdAct uses the global pmd
 void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS) {
   const PmdAct &a = m.acts[actId];
@@ -6027,11 +6106,18 @@ void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool
   // anchor by the feet (a.base), not by the canvas height: that way actions
   // with different padding (Hurt, Eat...) all end up at the same ground height
   int x0 = cx - a.w * s / 2, y0 = groundY - (a.base ? a.base : a.h) * s;
+  int left = a.w, right = -1, top = -1;  // what it fills, for the sparkles
   for (int r = 0; r < a.h; r++) {
     const uint8_t *row = fr + r * a.w;
     forRuns(a.w, [&](int c) { return indexedKey(row[c], sil); },
-            [&](int c0, int len, int k) { gfx->fillRect(x0 + c0 * s, y0 + r * s, len * s, s, sil ? INK_K : m.pal[k]); });
+            [&](int c0, int len, int k) {
+              gfx->fillRect(x0 + c0 * s, y0 + r * s, len * s, s, sil ? INK_K : m.pal[k]);
+              if (c0 < left) left = c0;
+              if (c0 + len > right) right = c0 + len;
+              if (top < 0) top = r;
+            });
   }
+  if (m.shiny && !sil && right > 0) drawSparkles(x0 + left * s, y0 + top * s, x0 + right * s, groundY, millis());
 }
 void drawPmdAct(uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS) {
   drawPmdActM(pmd, actId, cx, groundY, t, loop, sil, maxS);

@@ -273,11 +273,52 @@ int16_t Pet::registeredAt(int idx) const {
   return 0;
 }
 
-void Pet::registerSpecies(int16_t dex) {
-  if (dex < 1 || dex > 151) return;
-  dexReg[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
-  if (shiny) dexShinyReg[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
+static void setDexBit(uint8_t *bits, int16_t dex, bool on) {
+  uint8_t m = 1 << ((dex - 1) & 7);
+  if (on) bits[(dex - 1) >> 3] |= m;
+  else bits[(dex - 1) >> 3] &= ~m;
 }
+
+// one form into the Pokedex; true if this form is new
+bool Pet::addForm(int16_t dex, bool shinyForm) {
+  if (dex < 1 || dex > 151 || hasForm(dex, shinyForm)) return false;
+  bool had = isRegistered(dex);
+  setDexBit(dexReg, dex, true);
+  if (shinyForm) {
+    setDexBit(dexShinyReg, dex, true);
+    if (!had) setDexBit(dexShinyOnly, dex, true);  // only the shiny one so far
+  } else {
+    setDexBit(dexShinyOnly, dex, false);
+  }
+  return true;
+}
+
+// one form out of the Pokedex: the species stays while the other form is there
+void Pet::removeForm(int16_t dex, bool shinyForm) {
+  if (!hasForm(dex, shinyForm)) return;
+  bool other = hasForm(dex, !shinyForm);
+  if (shinyForm) setDexBit(dexShinyReg, dex, false);
+  setDexBit(dexShinyOnly, dex, other && !shinyForm);
+  if (!other) setDexBit(dexReg, dex, false);
+}
+
+uint16_t Pet::formCount() const {
+  uint16_t n = 0;
+  for (int16_t d = 1; d <= 151; d++) n += hasForm(d, false) + hasForm(d, true);
+  return n;
+}
+
+int16_t Pet::formAt(int idx, bool &shinyForm) const {
+  for (int16_t d = 1; d <= 151; d++)
+    for (int f = 0; f < 2; f++)
+      if (hasForm(d, f) && idx-- == 0) {
+        shinyForm = f;
+        return d;
+      }
+  return 0;
+}
+
+void Pet::registerSpecies(int16_t dex) { addForm(dex, shiny); }
 
 // streak and bond improve the egg draw (0..~14)
 int Pet::careBonus() const {
@@ -338,6 +379,8 @@ void Pet::checkMedals() {
   if (level() >= 100) trainerMedals |= MED_LV100;
   if (buddyPeak >= 1) trainerMedals |= MED_BUDDY;
   if (buddyPeak + 1 >= PARTY_SIZE) trainerMedals |= MED_PARTY;
+  for (uint8_t z = 0; z < ZONE_COUNT; z++)
+    if (zoneCaught(z) == zoneSize(z)) trainerMedals |= 1UL << (MED_FIRST_ZONE + z);
   uint32_t gained = (medals | trainerMedals) & ~before;
   if (gained) {
     for (uint32_t m = gained; m; m &= (m - 1)) totalMedals++;
@@ -601,22 +644,19 @@ uint8_t Pet::battleResult(bool won) {
   return gain;
 }
 
-bool Pet::catchWild(int16_t dex) {
-  if (dex < 1 || dex > 151 || isRegistered(dex)) return false;
-  // straight to the normal bit: registerSpecies() would mark shiny if the pet is one
-  dexReg[(dex - 1) >> 3] |= (1 << ((dex - 1) & 7));
+bool Pet::catchWild(int16_t dex, bool shinyForm) {
+  if (!addForm(dex, shinyForm)) return false;
+  checkMedals();  // a zone may be complete now
   save();
   return true;
 }
 
-bool Pet::tradeAway(int16_t give, int16_t get) {
-  if (!canTrade(give) || get < 1 || get > 151) return false;
-  if (give != get) {  // the same species both ways: nothing changes hands
-    dexReg[(give - 1) >> 3] &= ~(1 << ((give - 1) & 7));
-    dexShinyReg[(give - 1) >> 3] &= ~(1 << ((give - 1) & 7));
-  }
-  bool isNew = !isRegistered(get);
-  dexReg[(get - 1) >> 3] |= (1 << ((get - 1) & 7));
+bool Pet::tradeAway(int16_t give, int16_t get, bool giveShiny, bool getShiny) {
+  if (!canTrade(give, giveShiny) || get < 1 || get > 151) return false;
+  if (give == get && giveShiny == getShiny) return false;  // the same both ways: nothing changes hands
+  removeForm(give, giveShiny);
+  bool isNew = addForm(get, getShiny);
+  checkMedals();
   save();
   return isNew;
 }
@@ -796,6 +836,7 @@ void Pet::save() {
   prefs.putBool("stpk", starterPick);
   prefs.putBool("egpk", eggPick);
   prefs.putBytes("dexsh", dexShinyReg, sizeof(dexShinyReg));
+  prefs.putBytes("dexsho", dexShinyOnly, sizeof(dexShinyOnly));
   prefs.putUInt("age", ageMinutes);
   prefs.putShort("dexn", speciesId);
   prefs.putShort("eggT2", eggTarget);
@@ -849,6 +890,7 @@ void Pet::load() {
   starterPick = prefs.getBool("stpk", false);
   eggPick = prefs.getBool("egpk", false);
   prefs.getBytes("dexsh", dexShinyReg, sizeof(dexShinyReg));
+  if (prefs.isKey("dexsho")) prefs.getBytes("dexsho", dexShinyOnly, sizeof(dexShinyOnly));  // older saves: both forms
   ageMinutes = prefs.getUInt("age", 0);
   if (prefs.isKey("dexn")) {
     speciesId = prefs.getShort("dexn", -1);

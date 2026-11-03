@@ -61,9 +61,13 @@ enum : uint32_t {
   MED_DEX151 = 1 << 12, MED_LV100 = 1 << 13,
   MED_BUDDY = 1 << 14, MED_PARTY = 1 << 15,  // a buddy on screen; a party of 5 Pokemon on screen
   MED_PLAYMATE = 1UL << 16,                  // played a game with a buddy (Who's That? Showdown)
+  // a zone completed: every Pokemon in it caught, the legendary too (in zone order)
+  MED_ZONE_FOREST = 1UL << 17, MED_ZONE_BEACH = 1UL << 18, MED_ZONE_CAVE = 1UL << 19,
+  MED_ZONE_MANSION = 1UL << 20, MED_ZONE_FIELD = 1UL << 21,
 };
 #define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer
-#define MED_COUNT 17
+#define MED_FIRST_ZONE 17  // MED_ZONE_FOREST's bit: the zone medals have their own card page
+#define MED_COUNT 22
 #define PARTY_SIZE 5  // MED_PARTY: yours and 4 buddies at once
 
 class Pet {
@@ -89,7 +93,8 @@ public:
   uint8_t ceremony = CER_NONE;  // goodbye/runaway/release in progress
   uint8_t lastEnd = CER_NONE;   // how the previous one ended (affects the egg)
   uint8_t dexReg[19] = { 0 };       // pokedex of raised ones (151-bit bitmap)
-  uint8_t dexShinyReg[19] = { 0 };  // raised as shiny
+  uint8_t dexShinyReg[19] = { 0 };  // the shiny form is in the Pokedex (raised or caught)
+  uint8_t dexShinyOnly[19] = { 0 }; // ...and only the shiny one: the regular form isn't
   // daily care streak (the player's: persists across raisings)
   uint16_t streak = 0, bestStreak = 0;
   uint32_t lastCareDay = 0;
@@ -132,12 +137,21 @@ public:
   void friendlyBattle(bool won);  // against a buddy: cheers up, but doesn't tire or train
   // battle: trains ATK and tires. Returns the ATK gain.
   uint8_t battleResult(bool won);
-  bool catchWild(int16_t dex);           // catch: registers in the pokedex; true if new
-  // trading with a buddy: yours leaves the pokedex, theirs comes in (true if new). The one you
-  // are raising can't be traded.
-  bool canTrade(int16_t dex) const { return isRegistered(dex) && dex != speciesId; }
-  uint16_t tradeableCount() const { return registeredCount() - (isRegistered(speciesId) ? 1 : 0); }
-  bool tradeAway(int16_t give, int16_t get);
+  bool catchWild(int16_t dex, bool shiny = false);  // catch: registers that form; true if new
+  // The Pokedex keeps the regular and the shiny form of each species apart: both can be had,
+  // and each is traded on its own. A form is (dex, shiny).
+  bool hasForm(int16_t dex, bool shiny) const {
+    return shiny ? isShinyRegistered(dex) : isRegistered(dex) && !dexBit(dexShinyOnly, dex);
+  }
+  uint16_t formCount() const;                           // forms in the Pokedex
+  int16_t formAt(int idx, bool &shiny) const;           // the idx-th form, by dex number, regular first
+  // trading with a buddy: the form you give leaves the pokedex, theirs comes in (true if new).
+  // The form you are raising can't be traded.
+  bool canTrade(int16_t dex, bool shiny = false) const {
+    return hasForm(dex, shiny) && !(dex == speciesId && shiny == this->shiny);
+  }
+  uint16_t tradeableCount() const { return formCount() - (hasForm(speciesId, shiny) ? 1 : 0); }
+  bool tradeAway(int16_t give, int16_t get, bool giveShiny = false, bool getShiny = false);
   void quizResult(uint8_t correct);      // who's that pokemon
   void showdownResult(uint8_t mine, uint8_t theirs);  // Who's That? Showdown with a buddy
   bool visitorDueNow() const;            // a visit is due today
@@ -202,8 +216,9 @@ public:
   bool isRegistered(int16_t dex) const {
     return dex >= 1 && dex <= 151 && (dexReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
-  bool isShinyRegistered(int16_t dex) const {
-    return dex >= 1 && dex <= 151 && (dexShinyReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
+  bool isShinyRegistered(int16_t dex) const { return dexBit(dexShinyReg, dex); }
+  static bool dexBit(const uint8_t *bits, int16_t dex) {
+    return dex >= 1 && dex <= 151 && (bits[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
   uint16_t registeredCount() const;
   bool lineHasUnregistered(int16_t base) const;
@@ -265,6 +280,8 @@ private:
   void tick();
   void hatch();
   void registerSpecies(int16_t dex);
+  bool addForm(int16_t dex, bool shinyForm);
+  void removeForm(int16_t dex, bool shinyForm);
   void save();
   void load();
   static uint8_t clamp100(int v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }

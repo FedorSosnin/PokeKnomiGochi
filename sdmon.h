@@ -33,6 +33,7 @@ struct PmdAct {
 // multi-action PMD sprite loaded from SD into PSRAM
 struct PmdMon {
   bool loaded = false;
+  bool shiny = false;  // the shiny sprite was loaded: it gets sparkles
   uint16_t palCount = 0;
   uint16_t pal[256];
   uint8_t *blob = nullptr;

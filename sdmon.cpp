@@ -20,6 +20,7 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
   char path[28];
   snprintf(path, sizeof(path), "/mons/p%s%03u.bin", shiny ? "s" : "", dexNum);
   File f = SD_MMC.open(path, FILE_READ);
+  bool shinyFile = shiny && f;
   if (!f && shiny) {  // no PMD shiny: use the normal one
     snprintf(path, sizeof(path), "/mons/p%03u.bin", dexNum);
     f = SD_MMC.open(path, FILE_READ);
@@ -75,11 +76,13 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
     a.base = base;
   }
   loaded = true;
+  this->shiny = shinyFile;
   Serial.printf("loaded %s (%u KB)\n", path, size / 1024);
   return true;
 }
 
 void PmdMon::unload() {
+  loaded = shiny = false;
   if (blob) {
     free(blob);
     blob = nullptr;

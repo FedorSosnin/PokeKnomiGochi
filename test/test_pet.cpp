@@ -1296,3 +1296,59 @@ TEST(trade, the_one_you_raise_stays) {
   CHECK(p.tradeAway(1, 1) == false);  // the same species both ways: kept, nothing new
   CHECK(p.isRegistered(1));
 }
+
+TEST(shiny, the_pokedex_keeps_both_forms) {
+  Pet p;
+  makePet(p, 1);
+  CHECK(p.catchWild(25, true));  // a shiny Pikachu first
+  CHECK(p.isRegistered(25));
+  CHECK(p.hasForm(25, true) && !p.hasForm(25, false));
+  CHECK(p.catchWild(25));  // then a regular one: new too
+  CHECK(p.hasForm(25, true) && p.hasForm(25, false));
+  CHECK(!p.catchWild(25) && !p.catchWild(25, true));  // each only once
+  CHECK(p.hasMedal(MED_SHINY));
+  CHECK_EQ(p.formCount(), (uint16_t)3);  // Bulbasaur, Pikachu, shiny Pikachu
+  bool sh;
+  CHECK_EQ(p.formAt(1, sh), (int16_t)25);
+  CHECK(!sh);
+  CHECK_EQ(p.formAt(2, sh), (int16_t)25);
+  CHECK(sh);
+  CHECK_EQ(p.formAt(3, sh), (int16_t)0);
+}
+
+TEST(shiny, forms_survive_a_restart) {
+  Pet p;
+  makePet(p, 1);
+  p.catchWild(25, true);
+  p.catchWild(4);
+  p.catchWild(4, true);
+  Pet q;
+  q.begin();
+  CHECK(q.hasForm(25, true) && !q.hasForm(25, false));
+  CHECK(q.hasForm(4, true) && q.hasForm(4, false));
+}
+
+TEST(trade, a_shiny_is_traded_on_its_own) {
+  Pet p;
+  makePet(p, 1);
+  p.catchWild(25);
+  p.catchWild(25, true);
+  CHECK(p.canTrade(25, true) && p.canTrade(25, false));
+  CHECK(p.tradeAway(25, 7, true, false));  // the shiny Pikachu for a Squirtle
+  CHECK(p.hasForm(25, false) && !p.hasForm(25, true));  // the regular stays
+  CHECK(p.tradeAway(25, 4, false, true));  // the regular for a shiny Charmander
+  CHECK(!p.isRegistered(25));
+  CHECK(p.hasForm(4, true) && !p.hasForm(4, false));
+  CHECK(p.tradeAway(7, 7, false, true));  // the same species, the other form: a real swap
+  CHECK(p.hasForm(7, true) && !p.hasForm(7, false));
+  CHECK(!p.tradeAway(7, 7, true, true));  // the very same both ways: nothing
+}
+
+TEST(trade, only_the_form_you_raise_stays) {
+  Pet p;
+  makePet(p, 25);  // a regular Pikachu
+  p.catchWild(25, true);
+  CHECK(!p.canTrade(25, false));
+  CHECK(p.canTrade(25, true));  // the shiny one can go
+  CHECK_EQ(p.tradeableCount(), (uint16_t)1);
+}

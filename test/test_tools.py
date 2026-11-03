@@ -225,6 +225,7 @@ class TestTextBuffers(unittest.TestCase):
         'S_SD_LOSE_FMT': ('name_or_nick',),
         'S_GOT_AWAY_FMT': ('name',),
         'S_VB_THEY_SCORE_FMT': ('name_or_nick',),
+        'S_SHINY_WILD_FMT': ('name',),
     }
     DIGITS = {'u': 5, 'd': 5, 'lu': 10}
     SPEC = re.compile(r'%0?\d*(lu|u|d|s)')

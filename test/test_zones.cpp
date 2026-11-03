@@ -95,3 +95,40 @@ TEST(Zones, scene_fits_and_each_is_distinct) {
     for (uint8_t o = 0; o < z; o++) CHECK(memcmp(art[z], art[o], sizeof(art[z])) != 0);
   }
 }
+
+// every species can be caught through the zones: each is in one, and shows up there once
+// your Pokemon is strong enough (the wild level reaches its evolution level)
+TEST(Zones, all_151_can_be_caught) {
+  int maxFoe = 0;
+  for (int l = 1; l <= 100; l++)
+    for (int r = 0; r < 4; r++) {
+      int f = btlWildLevel(btlCapLevel(l), r);
+      if (f > maxFoe) maxFoe = f;
+    }
+  for (int16_t d = 1; d <= DEX_COUNT; d++) {
+    CHECK(zoneOf(d) < ZONE_COUNT);
+    CHECK_MSG(btlMinLevel(d) <= maxFoe, "a species no wild battle reaches");
+  }
+  for (uint8_t z = 0; z < ZONE_COUNT; z++) CHECK_EQ((int)zoneOf(ZONE_LEGEND[z]), (int)z);
+  // and the picker really hands each one out: catch everything a zone offers until it's full
+  Pet p;
+  p.speciesId = 25;
+  p.noSave = true;
+  for (uint8_t z = 0; z < ZONE_COUNT; z++)
+    for (int i = 0; i < 20000 && p.zoneCaught(z) < zoneSize(z); i++) p.catchWild(p.pickZoneSpecies(z, 100));
+  CHECK_EQ((int)p.registeredCount(), 151);
+}
+
+TEST(Zones, a_full_zone_earns_its_medal) {
+  Pet p;
+  p.speciesId = 25;
+  p.noSave = true;
+  zoneCatchAllBut(p, Z_CAVE, 0);  // all but the legendary
+  CHECK(!p.hasMedal(MED_ZONE_CAVE));
+  p.catchWild(ZONE_LEGEND[Z_CAVE]);
+  CHECK(p.hasMedal(MED_ZONE_CAVE));
+  CHECK(!p.hasMedal(MED_ZONE_FOREST));
+  CHECK_EQ(MED_ZONE_FOREST, 1UL << MED_FIRST_ZONE);
+  CHECK_EQ(MED_ZONE_FIELD, 1UL << (MED_FIRST_ZONE + Z_FIELD));
+  CHECK_EQ(MED_FIRST_ZONE + ZONE_COUNT, MED_COUNT);
+}
