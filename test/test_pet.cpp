@@ -228,6 +228,23 @@ TEST(tick, bars_never_drop_below_zero) {
   CHECK_EQ(p.hygiene, (uint8_t)0);
 }
 
+TEST(tick, party_boost_halves_the_energy_drain) {
+  Pet p;
+  makePet(p, 4);
+  setStats(p, 100, 100, 100, 100);
+  p.poops = 0;
+  p.partyBoost = true;  // a buddy or the visitor around
+  mockForceRandom(99);
+  advance(p, 10);
+  mockClearForcedRandom();
+  CHECK_EQ(p.energy, (uint8_t)95);    // half of 10
+  CHECK_EQ(p.fullness, (uint8_t)80);  // the rest drops as usual
+  p.weight = 60;                      // overweight: still twice the usual, halved
+  p.energy = 100;
+  advance(p, 10);
+  CHECK_EQ(p.energy, (uint8_t)90);
+}
+
 TEST(tick, sleeping_restores_energy_with_floors) {
   Pet p;
   makePet(p, 4);
@@ -536,12 +553,48 @@ TEST(train, test_mode_never_reaches_nvs) {
   CHECK_MSG(!q.isRegistered(99), "the test capture is not saved");
 }
 
+TEST(visitor, stays_an_hour_across_sleep_and_restarts) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(20000UL * 86400 + 20 * 3600);
+  p.visitorArrived(16);
+  CHECK_EQ(p.visitMin, (uint8_t)VISIT_MINUTES);
+  for (int i = 0; i < 20; i++) CHECK(!p.visitorMinute());
+  Pet q;  // a restart: the visitor and its 40 minutes are still there
+  q.begin();
+  q.setClock(20000UL * 86400 + 21 * 3600);
+  CHECK_EQ(q.visitDex, (int16_t)16);
+  CHECK_EQ(q.visitMin, (uint8_t)(VISIT_MINUTES - 20));
+  CHECK(q.visitorResumable());
+  CHECK(!q.visitorDueNow());          // not a second visit the same day
+  q.sleeping = true;
+  CHECK(!q.visitorResumable());       // it steps out while yours sleeps...
+  q.sleeping = false;
+  CHECK(q.visitorResumable());        // ...and comes back
+  for (int i = 0; i < VISIT_MINUTES - 21; i++) CHECK(!q.visitorMinute());
+  CHECK(q.visitorMinute());           // the last minute: its hour is up
+  q.visitorLeft();
+  CHECK(!q.visitorResumable());
+  CHECK_EQ(q.visitDex, (int16_t)0);
+}
+
+TEST(visitor, leftover_minutes_end_with_the_day) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(20000UL * 86400 + 20 * 3600);
+  p.visitorArrived(16);
+  p.setClock(20001UL * 86400 + 20 * 3600);  // the next day
+  CHECK(!p.visitorResumable());
+  CHECK_EQ(p.visitMin, (uint8_t)0);
+  CHECK(p.visitorDueNow());                  // today's own visit instead
+}
+
 TEST(visitor, day_is_saved_and_cheers_up_on_leaving) {
   Pet p;
   makePet(p, 4);
   p.setClock(20000UL * 86400 + 20 * 3600);  // 20:00: the hour of any day has already passed
   CHECK(p.visitorDueNow());
-  p.visitorArrived();
+  p.visitorArrived(16);
   CHECK(!p.visitorDueNow());
   Pet q;
   q.begin();

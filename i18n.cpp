@@ -44,6 +44,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Jugar", "Jugar juntos", "Duelo: Qui\202n es?", "%s quiere jugar!", "Prep\240rate...", "T\243", "Lo tienes!", "%s lo tiene!", "Nadie acert\242", "Ganaste!", "Gana %s!", "Empate!", "%s se escap\242!", "Voley Poke Ball", "Tu saque!", "Punto!", "Punto para %s!", "Inclina o arrastra",
     "ZONAS %d/%d", "%s variocolor!",
     "ENTRENO FUE AL MAXIMO", "ENTRENO", "GANA COMBATES", "12H DE BUEN CUIDADO", "MINIJUEGOS", "COMER SUMA, JUGAR QUEMA",
+    "BONUS DE GRUPO", "GASTO ENERGIA", "%u MIN",
   },
   // ---------------- EN ----------------
   {
@@ -82,6 +83,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Play", "Play together", "Who's That? Showdown", "%s wants to play!", "Get ready...", "You", "You got it!", "%s got it!", "Nobody got it", "You win!", "%s wins!", "It's a draw!", "%s got away!", "Poke Ball Volley", "Your serve!", "Point!", "%s scores!", "Tilt or drag to move",
     "ZONES %d/%d", "Shiny %s!",
     "ATK TRAINING MAXED", "TRAINING", "WIN BATTLES", "12H OF GOOD CARE", "PLAY MINI GAMES", "FOOD ADDS, PLAY BURNS",
+    "PARTY BOOST", "ENERGY DRAIN", "%u MIN",
   },
   // ---------------- FR ----------------
   {
@@ -120,6 +122,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Jouer", "Jouer ensemble", "Duel: Qui est-ce?", "%s veut jouer!", "Pr\202pare-toi...", "Toi", "Trouv\202!", "%s a trouv\202!", "Personne n\'a trouv\202", "Gagn\202!", "%s gagne!", "Egalit\202!", "%s s\'est enfui!", "Volley Poke Ball", "A toi de servir!", "Point!", "Point pour %s!", "Penche ou glisse",
     "ZONES %d/%d", "%s chromatique!",
     "ENTRAINEMENT ATQ AU MAX", "ENTRAINEMENT", "GAGNE DES COMBATS", "12H DE BONS SOINS", "MINI-JEUX", "MANGER GROSSIT, JOUER BRULE",
+    "BONUS D'EQUIPE", "PERTE ENERGIE", "%u MIN",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -163,6 +166,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Spielen", "Zusammen spielen", "Duell: Wer ist das?", "%s will spielen!", "Mach dich bereit...", "Du", "Richtig!", "%s war schneller!", "Niemand wusste es", "Gewonnen!", "%s gewinnt!", "Unentschieden!", "%s ist entkommen!", "Poke-Ball-Volley", "Du schl\204gst auf!", "Punkt!", "Punkt f\201r %s!", "Neigen oder ziehen",
     "ZONEN %d/%d", "Schillerndes %s!",
     "ANG-TRAINING MAXIMAL", "TRAINING", "SIEGE IM KAMPF", "12 STD. GUTE PFLEGE", "MINISPIELE", "ESSEN RAUF, SPIELEN RUNTER",
+    "PARTY-BONUS", "ENERGIEVERBRAUCH", "%u MIN",
   },
   // ---------------- IT ----------------
   {
@@ -201,6 +205,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Gioca", "Giochiamo insieme", "Sfida: Chi \212?", "%s vuole giocare!", "Pronti...", "Tu", "Indovinato!", "%s ha indovinato!", "Nessuno l\'ha preso", "Hai vinto!", "Vince %s!", "Pareggio!", "%s \212 scappato!", "Pallavolo Poke Ball", "Battuta tua!", "Punto!", "Punto a %s!", "Inclina o trascina",
     "ZONE %d/%d", "%s cromatico!",
     "ALLENAMENTO ATT AL MASSIMO", "ALLENAMENTO", "VINCI LE BATTAGLIE", "12 ORE DI BUONE CURE", "MINIGIOCHI", "MANGIARE SU, GIOCARE GIU",
+    "BONUS SQUADRA", "CALO ENERGIA", "%u MIN",
   },
   // ---------------- PT ----------------
   {
@@ -239,6 +244,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Jogar", "Jogar juntos", "Duelo: Quem \202?", "%s quer jogar!", "Prepara-te...", "Tu", "Acertaste!", "%s acertou!", "Ningu\202m acertou", "Ganhaste!", "%s ganha!", "Empate!", "%s escapou!", "Voleibol Poke Ball", "Tu serves!", "Ponto!", "Ponto para %s!", "Inclina ou arrasta",
     "ZONAS %d/%d", "%s brilhante!",
     "TREINO ATQ NO MAXIMO", "TREINO", "VENCER BATALHAS", "12H DE BOM CUIDADO", "MINIJOGOS", "COMER SOBE, JOGAR QUEIMA",
+    "BONUS DE GRUPO", "GASTO ENERGIA", "%u MIN",
   },
   // ---------------- JA ----------------
   {
@@ -300,6 +306,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "あそぶ", "いっしょに あそぶ", "だれだ? たいけつ", "%sが あそびたいって!", "よーい...", "きみ", "せいかい!", "%sが せいかい!", "だれも わからなかった", "きみの かち!", "%sの かち!", "ひきわけ!", "%sに にげられた!", "ボール バレー", "きみの サーブ!", "とくてん!", "%sの とくてん!", "かたむけるか ドラッグ",
     "ゾーン %d/%d", "いろちがいの%s!",
     "こうげきの くんれん MAX", "くんれん", "バトルに かつ", "12じかん おせわ", "ミニゲーム", "たべると ふえる、あそぶと へる",
+    "パーティ ボーナス", "つかれかた", "あと %u ふん",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -343,6 +350,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "놀기", "함께 놀기", "누구일까? 대결", "%s: 같이 놀래요!", "준비...", "나", "정답!", "%s 정답!", "아무도 못 맞췄어요", "내가 이겼다!", "%s 승리!", "무승부!", "%s: 도망쳤다!", "몬스터볼 배구", "내 서브!", "득점!", "%s 득점!", "기울이거나 끌기",
     "지역 %d/%d", "이로치 %s!",
     "공격 훈련 최대", "훈련", "배틀 승리", "12시간 잘 돌보기", "미니게임", "먹으면 늘고, 놀면 줄어요",
+    "파티 보너스", "에너지 소모", "%u분 남음",
   },
 };
 

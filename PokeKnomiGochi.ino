@@ -192,6 +192,10 @@ BuddySession bsState = BS_IDLE;
 uint8_t bsKind = 0;
 uint32_t bsId = 0, bsT = 0, bsResendT = 0, buddyHelloT = 0;
 bool buddyMenuOpen = false;
+bool partyOpen = false;  // the Party Boost screen: who is around and what it gives
+// With a buddy or the visitor around, ATK, DEF and SPD in wild battles: the same however many are
+// around, so extra browsers or devices don't stack it (energy also drains half as fast: pet.cpp)
+#define PARTY_STAT_BONUS 2
 bool playMenuOpen = false;  // "Play together": the games to play with the buddy of the menu
 // Who's That? Showdown: the quiz against a buddy, best of SD_ROUNDS (buddy.h)
 enum SdPhase : uint8_t { SD_READY, SD_ASK, SD_REVEAL, SD_DONE };
@@ -797,8 +801,11 @@ void handleSerial() {
   } else if (line == "GAMES") {
     openGamesMenu();
     Serial.println("DONE");
+  } else if (line == "PARTY") {  // the Party Boost screen (testing)
+    partyOpen = true;
+    Serial.println("DONE");
   } else if (line.startsWith("VISIT")) {
-    startVisitWith(line.length() > 6 ? line.substring(6).toInt() : 0);
+    startVisitWith(line.length() > 6 ? line.substring(6).toInt() : 0, false);
     Serial.println("DONE");
   } else if (line == "BATTLE") {
     startBattle();
@@ -1062,7 +1069,7 @@ void handleTouch() {
     tXl = x;
     tYl = y;
     // long press without moving on the pet -> release dialog
-    if (!holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen && !buddyMenuOpen && !tradeOpen && millis() - tStart > 3000 &&
+    if (!holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen && !buddyMenuOpen && !partyOpen && !tradeOpen && millis() - tStart > 3000 &&
         abs(tXl - tX0) < 30 && abs(tYl - tY0) < 30 && inPetZone(tX0, tY0) &&
         !pet.isEgg() && !confirmUntil && !pet.ceremony) {
       confirmUntil = millis() + 10000;
@@ -1094,6 +1101,10 @@ void onSwipeV(int dir) {
     if (dir < 0) { playMenuOpen = false; buddyMenuOpen = true; }
     return;
   }
+  if (partyOpen) {  // up: back home
+    if (dir < 0) partyOpen = false;
+    return;
+  }
   if (pet.awaitingStarter() || pet.awaitingEggPick() || buddyMenuOpen || tradeOpen) return;  // blocked while choosing
   if (gameOpen || galleryOpen || kbOpen || battleOpen || quizOpen || gamesMenuOpen || pet.ceremony) return;
   if (clockOpen) {
@@ -1117,6 +1128,7 @@ void onSwipeV(int dir) {
 
 // swipe: dir +1 = to the right
 void onSwipe(int dir) {
+  if (partyOpen) return;
   if (buddyMenuOpen) {  // several buddies: left and right go through them
     for (int k = 1; k < BUDDY_MAX && bsState == BS_IDLE; k++) {
       int i = (bCur + (dir > 0 ? BUDDY_MAX - k : k)) % BUDDY_MAX;
@@ -1217,6 +1229,10 @@ void onTap(int16_t x, int16_t y) {
     buddyMenuTap(x, y);
     return;
   }
+  if (partyOpen) {
+    partyTap(x, y);
+    return;
+  }
   if (playMenuOpen) {
     playMenuTap(x, y);
     return;
@@ -1298,6 +1314,11 @@ void onTap(int16_t x, int16_t y) {
   if (pet.isEgg()) {
     pet.eggTap();
     sfxPlay(SFX_TAP);
+    return;
+  }
+  if (partyPillAt(x, y)) {  // the Party Boost button
+    sfxPlay(SFX_TAP);
+    partyOpen = true;
     return;
   }
   int bt = buddyAt(x, y);
@@ -1612,7 +1633,7 @@ void printT(const char *s) {
 // while their "key" doesn't change they are neither repainted nor flushed over QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (pet.awaitingEggPick() || buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // the gallery manages its own repainting
+  if (pet.awaitingEggPick() || buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // the gallery manages its own repainting
   if (kbOpen || clockOpen) return true;
   return cardOpen && (cardAch || cardPage != 0);  // the card's page 0 has the animated portrait
 }
@@ -1621,6 +1642,7 @@ static uint32_t screenKey() {
   uint32_t h = 2166136261u;
   h = mixKey(h, pet.awaitingStarter() ? 1 : kbOpen ? 2 : clockOpen ? 3 : 4 + cardPage + (cardAch ? 16 : 0));
   h = mixKey(h, sdEpoch);
+  h = mixKey(h, partyBoostOn());  // the stats page shows the boost
   if (kbOpen) {
     h = mixKey(h, nameLen);
     for (int i = 0; i < nameLen; i++) h = mixKey(h, (uint8_t)nameBuf[i]);
@@ -1675,6 +1697,10 @@ bool render() {
   }
   if (buddyMenuOpen) {
     renderBuddyMenu();
+    return true;
+  }
+  if (partyOpen) {
+    renderParty();
     return true;
   }
   if (playMenuOpen) {
@@ -2163,23 +2189,26 @@ void renderQuiz() {
 }
 
 // ---------- daily visit ----------
+// Once a day a wild Pokemon comes over for an hour (VISIT_MINUTES, counted by the pet so a restart
+// keeps it). It joins the party at the end of the row, with any buddies, and gives the Party Boost.
+// It steps out while yours sleeps (or when four buddies fill the row) and comes back later that day.
 #define VISIT_ANNOUNCE_MS 3500UL
 #define VISIT_ENTER_MS 2500UL
-#define VISIT_HANG_MS 40000UL
+#define VISIT_MINUTE_MS 60000UL
 #define VISIT_LEAVE_MS 3500UL
-#define VISIT_X 368  // where the visitor stands: a buddy's place (partyBuddyX(1, 1))
 
-void startVisitWith(int16_t dex) {
-  if (visitPhase != VP_NONE || buddyCount(bPeers) || pet.isEgg() || pet.sleeping || pet.ceremony) return;
+// resume: one that stepped out, back without the announcement and without starting a new day's visit
+void startVisitWith(int16_t dex, bool resume) {
+  if (visitPhase != VP_NONE || buddyCount(bPeers) >= BUDDY_MAX || pet.isEgg() || pet.sleeping || pet.ceremony) return;
   if (dex < 1 || dex > DEX_COUNT) dex = pet.pickWildSpecies(btlCapLevel(pet.level()));
   visitPmd.load(dex, false);
   if (!visitPmd.loaded) return;
   visitDex = dex;
-  visitPhase = VP_ANNOUNCE;
+  visitPhase = resume ? VP_ENTER : VP_ANNOUNCE;
   visitT = millis();
-  pet.visitorArrived();
+  if (!resume) pet.visitorArrived(dex);
   sfxPlay(SFX_HEART);
-  Serial.printf("visit: #%d\n", dex);
+  Serial.printf("visit: #%d%s\n", dex, resume ? " (back)" : "");
 }
 
 void endVisit() {
@@ -2190,27 +2219,35 @@ void endVisit() {
 // checks the time and advances the visit, even with another screen open on top
 bool onMainScreen() {
   return !gameOpen && !runOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !zoneScreen && !galleryOpen && !cardOpen &&
-                      !kbOpen && !clockOpen && !choiceKind && !confirmUntil && !buddyMenuOpen && !tradeOpen &&
+                      !kbOpen && !clockOpen && !choiceKind && !confirmUntil && !buddyMenuOpen && !partyOpen && !tradeOpen &&
                       !playMenuOpen && !sdOpen && !vbOpen;
 }
 
 void visitTick(uint32_t now) {
+  pet.partyBoost = partyBoostOn();
   if (visitPhase == VP_NONE) {
     if (now - visitCheckT < 20000) return;
     visitCheckT = now;
-    bool mainScreen = onMainScreen();
     // with the screen dimmed nobody is looking: better to wait until someone returns
-    if (mainScreen && !screenOff && dimStage == 0 && pet.visitorDueNow()) startVisitWith(0);
+    if (!onMainScreen() || screenOff || dimStage != 0) return;
+    if (pet.visitorResumable()) startVisitWith(pet.visitDex, true);
+    else if (pet.visitorDueNow()) startVisitWith(0, false);
     return;
   }
-  if (pet.sleeping || pet.ceremony) { endVisit(); return; }
+  if (pet.sleeping || pet.ceremony || buddyCount(bPeers) >= BUDDY_MAX) {  // steps out: its minutes wait
+    endVisit();
+    return;
+  }
   uint32_t t = now - visitT;
   if (visitPhase == VP_ANNOUNCE && t > VISIT_ANNOUNCE_MS) { visitPhase = VP_ENTER; visitT = now; }
   else if (visitPhase == VP_ENTER && t > VISIT_ENTER_MS) { visitPhase = VP_HANG; visitT = now; }
-  else if (visitPhase == VP_HANG && t > VISIT_HANG_MS) {
-    visitPhase = VP_LEAVE;
-    visitT = now;
-    sfxPlay(SFX_BYE);
+  else if (visitPhase == VP_HANG && t >= VISIT_MINUTE_MS) {
+    visitT += VISIT_MINUTE_MS;
+    if (pet.visitorMinute()) {  // its hour is up
+      visitPhase = VP_LEAVE;
+      visitT = now;
+      sfxPlay(SFX_BYE);
+    }
   } else if (visitPhase == VP_LEAVE && t > VISIT_LEAVE_MS) {
     pet.visitorLeft();
     endVisit();
@@ -2227,29 +2264,28 @@ void drawVisitBanner(const char *msg) {
   printT(msg);
 }
 
+// the buddies, then the visitor at the end of the row (walking in from the right edge)
 void drawVisitor(uint32_t now) {
-  if (visitPhase == VP_NONE) {
-    drawBuddyPet(now);
-    return;
-  }
-  uint32_t t = now - visitT;
-  int x = VISIT_X;
-  uint8_t act = PMD_IDLE;
+  drawBuddyPet(now);
+  if (visitPhase == VP_NONE) return;
   if (visitPhase == VP_ANNOUNCE) {
     drawVisitBanner(T(S_VISITOR));
     return;
   }
+  uint32_t t = now - visitT;
+  int n = partyOthers(), home = partyBuddyX(n, partyBuddies() + 1), x = home;
+  uint8_t act = PMD_IDLE;
   if (visitPhase == VP_ENTER) {
-    x = 540 - (int)((540 - VISIT_X) * (float)t / VISIT_ENTER_MS);
+    x = 540 - (int)((540 - home) * (float)t / VISIT_ENTER_MS);
     if (visitPmd.has(PMD_WALKL)) act = PMD_WALKL;
   } else if (visitPhase == VP_LEAVE) {
-    x = VISIT_X + (int)((540 - VISIT_X) * (float)t / VISIT_LEAVE_MS);
+    x = home + (int)((540 - home) * (float)t / VISIT_LEAVE_MS);
     if (visitPmd.has(PMD_WALKR)) act = PMD_WALKR;
   } else if ((t / 6000) % 2 && visitPmd.has(PMD_HOP)) {
     act = PMD_HOP;
   }
-  drawPmdActM(visitPmd, act, x, PET_GROUND, now - visitT, true, false, partyOthersScale(1));
-  if (visitPhase == VP_HANG && (t / 900) % 4 == 0) drawMap(SPR_HEART, 32, 286, PET_GROUND - 150, 1, false);
+  drawPmdActM(visitPmd, act, x, PET_GROUND, now - visitT, true, false, partyOthersScale(n));
+  if (visitPhase == VP_HANG && n == 1 && (t / 900) % 4 == 0) drawMap(SPR_HEART, 32, 286, PET_GROUND - 150, 1, false);
   if (visitPhase == VP_LEAVE) {
     char b[40];
     snprintf(b, sizeof(b), T(S_VISIT_BYE_FMT), dexName(visitDex));
@@ -2271,8 +2307,7 @@ void knomiButtonTap() {
   screenOff = false;
   wakeUI();
   if (wasAsleep) return;  // in the dark it only wakes, like the touchscreen
-  if (buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
-  if (visitPhase != VP_NONE) return;  // no fighting with a visitor present
+  if (buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
   startBattle();
 }
 
@@ -2368,6 +2403,7 @@ void startBattleWith(int16_t dex) {
   if (!wildPmd.loaded) return;  // without a sprite there is no foe to show
 
   bMe = petFighter(lvl);
+  partyBoostFighter(bMe);
   bFoe = btlMakeWild(dex, foeLvl, btlWildGene(random(16)));
   bMeMoves = btlMovesFor(bMe.dex, lvl, dex);
   bFoeMoves = btlMovesFor(dex, foeLvl, bMe.dex);
@@ -3165,7 +3201,9 @@ void renderGame() {
 
 void startDungeon() {
   if (pet.isEgg() || pet.sleeping || pet.ceremony || !pmd.loaded) { sfxPlay(SFX_DENY); return; }
-  dnStart(dn, petFighter(btlCapLevel(pet.level())), esp_random());
+  BtlFighter me = petFighter(btlCapLevel(pet.level()));
+  partyBoostFighter(me);
+  dnStart(dn, me, esp_random());
   dungeonOpen = true;
   dnBot = dnNewHi = dnHeld = false;
   dnOverT = dnStepT = dnHurtT = dnHitT = 0;
@@ -3542,6 +3580,17 @@ void drawCardStat(int y, const char *label, uint16_t val, uint16_t maxBar, uint1
   if (fw > bw) fw = bw;
   gfx->fillRoundRect(bx, y + 2, bw, 11, 3, UI_TRACK);
   if (fw > 2) gfx->fillRoundRect(bx, y + 2, fw, 11, 3, color);
+}
+
+// the Party Boost after a stat's number, in the boost's green
+void drawStatBonus(int y, uint16_t val, int bon) {
+  if (!bon) return;
+  char num[8], plus[8];
+  snprintf(num, sizeof(num), "%u", val);
+  snprintf(plus, sizeof(plus), "+%d", bon);
+  gfx->setTextColor(C565(0x1e, 0x7d, 0x3c));
+  setCur(330 + textW(num, 2) + 6, y);
+  printT(plus);
 }
 
 // ---------- on-screen time setting (swipe down) ----------
@@ -4107,9 +4156,13 @@ void renderCardStats() {
   setCur(centerX(T(S_BATTLE), 3), 48);
   printT(T(S_BATTLE));  // the page's title: "BATTLE STATS"
 
-  drawCardStat(118, T(S_STAT_ATK), pet.atkStat(), 260, UI_BAR_BAD);
-  drawCardStat(160, T(S_STAT_DEF), pet.defStat(), 260, 0x4C98);
-  drawCardStat(202, T(S_STAT_SPE), pet.speStat(), 260, UI_BAR_WARN);
+  int bon = partyBoostOn() ? PARTY_STAT_BONUS : 0;  // friends around: what wild battles use
+  drawCardStat(118, T(S_STAT_ATK), pet.atkStat() + bon, 260, UI_BAR_BAD);
+  drawStatBonus(118, pet.atkStat() + bon, bon);
+  drawCardStat(160, T(S_STAT_DEF), pet.defStat() + bon, 260, 0x4C98);
+  drawStatBonus(160, pet.defStat() + bon, bon);
+  drawCardStat(202, T(S_STAT_SPE), pet.speStat() + bon, 260, UI_BAR_WARN);
+  drawStatBonus(202, pet.speStat() + bon, bon);
   drawCardStat(244, T(S_STAT_WGT), pet.weight, 100, 0xB3C8);
 
 #ifndef BOARD_KNOMI_V2  // on the Knomi, battle opens with the physical button
@@ -4670,6 +4723,11 @@ void eggPickTap(int16_t x, int16_t y) {
 #define BUDDY_PILL_Y 116
 #define BUDDY_PILL_H 32
 
+// ---------- Party Boost: with a buddy or a visitor around, yours gets a small boost ----------
+#define PARTY_TOP 84        // the screen's list of who is here, then the boost: centred between
+#define PARTY_BOTTOM 396    // the title and the close button
+#define PARTY_ROW_W 300
+
 const char *buddyNameOf(int i) {
   const BuddyPeer &p = bPeers[i];
   return p.nick[0] ? p.nick : (buddyDexOk(p.dex) ? dexName(p.dex) : "?");
@@ -5004,7 +5062,7 @@ void buddyTick(uint32_t now) {
       buddyPmdDex[i] = 0;
     }
     // the sprite is loaded outside the network code: if it doesn't fit, that buddy is simply not drawn
-    if (bPeers[i].on && buddyPmdDex[i] != bPeers[i].dex && visitPhase == VP_NONE) {
+    if (bPeers[i].on && buddyPmdDex[i] != bPeers[i].dex) {
       buddyPmd[i].load(bPeers[i].dex, bPeers[i].shiny);
       buddyPmdDex[i] = bPeers[i].dex;
     }
@@ -5066,22 +5124,22 @@ void buddyTick(uint32_t now) {
 }
 
 bool buddyVisible() {
-  return buddyCount(bPeers) && visitPhase == VP_NONE && !pet.isEgg() && !pet.sleeping && !pet.ceremony;
+  return buddyCount(bPeers) && !pet.isEgg() && !pet.sleeping && !pet.ceremony;
 }
 
 // buddies on the main screen right now (0 = none): with 2 or more everyone stands in a row
 // buddies standing on the main screen, for where everyone stands: they stay while yours sleeps
 // (only tapping them and their notice wait until it wakes up: buddyVisible)
 int partyBuddies() {
-  bool shown = buddyCount(bPeers) && visitPhase == VP_NONE && !pet.isEgg() && !pet.ceremony;
+  bool shown = buddyCount(bPeers) && !pet.isEgg() && !pet.ceremony;
   return shown ? buddyCount(bPeers) : 0;
 }
 
-// others on the main screen (buddies, or the daily visitor while it is here): then yours stands
-// in the middle, bigger (partyBuddyX / partyScale in buddy.h)
+// others on the main screen (buddies, then the daily visitor at the end of the row): then yours
+// stands in the middle, bigger (partyBuddyX / partyScale in buddy.h)
 int partyOthers() {
   int n = partyBuddies();
-  if (!n && (visitPhase == VP_ENTER || visitPhase == VP_HANG || visitPhase == VP_LEAVE)) n = 1;
+  if (visitPhase == VP_ENTER || visitPhase == VP_HANG || visitPhase == VP_LEAVE) n++;
   return n;
 }
 
@@ -5092,8 +5150,8 @@ void buddySelect(int i) {
 }
 
 void drawBuddyPet(uint32_t now) {
-  int n = partyBuddies(), k = 0;
-  if (!n) return;  // not standing on the main screen right now (an egg, a farewell, a visitor)
+  int n = partyOthers(), k = 0;
+  if (!partyBuddies()) return;  // not standing on the main screen right now (an egg, a farewell)
   for (int i = 0; i < BUDDY_MAX; i++) {
     if (!bPeers[i].on) continue;
     k++;  // party slot: in arrival-slot order, after yours
@@ -5102,6 +5160,14 @@ void drawBuddyPet(uint32_t now) {
     drawPmdActM(buddyPmd[i], act, partyBuddyX(n, k), PET_GROUND, now, true, false, partyOthersScale(n));
   }
   if (n == 1 && (now / 900) % 4 == 0) drawMap(SPR_HEART, 32, 286, PET_GROUND - 150, 1, false);  // they get along
+}
+
+// Party Boost in wild battles and the dungeon (not between buddies: both sides would have it)
+void partyBoostFighter(BtlFighter &f) {
+  if (!partyBoostOn()) return;
+  f.atk += PARTY_STAT_BONUS;
+  f.def += PARTY_STAT_BONUS;
+  f.spe += PARTY_STAT_BONUS;
 }
 
 // the buddy notice and, on top of everything, the notes about what happened
@@ -5114,10 +5180,8 @@ void drawBuddyTop() {
     gfx->setTextColor(UI_WHITE);
     setCur(centerX(buddyNote, 2), BUDDY_PILL_Y + 8);
     printT(buddyNote);
-  } else if (buddyVisible()) {
-    int n = buddyCount(bPeers);
-    if (n > 1) snprintf(b, sizeof(b), T(S_BUDDIES_FMT), n);
-    else snprintf(b, sizeof(b), T(S_BUDDY_HERE_FMT), buddyName());
+  } else if (partyPillShown()) {  // a buddy or a visitor around: the Party Boost button
+    snprintf(b, sizeof(b), "%s +%d", T(S_PARTY_BOOST), PARTY_STAT_BONUS);
     int w = textW(b, 2) + 24;
     gfx->fillRoundRect(CX - w / 2, BUDDY_PILL_Y, w, BUDDY_PILL_H, 12, C565(0x1e, 0x7d, 0x3c));
     gfx->setTextColor(UI_WHITE);
@@ -5128,9 +5192,8 @@ void drawBuddyTop() {
 
 // the buddy under a touch on the main screen (its notice counts too), -1 if none
 int buddyAt(int16_t x, int16_t y) {
-  int n = partyBuddies(), k = 0;
-  if (!n || !buddyVisible()) return -1;  // asleep: they are there, but not for playing
-  if (y >= BUDDY_PILL_Y - 6 && y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6 && x >= 60 && x <= 406) return bCur;
+  int n = partyOthers(), k = 0;
+  if (!partyBuddies() || !buddyVisible()) return -1;  // asleep: they are there, but not for playing
   for (int i = 0; i < BUDDY_MAX; i++) {
     if (!bPeers[i].on) continue;
     k++;
@@ -5177,6 +5240,123 @@ void renderBuddyMenu() {
   }
   drawCloseButton();
   gfx->flush();
+}
+
+// the visitor counts once it has walked in, until it starts to leave
+bool visitorHere() { return visitPhase == VP_ENTER || visitPhase == VP_HANG; }
+bool partyBoostOn() { return (buddyCount(bPeers) > 0 || visitorHere()) && !pet.sleeping && !pet.isEgg(); }
+
+// who the Party Boost screen lists: the buddies by slot, then the visitor (-1)
+int partyFriends(int8_t *who) {
+  int n = 0;
+  for (int i = 0; i < BUDDY_MAX; i++)
+    if (bPeers[i].on) who[n++] = i;
+  if (visitorHere()) who[n++] = -1;
+  return n;
+}
+int partyRowStep() {
+  int8_t who[BUDDY_MAX + 1];
+  return partyFriends(who) > 3 ? 50 : 64;  // tall enough for the icons; a full party still fits
+}
+#define PARTY_BOOST_H 58  // under the list: the two boost rows
+int partyRowY() {         // where the list starts
+  int8_t who[BUDDY_MAX + 1];
+  int h = partyFriends(who) * partyRowStep() + PARTY_BOOST_H;
+  return (PARTY_TOP + PARTY_BOTTOM - h) / 2;
+}
+int partyRowAt(int16_t x, int16_t y) {  // the row under a touch, -1 if none (or the visitor's: not tappable)
+  int8_t who[BUDDY_MAX + 1];
+  int n = partyFriends(who), y0 = partyRowY(), r = (y - y0) / partyRowStep();
+  if (abs(x - CX) > PARTY_ROW_W / 2 || y < y0 || r >= n || who[r] < 0) return -1;
+  return r;
+}
+const char *partyRowName(int r) {
+  int8_t who[BUDDY_MAX + 1];
+  partyFriends(who);
+  return who[r] >= 0 ? buddyNameOf(who[r]) : dexName(visitDex);
+}
+
+// the green button at the top of the main screen, while there is a boost and no note over it
+bool partyPillShown() {  // not over a note, nor the visitor's hello and goodbye
+  return partyBoostOn() && !timeLeft(buddyNoteUntil) && visitPhase != VP_ANNOUNCE && visitPhase != VP_LEAVE;
+}
+bool partyPillAt(int16_t x, int16_t y) {
+  return partyPillShown() && y >= BUDDY_PILL_Y - 6 && y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6 && x >= 60 && x <= 406;
+}
+
+void renderParty() {
+  int8_t who[BUDDY_MAX + 1];
+  int n = partyFriends(who);
+  if (!n) { partyOpen = false; return; }  // everyone left
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->setTextColor(UI_INK);
+  setSize(3);
+  setCur(centerX(T(S_PARTY_BOOST), 3), 48);
+  printT(T(S_PARTY_BOOST));
+  setSize(2);
+
+  // who is here: tap a buddy for its menu; the visitor shows how long it stays
+  const uint16_t green = C565(0x1e, 0x7d, 0x3c);
+  int step = partyRowStep(), x0 = CX - PARTY_ROW_W / 2, y0 = partyRowY();
+  for (int r = 0; r < n; r++) {
+    int y = y0 + r * step, h = step - 6;
+    bool visitor = who[r] < 0;
+    gfx->fillRoundRect(x0, y, PARTY_ROW_W, h, 12, visitor ? UI_BG_DAY : UI_WHITE);
+    gfx->drawRoundRect(x0, y, PARTY_ROW_W, h, 12, visitor ? UI_TRACK : green);
+    int16_t dex = visitor ? visitDex : bPeers[who[r]].dex;
+    if (const uint8_t *th = thumbs.get(dex)) drawThumb(th, x0 - 12, y + h / 2 - GAL_CELL / 2 + 4, 2, false);
+    gfx->setTextColor(UI_INK);
+    setCur(x0 + 58, y + h / 2 - 7);
+    printT(partyRowName(r));
+    char b[24];
+    if (visitor) {
+      snprintf(b, sizeof(b), T(S_VISIT_MIN_FMT), (unsigned)(pet.visitMin ? pet.visitMin : 1));
+      gfx->setTextColor(lerp565(UI_TRACK, UI_INK, 11, 16));
+    } else {
+      snprintf(b, sizeof(b), ">");
+      gfx->setTextColor(green);
+    }
+    setCur(x0 + PARTY_ROW_W - 14 - textW(b, 2), y + h / 2 - 7);
+    printT(b);
+  }
+
+  // what it gives, like the stats pages
+  int by = y0 + n * step + 14;
+  gfx->setTextColor(UI_INK);
+  setCur(86, by);
+  printT(T(S_BOOST_ENERGY));
+  gfx->setTextColor(green);
+  setCur(380 - textW("-50%", 2), by);
+  printT("-50%");
+  char st[24];
+  snprintf(st, sizeof(st), "%s %s %s", T(S_STAT_ATK), T(S_STAT_DEF), T(S_STAT_SPE));
+  gfx->setTextColor(UI_INK);
+  setCur(86, by + 28);
+  printT(st);
+  snprintf(st, sizeof(st), "+%d", PARTY_STAT_BONUS);
+  gfx->setTextColor(green);
+  setCur(380 - textW(st, 2), by + 28);
+  printT(st);
+  drawCloseButton();
+  gfx->flush();
+}
+
+void partyTap(int16_t x, int16_t y) {
+  int r = partyRowAt(x, y);
+  if (r >= 0) {  // a buddy: its menu, as tapping it on the main screen
+    int8_t who[BUDDY_MAX + 1];
+    partyFriends(who);
+    sfxPlay(SFX_TAP);
+    partyOpen = false;
+    if (bsState == BS_IDLE) buddySelect(who[r]);
+    buddyMenuOpen = true;
+    return;
+  }
+  if (closeHit(x, y)) {
+    sfxPlay(SFX_TAP);
+    partyOpen = false;
+  }
 }
 
 // both have something to trade: a Pokemon other than the one each is raising
@@ -6812,6 +6992,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     }
     return false;
   }
+  if (partyOpen) {
+    int r = partyRowAt(x, y);
+    if (r >= 0) return pressSet(t, CX - PARTY_ROW_W / 2, partyRowY() + r * partyRowStep(), PARTY_ROW_W, partyRowStep() - 6, partyRowName(r));
+    if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+    return false;
+  }
   if (buddyMenuOpen) {
     if (abs(x - CX) > 130 || y < BUDDY_ROW_Y || y >= BUDDY_ROW_Y + BUDDY_ROWS * BUDDY_ROW_STEP) return false;
     int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
@@ -6920,13 +7106,17 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, x0 + item * 66, 288, 66, 64, nullptr, ICON[item]);
   }
   if (pet.isEgg()) return false;
+  if (partyPillAt(x, y)) {
+    pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, T(S_PARTY_BOOST));
+    t.soft = true;  // it lies where swipes down start
+    return true;
+  }
   int bt = buddyAt(x, y);
   if (bt >= 0) {
-    int n = partyBuddies(), k = 0;
+    int n = partyOthers(), k = 0;
     for (int i = 0; i <= bt; i++) k += bPeers[i].on;
     const char *nm = buddyNameOf(bt);
-    if (y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6) pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, nm);
-    else pressSet(t, partyBuddyX(n, k) - partyHalf(n), PET_GROUND - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
+    pressSet(t, partyBuddyX(n, k) - partyHalf(n), PET_GROUND - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
     t.soft = true;  // buddies sit where swipes start: they give way to them
     return true;
   }

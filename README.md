@@ -120,7 +120,7 @@ Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the 
 
 ### Buddies
 
-If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over to play and a "... is here!" button appears. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon (or the button) to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
+If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over to play and a green **PARTY BOOST** button appears at the top. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
 
 - **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, you swap: the one you gave leaves your Pokédex. A shiny is its own square, so you can trade it and keep the regular one. Your own partner can't be traded, so with only one Pokémon, Trade is greyed out.
@@ -128,11 +128,22 @@ If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over 
   - **Who's That? Showdown** shows you both the same silhouette at the same moment: the first to tap the right name gets the point, and a wrong tap is out for that round. 10 questions.
   - **Poké Ball Volley:** your screen is your half of the court and your Pokémon is the paddle; tilt or drag to move. A ball over the top of your screen drops in on your buddy's. Every shot curves and the ball slowly speeds up, so a match to 3 points lasts about a minute.
 
+### Party Boost
+
+Your Pokémon does better with company. While at least one buddy or the daily visitor is around:
+
+- **Energy drains half as fast.**
+- **+2 ATK, DEF and SPD** in wild battles and PokeDungeon.
+
+It's the same boost however many friends are around. Tap **PARTY BOOST** to see who's here and what you get. Tap a buddy there for its Battle, Trade and Play menu, just like tapping its Pokémon. While the boost is on, the Battle Stats page shows each stat with its **+2**. Battles between buddies don't use it, since both sides would have it.
+
+<img src="docs/images/party.png" width="240" alt="The Party Boost screen: Pikachu and Charizard as buddies, Eevee visiting for 60 more minutes, energy drain -50% and ATK DEF SPD +2">
+
 To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac version (PokeMacGochi) and the browser version (PokeWebGochi), in any mix.
 
 ### Daily visitor
 
-Once a day, a wild Pokémon drops by to hang out with yours for a little while, then says goodbye.
+Once a day, a wild Pokémon drops by and stays for an hour. It joins any buddies in the row, counts for the Party Boost, and shows how many minutes it has left on the Party Boost screen. While your Pokémon sleeps it steps out, and it comes back when yours wakes up, the same day. It remembers its time even if the Knomi is unplugged. When its hour is up, it says goodbye and cheers yours up.
 
 ### Wi-Fi and the clock
 

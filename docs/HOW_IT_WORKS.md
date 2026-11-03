@@ -64,6 +64,19 @@ A loss earns nothing: no training and no bond. After a loss, your Pokémon has t
 
 Each kind of training stops at 100. Swipe up for the card, then left twice: the **Training** page shows each one's bar, with **MAX** when it's full, and what trains it, plus a row for weight. Training belongs to the Pokémon: a new one starts from zero.
 
+## Party Boost
+
+While at least one buddy or the daily visitor is on your screen:
+
+| Boost | |
+|---|---|
+| ⚡ **Energy drain** | Half: it drops every other minute instead of every minute (overweight too) |
+| 💪 **ATK, DEF, SPD** | +2 each in wild battles and PokeDungeon (not in battles between buddies) |
+
+It's the same with one friend or five, so extra devices don't stack it. Tap the green **PARTY BOOST** button for the list of who's here, where a buddy opens its menu.
+
+The **daily visitor** stays 60 awake minutes. It steps out while yours sleeps (or while four buddies fill the row) and comes back the same day, and its time survives a restart. Leftover minutes end at midnight.
+
 ## Zones
 
 There are two ways to start a battle:

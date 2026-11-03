@@ -8,6 +8,7 @@
 // Game minutes per level. With 60, CHARMANDER evolves at ~16 h
 // of play with perfect care. Lower to 1 to see evolutions instantly.
 #define MINUTES_PER_LEVEL 60
+#define VISIT_MINUTES 60     // the daily visitor stays this long (awake minutes, kept over sleep and restarts)
 #define BTL_WIN_TRAIN 6      // ATK per battle won
 #define BTL_ENERGY_COST 12
 #define BTL_LOSS_ENERGY 5    // losing leaves it exhausted: it must sleep to fight again
@@ -114,6 +115,9 @@ public:
   uint8_t dungeonHi = 0;   // deepest floor of PokeDungeon
   uint16_t battleWins = 0; // battles won by this individual
   uint32_t visitorDay = 0;  // last day with a visit
+  int16_t visitDex = 0;     // today's visitor, while it has minutes left
+  uint8_t visitMin = 0;     // its minutes left: it steps out while yours sleeps and comes back
+  bool partyBoost = false;  // a buddy or the visitor around (set by the sketch): energy drains half as fast
   uint8_t movesSeen = 1;   // moves already announced (to announce the new one only once)
 
   void begin();                 // loads state from NVS (or creates the first egg)
@@ -154,7 +158,9 @@ public:
   void quizResult(uint8_t correct);      // who's that pokemon
   void showdownResult(uint8_t mine, uint8_t theirs);  // Who's That? Showdown with a buddy
   bool visitorDueNow() const;            // a visit is due today
-  void visitorArrived();                 // records the day: doesn't repeat even after a restart
+  void visitorArrived(int16_t dex);      // records the day and who: doesn't repeat even after a restart
+  bool visitorResumable();               // a visitor stepped out (sleep, a restart) with minutes left today
+  bool visitorMinute();                  // one more minute together: true when its time is up
   void visitorLeft();                    // the visit cheers it up
   bool noSave = false;                   // board tests: nothing reaches the NVS
   int16_t pickWildSpecies(uint8_t lvl);  // rival: bias toward what's missing from the pokedex

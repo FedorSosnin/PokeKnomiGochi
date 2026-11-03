@@ -147,12 +147,14 @@ void Pet::tick() {
   if (ageMinutes % MINUTES_PER_LEVEL == 0) sfxPlay(SFX_LEVEL);  // leveled up (awake)
 
   fullness = clamp100(fullness - 2);
-  energy = clamp100(energy - 1);
+  // with company (Party Boost) energy only drops every other minute
+  bool tires = !partyBoost || ageMinutes % 2;
+  if (tires) energy = clamp100(energy - 1);
   if (fullness > 40 && poops < 3 && random(100) < 15) poops++;
 
   hygiene = clamp100(hygiene - 1 - 4 * poops);
   // overweight makes it lazy: energy drops twice as fast
-  if (weight > 50) energy = clamp100(energy - 1);
+  if (weight > 50 && tires) energy = clamp100(energy - 1);
   if (weight > 0 && ageMinutes % WGT_BURN_MIN == 0) weight--;
 
   // discipline forges defense: 12 h in a row well cared for = +1 DEF
@@ -698,13 +700,31 @@ bool Pet::visitorDueNow() const {
   return visitorDue(today(), (lastSeenEpoch / 3600) % 24, visitorDay);
 }
 
-void Pet::visitorArrived() {
+void Pet::visitorArrived(int16_t dex) {
   visitorDay = today();
+  visitDex = dex;
+  visitMin = VISIT_MINUTES;
   save();
 }
 
+bool Pet::visitorResumable() {
+  if (visitMin && visitorDay != today()) visitMin = 0;  // yesterday's: gone
+  return visitMin && visitDex >= 1 && visitDex <= DEX_COUNT && !isEgg() && !sleeping && ceremony == CER_NONE;
+}
+
+bool Pet::visitorMinute() {
+  if (visitMin) visitMin--;
+  save();
+  return visitMin == 0;
+}
+
 void Pet::visitorLeft() {
-  if (isEgg() || ceremony != CER_NONE) return;
+  visitDex = 0;
+  visitMin = 0;
+  if (isEgg() || ceremony != CER_NONE) {
+    save();
+    return;
+  }
   joy = clamp100(joy + 5);
   heartUntil = millis() + HEART_MS;
   addBond(1);
@@ -868,6 +888,8 @@ void Pet::save() {
   prefs.putUShort("bwin", battleWins);
   prefs.putUChar("bmov", movesSeen);
   prefs.putUInt("vday", visitorDay);
+  prefs.putShort("vdex", visitDex);
+  prefs.putUChar("vmin", visitMin);
   prefs.putString("nick", nick);
 }
 
@@ -929,6 +951,8 @@ void Pet::load() {
   battleWins = prefs.getUShort("bwin", 0);
   movesSeen = prefs.getUChar("bmov", 1);
   visitorDay = prefs.getUInt("vday", 0);
+  visitDex = prefs.getShort("vdex", 0);
+  visitMin = prefs.getUChar("vmin", 0);
   prefs.getString("nick", nick, sizeof(nick));
   // seed: the current pet counts as raised (old saves)
   if (speciesId >= 1) registerSpecies(speciesId);
