@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.28] - 2026-11-03
+
 - **Swipes over buddies:** a swipe that starts or ends on a buddy (or its name at the top) stays a swipe, so the card, the Pokédex, the achievements and the clock open as they should. A buddy's name box only shows when your finger rests on it, and a tap still opens its menu.
 - **PokeWebGochi:** with the mouse over it, the Poké Ball ring grows to twice its width, like the Mac app's. A change to the page alone now also counts as a new version, so an open tab offers it.
 

@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.27"
+#define FW_VERSION "1.28"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
