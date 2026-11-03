@@ -96,6 +96,8 @@ Joy also drops 2 more per minute while 🍖 is below 30, and 2 more while 🧼 i
 
 ## Medals
 
+Swipe from right to left on the home screen to see them all, 6 to a page; the ones you have earned are green with a check mark.
+
 | Medal | How to earn it |
 |---|---|
 | 🥉 **Level 10** | Reach level 10 |

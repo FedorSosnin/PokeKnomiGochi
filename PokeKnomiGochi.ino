@@ -117,8 +117,11 @@ bool kbOpen = false;          // keyboard for renaming the pet
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
 int cardNameBottom = 84;      // where the card's name (and the species under a nickname) ends: tapping above renames
-uint8_t cardPage = 0;         // 0 profile, 1 stats, 2 medals, 3 trainer medals, 4 zone medals, 5 progress
-#define CARD_PAGES 6
+uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 progress; the achievements: their pages
+#define CARD_PAGES 3
+bool cardAch = false;         // the same screen showing the achievements (swipe right to left from home)
+#define ACH_PAGES 5           // the pet's medals (2 pages), the trainer's (2), the zones' (1): 6 at most a page
+#define cardPageCount() (cardAch ? ACH_PAGES : CARD_PAGES)  // a macro: a function here would come before the sketch's prototypes
 uint8_t clockPage = 0;        // 0 time, 1 settings (Knomi only)
 uint8_t wifiListPage = 0, wifiKbLayer = 0;
 int8_t wifiKbHover = -1;      // key under the finger: typed on release
@@ -1094,13 +1097,14 @@ void onSwipeV(int dir) {
     return;
   }
   if (cardOpen) {
-    if (dir < 0) cardOpen = false;  // up closes the card
+    if (dir < 0 && !cardAch) cardOpen = false;  // up closes the card
     return;
   }
   if (dir > 0) {                    // swipe down: set the time
     if (!confirmUntil && !feedMenuUntil) openClock();
   } else if (!pet.isEgg() && !confirmUntil && !feedMenuUntil) {
     cardOpen = true;                // swipe up: card
+    cardAch = false;
     cardPage = 0;
   }
 }
@@ -1142,12 +1146,23 @@ void onSwipe(int dir) {
   }
 #endif
   if (gameOpen || kbOpen || clockOpen) return;
-  if (cardOpen) {  // inside the card: switch between the 4 pages
+  if (cardOpen) {  // inside the card or the achievements: switch pages
     int p = (int)cardPage + (dir > 0 ? -1 : 1);  // left advances
-    cardPage = p < 0 ? 0 : (p > CARD_PAGES - 1 ? CARD_PAGES - 1 : p);
+    if (p < 0 && cardAch) {  // back past the first: home, as the Pokedex does
+      cardOpen = cardAch = false;
+      return;
+    }
+    cardPage = p < 0 ? 0 : (p > cardPageCount() - 1 ? cardPageCount() - 1 : p);
     return;
   }
-  if (!galleryOpen) {
+  if (!galleryOpen && dir < 0) {  // right to left on home: the achievements, off to the right
+    if (!pet.ceremony && !confirmUntil && !pet.isEgg()) {
+      cardOpen = cardAch = true;
+      cardPage = 0;
+    }
+    return;
+  }
+  if (!galleryOpen) {  // left to right: the Pokedex, off to the left
     if (!pet.ceremony && !confirmUntil) {
       galleryOpen = true;
       galleryPage = 0;
@@ -1218,16 +1233,16 @@ void onTap(int16_t x, int16_t y) {
   }
   if (pet.ceremony) return;  // no buttons during the farewell
   if (cardOpen) {
-    if (cardPage == 0 && y < cardNameBottom + 12) openKeyboard();  // tap the name (or its pencil) = rename
+    if (!cardAch && cardPage == 0 && y < cardNameBottom + 12) openKeyboard();  // tap the name (or its pencil) = rename
 #ifndef BOARD_KNOMI_V2  // on the Knomi, battle opens with the physical button
-    else if (cardPage == 1 && y >= 300 && y <= 340 && x >= 96 && x <= 370) {
+    else if (!cardAch && cardPage == 1 && y >= 300 && y <= 340 && x >= 96 && x <= 370) {
       cardOpen = false;            // battle button
       startBattle();
     }
 #endif
     else if (closeHit(x, y)) {
       sfxPlay(SFX_TAP);
-      cardOpen = false;
+      cardOpen = cardAch = false;
     }
     return;
   }
@@ -1593,12 +1608,12 @@ static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
   if (pet.awaitingEggPick() || buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // the gallery manages its own repainting
   if (kbOpen || clockOpen) return true;
-  return cardOpen && cardPage != 0;  // page 0 has the animated portrait
+  return cardOpen && (cardAch || cardPage != 0);  // the card's page 0 has the animated portrait
 }
 static uint32_t mixKey(uint32_t h, uint32_t v) { return (h ^ v) * 16777619u; }
 static uint32_t screenKey() {
   uint32_t h = 2166136261u;
-  h = mixKey(h, pet.awaitingStarter() ? 1 : kbOpen ? 2 : clockOpen ? 3 : 4 + cardPage);
+  h = mixKey(h, pet.awaitingStarter() ? 1 : kbOpen ? 2 : clockOpen ? 3 : 4 + cardPage + (cardAch ? 16 : 0));
   h = mixKey(h, sdEpoch);
   if (kbOpen) {
     h = mixKey(h, nameLen);
@@ -1625,7 +1640,7 @@ static uint32_t screenKey() {
                         (uint32_t)pet.trAtk, (uint32_t)pet.trDef, (uint32_t)pet.trSpe, (uint32_t)pet.geneAtk,
                         (uint32_t)pet.geneDef, (uint32_t)pet.geneSpe, (uint32_t)pet.careMistakes,
                         (uint32_t)pet.fullness, (uint32_t)pet.joy, (uint32_t)pet.energy, (uint32_t)pet.hygiene,
-                        (uint32_t)pet.berryKnown, (uint32_t)pet.battleWins, (uint32_t)gLang })
+                        (uint32_t)pet.berryKnown, (uint32_t)pet.battleWins, (uint32_t)pet.trainerMedals, (uint32_t)gLang })
       h = mixKey(h, v);
     for (const char *c = pet.nick; *c; c++) h = mixKey(h, (uint8_t)*c);
   }
@@ -2269,7 +2284,7 @@ void knomiAskReset() {
   zoneScreen = ZS_NONE;
   if (galleryOpen) { galleryOpen = false; galleryUnload(); }
   wifiSetupStop();
-  gameOpen = cardOpen = kbOpen = clockOpen = false;
+  gameOpen = cardOpen = cardAch = kbOpen = clockOpen = false;
   confirmUntil = 0;
   screenOff = false;
   wakeUI();
@@ -4096,7 +4111,7 @@ void renderCardStats() {
   printT(T(S_BTL_START));
 #endif
   setSize(2);
-  char wins[24];
+  char wins[40];  // "VITTORIE IN BATTAGLIA: 65535" and a Japanese line run past 24
   snprintf(wins, sizeof(wins), T(S_WINS_FMT), pet.battleWins);
   gfx->setTextColor(UI_INK);
   int ww = textW(wins, 2), x0 = CX - (ww + 32) / 2;  // a trophy, then the battles won
@@ -4111,37 +4126,96 @@ void renderCardStats() {
 }
 
 // pages 2 and 3: the pet's medals, then the trainer's, with descriptive label
-void renderCardMedals(int first, int count, StrId headFmt) {
+// The achievements, off to the right of home: the pet's medals, the trainer's, the zones'. At most
+// 6 a page in a 2x3 grid centred under the title, so none is cut off by the round screen.
+#define ACH_PER_PAGE 6
+#define ACH_BOX_W 196
+#define ACH_BOX_H 52
+#define ACH_GAP 10
+// page p: its group (first medal, how many in all, title) and which of them it shows
+static void achPage(uint8_t p, int &first, int &count, StrId &title, int &from, int &n) {
+  static const struct { uint8_t first, count; StrId title; } G[3] = {
+    { 0, MED_PET_COUNT, S_MEDALS_FMT },
+    { MED_PET_COUNT, MED_FIRST_ZONE - MED_PET_COUNT, S_TRAINER_FMT },
+    { MED_FIRST_ZONE, MED_COUNT - MED_FIRST_ZONE, S_ZONE_MEDALS_FMT } };
+  for (int g = 0, page = 0; g < 3; g++) {
+    int pages = (G[g].count + ACH_PER_PAGE - 1) / ACH_PER_PAGE;
+    if (p < page + pages) {
+      first = G[g].first;
+      count = G[g].count;
+      title = G[g].title;
+      from = first + (p - page) * ACH_PER_PAGE;
+      n = count - (from - first) < ACH_PER_PAGE ? count - (from - first) : ACH_PER_PAGE;
+      return;
+    }
+    page += pages;
+  }
+  first = count = from = n = 0;
+  title = S_MEDALS_FMT;
+}
+
+static void drawCheck(int x, int y, uint16_t c) {  // a check mark, 3 px thick
+  for (int o = 0; o < 3; o++) {
+    gfx->drawLine(x, y + 8 + o, x + 6, y + 14 + o, c);
+    gfx->drawLine(x + 6, y + 14 + o, x + 17, y + 2 + o, c);
+  }
+}
+
+void renderAchievements(uint8_t p) {
+  int first, count, from, n;
+  StrId title;
+  achPage(p, first, count, title, from, n);
   int got = 0;
-  for (int i = first; i < first + count; i++)
-    if (pet.hasMedal(1UL << i)) got++;
+  for (int i = first; i < first + count; i++) got += pet.hasMedal(1UL << i);
   char head[40];
-  snprintf(head, sizeof(head), T(headFmt), got, count);
+  snprintf(head, sizeof(head), T(title), got, count);
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(head, 3), 48);
   printT(head);
 
-  int rowsTop = 104 + (4 - (count + 1) / 2) * 27;  // fewer rows: centred in the same space
-  for (int i = first; i < first + count; i++) {
-    int x = 28 + ((i - first) % 2) * 206, y = rowsTop + ((i - first) / 2) * 54;
+  int rows = (n + 1) / 2, top = (92 + 360 - (rows * ACH_BOX_H + (rows - 1) * ACH_GAP)) / 2;
+  setSize(2);
+  for (int k = 0; k < n; k++) {
+    int i = from + k, row = k / 2;
+    bool alone = k == n - 1 && n % 2;  // an odd one out sits in the middle
+    int x = alone ? CX - ACH_BOX_W / 2 : CX - ACH_BOX_W - ACH_GAP / 2 + (k % 2) * (ACH_BOX_W + ACH_GAP);
+    int y = top + row * (ACH_BOX_H + ACH_GAP);
     bool g = pet.hasMedal(1UL << i);
-    gfx->fillRoundRect(x, y, 196, 44, 10, g ? UI_BAR_OK : UI_TRACK);
-    if (g) {  // earned mark
-      gfx->fillCircle(x + 22, y + 22, 11, UI_BG_DAY);
-      gfx->setTextColor(UI_BAR_OK);
-      setSize(2);
-      setCur(x + 16, y + 13);
-      printT("v");
-    }
+    gfx->fillRoundRect(x, y, ACH_BOX_W, ACH_BOX_H, 10, g ? UI_BAR_OK : UI_TRACK);
+    if (g) drawCheck(x + 12, y + ACH_BOX_H / 2 - 9, UI_WHITE);
     gfx->setTextColor(g ? UI_BG_DAY : 0x8410);
-    setSize(2);
-    setCur(x + 44, y + 14);
-    printT(medalDesc(i));
+    // the name, on two lines when it doesn't fit on one
+    const char *d = medalDesc(i);
+    int tx = x + 38, avail = ACH_BOX_W - 44;
+    if (textW(d, 2) <= avail) {
+      setCur(tx, y + ACH_BOX_H / 2 - 8);
+      printT(d);
+    } else {
+      char a[40], b[40];
+      strlcpy(a, d, sizeof(a));
+      char *cut = nullptr;
+      for (char *c = a; *c; c++)
+        if (*c == ' ') {
+          *c = 0;
+          if (textW(a, 2) <= avail) cut = c;
+          *c = ' ';
+        }
+      if (cut) {
+        *cut = 0;
+        strlcpy(b, cut + 1, sizeof(b));
+      } else {
+        b[0] = 0;
+      }
+      setCur(tx, y + 8);
+      printT(a);
+      setCur(tx, y + 28);
+      printT(b);
+    }
   }
 }
 
-// page 4: progress (level, evolution, mistakes) — surfaces mechanics
+// the card's last page: progress (level, evolution, mistakes) — surfaces mechanics
 // that used to be invisible (how long until level-up/evolution and why)
 void renderCardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
@@ -4204,16 +4278,15 @@ void renderCardProgress() {
 void renderCard() {
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
-  if (cardPage == 0) renderCardProfile();
+  if (cardAch) renderAchievements(cardPage);
+  else if (cardPage == 0) renderCardProfile();
   else if (cardPage == 1) renderCardStats();
-  else if (cardPage == 2) renderCardMedals(0, MED_PET_COUNT, S_MEDALS_FMT);
-  else if (cardPage == 3) renderCardMedals(MED_PET_COUNT, MED_FIRST_ZONE - MED_PET_COUNT, S_TRAINER_FMT);
-  else if (cardPage == 4) renderCardMedals(MED_FIRST_ZONE, MED_COUNT - MED_FIRST_ZONE, S_ZONE_MEDALS_FMT);
   else renderCardProgress();
 
   // page indicator + help
-  for (int i = 0; i < CARD_PAGES; i++) {
-    int dx = CX + (2 * i - (CARD_PAGES - 1)) * 13;
+  int pages = cardPageCount();
+  for (int i = 0; i < pages; i++) {
+    int dx = CX + (2 * i - (pages - 1)) * 13;
     if (i == cardPage) gfx->fillCircle(dx, 374, 5, UI_INK);
     else gfx->drawCircle(dx, 374, 4, UI_INK);
   }
@@ -6781,7 +6854,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   if (pet.ceremony) return false;
   if (cardOpen) {
 #ifndef BOARD_KNOMI_V2
-    if (cardPage == 1 && pressIn(x, y, 96, 300, 274, 40)) return pressSet(t, 96, 300, 274, 40, T(S_BTL_START));
+    if (!cardAch && cardPage == 1 && pressIn(x, y, 96, 300, 274, 40)) return pressSet(t, 96, 300, 274, 40, T(S_BTL_START));
 #endif
     return false;
   }

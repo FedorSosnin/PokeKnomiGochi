@@ -70,9 +70,10 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | **Tap the bottom icons** | Feed it, open games, turn the light off for bed, or give it a bath |
 | **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
-| **Swipe up** | See its card, stats and medals |
+| **Swipe up** | See its card, stats and progress |
 | **Tap its name on the card** (✏️) | Rename it |
-| **Swipe left or right** | Open the Pokédex |
+| **Swipe from left to right** | Open the Pokédex |
+| **Swipe from right to left** | See your achievements: every medal, 6 to a page |
 | **Swipe down** | Set the clock, then swipe left for settings |
 | **Press the button** | Start a wild battle |
 | **Hold the button for 1–3 seconds** | Turn the screen on or off |
