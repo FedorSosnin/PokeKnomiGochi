@@ -18,7 +18,7 @@ BAND = 84 / 1024       # the black band across the middle
 SCREEN = 600 / 1024    # diameter of the round screen
 RING = 34 / 1024       # black ring around the screen
 # the part of the frame shown in the screen: a square around the pet, so it fills the circle
-CROP_X, CROP_Y, CROP_HALF = 225, 252, 60  # centred on Gengar, tongue and all, above the stats
+CROP_Y, CROP_HALF = 252, 60  # Gengar, tongue and all, above the stats; across, centred on him (pet_center)
 RED, WHITE, BLACK = (222, 33, 33), (255, 255, 255), (0, 0, 0)
 
 
@@ -40,9 +40,22 @@ def in_rounded_square(px, py):
     return (px - cx) ** 2 + (py - cy) ** 2 <= r * r
 
 
+def pet_center(frame):
+    """Where the pet is across the frame: the middle of its pixels (body, tongue and dark outline)
+    around where it stands. Its idle pose sways a few pixels, so the crop follows it."""
+    xs = []
+    for y in range(170, 320):
+        for x in range(110, 356):
+            r, g, b = frame[(y * CANVAS + x) * 4:(y * CANVAS + x) * 4 + 3]
+            if (b > 120 and g < 120 and r > 60) or (r > 150 and g < 100 and b < 100) or (r < 40 and g < 40 and b < 50):
+                xs.append(x)
+    return (min(xs) + max(xs) + 1) / 2 if xs else CANVAS / 2
+
+
 def main():
     frame = open(sys.argv[1], 'rb').read()
     assert len(frame) == CANVAS * CANVAS * 4
+    crop_x = pet_center(frame)
     c = SIZE / 2
     r_screen = SIZE * SCREEN / 2
     r_ring = r_screen + SIZE * RING
@@ -59,7 +72,7 @@ def main():
                         continue
                     d = ((px - c) ** 2 + (py - c) ** 2) ** 0.5
                     if d <= r_screen:
-                        u = int(CROP_X - CROP_HALF + (px - (c - r_screen)) / (2 * r_screen) * 2 * CROP_HALF)
+                        u = int(crop_x - CROP_HALF + (px - (c - r_screen)) / (2 * r_screen) * 2 * CROP_HALF)
                         v = int(CROP_Y - CROP_HALF + (py - (c - r_screen)) / (2 * r_screen) * 2 * CROP_HALF)
                         i = (min(max(v, 0), CANVAS - 1) * CANVAS + min(max(u, 0), CANVAS - 1)) * 4
                         col = frame[i:i + 3]
