@@ -4153,12 +4153,8 @@ void renderDexDetail(int16_t dex) {
     gfx->flush();
 }
 
-// a square of the Pokedex with the shiny form caught: it glows gold, with a sparkle
-void drawShinyGlow(int x, int y, int cell) {
-  gfx->fillRoundRect(x + 2, y + 2, cell - 4, cell - 4, 14, C565(0xff, 0xe7, 0x8c));
-  gfx->fillRoundRect(x + 6, y + 6, cell - 12, cell - 12, 11, C565(0xff, 0xf5, 0xcf));
-  drawSparkle(x + cell - 12, y + 12, 7);
-}
+// a square of the Pokedex with the shiny form caught: a gold sparkle in its corner
+void drawShinyMark(int x, int y, int cell) { drawSparkle(x + cell - 12, y + 12, 7); }
 
 void renderGallery() {
   if (galleryDetail) {  // detail view: always redrawn (animated)
@@ -4185,8 +4181,8 @@ void renderGallery() {
       int x = GAL_X + c * GAL_CELL, y = GAL_Y + r * GAL_CELL;
       const uint8_t *t = thumbs.get(dex);
       if (t) {
-        if (pet.isShinyRegistered(dex)) drawShinyGlow(x, y, GAL_CELL);
         drawThumb(thumbs.getForm(dex, !pet.hasForm(dex, false) && pet.hasForm(dex, true)), x, y, 2, !pet.isRegistered(dex));
+        if (pet.isShinyRegistered(dex)) drawShinyMark(x, y, GAL_CELL);
       } else {
         char num[6];
         snprintf(num, sizeof(num), "%d", dex);
@@ -5401,8 +5397,8 @@ void renderTrade() {
       int16_t dex = pet.formAt(trPage * 16 + i, shiny);
       if (!dex) break;
       int x = GAL_X + (i % 4) * GAL_CELL, y = GAL_Y + (i / 4) * GAL_CELL;
-      if (shiny) drawShinyGlow(x, y, GAL_CELL);
       if (const uint8_t *t = thumbs.getForm(dex, shiny)) drawThumb(t, x, y, 2, !pet.canTrade(dex, shiny));
+      if (shiny) drawShinyMark(x, y, GAL_CELL);
       if (!buddyRegHas(bPeers[bCur].reg, dex)) gfx->fillCircle(x + 66, y + 66, 7, UI_BAR_OK);
     }
     int pages = (pet.formCount() + 15) / 16;
@@ -5419,8 +5415,8 @@ void renderTrade() {
   if (trPhase == TR_DONE) {
     char b[44];
     snprintf(b, sizeof(b), T(S_TRADE_GOT_FMT), dexName(trTheirs));
-    if (trTheirsShiny) drawShinyGlow(CX - 84, 116, 168);
     if (const uint8_t *t = thumbs.getForm(trTheirs, trTheirsShiny)) drawThumb(t, CX - GAL_CELL / 2 - 40, 120, 4, false);
+    if (trTheirsShiny) drawShinyMark(CX - 84, 116, 168);
     catchBanner(b, C565(0x1e, 0x7d, 0x3c));
     gfx->flush();
     return;
@@ -5430,13 +5426,13 @@ void renderTrade() {
   printT(T(S_TRADE_GIVE));
   setCur(330 - textW(T(S_TRADE_GET), 2) / 2, 92);
   printT(T(S_TRADE_GET));
-  if (trMineShiny) drawShinyGlow(136 - 62, 120, 124);
   if (const uint8_t *t = thumbs.getForm(trMine, trMineShiny)) drawThumb(t, 136 - GAL_CELL / 2, 124, 3, false);
+  if (trMineShiny) drawShinyMark(136 - 62, 120, 124);
   setCur(136 - textW(dexName(trMine), 2) / 2, 216);
   printT(dexName(trMine));
   if (trTheirs) {
-    if (trTheirsShiny) drawShinyGlow(330 - 62, 120, 124);
     if (const uint8_t *t = thumbs.getForm(trTheirs, trTheirsShiny)) drawThumb(t, 330 - GAL_CELL / 2, 124, 3, false);
+    if (trTheirsShiny) drawShinyMark(330 - 62, 120, 124);
     setCur(330 - textW(dexName(trTheirs), 2) / 2, 216);
     printT(dexName(trTheirs));
   } else {
@@ -5676,9 +5672,9 @@ void renderZones() {
     int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + i);
     if (!dex) break;
     int x = ZONE_GRID_X + (i % 4) * ZONE_CELL, y = ZONE_GRID_Y + (i / 4) * ZONE_CELL;
-    if (pet.isShinyRegistered(dex)) drawShinyGlow(x, y, ZONE_CELL);
     if (const uint8_t *t = thumbs.getForm(dex, !pet.hasForm(dex, false) && pet.hasForm(dex, true)))
       drawThumb(t, x, y, 2, !pet.isRegistered(dex));
+    if (pet.isShinyRegistered(dex)) drawShinyMark(x, y, ZONE_CELL);
     if (dex == ZONE_LEGEND[zoneCur]) {  // star: the legendary waits here
       gfx->setTextColor(UI_BAR_WARN);
       setCur(x + 62, y + 4);
