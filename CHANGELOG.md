@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.29] - 2026-11-03
+
 - **Party Boost:** while a buddy or the daily visitor is around, energy drains half as fast and your Pokémon has +2 ATK, DEF and SPD in wild battles and PokeDungeon. It's the same however many friends are around. The green button at the top now says **PARTY BOOST +2**. Tap it for who's here and what you get, and tap a buddy there for its menu. The Battle Stats page shows the +2.
 - **The daily visitor stays an hour,** standing in the row with any buddies. It steps out while yours sleeps and comes back the same day, and remembers its time across restarts. Wild battles are no longer blocked while it visits.
 
