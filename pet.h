@@ -9,7 +9,6 @@
 // of play with perfect care. Lower to 1 to see evolutions instantly.
 #define MINUTES_PER_LEVEL 60
 #define BTL_WIN_TRAIN 6      // ATK per battle won
-#define BTL_LOSS_TRAIN 2     // and per loss: you learn from it too
 #define BTL_ENERGY_COST 12
 #define BTL_LOSS_ENERGY 5    // losing leaves it exhausted: it must sleep to fight again
 #define BTL_LOSS_GRACE_MIN 10  // minutes to put it to bed before it counts as neglect

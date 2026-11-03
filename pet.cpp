@@ -615,11 +615,14 @@ void Pet::dungeonResult(uint8_t floor) {
 }
 
 // battle: winning trains more than losing, and losing never does permanent damage
+// a win trains, cheers and bonds; a loss earns nothing, it only tires
 uint8_t Pet::battleResult(bool won) {
   if (ceremony != CER_NONE || isEgg()) return 0;
   uint8_t antes = trAtk;
-  uint16_t v = (uint16_t)trAtk + (won ? BTL_WIN_TRAIN : BTL_LOSS_TRAIN);
-  trAtk = v > 100 ? 100 : (uint8_t)v;
+  if (won) {
+    uint16_t v = (uint16_t)trAtk + BTL_WIN_TRAIN;
+    trAtk = v > 100 ? 100 : (uint8_t)v;
+  }
   uint8_t gain = trAtk - antes;
   if (won) {
     energy = dropTo(energy, BTL_ENERGY_COST, 5);
@@ -638,8 +641,10 @@ uint8_t Pet::battleResult(bool won) {
   } else {
     joy = dropTo(joy, 3, 5);
   }
-  addBond(2);
-  registerCare();
+  if (won) {
+    addBond(2);
+    registerCare();
+  }
   save();
   return gain;
 }

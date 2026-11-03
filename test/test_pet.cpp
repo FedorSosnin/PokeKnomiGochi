@@ -436,13 +436,27 @@ TEST(stats, egg_has_no_stats) {
   CHECK_EQ(p.speStat(), (uint16_t)0);
 }
 
-TEST(train, winning_trains_more_than_losing) {
+TEST(train, only_a_win_trains) {
   Pet p;
   makePet(p, 4);
   CHECK_EQ(p.battleResult(true), (uint8_t)BTL_WIN_TRAIN);
-  CHECK_EQ(p.battleResult(false), (uint8_t)BTL_LOSS_TRAIN);
-  CHECK_EQ(p.trAtk, (uint8_t)(BTL_WIN_TRAIN + BTL_LOSS_TRAIN));
+  CHECK_EQ(p.battleResult(false), (uint8_t)0);
+  CHECK_EQ(p.trAtk, (uint8_t)BTL_WIN_TRAIN);
   CHECK_EQ(p.battleWins, (uint16_t)1);
+}
+
+// a loss earns nothing (no training, bond or day of care) but still tires it out
+TEST(train, a_loss_earns_nothing_but_tires) {
+  Pet p;
+  makePet(p, 4);
+  p.energy = 90;
+  uint8_t bond = p.bond, atk = p.trAtk;
+  uint16_t streak = p.streak;
+  p.battleResult(false);
+  CHECK_EQ(p.trAtk, atk);
+  CHECK_EQ(p.bond, bond);
+  CHECK_EQ(p.streak, streak);
+  CHECK(p.energy <= BTL_LOSS_ENERGY);
 }
 
 TEST(train, battle_reports_what_really_rises) {

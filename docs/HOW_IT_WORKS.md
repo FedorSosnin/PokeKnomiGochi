@@ -49,11 +49,11 @@ Your Pokémon needs at least 15 ⚡ to fight.
 | Result | 😊 | ⚡ | 🍖 | 💪 | 💞 | ⚖️ |
 |---|---|---|---|---|---|---|
 | 🏆 **Win** | +10 | −12 | −5 | +6 | +2 | −5 |
-| 💫 **Loss** | −5 | Drops to 5 | −5 | +2 | +2 | −5 |
+| 💫 **Loss** | −5 | Drops to 5 | −5 | | | −5 |
 | 🤝 **Win against a buddy** | +15 | | | | +2 | |
 | 🤝 **Loss against a buddy** | +8 | | | | +2 | |
 
-After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it. A hit holds 75% of the time; otherwise the Pokémon breaks out on one of the three shakes and runs away.
+A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it. A hit holds 75% of the time; otherwise the Pokémon breaks out on one of the three shakes and runs away.
 
 ## Zones
 

@@ -2803,7 +2803,7 @@ void renderBattle() {
         snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(bMe.dex));
         battleCenterLine(b, 352);
       }
-      if (!bPvp) {  // no training between friends
+      if (!bPvp && bGain) {  // no training between friends, nor from a loss
         gfx->setTextColor(UI_BAR_BAD);
         snprintf(b, sizeof(b), T(S_STR_GAIN_FMT), bGain);
         battleCenterLine(b, 380);
@@ -5702,9 +5702,12 @@ void renderZones() {
   int pages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
   for (int i = 0; i < pages; i++) {
     int dotX = CX + (i * 2 - (pages - 1)) * 7;
-    if (i == zonePage) gfx->fillCircle(dotX, 396, 4, UI_INK);
-    else gfx->drawCircle(dotX, 396, 3, UI_INK);
+    if (i == zonePage) gfx->fillCircle(dotX, 390, 4, UI_INK);
+    else gfx->drawCircle(dotX, 390, 3, UI_INK);
   }
+  gfx->setTextColor(UI_INK);  // how to leave, as on the zone picker
+  setCur(centerX(T(S_SWIPE_BACK), 2), 404);
+  printT(T(S_SWIPE_BACK));
   gfx->flush();
 }
 

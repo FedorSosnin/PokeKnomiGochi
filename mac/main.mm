@@ -159,6 +159,26 @@ static void startAudio(void) {
 static NSRect restFrame(NSRect windowFrame) { return NSInsetRect(windowFrame, RING_PAD, RING_PAD); }
 static NSRect windowFrameFor(NSRect rest) { return NSInsetRect(rest, -RING_PAD, -RING_PAD); }
 
+// Over the screen the cursor is a finger, as on the Knomi; while the button is down the finger
+// presses: the same hand a little lower and to the right, on the same hotspot
+static NSCursor *fingerCursor(bool pressed) {
+  static NSCursor *up, *down;
+  if (!up) {
+    NSCursor *hand = NSCursor.pointingHandCursor;
+    NSSize sz = hand.image.size;
+    NSSize big = NSMakeSize(sz.width + 1, sz.height + 2);
+    NSImage *(^make)(CGFloat, CGFloat) = ^(CGFloat dx, CGFloat dy) {
+      return [NSImage imageWithSize:big flipped:NO drawingHandler:^BOOL(NSRect r) {
+        [hand.image drawInRect:NSMakeRect(dx, dy, sz.width, sz.height)];
+        return YES;
+      }];
+    };
+    up = [[NSCursor alloc] initWithImage:make(0, 2) hotSpot:hand.hotSpot];
+    down = [[NSCursor alloc] initWithImage:make(1, 0) hotSpot:hand.hotSpot];
+  }
+  return pressed ? down : up;
+}
+
 // The frame: a Pokeball with the game screen inside. Grab it to move the window.
 @interface RingView : NSView
 - (void)setHover:(bool)hover;
@@ -238,7 +258,9 @@ static NSRect windowFrameFor(NSRect rest) { return NSInsetRect(rest, -RING_PAD, 
 - (void)mouseMoved:(NSEvent *)event {
   CGFloat d = [self distance:event];
   [self setHover:d <= [self radius]];
-  if (d > self.bounds.size.width / 2 - RING_HOVER && d <= [self radius]) [NSCursor.openHandCursor set];
+  CGFloat screen = self.bounds.size.width / 2 - RING_HOVER;
+  if (d <= screen) [fingerCursor(NSEvent.pressedMouseButtons & 1) set];
+  else if (d <= [self radius]) [NSCursor.openHandCursor set];
   else [NSCursor.arrowCursor set];
 }
 - (void)mouseEntered:(NSEvent *)event { [self mouseMoved:event]; }
@@ -324,6 +346,7 @@ static NSRect windowFrameFor(NSRect rest) { return NSInsetRect(rest, -RING_PAD, 
   }
   NSPoint p = [self canvasPoint:event];
   _touching = true;
+  [fingerCursor(true) set];
   hostPointer((int)p.x, (int)p.y, true);
 }
 
@@ -336,6 +359,7 @@ static NSRect windowFrameFor(NSRect rest) { return NSInsetRect(rest, -RING_PAD, 
 - (void)mouseUp:(NSEvent *)event {
   if (!_touching) return;
   _touching = false;
+  [fingerCursor(false) set];
   NSPoint p = [self canvasPoint:event];
   hostPointer((int)p.x, (int)p.y, false);
 }
