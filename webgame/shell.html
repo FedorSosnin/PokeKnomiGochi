@@ -46,7 +46,7 @@
 </style>
 </head>
 <body>
-<div id="hint">Tap, hold and swipe the screen · ← → tilt · Space: wild battle</div>
+<div id="hint">Tap, hold and swipe the screen · ← → tilt · arrows walk in PokeDungeon · Space: wild battle</div>
 <script>  // a phone has no arrow keys or Space: it tilts
   if (matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Tap, hold and swipe the screen · Tilt to aim';
 </script>
@@ -182,15 +182,18 @@ for (const ev of ['pointerup', 'pointercancel']) {
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 canvas.addEventListener('touchend', startTilt);  // a finished tap: the moment iPhones accept the question
 
-// ---- keys: arrows tilt, Space is the Knomi's button ----
-const keys = { left: false, right: false };
+// ---- keys: arrows tilt (and walk in PokeDungeon), Space is the Knomi's button ----
+const keys = { left: false, right: false, up: false, down: false };
 function key(e, isDown) {
   if (e.key === 'ArrowLeft') keys.left = isDown;
   else if (e.key === 'ArrowRight') keys.right = isDown;
+  else if (e.key === 'ArrowUp') keys.up = isDown;
+  else if (e.key === 'ArrowDown') keys.down = isDown;
   else if (e.key === ' ') { if (!e.repeat) Module._webButton(isDown ? 1 : 0); }
   else return;
   startAudio();
   Module._webTilt(keys.left ? 1 : 0, keys.right ? 1 : 0);
+  Module._webArrows(keys.up ? 1 : 0, keys.down ? 1 : 0);
   e.preventDefault();
 }
 addEventListener('keydown', (e) => key(e, true));

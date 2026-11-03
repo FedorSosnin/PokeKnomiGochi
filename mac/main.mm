@@ -199,7 +199,7 @@ static void startAudio(void) {
 
 @implementation GameView {
   uint8_t *_rgba;
-  bool _left, _right, _touching;
+  bool _left, _right, _up, _down, _touching;
 }
 
 - (instancetype)initWithFrame:(NSRect)frame {
@@ -411,12 +411,17 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
   p.end();
 }
 
-- (void)applyKeys { hostTiltKeys(_left, _right); }
+- (void)applyKeys {
+  hostTiltKeys(_left, _right);
+  hostArrowKeys(_up, _down);
+}
 
 - (bool)handleKey:(NSEvent *)event down:(bool)down {
   switch (event.keyCode) {
     case 123: _left = down; [self applyKeys]; return true;   // left arrow
     case 124: _right = down; [self applyKeys]; return true;  // right arrow
+    case 126: _up = down; [self applyKeys]; return true;     // up arrow (PokeDungeon)
+    case 125: _down = down; [self applyKeys]; return true;   // down arrow
     case 49: hostButton(down); return true;                  // space
   }
   return false;
@@ -433,7 +438,7 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
 
 // without focus keyUp never arrives: the key would stay pressed forever
 - (void)releaseKeys {
-  _left = _right = false;
+  _left = _right = _up = _down = false;
   [self applyKeys];
   hostButton(false);
 }

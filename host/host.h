@@ -33,6 +33,8 @@ void hostPointer(int x, int y, bool down);
 void hostPointerHover(void);
 // Tilt keys; the game sees a ramp, not a jump, so it can be fine-tuned
 void hostTiltKeys(bool left, bool right);
+// Up and down arrows: with left and right (hostTiltKeys), PokeDungeon walks with all four
+void hostArrowKeys(bool up, bool down);
 // A real tilt sensor, -1 (left) .. 1 (right), like the Knomi's accelerometer; NaN goes back to the keys
 void hostTiltSensor(float x);
 // The Knomi's physical button: tap = wild rival, 1-3 s = screen, 10 s = erase save

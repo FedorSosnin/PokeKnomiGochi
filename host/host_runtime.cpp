@@ -126,6 +126,8 @@ static bool gPointerDown = false;
 static uint32_t gPointerHoldUntil = 0;
 static bool gButtonDown = false;
 static bool gTiltLeft = false, gTiltRight = false;
+static bool gArrowUp = false, gArrowDown = false;
+static uint8_t gArrowLast = 0;  // the arrow pressed last: 1 left, 2 right, 3 up, 4 down
 static float gTilt = 0;
 static float gTiltSensor = 0;
 static bool gTiltSensorOn = false;  // a real tilt sensor (a phone in the browser) instead of the keys
@@ -156,7 +158,26 @@ void hostPointer(int x, int y, bool down) {
   gPointerDown = down;
 }
 void hostPointerHover(void) { hostGameWake(); }
-void hostTiltKeys(bool left, bool right) { gTiltLeft = left; gTiltRight = right; }
+void hostTiltKeys(bool left, bool right) {
+  if (left && !gTiltLeft) gArrowLast = 1;
+  if (right && !gTiltRight) gArrowLast = 2;
+  gTiltLeft = left;
+  gTiltRight = right;
+}
+void hostArrowKeys(bool up, bool down) {
+  if (up && !gArrowUp) gArrowLast = 3;
+  if (down && !gArrowDown) gArrowLast = 4;
+  gArrowUp = up;
+  gArrowDown = down;
+}
+bool hostArrowDir(int8_t *dx, int8_t *dy) {
+  const bool held[5] = { false, gTiltLeft, gTiltRight, gArrowUp, gArrowDown };
+  uint8_t k = held[gArrowLast] ? gArrowLast : gArrowUp ? 3 : gArrowDown ? 4 : gTiltLeft ? 1 : gTiltRight ? 2 : 0;
+  if (!k) return false;
+  *dx = k == 1 ? -1 : k == 2 ? 1 : 0;
+  *dy = k == 3 ? -1 : k == 4 ? 1 : 0;
+  return true;
+}
 void hostTiltSensor(float x) {
   gTiltSensorOn = x == x;  // NaN: back to the keys
   if (gTiltSensorOn) gTiltSensor = x < -1 ? -1 : x > 1 ? 1 : x;

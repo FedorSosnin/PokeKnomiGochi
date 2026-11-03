@@ -30,7 +30,7 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 - **Tap your Pokémon** to pet it. The buttons along the bottom feed it, open the games, turn off the light at bedtime and give it a bath.
 - **Swipe up** for its stats and medals, **left or right** for the Pokédex, and **down** for the clock and settings.
 - **Battle** from the games menu: pick a zone, search, and catch what you beat to fill your Pokédex.
-- On a computer, the **left and right arrows** tilt and **Space** starts a wild battle.
+- On a computer, the **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
 
 ## Your save
 

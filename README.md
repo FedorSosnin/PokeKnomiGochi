@@ -223,7 +223,7 @@ The same game as a small round window on your Mac desktop, in a Poké Ball ring.
 
    Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/PokeMacGochi.app`
 
-**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Tilt Catch and throwing Poké Balls. Space is the Knomi's button, for a wild battle. Drag the ring to move the window. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound, Check for Updates and Quit.
+**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Tilt Catch and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle. Drag the ring to move the window. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound, Check for Updates and Quit.
 
 Your pet, sound setting and window size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 

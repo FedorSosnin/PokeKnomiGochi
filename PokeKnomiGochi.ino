@@ -3020,6 +3020,20 @@ void renderDungeon() {
     int8_t dx, dy;
     if (dnBotDir(dn, dx, dy) && dnStep(dn, dx, dy)) dungeonAfterStep();
   }
+#ifdef BOARD_HOST
+  {  // the arrow keys walk: a step on the press, then on as the finger does while it's held
+    static bool keyWas = false;
+    static uint32_t keyT = 0;
+    int8_t kx, ky;
+    bool key = hostArrowDir(&kx, &ky);
+    if (key && !dn.dead && !dnOverT && (!keyWas || now - keyT > 230)) {
+      keyT = now;
+      wakeUI();
+      if (dnStep(dn, kx, ky)) dungeonAfterStep();
+    }
+    keyWas = key;
+  }
+#endif
 
   dnCamX += (dn.x - dnCamX) * 0.45f;
   dnCamY += (dn.y - dnCamY) * 0.45f;

@@ -10,6 +10,7 @@ void hostPanelSetBrightness(uint8_t v);
 void hostCanvasFlushed();
 bool hostPointerRead(int16_t *x, int16_t *y);
 float hostTiltValue();
+bool hostArrowDir(int8_t *dx, int8_t *dy);  // the arrow held (the last one pressed): a step's direction
 void pressOverlay();  // the sketch's press preview, drawn over every frame
 
 class KnomiPanel {

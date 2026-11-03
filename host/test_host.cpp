@@ -433,6 +433,20 @@ static void testGame() {
   runTicks(150);
   CHECK(hostTiltValue() == 0.0f);
 
+  // all four arrows give a step's direction, the last one pressed winning (PokeDungeon)
+  int8_t dx = 0, dy = 0;
+  CHECK(!hostArrowDir(&dx, &dy));
+  hostArrowKeys(true, false);
+  CHECK(hostArrowDir(&dx, &dy) && dx == 0 && dy == -1);
+  hostTiltKeys(true, false);  // left too, pressed later: left
+  CHECK(hostArrowDir(&dx, &dy) && dx == -1 && dy == 0);
+  hostTiltKeys(false, false);  // left let go: back to up, still held
+  CHECK(hostArrowDir(&dx, &dy) && dx == 0 && dy == -1);
+  hostArrowKeys(false, true);
+  CHECK(hostArrowDir(&dx, &dy) && dx == 0 && dy == 1);
+  hostArrowKeys(false, false);
+  CHECK(!hostArrowDir(&dx, &dy));
+
   hostFlushSave();
   std::vector<uint8_t> saved = readFile(saveSub + "/tamapoke.prefs");
   std::string text(saved.begin(), saved.end());
