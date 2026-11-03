@@ -123,15 +123,28 @@ TEST(clock, 12_hour_clock) {
   CHECK_EQ(clock12Hour(23), 11);
 }
 
-TEST(catch_, three_shakes_hold_three_times_in_four) {
-  int held = 0, at[4] = {};
-  for (int roll = 0; roll < 100; roll++)
-    for (int r3 = 0; r3 < 3; r3++) {
-      uint8_t b = catchBreakAt(roll, r3);
-      CHECK(b <= CATCH_SHAKES);
-      at[b]++;
-      held += b == 0;
-    }
-  CHECK_EQ(held, CATCH_CHANCE * 3);           // 75% of the throws that hit
-  CHECK(at[1] == at[2] && at[2] == at[3]);   // a break-out on any of the three shakes alike
+TEST(catch_, the_shakes_hold_as_often_as_the_chance) {
+  for (uint8_t chance : { CATCH_CHANCE_IN, CATCH_CHANCE_MID, CATCH_CHANCE_OUT }) {
+    int held = 0, at[4] = {};
+    for (int roll = 0; roll < 100; roll++)
+      for (int r3 = 0; r3 < 3; r3++) {
+        uint8_t b = catchBreakAt(roll, r3, chance);
+        CHECK(b <= CATCH_SHAKES);
+        at[b]++;
+        held += b == 0;
+      }
+    CHECK_EQ(held, chance * 3);
+    CHECK(at[1] == at[2] && at[2] == at[3]);  // a break-out on any of the three shakes alike
+  }
+}
+
+// the closer to the middle, the surer: the green circle always holds, the second ring half the time
+TEST(catch_, the_rings_reward_a_good_aim) {
+  CHECK_EQ(catchChance(233, 233), CATCH_CHANCE_IN);
+  CHECK_EQ(catchChance(233 + CATCH_RING_IN - 1, 233), CATCH_CHANCE_IN);
+  CHECK_EQ(catchChance(233 - CATCH_RING_IN, 233), CATCH_CHANCE_MID);
+  CHECK_EQ(catchChance(233 + CATCH_RING_MID, 233), CATCH_CHANCE_OUT);
+  CHECK_EQ(catchChance(233 - CATCH_RADIUS + 1, 233), CATCH_CHANCE_OUT);
+  CHECK_EQ(catchChance(233 + CATCH_RADIUS, 233), 0);
+  CHECK(catchChance(233 + CATCH_RADIUS, 233) == 0 && !catchHit(233 + CATCH_RADIUS, 233));  // the same edge
 }

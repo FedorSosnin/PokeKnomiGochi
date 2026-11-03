@@ -2461,9 +2461,10 @@ void battleThrowStep(uint32_t now) {
   if (now - bBallT < 1500) return;
   if (catchHit(bBallX, battleFoeSway(now))) {  // in the ball: now the three shakes
     bCatchX = battleFoeSway(now);
-    bBreakAt = catchBreakAt(random(100), random(CATCH_SHAKES));
+    uint8_t chance = catchChance(bBallX, bCatchX);  // which ring it landed in
+    bBreakAt = catchBreakAt(random(100), random(CATCH_SHAKES), chance);
     bShakesHeard = 0;
-    Serial.printf("catch: in the ball (%s)\n", bBreakAt ? "will break out" : "holds");
+    Serial.printf("catch: in the ball, %u%% ring (%s)\n", chance, bBreakAt ? "will break out" : "holds");
     battleSetPhase(BP_SHAKE);
   } else {
     bBalls--;
@@ -2624,6 +2625,27 @@ void catchBanner(const char *s, uint16_t bg) {
   gfx->setTextColor(UI_INK);
 }
 
+// the catch rings around the Pokemon, as in Pokemon GO: a white ring for where a ball still hits,
+// a fainter one inside it, and the small green circle that always holds
+// centred on the Pokemon's body: halfway up what its sprite fills above the ground (drawn at 3x on 216)
+int catchRingY() {
+  const PmdAct &a = wildPmd.acts[PMD_IDLE];
+  if (!a.frames) return 176;
+  int top = a.h;
+  for (int r = 0; r < a.h && top == a.h; r++)
+    for (int c = 0; c < a.w; c++)
+      if (a.data[r * a.w + c] != 0xFF) { top = r; break; }
+  uint8_t s = a.h ? 170 / a.h : 3;
+  s = s < 2 ? 2 : s > 3 ? 3 : s;
+  return 216 - ((a.base ? a.base : a.h) - top) * s / 2;
+}
+void drawCatchRings(int cx) {
+  int cy = catchRingY();
+  for (int i = 0; i < 2; i++) gfx->drawCircle(cx, cy, CATCH_RADIUS - i, UI_WHITE);
+  gfx->drawCircle(cx, cy, CATCH_RING_MID, C565(0xdd, 0xe4, 0xea));
+  for (int i = 0; i < 3; i++) gfx->drawCircle(cx, cy, CATCH_RING_IN - i, C565(0x4c, 0xd9, 0x3c));
+}
+
 static const uint16_t ZONE_GROUND[ZONE_COUNT] = { C565(0x4f, 0x9a, 0x4a), C565(0xec, 0xd5, 0x93), C565(0x54, 0x4b, 0x63), C565(0x25, 0x28, 0x3a), C565(0x79, 0xbd, 0x4f) };
 
 void renderCatch() {
@@ -2644,6 +2666,7 @@ void renderCatch() {
     drawPmdActM(wildPmd, wildPmd.has(act) && t > 400 ? act : PMD_IDLE, x, 216, t, true, false, 3);
   } else if (bPhase != BP_CAUGHT && bPhase != BP_FLED && bPhase != BP_SHAKE) {
     drawPmdActM(wildPmd, PMD_IDLE, (int)foeX, 216, now - bPhaseT, true, false, 3);
+    if (bPhase == BP_AIM || bPhase == BP_THROW) drawCatchRings((int)foeX);
   }
   if (bPhase == BP_THROW) {
     float k = (now - bBallT) / 1500.0f;

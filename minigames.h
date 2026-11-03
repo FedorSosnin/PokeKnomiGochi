@@ -4,15 +4,27 @@
 
 #define CATCH_BALLS 3         // throws per encounter
 #define WILD_SHINY_PCT 2      // one wild Pokemon in 50 is shiny
-#define CATCH_CHANCE 75       // % of balls that hit and then hold through the three shakes
 #define CATCH_SHAKES 3
 #define CATCH_SHAKE_MS 900    // one rock to the side, with its tone
+// Three rings around the Pokemon: the closer to its middle the ball lands, the surer the catch
+#define CATCH_RING_IN 12      // logical px: the small green circle, a sure catch
+#define CATCH_RING_MID 28     // the second ring: half the time
+#define CATCH_RADIUS 48       // the outer ring: still a hit, but it rarely holds; past it, a miss
+#define CATCH_CHANCE_IN 100
+#define CATCH_CHANCE_MID 50
+#define CATCH_CHANCE_OUT 25
+
+// how likely a ball landing here is to hold (%), 0 for a miss
+inline uint8_t catchChance(float ballX, float foeX) {
+  float d = ballX - foeX;
+  if (d < 0) d = -d;
+  return d < CATCH_RING_IN ? CATCH_CHANCE_IN : d < CATCH_RING_MID ? CATCH_CHANCE_MID : d < CATCH_RADIUS ? CATCH_CHANCE_OUT : 0;
+}
 
 // a ball that hit: 0 = it holds (caught), or the shake (1..3) the Pokemon breaks out on
-inline uint8_t catchBreakAt(uint8_t roll100, uint8_t roll3) {
-  return roll100 < CATCH_CHANCE ? 0 : 1 + roll3 % CATCH_SHAKES;
+inline uint8_t catchBreakAt(uint8_t roll100, uint8_t roll3, uint8_t chance) {
+  return roll100 < chance ? 0 : 1 + roll3 % CATCH_SHAKES;
 }
-#define CATCH_RADIUS 48       // logical px: the hit has to be direct, but not cruel
 #define QUIZ_ROUNDS 5
 
 inline bool catchHit(float ballX, float foeX) {

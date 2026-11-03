@@ -74,6 +74,9 @@ static inline uint16_t spriteColor(char ch) {
     case 'L': return 0x6BF7;  // #6f7cb8
     case 's': return 0xAD97;  // #aab0bc
     case 'S': return 0x7BF1;  // #787e8c
+    case 'u': return 0x75DE;  // #73baf0  the Oran Berry's bright blues
+    case 'v': return 0x2BDB;  // #2a7ad8
+    case 'V': return 0x1A93;  // #1a529a
     default: return 0;
   }
 }
@@ -436,23 +439,23 @@ static const char* const SPR_HOME_FOOD[HOME_ICON_N] = {  // 18x18, a Razz Berry:
 };
 static const char* const SPR_BERRY_ORAN[HOME_ICON_N] = {  // 18x18, an Oran Berry
   "..................",
-  "...........kk.....",
-  ".........kkGGk....",
-  "......kkkGGggGk...",
-  "....kkBBkGgttgGk..",
-  "...kBBbbbkGgtggk..",
-  "..kBbbbbBBkGggGk..",
-  ".kBbwwBBBBBkkkkNk.",
-  ".kBbwBBBBBBBBNNNk.",
-  "kBbbBBBNBBBBNNNNk.",
-  "kBbBBBBBBBBNNNNNk.",
-  "kBBNBBBBBNNNNNNk..",
-  "kBBBBBBBBNNNMNNk..",
-  ".kBBBBNBNNNNNNk...",
-  ".kNNBBBNNNNNNk....",
-  "..kkNMNNNMNkk.....",
-  "....kkkkkkk.......",
   "..................",
+  "....kkkkkkkkkk....",
+  "...kvvvvvkGGGGk...",
+  "..kvvvvvvkGgggGk..",
+  ".kvvuuvvvkGgttgk..",
+  "kvvuuuuvvvkGgggGk.",
+  "kvvuuwuvvvvkGGGk..",
+  "kvvvuuvvvvvvkkkVk.",
+  "kvvvvvvvvvvVvvvVk.",
+  "kvvvVvvvvvvvvvvVk.",
+  ".kvvvvvvVvvvvvVVVk",
+  "..kvvvvvvvvvVVVVk.",
+  "..kvvvvvvvvVVVVVk.",
+  "...kvvvVvvVVVVVVk.",
+  "....kkVVVVVVVVVk..",
+  "......kkVVVVkkk...",
+  "........kkkk......",
 };
 static const char* const SPR_BERRY_PINAP[HOME_ICON_N] = {  // 18x18, a Pinap Berry
   ".......k.kgk.k....",
