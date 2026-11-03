@@ -4186,7 +4186,7 @@ void renderGallery() {
       const uint8_t *t = thumbs.get(dex);
       if (t) {
         if (pet.isShinyRegistered(dex)) drawShinyGlow(x, y, GAL_CELL);
-        drawThumb(t, x, y, 2, !pet.isRegistered(dex));
+        drawThumb(thumbs.getForm(dex, !pet.hasForm(dex, false) && pet.hasForm(dex, true)), x, y, 2, !pet.isRegistered(dex));
       } else {
         char num[6];
         snprintf(num, sizeof(num), "%d", dex);
@@ -5402,7 +5402,7 @@ void renderTrade() {
       if (!dex) break;
       int x = GAL_X + (i % 4) * GAL_CELL, y = GAL_Y + (i / 4) * GAL_CELL;
       if (shiny) drawShinyGlow(x, y, GAL_CELL);
-      if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, x, y, 2, !pet.canTrade(dex, shiny));
+      if (const uint8_t *t = thumbs.getForm(dex, shiny)) drawThumb(t, x, y, 2, !pet.canTrade(dex, shiny));
       if (!buddyRegHas(bPeers[bCur].reg, dex)) gfx->fillCircle(x + 66, y + 66, 7, UI_BAR_OK);
     }
     int pages = (pet.formCount() + 15) / 16;
@@ -5420,7 +5420,7 @@ void renderTrade() {
     char b[44];
     snprintf(b, sizeof(b), T(S_TRADE_GOT_FMT), dexName(trTheirs));
     if (trTheirsShiny) drawShinyGlow(CX - 84, 116, 168);
-    if (const uint8_t *t = thumbs.get(trTheirs)) drawThumb(t, CX - GAL_CELL / 2 - 40, 120, 4, false);
+    if (const uint8_t *t = thumbs.getForm(trTheirs, trTheirsShiny)) drawThumb(t, CX - GAL_CELL / 2 - 40, 120, 4, false);
     catchBanner(b, C565(0x1e, 0x7d, 0x3c));
     gfx->flush();
     return;
@@ -5431,12 +5431,12 @@ void renderTrade() {
   setCur(330 - textW(T(S_TRADE_GET), 2) / 2, 92);
   printT(T(S_TRADE_GET));
   if (trMineShiny) drawShinyGlow(136 - 62, 120, 124);
-  if (const uint8_t *t = thumbs.get(trMine)) drawThumb(t, 136 - GAL_CELL / 2, 124, 3, false);
+  if (const uint8_t *t = thumbs.getForm(trMine, trMineShiny)) drawThumb(t, 136 - GAL_CELL / 2, 124, 3, false);
   setCur(136 - textW(dexName(trMine), 2) / 2, 216);
   printT(dexName(trMine));
   if (trTheirs) {
     if (trTheirsShiny) drawShinyGlow(330 - 62, 120, 124);
-    if (const uint8_t *t = thumbs.get(trTheirs)) drawThumb(t, 330 - GAL_CELL / 2, 124, 3, false);
+    if (const uint8_t *t = thumbs.getForm(trTheirs, trTheirsShiny)) drawThumb(t, 330 - GAL_CELL / 2, 124, 3, false);
     setCur(330 - textW(dexName(trTheirs), 2) / 2, 216);
     printT(dexName(trTheirs));
   } else {
@@ -5677,7 +5677,8 @@ void renderZones() {
     if (!dex) break;
     int x = ZONE_GRID_X + (i % 4) * ZONE_CELL, y = ZONE_GRID_Y + (i / 4) * ZONE_CELL;
     if (pet.isShinyRegistered(dex)) drawShinyGlow(x, y, ZONE_CELL);
-    if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, x, y, 2, !pet.isRegistered(dex));
+    if (const uint8_t *t = thumbs.getForm(dex, !pet.hasForm(dex, false) && pet.hasForm(dex, true)))
+      drawThumb(t, x, y, 2, !pet.isRegistered(dex));
     if (dex == ZONE_LEGEND[zoneCur]) {  // star: the legendary waits here
       gfx->setTextColor(UI_BAR_WARN);
       setCur(x + 62, y + 4);

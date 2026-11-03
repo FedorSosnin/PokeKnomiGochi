@@ -53,6 +53,11 @@ struct SdThumbs {
   bool load();
   void unload();  // frees the blob: reload after receiving a new thumbs.bin
   const uint8_t *get(int16_t dex) const;  // blob: w,h,palCount,pal[],idx[]
+  // the shiny one (stored after the 151 regular ones); an older thumbs.bin has none: the regular
+  const uint8_t *getForm(int16_t dex, bool shiny) const {
+    const uint8_t *t = shiny && dex >= 1 && dex <= 151 ? get(dex + 151) : nullptr;
+    return t ? t : get(dex);
+  }
 };
 extern SdThumbs thumbs;
 

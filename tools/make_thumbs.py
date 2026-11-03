@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Generates /mons/thumbs.bin: 40x40 thumbnails of all 151 for the gallery.
+"""Generates /mons/thumbs.bin: 40x40 thumbnails of all 151 for the gallery, then the 151 shiny ones.
 
 They are derived from the front frame (Idle, frame 0) of the already packed PMD
-sprites (tools/sdcard/mons/pNNN.bin, TPK2 format) -> legal thumbnails (CC BY-NC),
-same style as the main screen. TPTH format (little-endian):
+sprites (tools/sdcard/mons/pNNN.bin and psNNN.bin, TPK2 format) -> legal thumbnails
+(CC BY-NC), same style as the main screen. Entries 1..151 are the regular ones and
+152..302 the shiny ones (dex + 151): firmware that only knows the first 151 reads them
+as before. TPTH format (little-endian):
 
   char[4] "TPTH"
   uint16  count
-  uint32  offset[count]    (from the start of the file, 1-based: offset[0]=dex 1)
+  uint32  offset[count]    (from the start of the file, 1-based: offset[0]=dex 1, offset[151]=shiny dex 1)
   blobs:  u8 w, u8 h, u8 palCount, u16 pal[palCount], u8 data[w*h] (0xFF transparent)
 
   python3 tools/make_thumbs.py
@@ -63,18 +65,19 @@ def shrink(w, h, pal, data):
 
 def main():
     blobs = []
-    for dex in range(1, 152):
-        path = os.path.join(DIR, f'p{dex:03d}.bin')
+    for n in range(1, 2 * 151 + 1):
+        dex, shiny = (n - 1) % 151 + 1, n > 151
+        path = os.path.join(DIR, f'p{"s" if shiny else ""}{dex:03d}.bin')
         w, h, pal, data = read_pmd_idle_frame0(path)
         nw, nh, npal, ndata = shrink(w, h, pal, data)
         if len(npal) > 255:
-            raise ValueError(f'{dex}: palette {len(npal)}')
+            raise ValueError(f'{n}: palette {len(npal)}')
         blob = struct.pack('<3B', nw, nh, len(npal))
         blob += struct.pack(f'<{len(npal)}H', *npal)
         blob += ndata
         blobs.append(blob)
 
-    head = 4 + 2 + 4 * 151
+    head = 4 + 2 + 4 * len(blobs)
     offsets, pos = [], head
     for b in blobs:
         offsets.append(pos)
@@ -83,8 +86,8 @@ def main():
     out = os.path.join(DIR, 'thumbs.bin')
     with open(out, 'wb') as f:
         f.write(b'TPTH')
-        f.write(struct.pack('<H', 151))
-        f.write(struct.pack('<151I', *offsets))
+        f.write(struct.pack('<H', len(blobs)))
+        f.write(struct.pack(f'<{len(blobs)}I', *offsets))
         for b in blobs:
             f.write(b)
     print(f"saved {out}: {pos / 1024:.0f} KB, {len(blobs)} thumbnails")
