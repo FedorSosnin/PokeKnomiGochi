@@ -16,13 +16,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Nv.%u",
     "Soltar a %s?", "SI", "NO",
-    "VICTORIAS EN COMBATE: %u", "FUERZA +%u", "NUEVO RECORD!", "RECORD: %u", "HUIR",
+    "VICTORIAS EN COMBATE: %u", "ENTRENO FUE +%u", "NUEVO RECORD!", "RECORD: %u", "HUIR",
     "PUNTOS: %u", "Qu\202 felicidad!", "+felicidad",
     "AJUSTAR HORA", "HORA", "MIN", "desliza arriba: cancelar", "Idioma",
     "MEDALLA!", "GENIAL!", "RACHA %u DIAS!",
     "RACHA %u  rec %u", "VIN", "BAYA ???", "BAYA FRAMBU", "BAYA ARANJA", "BAYA PINIA",
     "%s   EDAD %lud", "toca el nombre: renombrar",
-    "ESTADISTICAS", "FUE", "DEF", "VEL", "PES", "COMBATIR!",
+    "ESTAD. COMBATE", "FUE", "DEF", "VEL", "PES", "COMBATIR!",
     "MEDALLAS %d/%d", "toca: volver",
     "NOMBRE:", "toca para volver",
     "COM", "FEL", "ENE", "LIM",
@@ -43,6 +43,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "BUSCAR ACTUALIZACION", "Ya est\240 al d\241a", "ACTUALIZAR A v%s", "Actualizando %u%%", "Fall\242 la actualizaci\242n", "%u amigos aqu\241!",
     "Jugar", "Jugar juntos", "Duelo: Qui\202n es?", "%s quiere jugar!", "Prep\240rate...", "T\243", "Lo tienes!", "%s lo tiene!", "Nadie acert\242", "Ganaste!", "Gana %s!", "Empate!", "%s se escap\242!", "Voley Poke Ball", "Tu saque!", "Punto!", "Punto para %s!", "Inclina o arrastra",
     "ZONAS %d/%d", "%s variocolor!",
+    "ENTRENO FUE AL MAXIMO", "ENTRENO", "GANA COMBATES", "12H DE BUEN CUIDADO", "MINIJUEGOS", "COMER SUMA, JUGAR QUEMA",
   },
   // ---------------- EN ----------------
   {
@@ -53,13 +54,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Lv.%u",
     "Release %s?", "YES", "NO",
-    "BATTLE WINS: %u", "STR +%u", "NEW RECORD!", "BEST: %u", "RUN",
+    "BATTLE WINS: %u", "ATK TRAINING +%u", "NEW RECORD!", "BEST: %u", "RUN",
     "SCORE: %u", "So much fun!", "+happiness",
     "SET TIME", "HOUR", "MIN", "swipe up: cancel", "Lang",
     "MEDAL!", "AWESOME!", "%u DAY STREAK!",
     "STREAK %u  best %u", "BOND", "BERRY ???", "RAZZ BERRY", "ORAN BERRY", "PINAP BERRY",
     "%s   AGE %lud", "tap name: rename",
-    "STATS", "ATK", "DEF", "SPD", "WGT", "FIGHT!",
+    "BATTLE STATS", "ATK", "DEF", "SPD", "WGT", "FIGHT!",
     "MEDALS %d/%d", "tap: back",
     "NAME:", "tap to go back",
     "FOOD", "JOY", "ENE", "HYG",
@@ -80,6 +81,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "CHECK FOR UPDATE", "Up to date", "UPDATE TO v%s", "Updating %u%%", "Update failed", "%u buddies are here!",
     "Play", "Play together", "Who's That? Showdown", "%s wants to play!", "Get ready...", "You", "You got it!", "%s got it!", "Nobody got it", "You win!", "%s wins!", "It's a draw!", "%s got away!", "Poke Ball Volley", "Your serve!", "Point!", "%s scores!", "Tilt or drag to move",
     "ZONES %d/%d", "Shiny %s!",
+    "ATK TRAINING MAXED", "TRAINING", "WIN BATTLES", "12H OF GOOD CARE", "PLAY MINI GAMES", "FOOD ADDS, PLAY BURNS",
   },
   // ---------------- FR ----------------
   {
@@ -90,13 +92,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Niv.%u",
     "Rel\203cher %s?", "OUI", "NON",
-    "VICTOIRES EN COMBAT: %u", "FORCE +%u", "NOUVEAU RECORD!", "RECORD: %u", "FUITE",
+    "VICTOIRES EN COMBAT: %u", "ENTRAINEMENT ATQ +%u", "NOUVEAU RECORD!", "RECORD: %u", "FUITE",
     "SCORE: %u", "Trop bien!", "+bonheur",
     "R\220GLER L'HEURE", "HEURE", "MIN", "glisse haut: annuler", "Langue",
     "M\220DAILLE!", "SUPER!", "S\220RIE %u JOURS!",
     "S\220RIE %u  rec %u", "LIEN", "BAIE ???", "BAIE FRAMBY", "BAIE ORAN", "BAIE NANANA",
     "%s   AGE %lud", "touche le nom: renommer",
-    "STATS", "ATQ", "DEF", "VIT", "PDS", "COMBAT!",
+    "STATS COMBAT", "ATQ", "DEF", "VIT", "PDS", "COMBAT!",
     "M\220DAILLES %d/%d", "touche: retour",
     "NOM:", "touche pour revenir",
     "NOUR", "JOIE", "ENE", "HYG",
@@ -117,6 +119,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "MISE \205 JOUR ?", "D\202j\205 \205 jour", "INSTALLER v%s", "Mise \205 jour %u%%", "\220chec de mise \205 jour", "%u copains sont l\205 !",
     "Jouer", "Jouer ensemble", "Duel: Qui est-ce?", "%s veut jouer!", "Pr\202pare-toi...", "Toi", "Trouv\202!", "%s a trouv\202!", "Personne n\'a trouv\202", "Gagn\202!", "%s gagne!", "Egalit\202!", "%s s\'est enfui!", "Volley Poke Ball", "A toi de servir!", "Point!", "Point pour %s!", "Penche ou glisse",
     "ZONES %d/%d", "%s chromatique!",
+    "ENTRAINEMENT ATQ AU MAX", "ENTRAINEMENT", "GAGNE DES COMBATS", "12H DE BONS SOINS", "MINI-JEUX", "MANGER GROSSIT, JOUER BRULE",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -132,13 +135,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Lv.%u",
     "%s freilassen?", "JA", "NEIN",
-    "KAMPFSIEGE: %u", "KRAFT +%u", "NEUER REKORD!", "REKORD: %u", "FLUCHT",
+    "KAMPFSIEGE: %u", "ANG-TRAINING +%u", "NEUER REKORD!", "REKORD: %u", "FLUCHT",
     "PUNKTE: %u", "Wie sch\224n!", "+Freude",
     "ZEIT STELLEN", "STD", "MIN", "hoch wischen: Abbruch", "Sprache",
     "MEDAILLE!", "TOLL!", "%u TAGE SERIE!",
     "SERIE %u  rek %u", "BND", "BEERE ???", "HIMMIHBEERE", "SINELBEERE", "SANANABEERE",
     "%s   ALTER %lud", "Name tippen: umbenennen",
-    "WERTE", "ANG", "VER", "INI", "GEW", "KAMPF!",
+    "KAMPFWERTE", "ANG", "VER", "INI", "GEW", "KAMPF!",
     "MEDAILLEN %d/%d", "tippen: zur\201ck",
     "NAME:", "tippen: zur\201ck",
     "ESS", "FRO", "ENE", "HYG",
@@ -159,6 +162,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "NACH UPDATE SUCHEN", "Aktuell", "UPDATE AUF v%s", "Update l\204uft %u%%", "Update fehlgeschlagen", "%u Kumpel sind da!",
     "Spielen", "Zusammen spielen", "Duell: Wer ist das?", "%s will spielen!", "Mach dich bereit...", "Du", "Richtig!", "%s war schneller!", "Niemand wusste es", "Gewonnen!", "%s gewinnt!", "Unentschieden!", "%s ist entkommen!", "Poke-Ball-Volley", "Du schl\204gst auf!", "Punkt!", "Punkt f\201r %s!", "Neigen oder ziehen",
     "ZONEN %d/%d", "Schillerndes %s!",
+    "ANG-TRAINING MAXIMAL", "TRAINING", "SIEGE IM KAMPF", "12 STD. GUTE PFLEGE", "MINISPIELE", "ESSEN RAUF, SPIELEN RUNTER",
   },
   // ---------------- IT ----------------
   {
@@ -169,13 +173,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Lv.%u",
     "Liberare %s?", "SI", "NO",
-    "VITTORIE IN BATTAGLIA: %u", "FORZA +%u", "NUOVO RECORD!", "RECORD: %u", "FUGA",
+    "VITTORIE IN BATTAGLIA: %u", "ALLENAMENTO ATT +%u", "NUOVO RECORD!", "RECORD: %u", "FUGA",
     "PUNTI: %u", "Che gioia!", "+felicit\205",
     "IMPOSTA ORA", "ORA", "MIN", "scorri su: annulla", "Lingua",
     "MEDAGLIA!", "GRANDE!", "SERIE %u GIORNI!",
     "SERIE %u  rec %u", "LEG", "BACCA ???", "BACCALAMPON", "BACCARANCIA", "BACCANANAS",
     "%s   ETA %lud", "tocca il nome: rinomina",
-    "STATISTICHE", "ATT", "DIF", "VEL", "PES", "LOTTA!",
+    "STAT. LOTTA", "ATT", "DIF", "VEL", "PES", "LOTTA!",
     "MEDAGLIE %d/%d", "tocca: indietro",
     "NOME:", "tocca per tornare",
     "CIB", "GIO", "ENE", "IGI",
@@ -196,6 +200,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "CERCA AGGIORNAMENTI", "Gi\205 aggiornato", "AGGIORNA A v%s", "Aggiornamento %u%%", "Aggiornamento fallito", "%u amici sono qui!",
     "Gioca", "Giochiamo insieme", "Sfida: Chi \212?", "%s vuole giocare!", "Pronti...", "Tu", "Indovinato!", "%s ha indovinato!", "Nessuno l\'ha preso", "Hai vinto!", "Vince %s!", "Pareggio!", "%s \212 scappato!", "Pallavolo Poke Ball", "Battuta tua!", "Punto!", "Punto a %s!", "Inclina o trascina",
     "ZONE %d/%d", "%s cromatico!",
+    "ALLENAMENTO ATT AL MASSIMO", "ALLENAMENTO", "VINCI LE BATTAGLIE", "12 ORE DI BUONE CURE", "MINIGIOCHI", "MANGIARE SU, GIOCARE GIU",
   },
   // ---------------- PT ----------------
   {
@@ -206,13 +211,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "POKEDEX %u/151",
     "%s%s Niv.%u",
     "Soltar %s?", "SIM", "NAO",
-    "VITORIAS EM BATALHA: %u", "FOR\200A +%u", "NOVO RECORDE!", "RECORDE: %u", "FUGIR",
+    "VITORIAS EM BATALHA: %u", "TREINO ATQ +%u", "NOVO RECORDE!", "RECORDE: %u", "FUGIR",
     "PONTOS: %u", "Que alegria!", "+alegria",
     "AJUSTAR HORA", "HORA", "MIN", "deslize cima: cancelar", "Idioma",
     "MEDALHA!", "OTIMO!", "%u DIAS SEGUIDOS!",
     "SEQ %u  rec %u", "LA\200O", "BAGA ???", "BAGA FRAMBO", "BAGA ORAN", "BAGA PINAP",
     "%s   IDADE %lud", "toque no nome: renomear",
-    "ESTATISTICAS", "ATQ", "DEF", "VEL", "PES", "LUTAR!",
+    "STATUS BATALHA", "ATQ", "DEF", "VEL", "PES", "LUTAR!",
     "MEDALHAS %d/%d", "toque: voltar",
     "NOME:", "toque para voltar",
     "COM", "ALE", "ENE", "HIG",
@@ -233,6 +238,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "PROCURAR ATUALIZACAO", "J\240 est\240 atualizado", "ATUALIZAR PARA v%s", "A atualizar %u%%", "Falhou a atualizacao", "%u amigos aqui!",
     "Jogar", "Jogar juntos", "Duelo: Quem \202?", "%s quer jogar!", "Prepara-te...", "Tu", "Acertaste!", "%s acertou!", "Ningu\202m acertou", "Ganhaste!", "%s ganha!", "Empate!", "%s escapou!", "Voleibol Poke Ball", "Tu serves!", "Ponto!", "Ponto para %s!", "Inclina ou arrasta",
     "ZONAS %d/%d", "%s brilhante!",
+    "TREINO ATQ NO MAXIMO", "TREINO", "VENCER BATALHAS", "12H DE BOM CUIDADO", "MINIJOGOS", "COMER SOBE, JOGAR QUEIMA",
   },
   // ---------------- JA ----------------
   {
@@ -248,7 +254,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 
     "%s とおわかれ？", "はい", "いいえ",
 
-    "バトルのしょうり: %u", "ちから +%u", "しんきろく！", "きろく: %u", "にげる",
+    "バトルのしょうり: %u", "こうげきの くんれん +%u", "しんきろく！", "きろく: %u", "にげる",
 
     "スコア: %u", "たのしい！", "+ごきげん",
 
@@ -260,7 +266,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 
     "%s   %luにち", "なまえをタッチ: へんこう",
 
-    "ステータス", "こうげき", "ぼうぎょ", "すばやさ", "たいじゅう", "たたかう!",
+    "バトルの つよさ", "こうげき", "ぼうぎょ", "すばやさ", "たいじゅう", "たたかう!",
 
     "メダル %d/%d", "タッチ: もどる",
 
@@ -293,6 +299,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "アップデート", "さいしんです", "v%s にする", "アップデート %u%%", "しっぱいしました", "ともだち %u にん!",
     "あそぶ", "いっしょに あそぶ", "だれだ? たいけつ", "%sが あそびたいって!", "よーい...", "きみ", "せいかい!", "%sが せいかい!", "だれも わからなかった", "きみの かち!", "%sの かち!", "ひきわけ!", "%sに にげられた!", "ボール バレー", "きみの サーブ!", "とくてん!", "%sの とくてん!", "かたむけるか ドラッグ",
     "ゾーン %d/%d", "いろちがいの%s!",
+    "こうげきの くんれん MAX", "くんれん", "バトルに かつ", "12じかん おせわ", "ミニゲーム", "たべると ふえる、あそぶと へる",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -308,13 +315,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "도감 %u/151",
     "%s%s Lv.%u",
     "%s 놓아줄까요?", "예", "아니오",
-    "배틀 승리: %u", "힘 +%u", "신기록!", "최고: %u", "도망",
+    "배틀 승리: %u", "공격 훈련 +%u", "신기록!", "최고: %u", "도망",
     "점수: %u", "정말 즐거워요!", "+행복",
     "시간 설정", "시", "분", "위로 스와이프: 취소", "언어",
     "메달!", "최고예요!", "%u일 연속!",
     "연속 %u  최고 %u", "유대감", "열매 ???", "라즈열매", "오랭열매", "파인열매",
     "%s   나이 %lud", "이름 탭: 이름변경",
-    "능력치", "공격", "방어", "속도", "무게", "배틀!",
+    "배틀 능력치", "공격", "방어", "속도", "무게", "배틀!",
     "메달 %d/%d", "탭: 뒤로",
     "이름:", "탭하면 뒤로",
     "포만", "기분", "기력", "청결",
@@ -335,6 +342,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "업데이트 확인", "최신 버전", "v%s 로 업데이트", "업데이트 중 %u%%", "업데이트 실패", "친구 %u명이 왔어요!",
     "놀기", "함께 놀기", "누구일까? 대결", "%s: 같이 놀래요!", "준비...", "나", "정답!", "%s 정답!", "아무도 못 맞췄어요", "내가 이겼다!", "%s 승리!", "무승부!", "%s: 도망쳤다!", "몬스터볼 배구", "내 서브!", "득점!", "%s 득점!", "기울이거나 끌기",
     "지역 %d/%d", "이로치 %s!",
+    "공격 훈련 최대", "훈련", "배틀 승리", "12시간 잘 돌보기", "미니게임", "먹으면 늘고, 놀면 줄어요",
   },
 };
 

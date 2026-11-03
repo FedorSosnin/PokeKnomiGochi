@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.26"
+#define FW_VERSION "1.27"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -117,8 +117,8 @@ bool kbOpen = false;          // keyboard for renaming the pet
 char nameBuf[12] = "";
 uint8_t nameLen = 0;
 int cardNameBottom = 84;      // where the card's name (and the species under a nickname) ends: tapping above renames
-uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 progress; the achievements: their pages
-#define CARD_PAGES 3
+uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 training, 3 progress; the achievements: their pages
+#define CARD_PAGES 4
 bool cardAch = false;         // the same screen showing the achievements (swipe right to left from home)
 #define ACH_PAGES 5           // the pet's medals (2 pages), the trainer's (2), the zones' (1): 6 at most a page
 #define cardPageCount() (cardAch ? ACH_PAGES : CARD_PAGES)  // a macro: a function here would come before the sketch's prototypes
@@ -3018,6 +3018,9 @@ void renderBattle() {
         gfx->setTextColor(UI_BAR_BAD);
         snprintf(b, sizeof(b), T(S_STR_GAIN_FMT), bGain);
         battleCenterLine(b, 380);
+      } else if (!bPvp && bWon && pet.trAtk >= 100) {  // a win, but nothing more to train: say so
+        gfx->setTextColor(UI_BAR_BAD);
+        battleCenterLine(T(S_TRAIN_MAXED), 380);
       }
       break;
     }
@@ -4096,7 +4099,7 @@ void renderCardStats() {
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(T(S_BATTLE), 3), 48);
-  printT(T(S_BATTLE));  // the page's title: "STATS"
+  printT(T(S_BATTLE));  // the page's title: "BATTLE STATS"
 
   drawCardStat(118, T(S_STAT_ATK), pet.atkStat(), 260, UI_BAR_BAD);
   drawCardStat(160, T(S_STAT_DEF), pet.defStat(), 260, 0x4C98);
@@ -4123,6 +4126,34 @@ void renderCardStats() {
   drawMap(SPR_TROPHY, 12, x0, wy - 4, 2, false);
   setCur(x0 + 32, wy);
   printT(wins);
+}
+
+// page 2: training, which adds to ATK, DEF and SPD on top of what levels give, 0..100 each,
+// with what trains each one written under its bar; and weight, which food adds and play burns
+// (not a goal, so no MAX)
+void drawCardTrainRow(int y, const char *label, uint8_t tr, uint16_t color, const char *how, bool maxes) {
+  drawCardStat(y, label, tr, 100, color);
+  if (maxes && tr >= 100) {  // full: MAX in place of the number
+    gfx->fillRect(330, y, 60, 16, UI_BG_DAY);
+    gfx->setTextColor(color);
+    setCur(330, y);
+    printT("MAX");
+  }
+  gfx->setTextColor(lerp565(UI_TRACK, UI_INK, 11, 16));
+  setCur(96, y + 22);  // under its own bar, clear of the next row
+  printT(how);
+}
+
+void renderCardTraining() {
+  gfx->setTextColor(UI_INK);
+  setSize(3);
+  setCur(centerX(T(S_TRAINING), 3), 48);
+  printT(T(S_TRAINING));
+  setSize(2);
+  drawCardTrainRow(110, T(S_STAT_ATK), pet.trAtk, UI_BAR_BAD, T(S_TRAIN_HOW_ATK), true);
+  drawCardTrainRow(166, T(S_STAT_DEF), pet.trDef, 0x4C98, T(S_TRAIN_HOW_DEF), true);
+  drawCardTrainRow(222, T(S_STAT_SPE), pet.trSpe, UI_BAR_WARN, T(S_TRAIN_HOW_SPE), true);
+  drawCardTrainRow(278, T(S_STAT_WGT), pet.weight, 0xB3C8, T(S_TRAIN_HOW_WGT), false);
 }
 
 // pages 2 and 3: the pet's medals, then the trainer's, with descriptive label
@@ -4281,6 +4312,7 @@ void renderCard() {
   if (cardAch) renderAchievements(cardPage);
   else if (cardPage == 0) renderCardProfile();
   else if (cardPage == 1) renderCardStats();
+  else if (cardPage == 2) renderCardTraining();
   else renderCardProgress();
 
   // page indicator + help

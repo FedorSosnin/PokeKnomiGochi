@@ -18,8 +18,8 @@
 | **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
 | ![Razz, Oran and Pinap Berries and a candy](images/food.png) | ![The card, with the favorite berry](images/card.png) | ![Pikachu and shiny Pikachu side by side](images/shiny.png) |
 | **Feed it berries and candy** | **Its card and favorite berry** | **Catch the shiny ones too** |
-| ![Every medal, 6 to a page](images/achievements.png) | ![Stats and battle wins](images/stats.png) | ![Level and evolution progress](images/progress.png) |
-| **Achievements, a swipe away** | **Stats and battle wins** | **How close it is to evolving** |
+| ![Every medal, 6 to a page](images/achievements.png) | ![Stats, training and battle wins](images/stats.png) | ![Level and evolution progress](images/progress.png) |
+| **Achievements, a swipe away** | **Stats, training and battle wins** | **How close it is to evolving** |
 
 ## On your phone
 
@@ -35,6 +35,17 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 - **Swipe up** for its card and stats (tap its name there to rename it), **from left to right** for the Pokédex, **from right to left** for your achievements, and **down** for the clock and settings. The round **✕** at the bottom closes any of them.
 - **Battle** from the games menu: pick a zone, search, and catch what you beat to fill your Pokédex. Land the Poké Ball in the small green circle and the catch is sure.
 - On a computer, the mouse is a finger: it presses when you click. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
+
+## Training
+
+- **Winning a battle** adds attack training.
+- **Every 12 hours in a row of good care** adds defense training.
+- **Mini games** add speed training.
+- **Weight** goes up with food (candy the most) and down with play. Over 50, your Pokémon tires twice as fast.
+
+Each one stops at 100. The **Training** page on your Pokémon's card shows how far along each one is, and says **MAX** when it's full.
+
+<img src="images/training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each">
 
 ## Your save
 

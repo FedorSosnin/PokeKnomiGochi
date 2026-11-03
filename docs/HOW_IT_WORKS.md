@@ -55,6 +55,15 @@ Your Pokémon needs at least 15 ⚡ to fight.
 
 A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it. Where the ball lands decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
 
+## Training
+
+- **Winning a battle** adds attack training (+6 a win).
+- **Every 12 hours in a row of good care** adds defense training (+1). Good care means every need stays at 40 or more.
+- **Mini games** add speed training: Tilt Catch, PokeRun and PokeDungeon add 1 for every 5 points.
+- **Weight** isn't training: every berry adds 4 and candy 12 (6 more if it was already 80% full). Games, battles and time burn it off. Over 50, energy drops twice as fast; 20 or less earns the Fit medal.
+
+Each kind of training stops at 100. Swipe up for the card, then left twice: the **Training** page shows each one's bar, with **MAX** when it's full, and what trains it, plus a row for weight. Training belongs to the Pokémon: a new one starts from zero.
+
 ## Zones
 
 There are two ways to start a battle:

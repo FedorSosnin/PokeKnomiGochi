@@ -26,8 +26,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 | **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
 | ![Razz, Oran and Pinap Berries and a candy](docs/images/food.png) | ![The card, with the favorite berry](docs/images/card.png) | ![Pikachu and shiny Pikachu side by side](docs/images/shiny.png) |
 | **Feed it berries and candy** | **Its card and favorite berry** | **Catch the shiny ones too** |
-| ![Every medal, 6 to a page](docs/images/achievements.png) | ![Stats and battle wins](docs/images/stats.png) | ![Level and evolution progress](docs/images/progress.png) |
-| **Achievements, a swipe away** | **Stats and battle wins** | **How close it is to evolving** |
+| ![Every medal, 6 to a page](docs/images/achievements.png) | ![Stats, training and battle wins](docs/images/stats.png) | ![Level and evolution progress](docs/images/progress.png) |
+| **Achievements, a swipe away** | **Stats, training and battle wins** | **How close it is to evolving** |
 
 ## Install
 
@@ -72,7 +72,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | **Tap the bottom icons** | Feed it, open games, turn the light off for bed, or give it a bath |
 | **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
-| **Swipe up** | See its card, stats and progress |
+| **Swipe up** | See its card: profile, battle stats, training and progress |
 | **Tap its name on the card** (✏️) | Rename it |
 | **Swipe from left to right** | Open the Pokédex |
 | **Swipe from right to left** | See your achievements: every medal, 6 to a page |
@@ -90,6 +90,19 @@ A fully evolved Pokémon that is at least 3 days old offers a goodbye, which you
 Press the button to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up, and each move shows a little of its type: flames, splashing water, leaves, sparks, ice and more.
 
 Winning trains your Pokémon. Losing earns nothing and leaves it nearly out of energy, so it has to sleep before it can fight again.
+
+### Training
+
+Your Pokémon's ATK, DEF and SPD grow as it levels up, and training adds more on top:
+
+- **Winning a battle** adds attack training.
+- **Every 12 hours in a row of good care** (every need at 40 or more) adds defense training.
+- **Mini games** (Tilt Catch, PokeRun, PokeDungeon) add speed training.
+- **Weight** isn't training: food adds it (candy the most), and games, battles and time burn it off. Over 50, your Pokémon tires twice as fast.
+
+Each kind of training stops at 100. The card's **Training** page (swipe up, then left twice) shows how far along each one is, with **MAX** when it's full, and your Pokémon's weight. Once attack training is maxed, a win says so instead of adding more. A new Pokémon starts training from zero.
+
+<img src="docs/images/training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each">
 
 About 1 wild Pokémon in 50 is **shiny**: official shiny colors with gold sparkles around it. The Pokédex keeps shiny and regular forms apart, shows both side by side once you have both, and each can be traded on its own. Catching everything in a zone earns that zone's medal.
 

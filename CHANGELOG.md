@@ -8,6 +8,13 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.27] - 2026-11-03
+
+- **Training page:** the card has a new page after the stats, showing ATK, DEF and SPD training (0–100) at full size, with **MAX** when it's full and what trains each one: winning battles trains attack, every 12 hours in a row of good care trains defense, and mini games train speed. Weight has a row too: food adds it, play burns it.
+- **Battle Stats:** the stats page is now called Battle Stats.
+- **Clearer wins:** a won battle says "ATK TRAINING +6", or "ATK TRAINING MAXED" once there's nothing left to train.
+- The README and How it works list what trains each stat.
+
 ## [1.26] - 2026-11-03
 
 - **A close button everywhere:** a round gray ✕ at the bottom of every menu and screen closes it: the games menu, the card, the Pokédex, the zones, the clock and settings, the buddy menu, Play together, the egg choice and trades. It replaces "tap: back", "swipe up to go back" and the Back buttons. Swipes still work, and games in play still quit with a swipe up.
