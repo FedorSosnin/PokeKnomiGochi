@@ -497,6 +497,20 @@ static const char* const SPR_CANDY[HOME_ICON_N] = {  // 18x18, a candy
   "...kllk...........",
   "....kk............",
 };
+// a pencil beside the name on the card: the name can be changed
+static const char* const SPR_PENCIL[10] = {  // 10x10
+  ".......kk.",
+  "......kppk",
+  ".....kfkpk",
+  "....kffkk.",
+  "...kffYk..",
+  "..kffYk...",
+  ".kcfYk....",
+  ".kcck.....",
+  "kkkk......",
+  "..........",
+};
+
 static const char* const SPR_HOME_BALL[HOME_ICON_N] = {  // 18x18
   "......kkkkkk......",
   "....kkrrrrrrkk....",

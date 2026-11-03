@@ -2672,19 +2672,19 @@ void renderCatch() {
     float k = (now - bBallT) / 1500.0f;
     if (k > 1) k = 1;
     int y = 360 - (int)(200 * k), s = k < 0.5f ? 3 : 2;  // moves away
-    drawMap(SPR_ICON_PLAY, 16, (int)bBallX - 8 * s, y - 8 * s, s, false);
+    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bBallX - 9 * s, y - 9 * s, s, false);
   } else if (bPhase == BP_MISS) {  // bounces and falls: clearly it didn't go in
     float k = (now - bPhaseT) / 700.0f;
     if (k > 1) k = 1;
-    drawMap(SPR_ICON_PLAY, 16, (int)(bBallX + (bBallX < foeX ? -70 : 70) * k) - 16, 144 + (int)(200 * k * k), 2, false);
+    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)(bBallX + (bBallX < foeX ? -70 : 70) * k) - 18, 142 + (int)(200 * k * k), 2, false);
   } else if (bPhase == BP_SHAKE) {  // on the ground, rocking to one side on each count
     uint32_t t = now - bPhaseT;
     uint32_t in = t % CATCH_SHAKE_MS;
     float k = in < 420 ? sinf(in * 3.14159f / 420) : 0;  // a rock, then still until the next count
     int side = (t / CATCH_SHAKE_MS) % 2 ? 1 : -1;
-    drawMap(SPR_ICON_PLAY, 16, (int)bCatchX - 24 + (int)(side * 14 * k), 168 + (int)(4 * k), 3, false);
+    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bCatchX - 27 + (int)(side * 14 * k), 165 + (int)(4 * k), 3, false);
   } else if (bPhase == BP_CAUGHT) {
-    drawMap(SPR_ICON_PLAY, 16, (int)bFoeX - 24, 168, 3, false);
+    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, 165, 3, false);
   }
 
   gfx->fillRect(0, BTL_BAND_Y, 466, 466 - BTL_BAND_Y, UI_BG_DAY);
@@ -2695,7 +2695,7 @@ void renderCatch() {
   switch (bPhase) {
     case BP_AIM:
       battleCenterLine(T(S_THROW_HINT), 350);
-      drawMap(SPR_ICON_PLAY, 16, CX - 32, 376, 4, false);  // the pokeball is the button
+      drawMap(SPR_HOME_BALL, HOME_ICON_N, CX - 36, 372, 4, false);  // the pokeball is the button
       for (uint8_t i = 0; i < bBalls; i++) gfx->fillCircle(CX + 56 + i * 16, 408, 5, UI_BAR_BAD);
       break;
     case BP_THROW:
@@ -3829,8 +3829,10 @@ void renderCardProfile() {
   setSize(3);
   int hts = (textW(head, 3) <= 198) ? 3 : 2;
   setSize(hts);
-  setCur(centerX(head, hts), hts == 3 ? 34 : 40);
+  int hw = textW(head, hts);
+  setCur(CX - (hw + 24) / 2, hts == 3 ? 34 : 40);  // room for the pencil after it
   printT(head);
+  drawMap(SPR_PENCIL, 10, CX + (hw + 24) / 2 - 20, hts == 3 ? 34 : 38, 2, false);  // the name can be changed
   if (pet.nick[0]) {  // real species under the nickname
     const char *sp = dexName(pet.speciesId);
     char par[32];
@@ -3866,11 +3868,20 @@ void renderCardProfile() {
            (unsigned long)(pet.ageMinutes / 1440));
   gfx->setTextColor(UI_INK);
   setSize(2);
-  setCur(centerX(info, 2), 296);
+  if (pet.berryKnown) {  // the favorite berry's own icon before its name
+    static const char *const *const BERRY_ICON[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
+    int iw = textW(info, 2), x0 = CX - (iw + 42) / 2;
+    drawMap(BERRY_ICON[pet.lovesBerry(0) ? 0 : pet.lovesBerry(1) ? 1 : 2], HOME_ICON_N, x0, 286, 2, false);
+    setCur(x0 + 42, 296);
+  } else {
+    setCur(centerX(info, 2), 296);
+  }
   printT(info);
 
-  gfx->setTextColor(UI_TRACK);
-  setCur(centerX(T(S_RENAME_HINT), 2), 332);
+  // how to rename, plainly: the pencil by the name, and this
+  int rw = textW(T(S_RENAME_HINT), 2);
+  drawMap(SPR_PENCIL, 10, CX - (rw + 26) / 2, 330, 2, false);
+  setCur(CX - (rw + 26) / 2 + 26, 332);
   printT(T(S_RENAME_HINT));
 }
 
