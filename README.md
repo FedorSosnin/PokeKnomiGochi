@@ -12,7 +12,7 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 |:--:|:--:|:--:|
 | ![Gengar at home](docs/images/home.png) | ![Charizard's fire attack on a wild Pikachu](docs/images/battle.png) | ![Aiming a Poké Ball inside the catch rings](docs/images/catch.png) |
 | **Raise your Pokémon** | **Battle wild Pokémon** | **Aim for the green circle** |
-| ![A successful catch](docs/images/caught.png) | ![The Pokédex](docs/images/pokedex.png) | ![A Pokédex entry](docs/images/pokedex-entry.png) |
+| ![A catch bursting with light](docs/images/caught.png) | ![The Pokédex](docs/images/pokedex.png) | ![A Pokédex entry](docs/images/pokedex-entry.png) |
 | **Catch what you beat** | **Fill the Pokédex** | **Read about what you've caught** |
 | ![Games menu](docs/images/games.png) | ![PokeRun](docs/images/pokerun.png) | ![Who's That Pokémon?](docs/images/quiz.png) |
 | **Play mini games** | **PokeRun** | **Who's That Pokémon?** |
@@ -26,6 +26,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 | **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
 | ![Razz, Oran and Pinap Berries and a candy](docs/images/food.png) | ![The card, with the favorite berry](docs/images/card.png) | ![Pikachu and shiny Pikachu side by side](docs/images/shiny.png) |
 | **Feed it berries and candy** | **Its card and favorite berry** | **Catch the shiny ones too** |
+| ![Every medal, 6 to a page](docs/images/achievements.png) | ![Stats and battle wins](docs/images/stats.png) | ![Level and evolution progress](docs/images/progress.png) |
+| **Achievements, a swipe away** | **Stats and battle wins** | **How close it is to evolving** |
 
 ## Install
 

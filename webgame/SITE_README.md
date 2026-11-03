@@ -18,6 +18,8 @@
 | **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
 | ![Razz, Oran and Pinap Berries and a candy](images/food.png) | ![The card, with the favorite berry](images/card.png) | ![Pikachu and shiny Pikachu side by side](images/shiny.png) |
 | **Feed it berries and candy** | **Its card and favorite berry** | **Catch the shiny ones too** |
+| ![Every medal, 6 to a page](images/achievements.png) | ![Stats and battle wins](images/stats.png) | ![Level and evolution progress](images/progress.png) |
+| **Achievements, a swipe away** | **Stats and battle wins** | **How close it is to evolving** |
 
 ## On your phone
 

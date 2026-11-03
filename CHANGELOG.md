@@ -8,6 +8,14 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.26] - 2026-11-03
+
+- **A close button everywhere:** a round gray ✕ at the bottom of every menu and screen closes it: the games menu, the card, the Pokédex, the zones, the clock and settings, the buddy menu, Play together, the egg choice and trades. It replaces "tap: back", "swipe up to go back" and the Back buttons. Swipes still work, and games in play still quit with a swipe up.
+- **Achievements get their own screen:** swipe from right to left on the home screen. Every medal, at most 6 to a page in a 2×3 grid so none is cut off, earned ones green with a white check mark.
+- **Swipes:** from left to right opens the Pokédex, from right to left the achievements, up the card (now profile, stats and progress) and down the clock.
+- **Battle Wins:** the stats page says "Battle Wins", higher up and with a trophy.
+- **Caught!** The Poké Ball bursts with light when a catch holds.
+
 ## [1.25] - 2026-11-03
 
 - **New look for the home screen:** the four buttons are bigger pixel-art icons without boxes: a Razz Berry, a Poké Ball, a crescent moon and a bubble.
