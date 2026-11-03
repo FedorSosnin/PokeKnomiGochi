@@ -2748,9 +2748,12 @@ static bool fxFlies(uint8_t ty) {
          ty == TY_PSYCHIC || ty == TY_POISON || ty == TY_GHOST || ty == TY_DRAGON;
 }
 
+#define FX_SIZE 3  // how big the pieces are, in halves: 3 = one and a half times the first size
+
 // one piece of the element at (x, y); i tells the pieces apart, k is its age 0..1
 static void fxPiece(uint8_t ty, int x, int y, int i, float k) {
-  int r = (int)(5 - 2 * k);
+  int r = (int)((5 - 2 * k) * FX_SIZE / 2);
+  const int u = FX_SIZE;  // the other sizes, in halves too
   switch (ty) {
     case TY_FIRE:
     case TY_DRAGON: {  // a flame: round below, pointed above
@@ -2765,25 +2768,25 @@ static void fxPiece(uint8_t ty, int x, int y, int i, float k) {
       gfx->fillRect(x - 1, y - r + 1, 2, 2, FX_WHITE);
       break;
     case TY_GRASS: {  // a leaf, turning as it goes
-      int dx = (i + (int)(k * 6)) % 2 ? 3 : -3;
-      gfx->fillCircle(x - dx / 2, y, 3, FX_GREEN);
-      gfx->fillCircle(x + dx / 2, y - 1, 3, FX_GREEN);
+      int dx = ((i + (int)(k * 6)) % 2 ? 3 : -3) * u / 2;
+      gfx->fillCircle(x - dx / 2, y, 3 * u / 2, FX_GREEN);
+      gfx->fillCircle(x + dx / 2, y - 1, 3 * u / 2, FX_GREEN);
       gfx->drawLine(x - dx, y + 1, x + dx, y - 2, FX_DARK_GREEN);
       break;
     }
     case TY_BUG:
-      gfx->fillCircle(x, y, 2, i % 2 ? FX_GREEN : FX_DARK_GREEN);
+      gfx->fillCircle(x, y, 2 * u / 2, i % 2 ? FX_GREEN : FX_DARK_GREEN);
       break;
     case TY_ELECTRIC: {  // a short zigzag spark
       if ((millis() / 70 + i) % 3 == 0) break;  // they flicker
-      int z = i % 2 ? 5 : -5;
+      int z = (i % 2 ? 5 : -5) * u / 2, h = 10 * u / 2, m = 3 * u / 2;
       for (int o = -1; o <= 2; o++) {  // thick, with a dark edge, so it shows against a light sky
         uint16_t c = o == 2 ? FX_ORANGE : FX_YELLOW;
-        gfx->drawLine(x + o, y - 10, x + z + o, y - 3, c);
-        gfx->drawLine(x + z + o, y - 3, x - z + o, y + 3, c);
-        gfx->drawLine(x - z + o, y + 3, x + o, y + 10, c);
+        gfx->drawLine(x + o, y - h, x + z + o, y - m, c);
+        gfx->drawLine(x + z + o, y - m, x - z + o, y + m, c);
+        gfx->drawLine(x - z + o, y + m, x + o, y + h, c);
       }
-      gfx->drawLine(x, y - 10, x + z, y - 3, FX_WHITE);
+      gfx->drawLine(x, y - h, x + z, y - m, FX_WHITE);
       break;
     }
     case TY_ICE:  // a little crystal
@@ -2798,11 +2801,11 @@ static void fxPiece(uint8_t ty, int x, int y, int i, float k) {
       break;
     case TY_ROCK:
     case TY_GROUND:  // pebbles
-      gfx->fillRoundRect(x - 3, y - 3, 7, 6, 2, i % 2 ? FX_BROWN : FX_TAN);
+      gfx->fillRoundRect(x - 3 * u / 2, y - 3 * u / 2, 7 * u / 2, 6 * u / 2, 3, i % 2 ? FX_BROWN : FX_TAN);
       break;
     case TY_FLYING:  // a gust
-      gfx->fillRect(x - 8, y, 16, 1, FX_WHITE);
-      gfx->fillRect(x - 4, y + 3, 10, 1, FX_WHITE);
+      gfx->fillRect(x - 8 * u / 2, y, 16 * u / 2, 2, FX_WHITE);
+      gfx->fillRect(x - 4 * u / 2, y + 3 * u / 2, 10 * u / 2, 2, FX_WHITE);
       break;
     default:  // NORMAL, FIGHTING, PSYCHIC on its way: an impact star
       gfx->drawLine(x - r - 2, y, x + r + 2, y, i % 2 ? FX_WHITE : FX_YELLOW);
@@ -2818,7 +2821,7 @@ static void fxBurst(uint8_t ty, int cx, int cy, float k) {
     for (int j = 0; j < 3; j++) {
       float kk = k * 1.4f - j * 0.2f;
       if (kk <= 0 || kk >= 1) continue;
-      int rr = 8 + (int)(44 * kk);
+      int rr = (8 + (int)(44 * kk)) * FX_SIZE / 2;
       gfx->drawCircle(cx, cy, rr, FX_PINK);
       gfx->drawCircle(cx, cy, rr + 1, FX_PINK);
     }
@@ -2827,22 +2830,22 @@ static void fxBurst(uint8_t ty, int cx, int cy, float k) {
   const int n = 8;
   for (int i = 0; i < n; i++) {
     float a = i * 6.28318f / n + 0.4f;
-    float dist = 10 + 40 * k;
+    float dist = (10 + 40 * k) * FX_SIZE / 2;
     int x = cx + (int)(cosf(a) * dist), y = cy + (int)(sinf(a) * dist * 0.75f);
     switch (ty) {
       case TY_FIRE: case TY_DRAGON: case TY_POISON: case TY_GHOST:
-        y -= (int)(26 * k);  // they rise
+        y -= (int)(26 * k) * FX_SIZE / 2;  // they rise
         break;
       case TY_WATER: case TY_GRASS:
-        y += (int)(38 * k * k) - 8;  // thrown out, then they fall
+        y += ((int)(38 * k * k) - 8) * FX_SIZE / 2;  // thrown out, then they fall
         if (ty == TY_GRASS) x += (int)(6 * sinf(k * 9 + i));
         break;
       case TY_ROCK: case TY_GROUND:  // dropped on it from above
-        x = cx + (i - n / 2) * 11;
+        x = cx + (i - n / 2) * 11 * FX_SIZE / 2;
         y = cy - 70 + (int)(80 * k * k) + (i % 3) * 6;
         break;
       case TY_ELECTRIC:
-        dist = 14 + 20 * k;
+        dist = (14 + 20 * k) * FX_SIZE / 2;
         x = cx + (int)(cosf(a) * dist);
         y = cy + (int)(sinf(a) * dist);
         break;
