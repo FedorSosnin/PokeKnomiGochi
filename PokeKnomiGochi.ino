@@ -1790,10 +1790,8 @@ bool render() {
       int x0 = CX - count * 33;
       gfx->fillRoundRect(x0, 288, count * 66, 64, 14, UI_WHITE);
       gfx->drawRoundRect(x0, 288, count * 66, 64, 14, inkColor());
-      drawMap(SPR_ICON_FOOD, 16, x0 + 9, 296, 3, false);
-      drawMap(SPR_ICON_BERRY_B, 16, x0 + 75, 296, 3, false);
-      drawMap(SPR_ICON_BERRY_G, 16, x0 + 141, 296, 3, false);
-      if (count == 4) drawMap(SPR_ICON_CANDY, 16, x0 + 207, 296, 3, false);
+      static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_NANAB, SPR_BERRY_PINAP, SPR_CANDY };
+      for (int i = 0; i < count; i++) drawMap(FOOD[i], HOME_ICON_N, x0 + 6 + 66 * i, 293, 3, false);
     }
   }
 
@@ -6565,7 +6563,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (feedMenuUntil) {
-    static const char *const *const ICON[4] = { SPR_ICON_FOOD, SPR_ICON_BERRY_B, SPR_ICON_BERRY_G, SPR_ICON_CANDY };
+    static const char *const *const ICON[4] = { SPR_HOME_FOOD, SPR_BERRY_NANAB, SPR_BERRY_PINAP, SPR_CANDY };
     int count = pet.canHaveCandy() ? 4 : 3;
     int x0 = CX - count * 33;
     if (y < 288 || y > 352 || x < x0 || x > x0 + count * 66) return false;
@@ -6605,7 +6603,7 @@ void pressOverlay() {
   const uint16_t ring = TYPE_ACCENT[TY_WATER];
   for (int i = 0; i < 4; i++) gfx->drawRoundRect(t.x - 3 - i, t.y - 3 - i, t.w + 6 + 2 * i, t.h + 6 + 2 * i, 12 + i, ring);
   if (t.icon) {
-    const int s = 5, side = HOME_ICON_N * s + 24;  // only the home buttons carry an icon
+    const int s = 5, side = HOME_ICON_N * s + 24;  // only the home buttons and the food menu carry an icon
     PressBox b = pressPopupBox(tXl, tYl, side + 16, side + 16);
     gfx->fillRoundRect(b.x, b.y, b.w, b.h, 16, ring);
     gfx->fillRoundRect(b.x + 8, b.y + 8, side, side, 12, UI_WHITE);
