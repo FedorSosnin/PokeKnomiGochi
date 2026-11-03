@@ -16,6 +16,9 @@ if [[ ! -d $SITE/.git ]]; then
   $GIT clone -q https://github.com/$REPO.git $SITE
 fi
 $GIT -C $SITE pull -q --ff-only 2>/dev/null || true
+# commit as this repo's author when the site's checkout has no name of its own
+[[ -n $(git -C $SITE config user.email) ]] || git -C $SITE config user.email "$(git config user.email)"
+[[ -n $(git -C $SITE config user.name) ]] || git -C $SITE config user.name "$(git config user.name)"
 rsync -a --delete --exclude .git --exclude CNAME web/play/ $SITE/
 echo $DOMAIN > $SITE/CNAME
 cp webgame/SITE_README.md $SITE/README.md

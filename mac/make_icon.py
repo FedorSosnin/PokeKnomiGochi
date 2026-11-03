@@ -18,7 +18,7 @@ BAND = 84 / 1024       # the black band across the middle
 SCREEN = 600 / 1024    # diameter of the round screen
 RING = 34 / 1024       # black ring around the screen
 # the part of the frame shown in the screen: a square around the pet, so it fills the circle
-CROP_X, CROP_Y, CROP_HALF = 230, 246, 66  # Gengar, tongue and all, above the stats
+CROP_X, CROP_Y, CROP_HALF = 225, 252, 60  # centred on Gengar, tongue and all, above the stats
 RED, WHITE, BLACK = (222, 33, 33), (255, 255, 255), (0, 0, 0)
 
 
