@@ -53,7 +53,7 @@ Your Pokémon needs at least 15 ⚡ to fight.
 | 🤝 **Win against a buddy** | +15 | | | | +2 | |
 | 🤝 **Loss against a buddy** | +8 | | | | +2 | |
 
-A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it. Where the ball lands decides how likely it is to hold: in the small green circle 100%, in the second ring 50%, in the outer white ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
+A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it. Where the ball lands decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
 
 ## Zones
 

@@ -138,7 +138,7 @@ TEST(catch_, the_shakes_hold_as_often_as_the_chance) {
   }
 }
 
-// the closer to the middle, the surer: the green circle always holds, the second ring half the time
+// the closer to the middle, the surer: the green circle always holds, the second ring three times in four
 TEST(catch_, the_rings_reward_a_good_aim) {
   CHECK_EQ(catchChance(233, 233), CATCH_CHANCE_IN);
   CHECK_EQ(catchChance(233 + CATCH_RING_IN - 1, 233), CATCH_CHANCE_IN);

@@ -8,10 +8,10 @@
 #define CATCH_SHAKE_MS 900    // one rock to the side, with its tone
 // Three rings around the Pokemon: the closer to its middle the ball lands, the surer the catch
 #define CATCH_RING_IN 12      // logical px: the small green circle, a sure catch
-#define CATCH_RING_MID 28     // the second ring: half the time
+#define CATCH_RING_MID 28     // the second ring, about the Pokemon's body: most of the time
 #define CATCH_RADIUS 48       // the outer ring: still a hit, but it rarely holds; past it, a miss
 #define CATCH_CHANCE_IN 100
-#define CATCH_CHANCE_MID 50
+#define CATCH_CHANCE_MID 75
 #define CATCH_CHANCE_OUT 25
 
 // how likely a ball landing here is to hold (%), 0 for a miss

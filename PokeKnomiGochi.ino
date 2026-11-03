@@ -2625,8 +2625,8 @@ void catchBanner(const char *s, uint16_t bg) {
   gfx->setTextColor(UI_INK);
 }
 
-// the catch rings around the Pokemon, as in Pokemon GO: a white ring for where a ball still hits,
-// a fainter one inside it, and the small green circle that always holds
+// the catch rings around the Pokemon, as in Pokemon GO: a faint ring for where a ball still hits,
+// a bold white one around the body (three in four hold), and the small green circle that always holds
 // centred on the Pokemon's body: halfway up what its sprite fills above the ground (drawn at 3x on 216)
 int catchRingY() {
   const PmdAct &a = wildPmd.acts[PMD_IDLE];
@@ -2641,8 +2641,8 @@ int catchRingY() {
 }
 void drawCatchRings(int cx) {
   int cy = catchRingY();
-  for (int i = 0; i < 2; i++) gfx->drawCircle(cx, cy, CATCH_RADIUS - i, UI_WHITE);
-  gfx->drawCircle(cx, cy, CATCH_RING_MID, C565(0xdd, 0xe4, 0xea));
+  gfx->drawCircle(cx, cy, CATCH_RADIUS, C565(0xdd, 0xe4, 0xea));
+  for (int i = 0; i < 2; i++) gfx->drawCircle(cx, cy, CATCH_RING_MID - i, UI_WHITE);
   for (int i = 0; i < 3; i++) gfx->drawCircle(cx, cy, CATCH_RING_IN - i, C565(0x4c, 0xd9, 0x3c));
 }
 

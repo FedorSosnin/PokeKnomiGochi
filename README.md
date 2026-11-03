@@ -86,7 +86,7 @@ Winning trains your Pokémon. Losing leaves it nearly out of energy, so it has t
 
 About 1 wild Pokémon in 50 is **shiny**: official shiny colors with gold sparkles around it. The Pokédex keeps shiny and regular forms apart, shows both side by side once you have both, and each can be traded on its own. Catching everything in a zone earns that zone's medal.
 
-If you beat a Pokémon you haven't caught yet, you get three Poké Balls. Tap to throw, then lean the Knomi left and right to steer. Rings show around the Pokémon while you aim: land the ball in the small green circle and it always holds, in the next ring half the time, and in the outer ring only one time in four. The ball rocks three times while it counts to 3, then the Pokémon joins your Pokédex or breaks out and runs away.
+If you beat a Pokémon you haven't caught yet, you get three Poké Balls. Tap to throw, then lean the Knomi left and right to steer. Rings show around the Pokémon while you aim: land the ball in the small green circle and it always holds, in the next ring three times in four, and in the outer ring only one time in four. The ball rocks three times while it counts to 3, then the Pokémon joins your Pokédex or breaks out and runs away.
 
 ### Games
 
