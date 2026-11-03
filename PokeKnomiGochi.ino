@@ -2649,6 +2649,38 @@ void drawCatchRings(int cx) {
 
 static const uint16_t ZONE_GROUND[ZONE_COUNT] = { C565(0x4f, 0x9a, 0x4a), C565(0xec, 0xd5, 0x93), C565(0x54, 0x4b, 0x63), C565(0x25, 0x28, 0x3a), C565(0x79, 0xbd, 0x4f) };
 
+// caught: the ball bursts with light, a flash ring, rays that shoot out and fade, then a few
+// sparkles twinkling around it
+void drawCatchShine(int cx, int cy, uint32_t t) {
+  const uint16_t gold = C565(0xff, 0xd9, 0x5e), pale = C565(0xff, 0xf6, 0xc8);
+  if (t < 450) {  // the flash: rings spreading out
+    int rr = 28 + (int)(t * 0.16f);
+    for (int i = 0; i < 3; i++) gfx->drawCircle(cx, cy, rr + i, i == 1 ? UI_WHITE : pale);
+    if (t > 120) for (int i = 0; i < 2; i++) gfx->drawCircle(cx, cy, rr - 18 + i, gold);
+  }
+  if (t < 1100) {  // the rays: out, then shorter as they fade
+    float k = t / 1100.0f, len = 46 * sinf(k * 3.14159f), start = 32 + 20 * k;
+    for (int i = 0; i < 12; i++) {
+      float a = i * 6.28318f / 12 + 0.13f;
+      int x0 = cx + (int)(cosf(a) * start), y0 = cy + (int)(sinf(a) * start);
+      int x1 = cx + (int)(cosf(a) * (start + len)), y1 = cy + (int)(sinf(a) * (start + len));
+      uint16_t c = i % 2 ? UI_WHITE : gold;
+      gfx->drawLine(x0, y0, x1, y1, c);
+      gfx->drawLine(x0 + 1, y0, x1 + 1, y1, c);
+      gfx->drawLine(x0, y0 + 1, x1, y1 + 1, c);
+    }
+  }
+  if (t > 250 && t < 3000) {  // sparkles, each on its own beat
+    for (int i = 0; i < 6; i++) {
+      float a = i * 6.28318f / 6 + 0.5f;
+      int d = 52 + (i % 2) * 18;
+      uint32_t beat = (t + i * 230) % 900;
+      int sz = beat < 300 ? 13 * beat / 300 : beat < 600 ? 13 * (600 - beat) / 300 : 0;
+      drawSparkle(cx + (int)(cosf(a) * d), cy + (int)(sinf(a) * d * 0.8f), sz);
+    }
+  }
+}
+
 void renderCatch() {
   uint32_t now = millis();
   drawGameScene();
@@ -2685,6 +2717,7 @@ void renderCatch() {
     int side = (t / CATCH_SHAKE_MS) % 2 ? 1 : -1;
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bCatchX - 27 + (int)(side * 14 * k), 165 + (int)(4 * k), 3, false);
   } else if (bPhase == BP_CAUGHT) {
+    drawCatchShine((int)bFoeX, 165 + 27, now - bPhaseT);
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, 165, 3, false);
   }
 
