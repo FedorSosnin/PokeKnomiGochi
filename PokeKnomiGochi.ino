@@ -1225,7 +1225,8 @@ void onTap(int16_t x, int16_t y) {
       startBattle();
     }
 #endif
-    else {
+    else if (closeHit(x, y)) {
+      sfxPlay(SFX_TAP);
       cardOpen = false;
     }
     return;
@@ -2030,9 +2031,7 @@ void renderGamesMenu() {
     setCur(centerX(gameLabel(i), 2), y + 16);
     printT(gameLabel(i));
   }
-  gfx->setTextColor(UI_INK);
-  setCur(centerX(T(S_SWIPE_QUIT), 2), GAMES_ROW_Y + GAMES_COUNT * (GAMES_ROW_H + GAMES_ROW_GAP) + 4);
-  printT(T(S_SWIPE_QUIT));
+  drawCloseButton();  // any tap outside the rows closes it too
   gfx->flush();
 }
 
@@ -3820,9 +3819,7 @@ void renderSettings() {
     setCur(centerX(m, 2), UPD_BTN_Y + 60);
     printT(m);
   }
-  gfx->setTextColor(UI_TRACK);
-  setCur(centerX(T(S_CLOCK_CANCEL), 2), 410);
-  printT(T(S_CLOCK_CANCEL));
+  drawCloseButton();
   gfx->flush();
 }
 #endif
@@ -3892,21 +3889,25 @@ void renderClock() {
   setCur(CX - 18, 352);
   printT("OK");
 
-  gfx->setTextColor(UI_TRACK);
-  setSize(2);
-  setCur(centerX(T(S_CLOCK_CANCEL), 2), 410);
-  printT(T(S_CLOCK_CANCEL));
+  drawCloseButton();
 
   // firmware version (discreet, at the very bottom)
   char ver[28];
   snprintf(ver, sizeof(ver), "PokeKnomiGochi v%s", FW_VERSION);
+  gfx->setTextColor(UI_TRACK);
   setSize(1);
-  setCur(centerX(ver, 1), 436);
+  setCur(centerX(ver, 1), 449);
   printT(ver);
   gfx->flush();
 }
 
 void clockTap(int16_t x, int16_t y) {
+  if (closeHit(x, y) && wifiSetupState() == WS_OFF) {  // as swiping up does: nothing set
+    sfxPlay(SFX_TAP);
+    wifiSetupStop();
+    clockOpen = false;
+    return;
+  }
 #ifdef BOARD_KNOMI_V2
   if (clockPage == 1) {
     settingsTap(x, y);
@@ -4209,10 +4210,7 @@ void renderCard() {
     if (i == cardPage) gfx->fillCircle(dx, 374, 5, UI_INK);
     else gfx->drawCircle(dx, 374, 4, UI_INK);
   }
-  gfx->setTextColor(UI_TRACK);
-  setSize(2);
-  setCur(centerX(T(S_BACK), 2), 398);
-  printT(T(S_BACK));
+  drawCloseButton();
   gfx->flush();
 }
 
@@ -4283,7 +4281,9 @@ void keyboardTap(int16_t x, int16_t y) {
 // ---------- pokedex gallery ----------
 
 #define GAL_X 73
-#define GAL_Y 84
+#define GAL_Y 72
+#define GAL_DOTS_Y 400   // a grid's page dots, just under it, well clear of the close button
+#define GAL_CLOSE_Y 432  // and the close button under them
 #define GAL_CELL 80
 
 // draws a thumbnail centered in its cell; sil=true paints it in ink
@@ -4382,10 +4382,7 @@ void renderDexDetail(int16_t dex) {
     } else if (const uint8_t *t = thumbs.get(dex)) {
       drawThumb(t, CX - GAL_CELL, 135, 4, true);
     }
-    gfx->setTextColor(UI_INK);
-    setSize(2);
-    setCur(centerX(T(S_DETAIL_BACK), 2), 408);
-    printT(T(S_DETAIL_BACK));
+    drawCloseButton();  // a tap anywhere goes back too
     gfx->flush();
 }
 
@@ -4431,9 +4428,10 @@ void renderGallery() {
   }
   // page dots
   for (int i = 0; i < 10; i++) {
-    if (i == galleryPage) gfx->fillCircle(170 + i * 14, 436, 4, UI_INK);
-    else gfx->drawCircle(170 + i * 14, 436, 3, UI_INK);
+    if (i == galleryPage) gfx->fillCircle(170 + i * 14, GAL_DOTS_Y, 4, UI_INK);
+    else gfx->drawCircle(170 + i * 14, GAL_DOTS_Y, 3, UI_INK);
   }
+  drawCloseButtonAt(GAL_CLOSE_Y);
   gfx->flush();
 }
 
@@ -4444,7 +4442,8 @@ void galleryTap(int16_t x, int16_t y) {
     galleryDirty = true;
     return;
   }
-  if (y < 72) {  // tap the header = exit
+  if (y < 66 || closeHitAt(x, y, GAL_CLOSE_Y)) {  // the close button (or the header) = exit
+    sfxPlay(SFX_TAP);
     galleryOpen = false;
     galleryUnload();
     return;
@@ -4464,8 +4463,6 @@ void galleryTap(int16_t x, int16_t y) {
 
 #define PICK_BTN_Y 316
 #define PICK_BTN_H 56
-#define PICK_BACK_Y 384
-#define PICK_BACK_H 44
 
 void renderEggPick() {
   if (eggPickDetail) {  // animated: always redrawn
@@ -4485,11 +4482,7 @@ void renderEggPick() {
     setSize(3);
     setCur(centerX(T(S_CHOOSE_BTN), 3), PICK_BTN_Y + 16);
     printT(T(S_CHOOSE_BTN));
-    gfx->fillRoundRect(CX - 80, PICK_BACK_Y, 160, PICK_BACK_H, 12, UI_TRACK);
-    gfx->setTextColor(UI_INK);
-    setSize(2);
-    setCur(centerX(T(S_BACK_BTN), 2), PICK_BACK_Y + 14);
-    printT(T(S_BACK_BTN));
+    drawCloseButton();
     gfx->flush();
     return;
   }
@@ -4519,8 +4512,8 @@ void drawOwnedGrid(const char *title, int page, int16_t locked) {
   if (pages > 1) {
     for (int i = 0; i < pages; i++) {
       int dotX = CX + (i * 2 - (pages - 1)) * 7;
-      if (i == page) gfx->fillCircle(dotX, 436, 4, UI_INK);
-      else gfx->drawCircle(dotX, 436, 3, UI_INK);
+      if (i == page) gfx->fillCircle(dotX, GAL_DOTS_Y, 4, UI_INK);
+      else gfx->drawCircle(dotX, GAL_DOTS_Y, 3, UI_INK);
     }
   }
 }
@@ -4537,7 +4530,7 @@ void eggPickTap(int16_t x, int16_t y) {
     if (y >= PICK_BTN_Y && y < PICK_BTN_Y + PICK_BTN_H && abs(x - CX) <= 110) {
       pet.chooseEgg(eggPickDetail);
       sfxPlay(SFX_TAP);
-    } else if (y >= PICK_BACK_Y && y < PICK_BACK_Y + PICK_BACK_H && abs(x - CX) <= 80) {
+    } else if (closeHit(x, y)) {
       sfxPlay(SFX_TAP);
     } else {
       return;
@@ -5028,13 +5021,13 @@ int buddyAt(int16_t x, int16_t y) {
   return -1;
 }
 
-// the buddy menu's rows: Battle, Trade, Play, Back
-#define BUDDY_ROWS 4
+// the buddy menu's rows: Battle, Trade, Play (the close button under them)
+#define BUDDY_ROWS 3
 #define BUDDY_ROW_Y 172
 #define BUDDY_ROW_STEP 58
 #define BUDDY_ROW_H 48
-static const StrId BUDDY_ROW_LABEL[BUDDY_ROWS] = { S_BUDDY_BATTLE, S_BUDDY_TRADE, S_PLAY_BTN, S_BACK_BTN };
-static const uint16_t BUDDY_ROW_COLOR[BUDDY_ROWS] = { UI_BAR_BAD, C565(0x1e, 0x7d, 0x3c), TYPE_ACCENT[TY_PSYCHIC], UI_TRACK };
+static const StrId BUDDY_ROW_LABEL[BUDDY_ROWS] = { S_BUDDY_BATTLE, S_BUDDY_TRADE, S_PLAY_BTN };
+static const uint16_t BUDDY_ROW_COLOR[BUDDY_ROWS] = { UI_BAR_BAD, C565(0x1e, 0x7d, 0x3c), TYPE_ACCENT[TY_PSYCHIC] };
 
 void renderBuddyMenu() {
   if (!bPeers[bCur].on) { buddyMenuOpen = false; return; }
@@ -5060,10 +5053,11 @@ void renderBuddyMenu() {
     int y = BUDDY_ROW_Y + i * BUDDY_ROW_STEP;
     bool off = i == 1 && !buddyTradeOk();  // Trade: nothing to trade on one side
     gfx->fillRoundRect(CX - 130, y, 260, BUDDY_ROW_H, 14, off ? UI_TRACK : BUDDY_ROW_COLOR[i]);
-    gfx->setTextColor(i == BUDDY_ROWS - 1 ? UI_INK : off ? 0x8410 : UI_WHITE);
+    gfx->setTextColor(off ? 0x8410 : UI_WHITE);
     setCur(centerX(T(BUDDY_ROW_LABEL[i]), 2), y + 17);
     printT(T(BUDDY_ROW_LABEL[i]));
   }
+  drawCloseButton();
   gfx->flush();
 }
 
@@ -5071,11 +5065,12 @@ void renderBuddyMenu() {
 bool buddyTradeOk() { return pet.tradeableCount() > 0 && buddyTradeable(bPeers[bCur]) > 0; }
 
 void buddyMenuTap(int16_t x, int16_t y) {
-  if (abs(x - CX) > 130 || y < BUDDY_ROW_Y) {
+  int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
+  if (abs(x - CX) > 130 || y < BUDDY_ROW_Y || row >= BUDDY_ROWS) {  // the close button, or outside the rows
+    if (closeHit(x, y)) sfxPlay(SFX_TAP);
     buddyMenuOpen = false;
     return;
   }
-  int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
   if (row == 1 && !buddyTradeOk()) {  // greyed out: the menu stays
     sfxPlay(SFX_DENY);
     Serial.println("buddy: nothing to trade");
@@ -5091,7 +5086,6 @@ void buddyMenuTap(int16_t x, int16_t y) {
 // ---------- "Play together": games only buddies can play ----------
 #define PLAY_ROW_Y 186
 #define PLAY_ROW_H 56
-#define PLAY_BACK_Y 330
 static const StrId PLAY_GAMES[] = { S_SHOWDOWN, S_VOLLEY };
 static const uint8_t PLAY_KINDS[] = { BK_SHOWDOWN, BK_VOLLEY };
 #define PLAY_GAME_COUNT (int)(sizeof(PLAY_GAMES) / sizeof(PLAY_GAMES[0]))
@@ -5115,10 +5109,7 @@ void renderPlayMenu() {
     setCur(centerX(T(PLAY_GAMES[i]), 2), y + 20);
     printT(T(PLAY_GAMES[i]));
   }
-  gfx->fillRoundRect(CX - 80, PLAY_BACK_Y, 160, 44, 12, UI_TRACK);
-  gfx->setTextColor(UI_INK);
-  setCur(centerX(T(S_BACK_BTN), 2), PLAY_BACK_Y + 14);
-  printT(T(S_BACK_BTN));
+  drawCloseButton();
   gfx->flush();
 }
 
@@ -5132,7 +5123,7 @@ void playMenuTap(int16_t x, int16_t y) {
       return;
     }
   }
-  if (abs(x - CX) <= 80 && y >= PLAY_BACK_Y && y < PLAY_BACK_Y + 44) {
+  if (closeHit(x, y)) {  // back to the buddy menu
     sfxPlay(SFX_TAP);
     playMenuOpen = false;
     buddyMenuOpen = true;
@@ -5640,8 +5631,8 @@ void renderTrade() {
     int pages = (pet.formCount() + 15) / 16;
     for (int i = 0; pages > 1 && i < pages; i++) {
       int dotX = CX + (i * 2 - (pages - 1)) * 7;
-      if (i == trPage) gfx->fillCircle(dotX, 436, 4, UI_INK);
-      else gfx->drawCircle(dotX, 436, 3, UI_INK);
+      if (i == trPage) gfx->fillCircle(dotX, GAL_DOTS_Y, 4, UI_INK);
+      else gfx->drawCircle(dotX, GAL_DOTS_Y, 3, UI_INK);
     }
     gfx->flush();
     return;
@@ -5682,10 +5673,7 @@ void renderTrade() {
     gfx->setTextColor(UI_WHITE);
     setCur(centerX(T(S_BUDDY_TRADE), 2), PICK_BTN_Y - 21);
     printT(T(S_BUDDY_TRADE));
-    gfx->fillRoundRect(CX - 80, PICK_BACK_Y - 40, 160, PICK_BACK_H, 12, UI_TRACK);
-    gfx->setTextColor(UI_INK);
-    setCur(centerX(T(S_BACK_BTN), 2), PICK_BACK_Y - 26);
-    printT(T(S_BACK_BTN));
+    drawCloseButton();
   } else {
     setCur(centerX(T(S_BUDDY_WAITING), 2), PICK_BTN_Y);
     printT(T(S_BUDDY_WAITING));
@@ -5695,7 +5683,7 @@ void renderTrade() {
 
 void tradeTap(int16_t x, int16_t y) {
   if (trPhase == TR_PICK) {
-    if (y < 72) {  // tap the header = exit, as in the Pokedex
+    if (y < 66 || closeHitAt(x, y, GAL_CLOSE_Y)) {  // the close button (or the header) = exit, as in the Pokedex
       sfxPlay(SFX_TAP);
       tradeClose(true);
       return;
@@ -5723,7 +5711,7 @@ void tradeTap(int16_t x, int16_t y) {
       trPhase = TR_WAITC;
       trT = millis();
       bsResendT = 0;
-    } else if (y >= PICK_BACK_Y - 40 && y < PICK_BACK_Y - 40 + PICK_BACK_H && abs(x - CX) <= 80) {
+    } else if (closeHit(x, y)) {
       sfxPlay(SFX_TAP);
       tradeClose(true);
     }
@@ -5822,6 +5810,10 @@ void zoneTap(int16_t x, int16_t y) {
     zoneDetailClose();
     return;
   }
+  if (closeHit(x, y)) {  // the picker closes; a zone goes back to the picker
+    zoneBack();
+    return;
+  }
   if (zoneScreen == ZS_PICK) {
     for (uint8_t z = 0; z < ZONE_COUNT; z++) {
       int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
@@ -5890,9 +5882,7 @@ void renderZones() {
       setCur(cx - textW(b, 2) / 2, y + 18);
       printT(b);
     }
-    gfx->setTextColor(UI_INK);
-    setCur(centerX(T(S_SWIPE_BACK), 2), 396);
-    printT(T(S_SWIPE_BACK));
+    drawCloseButton();
     gfx->flush();
     return;
   }
@@ -5927,9 +5917,7 @@ void renderZones() {
     if (i == zonePage) gfx->fillCircle(dotX, 390, 4, UI_INK);
     else gfx->drawCircle(dotX, 390, 3, UI_INK);
   }
-  gfx->setTextColor(UI_INK);  // how to leave, as on the zone picker
-  setCur(centerX(T(S_SWIPE_BACK), 2), 404);
-  printT(T(S_SWIPE_BACK));
+  drawCloseButton();  // how to leave, as on the zone picker
   gfx->flush();
 }
 
@@ -6587,6 +6575,27 @@ const char *statusMsg() {
   return T(S_HAPPY);
 }
 
+// ---------- the close button ----------
+// One round X, at the bottom in the middle, closes whatever it's on: the menus, the card, the
+// Pokedex, the zones, the clock. (Swipes still work too; games in play keep swiping up to quit.)
+#define CLOSE_Y 422  // its centre on most screens
+#define CLOSE_R 21
+void drawCloseButtonAt(int cy) {
+  gfx->fillCircle(CX, cy, CLOSE_R, UI_WHITE);
+  for (int i = 0; i < 2; i++) gfx->drawCircle(CX, cy, CLOSE_R - i, UI_INK);
+  const int a = 8;
+  for (int o = -1; o <= 1; o++) {
+    gfx->drawLine(CX - a + o, cy - a, CX + a + o, cy + a, UI_INK);
+    gfx->drawLine(CX + a + o, cy - a, CX - a + o, cy + a, UI_INK);
+  }
+}
+void drawCloseButton() { drawCloseButtonAt(CLOSE_Y); }
+bool closeHitAt(int16_t x, int16_t y, int cy) {  // a little more generous than what's drawn
+  int dx = x - CX, dy = y - cy;
+  return dx * dx + dy * dy <= (CLOSE_R + 10) * (CLOSE_R + 10);
+}
+bool closeHit(int16_t x, int16_t y) { return closeHitAt(x, y, CLOSE_Y); }
+
 // draws an n x n pixel map, scaled; silhouette=true paints it in ink
 void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette) {
   for (int r = 0; r < n; r++) {
@@ -6682,8 +6691,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     if (eggPickDetail) {
       if (y >= PICK_BTN_Y && y < PICK_BTN_Y + PICK_BTN_H && abs(x - CX) <= 110)
         return pressSet(t, CX - 110, PICK_BTN_Y, 220, PICK_BTN_H, T(S_CHOOSE_BTN));
-      if (y >= PICK_BACK_Y && y < PICK_BACK_Y + PICK_BACK_H && abs(x - CX) <= 80)
-        return pressSet(t, CX - 80, PICK_BACK_Y, 160, PICK_BACK_H, T(S_BACK_BTN));
+      if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     }
     return false;
   }
@@ -6697,15 +6705,14 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       int gy = PLAY_ROW_Y + i * (PLAY_ROW_H + 10);
       if (abs(x - CX) <= 150 && y >= gy && y < gy + PLAY_ROW_H) return pressSet(t, CX - 150, gy, 300, PLAY_ROW_H, T(PLAY_GAMES[i]));
     }
-    if (abs(x - CX) <= 80 && y >= PLAY_BACK_Y && y < PLAY_BACK_Y + 44) return pressSet(t, CX - 80, PLAY_BACK_Y, 160, 44, T(S_BACK_BTN));
+    if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     return false;
   }
   if (tradeOpen) {
     if (trPhase != TR_REVIEW) return false;
     if (y >= PICK_BTN_Y - 40 && y < PICK_BTN_Y - 40 + PICK_BTN_H && abs(x - CX) <= 110)
       return pressSet(t, CX - 110, PICK_BTN_Y - 40, 220, PICK_BTN_H, T(S_BUDDY_TRADE));
-    if (y >= PICK_BACK_Y - 40 && y < PICK_BACK_Y - 40 + PICK_BACK_H && abs(x - CX) <= 80)
-      return pressSet(t, CX - 80, PICK_BACK_Y - 40, 160, PICK_BACK_H, T(S_BACK_BTN));
+    if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     return false;
   }
   if (galleryOpen) return false;

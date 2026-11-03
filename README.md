@@ -68,6 +68,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 |---|---|
 | **Tap the Pokémon** | Pet it |
 | **Tap the bottom icons** | Feed it, open games, turn the light off for bed, or give it a bath |
+| **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
 | **Swipe up** | See its card, stats and medals |
 | **Tap its name on the card** (✏️) | Rename it |
