@@ -278,12 +278,12 @@ struct Btn {
   const char *const *icon;
 };
 Btn buttons[4] = {
-  { 140, 390, SPR_ICON_FOOD },   // eat
-  { 202, 404, SPR_ICON_PLAY },   // play
-  { 264, 404, SPR_ICON_LIGHT },  // light
-  { 326, 390, SPR_ICON_CLEAN },  // bath
+  { 140, 400, SPR_HOME_FOOD },    // eat
+  { 202, 414, SPR_HOME_BALL },    // play
+  { 264, 414, SPR_HOME_MOON },    // light
+  { 326, 400, SPR_HOME_BUBBLE },  // bath
 };
-#define BTN_HALF 26  // 52x52 button
+#define BTN_HALF 27  // the 54x54 icon (HOME_ICON_N at 3x)
 #define BTN_HIT 36   // touch radius (a bit more generous)
 
 // egg cracks ('k' pixels over the sprite)
@@ -6334,13 +6334,11 @@ void drawBar(int x, int y, const char *label, uint8_t val) {
   if (fw > 0) gfx->fillRoundRect(bx + 2, y + 2, fw, bh - 4, 3, fill);
 }
 
+// the icons on their own, no box; while sleeping only LIGHT works, the rest are shadows
 void drawButtons() {
   for (int i = 0; i < 4; i++) {
-    bool off = pet.sleeping && i != 2;  // while sleeping only LIGHT works
-    int bx = buttons[i].cx - BTN_HALF, by = buttons[i].cy - BTN_HALF;
-    if (!pet.sleeping) gfx->fillRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, UI_WHITE);
-    gfx->drawRoundRect(bx, by, 2 * BTN_HALF, 2 * BTN_HALF, 14, inkColor());
-    if (!off) drawMap(buttons[i].icon, 16, buttons[i].cx - 16, buttons[i].cy - 16, 2, false);
+    bool off = pet.sleeping && i != 2;
+    drawMap(buttons[i].icon, HOME_ICON_N, buttons[i].cx - BTN_HALF, buttons[i].cy - BTN_HALF, 3, off);
   }
 }
 
@@ -6607,11 +6605,11 @@ void pressOverlay() {
   const uint16_t ring = TYPE_ACCENT[TY_WATER];
   for (int i = 0; i < 4; i++) gfx->drawRoundRect(t.x - 3 - i, t.y - 3 - i, t.w + 6 + 2 * i, t.h + 6 + 2 * i, 12 + i, ring);
   if (t.icon) {
-    const int s = 5, side = 16 * s + 24;
+    const int s = 5, side = HOME_ICON_N * s + 24;  // only the home buttons carry an icon
     PressBox b = pressPopupBox(tXl, tYl, side + 16, side + 16);
     gfx->fillRoundRect(b.x, b.y, b.w, b.h, 16, ring);
     gfx->fillRoundRect(b.x + 8, b.y + 8, side, side, 12, UI_WHITE);
-    drawMap(t.icon, 16, b.x + 20, b.y + 20, s, false);
+    drawMap(t.icon, HOME_ICON_N, b.x + 20, b.y + 20, s, false);
     return;
   }
   if (!t.label || !t.label[0]) return;
