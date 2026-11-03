@@ -6580,13 +6580,12 @@ const char *statusMsg() {
 // Pokedex, the zones, the clock. (Swipes still work too; games in play keep swiping up to quit.)
 #define CLOSE_Y 422  // its centre on most screens
 #define CLOSE_R 21
-void drawCloseButtonAt(int cy) {
-  gfx->fillCircle(CX, cy, CLOSE_R, UI_WHITE);
-  for (int i = 0; i < 2; i++) gfx->drawCircle(CX, cy, CLOSE_R - i, UI_INK);
+void drawCloseButtonAt(int cy) {  // a gray disc with a white X
+  gfx->fillCircle(CX, cy, CLOSE_R, C565(0x8e, 0x8c, 0x96));
   const int a = 8;
   for (int o = -1; o <= 1; o++) {
-    gfx->drawLine(CX - a + o, cy - a, CX + a + o, cy + a, UI_INK);
-    gfx->drawLine(CX + a + o, cy - a, CX - a + o, cy + a, UI_INK);
+    gfx->drawLine(CX - a + o, cy - a, CX + a + o, cy + a, UI_WHITE);
+    gfx->drawLine(CX + a + o, cy - a, CX - a + o, cy + a, UI_WHITE);
   }
 }
 void drawCloseButton() { drawCloseButtonAt(CLOSE_Y); }
