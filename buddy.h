@@ -30,9 +30,10 @@
 enum BuddyType : uint8_t {
   BM_HELLO = 1, BM_INVITE, BM_ACCEPT, BM_DECLINE, BM_FIGHTER, BM_MOVE, BM_OFFER, BM_CONFIRM, BM_LEAVE,
   BM_ROUND, BM_ANSWER, BM_RESULT,  // Who's That? Showdown (older firmware drops these: it sees past BM_END)
+  BM_VBALL, BM_VMISS,              // Poke Ball Volley: the ball over the net; a point
   BM_END
 };
-enum BuddyKind : uint8_t { BK_BATTLE = 1, BK_TRADE, BK_SHOWDOWN };
+enum BuddyKind : uint8_t { BK_BATTLE = 1, BK_TRADE, BK_SHOWDOWN, BK_VOLLEY };
 
 struct __attribute__((packed)) BuddyMsg {
   char magic[4];
@@ -80,7 +81,9 @@ inline bool buddyParse(const uint8_t *buf, size_t len, BuddyMsg &m) {
     if (m.hp < 1 || m.def < 1) return false;
     if (m.hp > BUDDY_MAX_STAT || m.atk > BUDDY_MAX_STAT || m.def > BUDDY_MAX_STAT || m.spe > BUDDY_MAX_STAT) return false;
   }
-  if (m.type == BM_INVITE && m.kind != BK_BATTLE && m.kind != BK_TRADE && m.kind != BK_SHOWDOWN) return false;
+  if (m.type == BM_INVITE && (m.kind < BK_BATTLE || m.kind > BK_VOLLEY)) return false;
+  if (m.type == BM_VBALL && (m.hp > 466 || m.atk > 4000)) return false;  // its x at the net; curve + 2000
+  if (m.type == BM_VMISS && (m.atk > 9 || m.def > 9)) return false;  // the score
   if (m.type == BM_MOVE && m.move > 1) return false;
   if ((m.type == BM_ROUND || m.type == BM_ANSWER || m.type == BM_RESULT) && m.turn >= SD_ROUNDS) return false;
   if (m.type == BM_ANSWER && m.move > SD_NO_PICK) return false;

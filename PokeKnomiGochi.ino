@@ -44,13 +44,14 @@
 #include "zones_art.h"
 #include "autorot.h"
 #include "press.h"
+#include "volley.h"
 #include "ota.h"
 #include "ota_update.h"
 #include "buddy_net.h"
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.22"
+#define FW_VERSION "1.23"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -197,6 +198,17 @@ int8_t sdMyPick = -1, sdTheirPick = -1;
 uint16_t sdMyMs = 0, sdTheirMs = 0;
 bool sdTheirIn = false;
 uint32_t sdT = 0, sdAskT = 0, sdFirstRightT = 0, sdSendT = 0;
+// Poke Ball Volley (volley.h): the ball is on one board at a time; over the net it goes to the other
+enum VbPhase : uint8_t { VB_READY, VB_PLAY, VB_AWAY, VB_SERVE, VB_POINTED, VB_DONE };
+bool vbOpen = false, vbHost = false, vbRewarded = false, vbMineLast = false;
+VbPhase vbPhase = VB_READY;
+VbBall vbBall;
+float vbPadX = 233, vbSpeed0 = VB_SPEED0;
+uint8_t vbMine = 0, vbTheirs = 0, vbSeqOut = 0, vbSeqIn = 0xFF;
+bool vbOutPending = false, vbMissPending = false;  // a crossing / a point not acknowledged yet
+VbBall vbOut;                                      // the crossing being sent
+uint32_t vbT = 0, vbStepT = 0, vbSendT = 0;
+bool vbBot = false;  // test mode: the paddle chases the ball, at a limited speed (VBBOT)
 char buddyNote[44] = "";
 uint32_t buddyNoteUntil = 0;
 bool bPvp = false, bPvpGone = false;   // this battle is against the buddy
@@ -552,8 +564,8 @@ PowerCtx powerCtx(uint32_t now) {
 #ifdef BOARD_HOST
   if (!c.sleeping) c.idleMs = 0;  // a desktop window has no panel to protect: only the pet's sleep dims it
 #endif
-  c.gameOpen = gameOpen || battleOpen || quizOpen || runOpen || dungeonOpen || sdOpen;
-  c.arcadeOpen = runOpen || dungeonOpen;
+  c.gameOpen = gameOpen || battleOpen || quizOpen || runOpen || dungeonOpen || sdOpen || vbOpen;
+  c.arcadeOpen = runOpen || dungeonOpen || vbOpen;
   c.usb = usbPresent();
   c.charging = batCharging();
   c.batPct = batPercent();
@@ -751,6 +763,9 @@ void handleSerial() {
       p.seen = millis();
       buddyFake = true;
     }
+    Serial.println("DONE");
+  } else if (line == "VBBOT" && pet.noSave) {  // Poke Ball Volley plays by itself (testing)
+    vbBot = !vbBot;
     Serial.println("DONE");
   } else if (line.startsWith("CATCH ") && pet.noSave) {  // "CATCH dex": into the Pokedex (testing trades)
     pet.catchWild(line.substring(6).toInt());
@@ -976,7 +991,7 @@ void handleTouch() {
 
   // games: the touch is resolved on finger lift, so that swiping up exits
   // without pressing anything on the way. Only the PokeRun jump fires on touch-down: there every ms counts.
-  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen || dungeonOpen || zoneScreen || sdOpen) {
+  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen || dungeonOpen || zoneScreen || sdOpen || vbOpen) {
     if (pressed) { tXl = x; tYl = y; }  // tXl: aim with the finger where there is no accelerometer
     // in the dungeon, keeping the finger down keeps walking
     if (dungeonOpen && pressed && wasPressed && !swallowGesture && !dnOverT && millis() - tStart > 350 &&
@@ -1569,7 +1584,7 @@ void printT(const char *s) {
 // while their "key" doesn't change they are neither repainted nor flushed over QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (pet.awaitingEggPick() || buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // the gallery manages its own repainting
+  if (pet.awaitingEggPick() || buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // the gallery manages its own repainting
   if (kbOpen || clockOpen) return true;
   return cardOpen && cardPage != 0;  // page 0 has the animated portrait
 }
@@ -1640,6 +1655,10 @@ bool render() {
   }
   if (sdOpen) {
     renderShowdown();
+    return true;
+  }
+  if (vbOpen) {
+    renderVolley();
     return true;
   }
   if (tradeOpen) {
@@ -1843,6 +1862,7 @@ void respawnBall() {
 void quitGame() {
   sfxPlay(SFX_TAP);
   if (sdOpen) sdQuit();
+  if (vbOpen) vbQuit();
   if (battleOpen) closeBattle();
   if (quizOpen) closeQuiz();
   if (runOpen) closeRun();
@@ -1858,7 +1878,7 @@ void autoRotateTick(uint32_t now) {
   static RotFilter filter;
   if (now - last < 100) return;
   last = now;
-  if (screenOff || wasPressed || gameOpen || (battleOpen && bPhase >= BP_AIM)) {
+  if (screenOff || wasPressed || gameOpen || vbOpen || (battleOpen && bPhase >= BP_AIM)) {
     filter.reset();
     return;
   }
@@ -2147,7 +2167,7 @@ void endVisit() {
 bool onMainScreen() {
   return !gameOpen && !runOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !zoneScreen && !galleryOpen && !cardOpen &&
                       !kbOpen && !clockOpen && !choiceKind && !confirmUntil && !buddyMenuOpen && !tradeOpen &&
-                      !playMenuOpen && !sdOpen;
+                      !playMenuOpen && !sdOpen && !vbOpen;
 }
 
 void visitTick(uint32_t now) {
@@ -2227,7 +2247,7 @@ void knomiButtonTap() {
   screenOff = false;
   wakeUI();
   if (wasAsleep) return;  // in the dark it only wakes, like the touchscreen
-  if (buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
+  if (buddyMenuOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
   if (visitPhase != VP_NONE) return;  // no fighting with a visitor present
   startBattle();
 }
@@ -2238,6 +2258,7 @@ void knomiAskReset() {
   if (battleOpen) closeBattle();
   if (quizOpen) closeQuiz();
   if (sdOpen) sdQuit();
+  if (vbOpen) vbQuit();
   if (runOpen) closeRun();
   if (dungeonOpen) closeDungeon();
   gamesMenuOpen = playMenuOpen = false;
@@ -4369,6 +4390,11 @@ void buddyStartSession() {
     sdStart(inviter);
     return;
   }
+  if (bsKind == BK_VOLLEY) {
+    bsState = BS_PLAY;
+    vbStart(inviter);
+    return;
+  }
   bsState = BS_TRADE;
   tradeOpen = true;
   trPhase = TR_PICK;
@@ -4516,10 +4542,16 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
       if (bsState == BS_INVITING && bsKind == BK_SHOWDOWN) buddyStartSession();  // the ACCEPT was lost
       sdHandle(m);
       break;
+    case BM_VBALL:
+    case BM_VMISS:
+      if (bsState == BS_INVITING && bsKind == BK_VOLLEY) buddyStartSession();
+      vbHandle(m);
+      break;
     case BM_LEAVE:
-      if (sdOpen) {
+      if (sdOpen || vbOpen) {
         buddySetNote(S_BUDDY_LEFT_FMT);
-        sdClose();
+        if (sdOpen) sdClose();
+        if (vbOpen) vbClose();
         break;
       }
       if (bPvp) {
@@ -4604,9 +4636,10 @@ void buddyTick(uint32_t now) {
   if (!bPeers[bCur].on) {
     buddyNetSetPeer(0);
     buddyMenuOpen = playMenuOpen = false;
-    if (sdOpen) {
+    if (sdOpen || vbOpen) {
       buddySetNote(S_BUDDY_LEFT_FMT);
-      sdClose();
+      if (sdOpen) sdClose();
+      if (vbOpen) vbClose();
     }
     if (bPvp && bPhase < BP_END) {
       if (bPhase != BP_RAN) buddyGoneFromBattle();
@@ -4627,6 +4660,7 @@ void buddyTick(uint32_t now) {
 
   if (bsState == BS_INVITED && choiceKind != 5) buddyDeclineInvite();  // time ran out
   sdTick(now);
+  vbTick(now);
 
   if (bsState == BS_INVITING && now - bsT > BUDDY_REPLY_MS) {
     buddySetNote(S_BUDDY_BUSY_FMT);
@@ -4792,7 +4826,8 @@ void buddyMenuTap(int16_t x, int16_t y) {
 #define PLAY_ROW_Y 186
 #define PLAY_ROW_H 56
 #define PLAY_BACK_Y 330
-static const StrId PLAY_GAMES[] = { S_SHOWDOWN };  // more to come
+static const StrId PLAY_GAMES[] = { S_SHOWDOWN, S_VOLLEY };
+static const uint8_t PLAY_KINDS[] = { BK_SHOWDOWN, BK_VOLLEY };
 #define PLAY_GAME_COUNT (int)(sizeof(PLAY_GAMES) / sizeof(PLAY_GAMES[0]))
 
 void renderPlayMenu() {
@@ -4827,7 +4862,7 @@ void playMenuTap(int16_t x, int16_t y) {
     if (abs(x - CX) <= 150 && y >= gy && y < gy + PLAY_ROW_H) {
       sfxPlay(SFX_TAP);
       playMenuOpen = false;
-      buddyInvite(BK_SHOWDOWN);
+      buddyInvite(PLAY_KINDS[i]);
       return;
     }
   }
@@ -5074,6 +5109,245 @@ void renderShowdown() {
     gfx->setTextColor(bg == UI_WHITE || bg == UI_TRACK ? UI_INK : UI_WHITE);
     setCur(centerX(dexName(sdOpts[i]), 2), y + 15);
     printT(dexName(sdOpts[i]));
+  }
+  gfx->flush();
+}
+
+// ---------- Poke Ball Volley: the ball goes from one screen to the other ----------
+// The ball lives on one board at a time and is simulated there (volley.h). Over the net it is
+// handed to the buddy (BM_VBALL); a miss is a point for them (BM_VMISS), and the one who missed
+// serves next. Both are resent until acknowledged, and any newer message counts as one too.
+#define VB_READY_MS 1800UL
+#define VB_SERVE_MS 1300UL  // the ball sits on your Pokemon for a moment, then off it goes
+#define VB_POINT_MS 1800UL
+#define VB_DONE_MS 6000UL
+
+void vbSend(BuddyType type, bool ack, uint8_t seq) {
+  BuddyMsg m = buddyMsg(type);
+  m.kind = BK_VOLLEY;
+  m.ack = ack;
+  m.turn = seq;
+  if (type == BM_VBALL) {
+    m.hp = (uint16_t)vbOut.x;
+    m.dex = (int16_t)vbOut.vx;
+    m.spe = (uint16_t)fabsf(vbOut.vy);
+    float c = vbOut.ax < -2000 ? -2000 : vbOut.ax > 2000 ? 2000 : vbOut.ax;
+    m.atk = (uint16_t)(c + 2000);  // the curve, offset to fit unsigned
+  } else {
+    m.atk = vbMine;  // the score as the sender sees it
+    m.def = vbTheirs;
+  }
+  buddyNetSend(m);
+}
+
+void vbStart(bool host) {
+  vbOpen = true;
+  vbHost = host;
+  vbRewarded = false;
+  vbMine = vbTheirs = 0;
+  vbSpeed0 = VB_SPEED0;
+  vbSeqOut = 0;
+  vbSeqIn = 0xFF;
+  vbOutPending = vbMissPending = false;
+  vbPadX = CX;
+  vbPhase = VB_READY;
+  vbT = millis();
+  tiltZero();
+  Serial.printf("buddy: volley vs #%d (%s)\n", bPeers[bCur].dex, host ? "host" : "guest");
+}
+
+void vbClose() {
+  vbOpen = false;
+  buddyEndSession();
+}
+
+void vbQuit() {
+  buddyNetSend(buddyMsg(BM_LEAVE));
+  vbClose();
+}
+
+void vbTap() {
+  if (vbPhase == VB_DONE && millis() - vbT > 1200) vbClose();
+}
+
+bool vbOver() { return vbMine >= VB_WIN || vbTheirs >= VB_WIN; }
+
+void vbReward() {
+  if (vbRewarded) return;
+  vbRewarded = true;
+  pet.showdownResult(vbMine, vbTheirs);  // the same reward as any game with a buddy
+  sfxPlay(vbMine > vbTheirs ? SFX_MEDAL : SFX_LEVEL);
+  Serial.printf("buddy: volley over %u-%u\n", vbMine, vbTheirs);
+}
+
+// a point: who got it, then the next serve (the one who missed) or the end
+void vbPoint(bool mine) {
+  vbMineLast = mine;
+  vbPhase = VB_POINTED;
+  vbT = millis();
+  sfxPlay(mine ? SFX_HEART : SFX_DENY);
+  Serial.printf("buddy: volley point %s (%u-%u)\n", mine ? "mine" : "theirs", vbMine, vbTheirs);
+}
+
+void vbHandle(const BuddyMsg &m) {
+  if (!vbOpen) return;
+  if (m.ack) {  // the buddy got it
+    if (m.turn == vbSeqOut) vbOutPending = vbMissPending = false;
+    return;
+  }
+  bool fresh = m.turn != vbSeqIn;
+  vbSend((BuddyType)m.type, true, m.turn);  // acknowledged, even a repeat (our ack may have been lost)
+  if (!fresh) return;
+  vbSeqIn = m.turn;
+  vbOutPending = vbMissPending = false;  // anything new from them means ours arrived
+  if (m.type == BM_VBALL) {
+    vbBall = vbArrive(m.hp, m.dex, m.spe, (float)m.atk - 2000);
+    vbPhase = VB_PLAY;
+    vbStepT = millis();
+  } else {  // they missed: a point for us, and they serve
+    vbMine = m.def;
+    vbTheirs = m.atk;
+    vbPoint(true);
+  }
+}
+
+void vbTick(uint32_t now) {
+  if (!vbOpen) return;
+  // the paddle: your finger where it touches, or the tilt (arrow keys on a computer)
+  float dt = (now - vbStepT) / 1000.0f;
+  if (dt > 0.1f) dt = 0.1f;
+  if (vbBot) {  // a player who moves at most this fast: it misses once the ball is quick
+    static float to = CX;  // aims like a person: a fresh look every 0.3 s, a tilting hand's speed
+    static uint32_t lookT = 0;
+    if (now - lookT > 300) {
+      lookT = now;
+      to = vbPhase == VB_PLAY && vbBall.vy > 0 ? vbBall.x : CX;
+    }
+    float step = 250.0f * dt;
+    vbPadX += to > vbPadX + step ? step : to < vbPadX - step ? -step : to - vbPadX;
+  } else if (wasPressed) {
+    float k = dt * 14 > 1 ? 1 : dt * 14;
+    vbPadX += (tXl - vbPadX) * k;
+  } else {
+    vbPadX += playerTilt() * 430.0f * dt;
+  }
+  if (vbPadX < VB_LEFT) vbPadX = VB_LEFT;
+  if (vbPadX > VB_RIGHT) vbPadX = VB_RIGHT;
+
+  if ((vbOutPending || vbMissPending) && now - vbSendT >= 300) {
+    vbSendT = now;
+    vbSend(vbOutPending ? BM_VBALL : BM_VMISS, false, vbSeqOut);
+  }
+  uint32_t t = now - vbT;
+  switch (vbPhase) {
+    case VB_READY:
+      if (t > VB_READY_MS) {
+        vbPhase = vbHost ? VB_SERVE : VB_AWAY;  // the inviter serves first
+        vbT = now;
+      }
+      break;
+    case VB_SERVE:
+      if (t > VB_SERVE_MS) {
+        vbBall = vbServe(vbPadX, vbSpeed0, playerTilt());
+        vbPhase = VB_PLAY;
+        sfxPlay(SFX_PLAY);
+      }
+      break;
+    case VB_PLAY: {
+      // small steps, so a fast ball can't jump past the paddle
+      for (float left = dt; left > 0 && vbPhase == VB_PLAY; left -= 0.008f) {
+        VbEvent ev = vbStep(vbBall, left < 0.008f ? left : 0.008f, vbPadX);
+        if (ev == VB_HIT) {
+          sfxPlay(SFX_PLAY);
+        } else if (ev == VB_OVER_NET) {
+          vbOut = vbBall;
+          vbSeqOut++;
+          vbOutPending = true;
+          vbMissPending = false;
+          vbSendT = 0;
+          vbPhase = VB_AWAY;
+        } else if (ev == VB_MISSED) {
+          vbTheirs++;
+          vbSpeed0 = vbNextServeSpeed(vbSpeed(vbBall));
+          vbSeqOut++;
+          vbMissPending = true;
+          vbOutPending = false;
+          vbSendT = 0;
+          vbPoint(false);
+        }
+      }
+      break;
+    }
+    case VB_POINTED:
+      if (t > VB_POINT_MS) {
+        if (vbOver()) {
+          vbPhase = VB_DONE;
+          vbT = now;
+          vbReward();
+        } else {
+          vbPhase = vbMineLast ? VB_AWAY : VB_SERVE;  // the one who missed serves
+          vbT = now;
+        }
+      }
+      break;
+    case VB_AWAY:
+      break;
+    case VB_DONE:
+      if (t > VB_DONE_MS) vbClose();
+      break;
+  }
+  vbStepT = now;
+}
+
+void renderVolley() {
+  if (!vbOpen) return;
+  drawGameScene();
+  char b[48];
+  // the net: past it, the buddy's side
+  for (int x = VB_LEFT - 20; x < VB_RIGHT + 20; x += 18) gfx->fillRect(x, VB_TOP - 2, 10, 4, UI_WHITE);
+  gfx->setTextColor(UI_WHITE);
+  setSize(2);
+  snprintf(b, sizeof(b), "%s %u : %u %s", T(S_SD_YOU_LBL), vbMine, vbTheirs, buddyName());
+  setCur(centerX(b, 2), 36);
+  printT(b);
+  // your Pokemon is the paddle
+  gPmdForceScale = 2;
+  drawPmdAct(PMD_IDLE, (int)vbPadX, VB_PADDLE_Y + 40, millis(), true, false, 2);
+  gPmdForceScale = 0;
+  if (vbPhase == VB_PLAY) drawMap(SPR_ICON_PLAY, 16, (int)vbBall.x - VB_BALL_R, (int)vbBall.y - VB_BALL_R, 4, false);
+  if (vbPhase == VB_SERVE) drawMap(SPR_ICON_PLAY, 16, (int)vbPadX - 16, VB_PADDLE_Y - 34, 2, false);
+  const char *line = nullptr;
+  if (vbPhase == VB_READY) line = T(S_SD_READY);
+  else if (vbPhase == VB_SERVE) line = T(S_VB_SERVE);
+  else if (vbPhase == VB_POINTED) {
+    if (vbMineLast) line = T(S_VB_POINT);
+    else {
+      snprintf(b, sizeof(b), T(S_VB_THEY_SCORE_FMT), buddyName());
+      line = b;
+    }
+  }
+  if (line) {
+    gfx->setTextColor(UI_WHITE);
+    setCur(centerX(line, 2), 190);
+    printT(line);
+  }
+  if (vbPhase == VB_READY || vbPhase == VB_SERVE) {
+    gfx->setTextColor(UI_WHITE);
+    setCur(centerX(T(S_VB_HINT), 2), 222);
+    printT(T(S_VB_HINT));
+  }
+  if (vbPhase == VB_DONE) {
+    gfx->fillRoundRect(CX - 150, 130, 300, 150, 18, UI_BG_DAY);
+    gfx->setTextColor(UI_INK);
+    snprintf(b, sizeof(b), "%u : %u", vbMine, vbTheirs);
+    setSize(5);
+    setCur(centerX(b, 5), 150);
+    printT(b);
+    setSize(2);
+    if (vbMine > vbTheirs) strlcpy(b, T(S_SD_WIN), sizeof(b));
+    else snprintf(b, sizeof(b), T(S_SD_LOSE_FMT), buddyName());
+    setCur(centerX(b, 2), 228);
+    printT(b);
   }
   gfx->flush();
 }
@@ -5472,7 +5746,7 @@ void drawChoiceDialog() {
     c1 = UI_BAR_BAD; t1 = UI_WHITE; c2 = UI_BAR_OK; t2 = UI_WHITE;
   } else if (choiceKind == 5) {  // the buddy invites
     static char invite[44];
-    snprintf(invite, sizeof(invite), T(bsKind == BK_BATTLE ? S_BUDDY_INV_BTL_FMT : bsKind == BK_SHOWDOWN ? S_BUDDY_INV_PLAY_FMT : S_BUDDY_INV_TRD_FMT), buddyName());
+    snprintf(invite, sizeof(invite), T(bsKind == BK_BATTLE ? S_BUDDY_INV_BTL_FMT : bsKind == BK_TRADE ? S_BUDDY_INV_TRD_FMT : S_BUDDY_INV_PLAY_FMT), buddyName());
     q = invite; o1 = T(S_YES); o2 = T(S_NO);
     c1 = UI_BAR_OK; t1 = UI_WHITE; c2 = UI_TRACK; t2 = UI_INK;
   } else if (choiceKind == 4) {  // runaway
@@ -6007,6 +6281,7 @@ void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette
 // the game screens' tap, by whichever is open (same order as handleTouch checks them)
 void gameTap(int16_t x, int16_t y) {
   if (sdOpen) sdTap(x, y);
+  else if (vbOpen) vbTap();
   else if (battleOpen) battleTap(x, y);
   else if (quizOpen) quizTap(x, y);
   else if (gamesMenuOpen) gamesMenuTap(x, y);
@@ -6073,7 +6348,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       return pressSet(t, ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, T(S_ZONE_SEARCH));
     return false;  // Pokedex grids (here and below) swipe between pages: a slow swipe must not pick a square
   }
-  if (gameOpen || runOpen || dungeonOpen) return false;  // aiming, jumping, walking: no buttons
+  if (gameOpen || runOpen || dungeonOpen || vbOpen) return false;  // aiming, jumping, walking, volleying: no buttons
 
   // --- everything else (same order as onTap) ---
   if (pet.awaitingStarter()) {

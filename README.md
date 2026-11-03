@@ -22,8 +22,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 | **Guess the silhouette** | **Tilt Catch** | **A visitor drops by each day** |
 | ![A buddy visiting from another Knomi](docs/images/buddy.png) | ![Battle or trade with a buddy](docs/images/buddy-menu.png) | ![The button under your finger, shown large](docs/images/press.png) |
 | **A buddy visits from another Knomi** | **Battle or trade with them** | **Press and slide to choose** |
-| ![Play together](docs/images/play.png) | ![Who's That? Showdown](docs/images/showdown.png) | ![A Showdown won](docs/images/showdown-win.png) |
-| **Play together** | **Who's That? Showdown** | **Race your buddy, best of 5** |
+| ![Play together](docs/images/play.png) | ![Who's That? Showdown](docs/images/showdown.png) | ![Poké Ball Volley](docs/images/volley.png) |
+| **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
 
 ## Install
 
@@ -84,7 +84,7 @@ Press the button to meet a wild Pokémon in a simple turn-based fight, inspired 
 
 Winning trains your Pokémon. Losing leaves it nearly out of energy, so it has to sleep before it can fight again.
 
-If you beat a Pokémon you haven't caught yet, you get three Poké Balls. Tap to throw, then lean the Knomi left and right to steer. A direct hit adds it to your Pokédex.
+If you beat a Pokémon you haven't caught yet, you get three Poké Balls. Tap to throw, then lean the Knomi left and right to steer. On a hit the ball rocks three times while it counts to 3: three out of four times it holds and the Pokémon joins your Pokédex, otherwise it breaks out and runs away.
 
 ### Games
 
@@ -101,8 +101,10 @@ Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the 
 If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over to play and a "... is here!" button appears. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon (or the button) to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
 
 - **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
-- **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, each of you gets the other's entry and keeps your own.
-- **Play:** games only buddies can play together. **Who's That? Showdown** shows you both the same silhouette at the same moment: the first to tap the right name gets the point, and a wrong tap is out for that round. Best of 5, then joy and bond for both, a bit more for the winner, and the **Playmate** medal.
+- **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, you swap: the one you gave leaves your Pokédex. Your own partner can't be traded, so with only one Pokémon, Trade is greyed out.
+- **Play:** games only buddies can play together, with joy and bond for both afterwards, a bit more for the winner, and the **Playmate** medal.
+  - **Who's That? Showdown** shows you both the same silhouette at the same moment: the first to tap the right name gets the point, and a wrong tap is out for that round. 10 questions.
+  - **Poké Ball Volley:** your screen is your half of the court and your Pokémon is the paddle; tilt or drag to move. A ball over the top of your screen drops in on your buddy's. Every shot curves and the ball slowly speeds up, so a match to 3 points lasts about a minute.
 
 To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac version (PokeMacGochi) and the browser version (PokeWebGochi), in any mix.
 

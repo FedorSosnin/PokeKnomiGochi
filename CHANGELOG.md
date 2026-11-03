@@ -8,6 +8,16 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.23] - 2026-11-03
+
+- **Poké Ball Volley:** a second game under **Play** with a buddy. Each screen is your half of the court, your Pokémon is the paddle, and a ball over the top of your screen drops in at the top of your buddy's. Tilt or drag to move. Every shot curves, more off the edge of your Pokémon, so standing in the middle doesn't win. The ball speeds up slowly the longer it stays in the air, so a match to 3 points lasts about a minute. Same rewards as Showdown, and it counts for the **Playmate** medal.
+- **Who's That? Showdown** now has 10 questions instead of 5.
+- **Trades cost a Pokémon:** the one you give is gone from your Pokédex. Your own partner can't be traded, and with only one Pokémon, Trade is greyed out.
+- **The catch takes three shakes:** after a hit, the ball rocks three times with a tone and a count to 3. Your Pokémon has a 75% chance to stay in; if it breaks out, it runs away ("... got away!").
+- **Buddies while your Pokémon sleeps** stand on both sides again, instead of piling up on the right.
+- A buddy's invite to play no longer says it wants to trade.
+- Both players need this version for the new games and rules.
+
 ## [1.22] - 2026-11-02
 
 - **Play with a buddy:** the buddy menu now has **Play**, next to Battle and Trade, with games only buddies can play together. The first is **Who's That? Showdown**: the same silhouette on both screens at once, the first to tap the right name gets the point, a wrong tap is out for the round, best of 5. Both get joy and bond, the winner a bit more, and the new **Playmate** trainer medal. Both players need this version.

@@ -53,7 +53,7 @@ Your Pokémon needs at least 15 ⚡ to fight.
 | 🤝 **Win against a buddy** | +15 | | | | +2 | |
 | 🤝 **Loss against a buddy** | +8 | | | | +2 | |
 
-After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it.
+After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it. A hit holds 75% of the time; otherwise the Pokémon breaks out on one of the three shakes and runs away.
 
 ## Zones
 
@@ -116,4 +116,4 @@ These stay with you across every Pokémon you raise.
 | 💯 **Level 100** | Raise a Pokémon to level 100 |
 | 🤝 **First buddy** | Have a buddy's Pokémon on your screen |
 | 🎉 **Party of 5** | Have 4 buddies at once: 5 Pokémon on screen |
-| 🎮 **Playmate** | Play a game with a buddy (Who's That? Showdown) |
+| 🎮 **Playmate** | Play a game with a buddy (Who's That? Showdown or Poké Ball Volley) |

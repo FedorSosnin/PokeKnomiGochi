@@ -218,3 +218,24 @@ TEST(buddy, what_a_buddy_can_trade) {
   b.reg[0] |= 1;  // Bulbasaur too
   CHECK_EQ(buddyTradeable(b), 1);
 }
+
+TEST(buddy, volley_messages_are_checked) {
+  BuddyMsg out, m;
+  buddyInit(m, BM_VBALL, 5, 6, 7);
+  m.kind = BK_VOLLEY;
+  m.hp = 200;
+  m.atk = 2000;  // no curve
+  CHECK(parseCopy(m, out));
+  m.hp = 900;    // off the court
+  CHECK(!parseCopy(m, out));
+  m.hp = 200;
+  m.atk = 9000;  // a curve nobody could put on it
+  CHECK(!parseCopy(m, out));
+  buddyInit(m, BM_VMISS, 5, 6, 7);
+  m.kind = BK_VOLLEY;
+  m.atk = 2;
+  m.def = 1;
+  CHECK(parseCopy(m, out));
+  m.def = 40;    // not a real score
+  CHECK(!parseCopy(m, out));
+}
