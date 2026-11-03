@@ -8,6 +8,16 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.24] - 2026-11-03
+
+- **Shiny Pokémon in the wild:** about 1 wild battle in 50 brings a shiny, in its official shiny colors with gold sparkles twinkling around it. The battle opens with "Shiny ...!". Beat it and you get Poké Balls even if you already have the regular one.
+- **Sparkles:** every shiny twinkles: your own, a buddy's, a visitor, a wild one, and in the Pokédex.
+- **Both forms in the Pokédex:** the regular and the shiny form of a species are kept apart. A square with the shiny gets a gold sparkle (and shows the shiny if that's the only one you have), and an entry with both shows them side by side.
+- **Trade shinies:** the trade grid shows each form you have as its own square, so a shiny can be traded on its own and the regular one stays. Only the exact form you're raising can't be traded.
+- **Zone medals:** a medal for each zone you complete, legendary included: Forest, Beach, Cave, Mansion and Field. They have their own Zones page on the card.
+- Every one of the 151 can be caught in the zones; a test now makes sure it stays that way.
+- Both players need this version to trade shinies.
+
 ## [1.23] - 2026-11-03
 
 - **Poké Ball Volley:** a second game under **Play** with a buddy. Each screen is your half of the court, your Pokémon is the paddle, and a ball over the top of your screen drops in at the top of your buddy's. Tilt or drag to move. Every shot curves, more off the edge of your Pokémon, so standing in the middle doesn't win. The ball speeds up slowly the longer it stays in the air, so a match to 3 points lasts about a minute. Same rewards as Showdown, and it counts for the **Playmate** medal.

@@ -70,7 +70,9 @@ There are two ways to start a battle:
 | 👻 **Mansion** | 21 | Ghost, Psychic, poison gas and sludge, and machines | Mewtwo |
 | 🌾 **Field** | 28 | Birds, Normal, Eevee and fire runners | Zapdos |
 
-⭐ A zone's legendary appears only after you've caught everything else there. Each Search then has a 25% chance of finding it, or 3% once it's caught. Evolved forms only appear once your Pokémon is high enough level.
+⭐ A zone's legendary appears only after you've caught everything else there. Each Search then has a 25% chance of finding it, or 3% once it's caught. Evolved forms only appear once your Pokémon is high enough level. All 151 can be caught this way, and catching all of a zone earns its zone medal.
+
+✨ About 1 wild Pokémon in 50 is shiny. Its shiny form goes into the Pokédex separately from the regular one, so you can have both, and each can be traded on its own.
 
 ## What drops over time
 
@@ -111,9 +113,15 @@ These stay with you across every Pokémon you raise.
 
 | Medal | How to earn it |
 |---|---|
-| ✨ **Shiny found** | Raise or register a shiny Pokémon |
+| ✨ **Shiny found** | Raise, catch or trade for a shiny Pokémon |
 | 📖 **Pokédex 10 / 50 / 100 / 151** | Register that many Pokémon |
 | 💯 **Level 100** | Raise a Pokémon to level 100 |
 | 🤝 **First buddy** | Have a buddy's Pokémon on your screen |
 | 🎉 **Party of 5** | Have 4 buddies at once: 5 Pokémon on screen |
 | 🎮 **Playmate** | Play a game with a buddy (Who's That? Showdown or Poké Ball Volley) |
+
+### Zone medals
+
+| Medal | How to earn it |
+|---|---|
+| 🌲 **Forest** / 🏖️ **Beach** / 🪨 **Cave** / 👻 **Mansion** / 🌾 **Field** | Catch every Pokémon in that zone, legendary included |

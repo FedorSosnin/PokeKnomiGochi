@@ -38,7 +38,7 @@ Your Pokémon is saved in this browser automatically. Clearing the browser's dat
 
 ## Buddies
 
-Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle, trade Pokédex entries, or **play** a game together: in **Who's That? Showdown** you both see the same silhouette and race to name it first, and in **Poké Ball Volley** your screens are the two halves of one court. Trades are a real swap: the Pokémon you give leaves your Pokédex. You meet players of the browser version, the [Mac app](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
+Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle, trade Pokédex entries, or **play** a game together: in **Who's That? Showdown** you both see the same silhouette and race to name it first, and in **Poké Ball Volley** your screens are the two halves of one court. Trades are a real swap: the Pokémon you give leaves your Pokédex. Shinies (about 1 wild Pokémon in 50) sparkle, have their own place in the Pokédex and can be traded too. You meet players of the browser version, the [Mac app](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
 
 ## Want a real one?
 
