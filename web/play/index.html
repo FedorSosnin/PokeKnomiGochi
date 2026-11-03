@@ -27,11 +27,16 @@
     font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   /* the Knomi screen in a Poke Ball ring, centered both ways */
-  #ball { position: absolute; left: 50%; top: 50%; width: var(--side); height: var(--side);
+  /* with the mouse over it the ring grows outward to twice its width, like the Mac app's; the screen
+     stays put. Only for a real mouse: on a phone a tap would leave it grown */
+  @property --grow { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  #ball { position: absolute; left: 50%; top: 50%; width: calc(var(--side) + 2 * var(--grow));
+    height: calc(var(--side) + 2 * var(--grow)); transition: --grow .15s ease-out;
     transform: translate(-50%, -50%); border-radius: 50%; box-sizing: border-box;
     background: linear-gradient(#de2121 0 calc(50% - var(--ring) / 2), #000 0 calc(50% + var(--ring) / 2), #fff 0); }
-  #screen { position: absolute; inset: var(--ring); width: calc(100% - 2 * var(--ring));
-    height: calc(100% - 2 * var(--ring)); border-radius: 50%; background: #000;
+  @media (hover: hover) and (pointer: fine) { #ball:hover { --grow: var(--ring); } }
+  #screen { position: absolute; inset: calc(var(--ring) + var(--grow)); width: calc(100% - 2 * (var(--ring) + var(--grow)));
+    height: calc(100% - 2 * (var(--ring) + var(--grow))); border-radius: 50%; background: #000;
     image-rendering: pixelated; touch-action: none; cursor: pointer; }
   #bar { position: absolute; left: 0; right: 0; bottom: max(10px, env(safe-area-inset-bottom));
     display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 0 16px; }
@@ -70,7 +75,7 @@ const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = '9b25fe4d31';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = 'b7739a83c5';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -363,6 +368,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=9b25fe4d31"></script>
+<script src="pokewebgochi.js?v=b7739a83c5"></script>
 </body>
 </html>

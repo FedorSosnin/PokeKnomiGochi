@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **PokeWebGochi:** with the mouse over it, the Poké Ball ring grows to twice its width, like the Mac app's. A change to the page alone now also counts as a new version, so an open tab offers it.
+
 ## [1.27] - 2026-11-03
 
 - **Training page:** the card has a new page after the stats, showing ATK, DEF and SPD training (0–100) at full size, with **MAX** when it's full and what trains each one: winning battles trains attack, every 12 hours in a row of good care trains defense, and mini games train speed. Weight has a row too: food adds it, play burns it.

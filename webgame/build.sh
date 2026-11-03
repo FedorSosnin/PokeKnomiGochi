@@ -23,8 +23,9 @@ em++ -std=c++17 -O2 -DBOARD_HOST -DBOARD_KNOMI_V2 -I host -I host/shim -I . \
   --preload-file $B/res@/res \
   -o $OUT/pokewebgochi.js
 # one id for this build: the page asks for its files with it (no mix of old and new from caches),
-# and a tab left open compares it with version.json to offer the new version
-BUILD=$(cat $OUT/pokewebgochi.js $OUT/pokewebgochi.wasm $OUT/pokewebgochi.data | shasum | cut -c1-10)
+# and a tab left open compares it with version.json to offer the new version. The page counts too, so
+# a change to it alone is a new version
+BUILD=$(cat webgame/shell.html $OUT/pokewebgochi.js $OUT/pokewebgochi.wasm $OUT/pokewebgochi.data | shasum | cut -c1-10)
 sed "s/__BUILD__/$BUILD/g" webgame/shell.html > $OUT/index.html
 printf '{"build":"%s"}\n' "$BUILD" > $OUT/version.json
 cp webgame/assets/* $OUT/  # icons, the shared-link preview, the home-screen manifest
