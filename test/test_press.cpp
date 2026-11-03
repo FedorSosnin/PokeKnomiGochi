@@ -45,3 +45,12 @@ TEST(press, flick_vs_slide) {
   CHECK(!pressIsFlick(0, -120, 600));   // slow slide: choosing
   CHECK(!pressIsFlick(30, 20, 100));    // a tap that wobbled
 }
+
+TEST(press, soft_targets_give_way_to_swipes) {
+  CHECK(!pressSoftShows(0, 0, 50));      // just landed: a swipe may be starting
+  CHECK(pressSoftShows(5, -8, 200));     // resting on the buddy: preview it
+  CHECK(!pressSoftShows(60, 0, 200));    // sliding sideways: a page swipe
+  CHECK(!pressSoftShows(0, 90, 600));    // a slow drag down: still a swipe
+  CHECK(pressSoftMoved(-31, 0));
+  CHECK(!pressSoftMoved(30, -30));       // a wobble
+}

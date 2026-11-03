@@ -920,6 +920,7 @@ bool inPetZone(int16_t x, int16_t y) {
 // press preview (press.h): the control under the finger, drawn by pressOverlay() on each flush
 PressTarget pressT;
 bool pressOn = false;
+bool pressSoftGone = false;  // this touch moved off a soft target (a buddy): a swipe, no preview till lift
 bool pressTargetAt(int16_t x, int16_t y, PressTarget &t);  // prototypes (defined at the end)
 void gameTap(int16_t x, int16_t y);
 
@@ -933,7 +934,11 @@ void pressRepaint() {
 
 void pressUpdate(int16_t x, int16_t y) {
   PressTarget t;
-  bool on = !swallowGesture && pressTargetAt(x, y, t);
+  bool on = !swallowGesture && !pressSoftGone && pressTargetAt(x, y, t);
+  if (on && t.soft) {  // a buddy: only for a finger resting on it, so swipes over buddies stay swipes
+    if (pressSoftMoved(x - tX0, y - tY0)) pressSoftGone = true;
+    on = pressSoftShows(x - tX0, y - tY0, millis() - tStart);
+  }
   // where left and right turn pages (buddies, time/settings, the card), a sideways drag is a swipe
   bool pagesSideways = buddyMenuOpen || cardOpen || (clockOpen && wifiSetupState() == WS_OFF);
   if (pagesSideways && abs(x - tX0) > 40 && abs(x - tX0) > abs(y - tY0)) on = false;
@@ -946,6 +951,7 @@ void pressUpdate(int16_t x, int16_t y) {
 // finger lifted: true if it was on a control and the gesture wasn't a quick swipe
 bool pressRelease() {
   bool picked = pressOn && !pressIsFlick(tXl - tX0, tYl - tY0, millis() - tStart);
+  pressSoftGone = false;
   if (pressOn) {
     pressOn = false;
     pressRepaint();
@@ -6919,8 +6925,10 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     int n = partyBuddies(), k = 0;
     for (int i = 0; i <= bt; i++) k += bPeers[i].on;
     const char *nm = buddyNameOf(bt);
-    if (y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6) return pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, nm);
-    return pressSet(t, partyBuddyX(n, k) - partyHalf(n), PET_GROUND - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
+    if (y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6) pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, nm);
+    else pressSet(t, partyBuddyX(n, k) - partyHalf(n), PET_GROUND - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
+    t.soft = true;  // buddies sit where swipes start: they give way to them
+    return true;
   }
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   if (pet.wantEvolveButton() && pressIn(x, y, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H))

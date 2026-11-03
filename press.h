@@ -10,12 +10,15 @@
 #define PRESS_EDGE 20        // margin from the round edge
 #define PRESS_FLICK_MS 350   // faster than this and longer than PRESS_FLICK_PX: still a swipe
 #define PRESS_FLICK_PX 80
+#define PRESS_SOFT_MS 150    // a soft target (a buddy) previews only once the finger has rested this long...
+#define PRESS_SOFT_PX 30     // ...within this of where it landed; farther and the touch is a swipe
 
 // the control under the finger
 struct PressTarget {
   int16_t x, y, w, h;       // the drawn control, to outline it
   const char *label;        // the large copy: text...
   const char *const *icon;  // ...or a 16x16 icon
+  bool soft = false;        // a big target lying where swipes start (the buddies): gives way to them
 };
 
 struct PressBox {
@@ -40,6 +43,13 @@ inline PressBox pressPopupBox(int16_t fx, int16_t fy, int16_t w, int16_t h, int1
   else if (x + w > c + half) x = c + half - w;
   return { x, y, w, h };
 }
+
+// a soft target, for a finger dx, dy from where it landed after dt ms: true once it has moved off
+// (the touch is a swipe from then on), and *show says whether to preview it yet
+inline bool pressSoftMoved(int dx, int dy) {
+  return dx > PRESS_SOFT_PX || dx < -PRESS_SOFT_PX || dy > PRESS_SOFT_PX || dy < -PRESS_SOFT_PX;
+}
+inline bool pressSoftShows(int dx, int dy, uint32_t dt) { return dt >= PRESS_SOFT_MS && !pressSoftMoved(dx, dy); }
 
 // a quick, long flick is still a swipe (pages, swipe up to exit) even if it ends on a control
 inline bool pressIsFlick(int dx, int dy, uint32_t dt) {
