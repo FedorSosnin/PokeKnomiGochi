@@ -449,7 +449,7 @@ def icon_play():
 
 
 # The home screen's buttons, the food and the card's pencil: hand-drawn pixel art, kept as drawn
-# (18x18 drawn at 3x without a box; the pencil 10x10)
+# (18x18 drawn at 3x without a box; the pencil 10x10, the trophy 12x12)
 HAND_ICONS = {
     "PENCIL": [
         ".......kk.",
@@ -602,6 +602,20 @@ HAND_ICONS = {
         "......kkBBBBBBkk..",
         "........kkkkkk....",
         "..................",
+    ],
+    "TROPHY": [  # 12x12, beside the battle wins on the stats page
+        "..kkkkkkkk..",
+        "kkkffffffkkk",
+        "kfkfwffffkfk",
+        "kfkfwffffkfk",
+        ".kkffffffkk.",
+        "..kffffYYk..",
+        "...kffYYk...",
+        "....kfYk....",
+        ".....kk.....",
+        "....kffk....",
+        "...kfffYk...",
+        "...kkkkkk...",
     ],
 }
 HOME_ICON_N = 18

@@ -4099,7 +4099,14 @@ void renderCardStats() {
   char wins[24];
   snprintf(wins, sizeof(wins), T(S_WINS_FMT), pet.battleWins);
   gfx->setTextColor(UI_INK);
-  setCur(centerX(wins, 2), 350);
+  int ww = textW(wins, 2), x0 = CX - (ww + 32) / 2;  // a trophy, then the battles won
+#ifdef BOARD_KNOMI_V2
+  const int wy = 300;  // under the bars, clear of the page dots
+#else
+  const int wy = 270;  // above the battle button
+#endif
+  drawMap(SPR_TROPHY, 12, x0, wy - 4, 2, false);
+  setCur(x0 + 32, wy);
   printT(wins);
 }
 

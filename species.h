@@ -577,6 +577,21 @@ static const char* const SPR_HOME_BUBBLE[18] = {  // 18x18
   "..................",
 };
 
+static const char* const SPR_TROPHY[12] = {  // 12x12
+  "..kkkkkkkk..",
+  "kkkffffffkkk",
+  "kfkfwffffkfk",
+  "kfkfwffffkfk",
+  ".kkffffffkk.",
+  "..kffffYYk..",
+  "...kffYYk...",
+  "....kfYk....",
+  ".....kk.....",
+  "....kffk....",
+  "...kfffYk...",
+  "...kkkkkk...",
+};
+
 static const char* const SPR_EGG[32] = {  // 32x32
   "................................",
   "................................",
