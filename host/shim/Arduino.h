@@ -25,6 +25,17 @@
 #define digitalPinToInterrupt(p) (p)
 
 using std::abs;
+#ifdef _WIN32  // the ESP32's (and macOS's) strlcpy, which Windows doesn't have
+inline size_t strlcpy(char *dst, const char *src, size_t size) {
+  size_t n = strlen(src);
+  if (size) {
+    size_t k = n < size - 1 ? n : size - 1;
+    memcpy(dst, src, k);
+    dst[k] = 0;
+  }
+  return n;
+}
+#endif
 // With mixed types: min(uint32_t, 800UL) is the same type on the ESP32 but not here
 template <class A, class B> inline auto min(A a, B b) -> std::common_type_t<A, B> { return a < b ? a : b; }
 template <class A, class B> inline auto max(A a, B b) -> std::common_type_t<A, B> { return a > b ? a : b; }

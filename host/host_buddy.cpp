@@ -1,5 +1,5 @@
 // What buddy_net.cpp is on the Knomi: the same UDP messages on BUDDY_PORT, broadcast until the
-// buddy's address is known, then straight to it. Plain BSD sockets, never blocks. Plus the relay
+// buddy's address is known, then straight to it. Plain BSD sockets (Winsock on Windows), never blocks. Plus the relay
 // (relay/ on Cloudflare): the front end keeps a WebSocket to it and hands the messages over, so
 // browsers, which have no UDP, meet everyone else too. A message may arrive both ways; the game
 // already copes with repeats, since the UDP ones are resent until answered.
@@ -75,17 +75,40 @@ void hostBuddyNetConfig(bool, uint16_t, const char *, uint16_t) {}
 
 #else
 
-#include <arpa/inet.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+#ifdef _WIN32  // Winsock: the same calls, a few different names
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#pragma push_macro("INPUT")  // Arduino's pin mode is a struct name in Windows' headers
+#undef INPUT
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#pragma pop_macro("INPUT")
+#ifndef SIO_UDP_CONNRESET
+#define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR, 12)
+#endif
+typedef uint32_t in_addr_t;
+#define closeSocket closesocket
+static const char *sockError() {
+  static char msg[16];
+  snprintf(msg, sizeof(msg), "error %d", WSAGetLastError());
+  return msg;
+}
+#else
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <vector>
+#define closeSocket close
+static const char *sockError() { return strerror(errno); }
+#endif
 
 #define IFACE_REFRESH_MS 5000UL  // Wi-Fi comes and goes: the list of networks is read again this often
 #define BIND_RETRY_MS 5000UL
@@ -102,7 +125,7 @@ static uint32_t peerId = 0;
 static in_addr_t peerIp = 0;
 
 static void closeSock() {
-  if (sock >= 0) close(sock);
+  if (sock >= 0) closeSocket(sock);
   sock = -1;
   peerIp = 0;
 }
@@ -126,22 +149,38 @@ static void readEnv() {
 }
 
 static bool openSock() {
-  int s = socket(AF_INET, SOCK_DGRAM, 0);
+#ifdef _WIN32
+  static bool wsa = false;
+  if (!wsa) {
+    WSADATA d;
+    if (WSAStartup(MAKEWORD(2, 2), &d) != 0) return false;
+    wsa = true;
+  }
+#endif
+  int s = (int)socket(AF_INET, SOCK_DGRAM, 0);
   if (s < 0) return false;
   int one = 1;
-  // REUSEPORT: two copies on one Mac share the port, and both hear every broadcast
-  setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+  // REUSEPORT: two copies on one Mac share the port, and both hear every broadcast (on Windows REUSEADDR does that)
+  setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&one, sizeof(one));
+  setsockopt(s, SOL_SOCKET, SO_BROADCAST, (const char *)&one, sizeof(one));
+#ifdef _WIN32
+  u_long nb = 1;
+  ioctlsocket(s, FIONBIO, &nb);
+  BOOL no = FALSE;  // a packet to a buddy that has gone would otherwise turn up as an error on the next receive
+  DWORD ret = 0;
+  WSAIoctl(s, SIO_UDP_CONNRESET, &no, sizeof(no), NULL, 0, &ret, NULL, NULL);
+#else
   setsockopt(s, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one));
-  setsockopt(s, SOL_SOCKET, SO_BROADCAST, &one, sizeof(one));
   fcntl(s, F_SETFL, fcntl(s, F_GETFL, 0) | O_NONBLOCK);
   fcntl(s, F_SETFD, FD_CLOEXEC);
+#endif
   sockaddr_in a = {};
   a.sin_family = AF_INET;
   a.sin_port = htons(gListenPort);
   a.sin_addr.s_addr = htonl(INADDR_ANY);
   if (bind(s, (sockaddr *)&a, sizeof(a)) != 0) {
-    fprintf(stderr, "buddy: cannot listen on UDP %u: %s\n", gListenPort, strerror(errno));
-    close(s);
+    fprintf(stderr, "buddy: cannot listen on UDP %u: %s\n", gListenPort, sockError());
+    closeSocket(s);
     return false;
   }
   sock = s;
@@ -156,6 +195,33 @@ static void readInterfaces() {
     broadcasts.push_back(gFixedTarget);
     return;
   }
+#ifdef _WIN32
+  ULONG len = 16384;
+  std::vector<uint8_t> mem;
+  IP_ADAPTER_ADDRESSES *list;
+  ULONG r;
+  do {
+    mem.resize(len);
+    list = (IP_ADAPTER_ADDRESSES *)mem.data();
+    r = GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER, NULL, list, &len);
+  } while (r == ERROR_BUFFER_OVERFLOW);
+  if (r != NO_ERROR) return;
+  for (IP_ADAPTER_ADDRESSES *i = list; i; i = i->Next) {
+    if (i->OperStatus != IfOperStatusUp) continue;
+    bool canBroadcast = i->IfType != IF_TYPE_SOFTWARE_LOOPBACK && i->IfType != IF_TYPE_TUNNEL && i->IfType != IF_TYPE_PPP;
+    for (IP_ADAPTER_UNICAST_ADDRESS *u = i->FirstUnicastAddress; u; u = u->Next) {
+      if (u->Address.lpSockaddr->sa_family != AF_INET) continue;
+      in_addr_t ip = ((sockaddr_in *)u->Address.lpSockaddr)->sin_addr.s_addr;
+      ownAddrs.push_back(ip);
+      int bits = u->OnLinkPrefixLength;
+      if (!canBroadcast || bits <= 0 || bits >= 31) continue;
+      in_addr_t b = ip | htonl(0xffffffffu >> bits);
+      bool dup = false;
+      for (in_addr_t x : broadcasts) dup |= x == b;
+      if (!dup) broadcasts.push_back(b);
+    }
+  }
+#else
   ifaddrs *list = nullptr;
   if (getifaddrs(&list) != 0) return;
   for (ifaddrs *i = list; i; i = i->ifa_next) {
@@ -168,6 +234,7 @@ static void readInterfaces() {
     if (b && !dup) broadcasts.push_back(b);
   }
   freeifaddrs(list);
+#endif
 }
 
 static bool udpUp() {
@@ -197,7 +264,7 @@ static bool udpPoll(BuddyMsg &out) {
     uint8_t buf[sizeof(BuddyMsg) + 1];
     sockaddr_in from = {};
     socklen_t fromLen = sizeof(from);
-    ssize_t got = recvfrom(sock, buf, sizeof(buf), 0, (sockaddr *)&from, &fromLen);
+    int got = (int)recvfrom(sock, (char *)buf, sizeof(buf), 0, (sockaddr *)&from, &fromLen);
     if (got < 0) return false;  // EWOULDBLOCK: nothing more for now
     if (!buddyParse(buf, (size_t)got, out) || out.from == buddyNetId()) continue;
     if (out.to != 0 && out.to != buddyNetId()) continue;
@@ -219,11 +286,11 @@ static void sendTo(const BuddyMsg &m, in_addr_t ip) {
   a.sin_family = AF_INET;
   a.sin_port = htons(gSendPort);
   a.sin_addr.s_addr = ip;
-  if (sendto(sock, &m, sizeof(m), 0, (sockaddr *)&a, sizeof(a)) < 0) {
+  if (sendto(sock, (const char *)&m, sizeof(m), 0, (sockaddr *)&a, sizeof(a)) < 0) {
     static uint32_t warnT = 0;  // e.g. macOS Local Network permission refused: says so now and then, not every packet
     if (!warnT || millis() - warnT > 60000UL) {
       warnT = millis() | 1;
-      fprintf(stderr, "buddy: cannot send to %s: %s\n", inet_ntoa(a.sin_addr), strerror(errno));
+      fprintf(stderr, "buddy: cannot send to %s: %s\n", inet_ntoa(a.sin_addr), sockError());
     }
   }
 }

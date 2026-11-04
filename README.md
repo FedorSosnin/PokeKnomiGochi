@@ -4,7 +4,7 @@ A Pokémon tamagotchi for the **BTT Knomi V2**, the little round screen made for
 
 <p align="center"><img src="docs/images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a Knomi in its printed Poké Ball case" width="360"> <img src="docs/images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, its Pokémon asleep" width="360"></p>
 
-**No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac).
+**No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows).
 
 This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) by Quique Tortosa, who created the original game. PokeKnomiGochi brings it to the Knomi and adds battles, catching and new games. Please give the original a star.
 
@@ -267,6 +267,24 @@ Your pet, sound setting and window size and place are saved on the Mac in `~/Lib
 **Buddies:** a Knomi or another PokeMacGochi on the same Wi-Fi shows up as a buddy, just like between two Knomis. The first time, macOS asks whether PokeMacGochi may find devices on your local network: click **Allow**. If you clicked **Don't Allow**, turn PokeMacGochi on in **System Settings → Privacy & Security → Local Network** and reopen it.
 
 To build it yourself, run `mac/build_dmg.sh` (needs Xcode's Command Line Tools). [host/README.md](host/README.md) explains how it works.
+
+## PokeWinGochi (Windows)
+
+The same game as a small round window on your Windows desktop, for Windows 10 and 11. It's one file with nothing to install, it has no taskbar button, and it lives in the taskbar's notification area (the icons by the clock).
+
+1. Download `PokeWinGochi.exe` from the [latest Windows release](https://github.com/FedorSosnin/PokeKnomiGochi/releases) and put it somewhere you'll keep it, like your Desktop or Documents.
+2. Open it. Windows warns that it **protected your PC**, because the app isn't signed by a paid developer certificate. Click **More info**, then **Run anyway**. After that it opens normally.
+3. The first time, Windows Firewall may ask whether PokeWinGochi can use your network. Allow it on **private networks**, so buddies on your Wi-Fi can find you.
+
+**Controls:** the same as the Mac app. Click, hold and swipe like a touch screen; the left and right arrows tilt, all four arrows walk in PokeDungeon, and Space is the Knomi's button. Drag the ring to move the window: it grows when the mouse is over it, and the screen inside is only for touching. Right-click it, or click the Poké Ball by the clock, for About, Size, Mute Sound, Check for Updates and Quit. To start it with Windows, put a shortcut to it in the Startup folder (press Win+R and type `shell:startup`).
+
+Your pet, sound setting and window size and place are saved in `%APPDATA%\PokeWinGochi`, separate from the app; the game's pictures are unpacked to `%LOCALAPPDATA%\PokeWinGochi`. Only one copy runs on that save at a time.
+
+**Updates:** it checks for a new version when it opens and once a day, and tells you once when one is out. Quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one. Your pet stays.
+
+**Buddies:** Knomis, Macs, PCs and browsers find each other, the same as the Mac app.
+
+To build it yourself, run `windows/build.sh` on a Mac or Linux with [llvm-mingw](https://github.com/mstorsjo/llvm-mingw). [host/README.md](host/README.md) explains how it works.
 
 ## Credits and license
 

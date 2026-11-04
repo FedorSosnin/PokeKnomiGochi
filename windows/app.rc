@@ -1,0 +1,38 @@
+// PokeWinGochi.exe's resources: the icon, the manifest, the file properties, and the game's
+// files (main.cpp writes them out to %LOCALAPPDATA%\PokeWinGochi\res at launch): one .exe is the app.
+#include <windows.h>
+#include "version.h"
+#include "resources.h"
+
+IDI_APP ICON "app.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "app.manifest"
+
+IDR_SPRITES RCDATA "../build/win/res/sprites.tpkz"
+IDR_FONT_JA RCDATA "../host/fonts/unifont_t_japanese3.u8g2"
+IDR_FONT_KO RCDATA "../host/fonts/unifont_t_korean2.u8g2"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION APP_VERSION_NUM
+PRODUCTVERSION APP_VERSION_NUM
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "CompanyName", "Fedor Sosnin"
+      VALUE "FileDescription", "PokeWinGochi"
+      VALUE "FileVersion", APP_VERSION
+      VALUE "InternalName", "PokeWinGochi"
+      VALUE "LegalCopyright", "Fedor Sosnin. Personal, non-commercial."
+      VALUE "OriginalFilename", "PokeWinGochi.exe"
+      VALUE "ProductName", "PokeWinGochi"
+      VALUE "ProductVersion", APP_VERSION
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

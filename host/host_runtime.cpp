@@ -4,6 +4,10 @@
 #include "host_internal.h"
 #include <errno.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#define mkdir(path, mode) _mkdir(path)
+#endif
 #include <time.h>
 #include <Wire.h>
 #include <chrono>
@@ -266,7 +270,9 @@ static const uint8_t *loadFont(const char *name) {
 static bool makeDirs(const std::string &path) {
   for (size_t i = 1; i <= path.size(); i++) {
     if (i < path.size() && path[i] != '/') continue;
-    if (mkdir(path.substr(0, i).c_str(), 0755) != 0 && errno != EEXIST) return false;
+    std::string sub = path.substr(0, i);
+    if (sub.size() == 2 && sub[1] == ':') continue;  // a Windows drive ("C:")
+    if (mkdir(sub.c_str(), 0755) != 0 && errno != EEXIST) return false;
   }
   return true;
 }

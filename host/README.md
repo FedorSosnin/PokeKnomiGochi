@@ -4,6 +4,8 @@ Runs the game on something that isn't a board. It is split in two so a future we
 
 - **`host/`** is portable C++ with no AppKit: a 466x466 RGB565 software canvas (the subset of Arduino_GFX the sketch uses, same algorithms), input, clock, sprite loading, save storage and PCM sound. `host.h` is the whole interface a front end sees.
 - **`mac/`** is only the window: a round, always-on-top `NSWindow`, mouse and keyboard, and an audio queue.
+- **`windows/`** is the same for Windows: a round layered window drawn in software, the notification-area icon, `waveOut` sound and WinHTTP for the relay and updates, cross-compiled with llvm-mingw into one `.exe` that carries the sprite pack and fonts.
+- **`webgame/`** is the browser's: a canvas, WebAudio and a WebSocket.
 
 ## The game is not forked
 
@@ -38,6 +40,12 @@ mac/make_icon.sh     # regenerates mac/AppIcon.icns from a frame of the game (th
 ```
 
 This produces `build/mac/PokeMacGochi.app`. It needs the Xcode Command Line Tools and python3. There is no App Store build and no signing beyond a local ad hoc signature.
+
+```bash
+windows/build.sh     # build/win/PokeWinGochi.exe (llvm-mingw on PATH, or in ~/Tools/llvm-mingw)
+```
+
+On Windows the host reads the compressed sprite pack, like the browser, and the few POSIX calls it makes (sockets, `mkdir`, replacing the save file, the time zone) have a Windows branch. `--console` takes the Mac's test commands from stdin, plus `SHOT file.bmp`, which saves the window as drawn; Wine runs it for a quick check on a Mac.
 
 ```bash
 make -C host test

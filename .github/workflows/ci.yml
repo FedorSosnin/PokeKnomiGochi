@@ -92,6 +92,23 @@ jobs:
       - name: Run the suite (plus AddressSanitizer + UBSan)
         run: ./test/run_tests.sh --asan
 
+  windows:
+    name: Build PokeWinGochi.exe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Pinned like the ESP32 core: the same llvm-mingw the release is built with on the Mac
+      - name: Install llvm-mingw and zsh
+        run: |
+          sudo apt-get install -y zsh
+          curl -sSL https://github.com/mstorsjo/llvm-mingw/releases/download/20261020/llvm-mingw-20261020-ucrt-ubuntu-22.04-x86_64.tar.xz | tar xJ -C $HOME
+          echo "$HOME/llvm-mingw-20261020-ucrt-ubuntu-22.04-x86_64/bin" >> $GITHUB_PATH
+      - run: zsh windows/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PokeWinGochi
+          path: build/win/PokeWinGochi.exe
+
   i18n:
     name: i18n format-specifier consistency
     runs-on: ubuntu-latest

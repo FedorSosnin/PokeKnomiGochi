@@ -10,8 +10,13 @@ static int64_t gClockOffset = 0;  // whatever was adjusted by hand on the time s
 static uint32_t localEpoch() {
   time_t now = time(nullptr);
   struct tm t;
+#ifdef _WIN32  // no tm_gmtoff: the local time read back as if it were UTC gives the offset
+  localtime_s(&t, &now);
+  return (uint32_t)_mkgmtime(&t);
+#else
   localtime_r(&now, &t);
   return (uint32_t)(now + t.tm_gmtoff);
+#endif
 }
 
 bool rtcBegin() { return true; }

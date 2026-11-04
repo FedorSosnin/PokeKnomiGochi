@@ -6,6 +6,11 @@
 #include "host_internal.h"
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 #include <map>
 #include <set>
 #include <vector>
@@ -63,7 +68,11 @@ void hostPrefsFlush() {
         ok = fprintf(f, e.second.empty() ? "-\n" : "\n") > 0 && ok;
       }
       ok = fclose(f) == 0 && ok;
+#ifdef _WIN32  // rename() won't replace a file that exists
+      if (ok) ok = MoveFileExA(tmp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
+#else
       if (ok) ok = rename(tmp.c_str(), path.c_str()) == 0;
+#endif
       if (!ok) { remove(tmp.c_str()); fprintf(stderr, "failed to save %s\n", path.c_str()); }
     }
   }

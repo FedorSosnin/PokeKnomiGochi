@@ -7,9 +7,10 @@
 
 const char *hostResourcesDir();
 
-#if defined(__EMSCRIPTEN__)
-// In the browser the 40 MB folder would be too much to download: it reads the Knomi's
-// compressed pack (tools/pack_flash.py, 1.2 MB) from <resources>/sprites.tpkz instead.
+#if defined(__EMSCRIPTEN__) || defined(_WIN32)
+// In the browser the 40 MB folder would be too much to download, and on Windows the app is one
+// .exe: both read the Knomi's compressed pack (tools/pack_flash.py, 1.2 MB) from
+// <resources>/sprites.tpkz instead.
 #include <stdlib.h>
 #include <string.h>
 #include <string>
