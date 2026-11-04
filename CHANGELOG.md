@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.36] - 2026-11-04
+
 - **The wild Pokémon runs for it:** after the battle, while you throw Poké Balls, it runs back and forth across the field in its walking animation, facing the way it goes, with a shadow and a little dust behind it, instead of sliding along the horizon. The rings run with it and the ball lands on the field; how to aim and the odds are the same.
 - **Tilt and controllers on Windows** (PokeWinGochi 1.3): a controller's left stick tilts smoothly and walks in PokeDungeon with the D-pad, and a motion sensor that Windows knows about tilts the game like a phone (**Tilt with the Device** in the menu turns it off). On a ROG Ally, mapping the gyro to the left joystick in Armoury Crate makes tilting the Ally tilt the game.
 - **Vibration on Windows** (PokeWinGochi 1.2): PokeWinGochi buzzes with the game's sound effects on a controller that can rumble: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. **Vibration** in its menu turns it off.

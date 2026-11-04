@@ -1,6 +1,6 @@
 {
   "name": "PokeKnomiGochi",
-  "version": "1.35-knomi",
+  "version": "1.36-knomi",
   "new_install_prompt_erase": true,
   "builds": [
     {
