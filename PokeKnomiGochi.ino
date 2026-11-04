@@ -6102,6 +6102,7 @@ void renderTrade() {
       if (i == trPage) gfx->fillCircle(dotX, GAL_DOTS_Y, 4, UI_INK);
       else gfx->drawCircle(dotX, GAL_DOTS_Y, 3, UI_INK);
     }
+    drawCloseButtonAt(GAL_CLOSE_Y);  // backing out of the trade, as in the Pokedex
     gfx->flush();
     return;
   }
@@ -6145,6 +6146,7 @@ void renderTrade() {
   } else {
     setCur(centerX(T(S_BUDDY_WAITING), 2), PICK_BTN_Y);
     printT(T(S_BUDDY_WAITING));
+    drawCloseButton();  // waiting for the buddy can always be given up
   }
   gfx->flush();
 }
@@ -6183,6 +6185,9 @@ void tradeTap(int16_t x, int16_t y) {
       sfxPlay(SFX_TAP);
       tradeClose(true);
     }
+  } else if (trPhase != TR_DONE && closeHit(x, y)) {  // waiting for the buddy: the X backs out
+    sfxPlay(SFX_TAP);
+    tradeClose(true);
   }
 }
 
@@ -7187,7 +7192,10 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (tradeOpen) {
-    if (trPhase != TR_REVIEW) return false;
+    if (trPhase == TR_PICK)
+      return closeHitAt(x, y, GAL_CLOSE_Y) && pressSet(t, CX - CLOSE_R, GAL_CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+    if (trPhase == TR_DONE) return false;
+    if (trPhase != TR_REVIEW) return closeHit(x, y) && pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     if (y >= PICK_BTN_Y - 40 && y < PICK_BTN_Y - 40 + PICK_BTN_H && abs(x - CX) <= 110)
       return pressSet(t, CX - 110, PICK_BTN_Y - 40, 220, PICK_BTN_H, T(S_BUDDY_TRADE));
     if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");

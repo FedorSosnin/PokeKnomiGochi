@@ -8,6 +8,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Back out of a trade any time:** the screen where you pick a Pokémon to give now shows an ✕ (it worked before, but you couldn't see it), and so does waiting for your buddy after you've picked or confirmed. Backing out leaves both Pokédexes as they were.
 - **Defense training is fairer:** good care now adds +1 every 6 hours instead of 12, hours asleep count, a need can dip under 40 for up to 15 minutes before the count starts over, and the count is saved, so a restart or an update no longer wipes it.
 
 ## [1.34] - 2026-11-04
