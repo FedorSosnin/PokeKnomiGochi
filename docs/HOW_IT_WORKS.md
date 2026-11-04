@@ -94,7 +94,7 @@ There are two ways to start a battle:
 
 ⭐ A zone's legendary appears only after you've caught everything else there. Each Search then has a 25% chance of finding it, or 3% once it's caught. Evolved forms only appear once your Pokémon is high enough level. All 151 can be caught this way, and catching all of a zone earns its zone medal.
 
-✨ About 1 wild Pokémon in 50 is shiny. Its shiny form goes into the Pokédex separately from the regular one, so you can have both, and each can be traded on its own.
+✨ About 1 wild Pokémon in 100 is shiny. Its shiny form goes into the Pokédex separately from the regular one, so you can have both, and each can be traded on its own.
 
 ## What drops over time
 

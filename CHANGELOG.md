@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Shinies are rarer:** about 1 wild Pokémon in 100 is shiny now, instead of 1 in 50.
+
 ## [1.33] - 2026-11-03
 
 - **Vibration in the browser on Android:** PokeWebGochi buzzes softly with taps, meals, medals, catches and the other sound effects, even with the sound muted. A **Vibration** button under the screen turns it off; it only shows on phones whose browser can vibrate (iPhones can't).

@@ -3,7 +3,7 @@
 // Rules for the catch, the quiz and the daily visit, without hardware (test/test_minigames.cpp).
 
 #define CATCH_BALLS 3         // throws per encounter
-#define WILD_SHINY_PCT 2      // one wild Pokemon in 50 is shiny
+#define WILD_SHINY_PCT 1      // one wild Pokemon in 100 is shiny
 #define CATCH_SHAKES 3
 #define CATCH_SHAKE_MS 900    // one rock to the side, with its tone
 // Three rings around the Pokemon: the closer to its middle the ball lands, the surer the catch
