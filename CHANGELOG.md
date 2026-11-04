@@ -8,6 +8,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Tilt and controllers on Windows** (PokeWinGochi 1.3): a controller's left stick tilts smoothly and walks in PokeDungeon with the D-pad, and a motion sensor that Windows knows about tilts the game like a phone (**Tilt with the Device** in the menu turns it off). On a ROG Ally, mapping the gyro to the left joystick in Armoury Crate makes tilting the Ally tilt the game.
 - **Vibration on Windows** (PokeWinGochi 1.2): PokeWinGochi buzzes with the game's sound effects on a controller that can rumble: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. **Vibration** in its menu turns it off.
 
 ## [1.35] - 2026-11-04

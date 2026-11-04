@@ -286,6 +286,8 @@ Your pet, sound setting and window size and place are saved in `%APPDATA%\PokeWi
 
 **Updates:** it checks for a new version when it opens and once a day, and tells you once when one is out. Quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one. Your pet stays.
 
+**Tilt and controllers:** a controller's left stick tilts smoothly (for Tilt Catch and aiming Poké Balls), and the stick or D-pad walks in PokeDungeon: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. If Windows has a motion sensor, as many tablets do, tilting the device tilts the game, like on a phone; **Tilt with the Device** in the menu turns that off. On a ROG Ally, set the gyro to act as the left joystick in Armoury Crate, and tilting the Ally tilts the game. The controller and the sensor only count while PokeWinGochi is the active window.
+
 **Vibration:** on a handheld PC with a built-in controller, like the ROG Ally, or with an Xbox controller connected, it buzzes softly with taps, meals, medals and catches. **Vibration** in the menu turns it off; it only shows when a controller is connected.
 
 **Buddies:** Knomis, Macs, PCs and browsers find each other, the same as the Mac app.

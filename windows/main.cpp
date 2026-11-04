@@ -21,6 +21,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <initguid.h>  // the sensor ids, defined here
+#include <sensors.h>
+#include <sensorsapi.h>
 #include "host.h"
 #include "resources.h"
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
@@ -67,7 +70,7 @@ enum {
 };
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
 enum {
-  ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT, ID_VIBE,
+  ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT, ID_VIBE, ID_TILT,
 };
 
 static HWND gWnd;
@@ -396,6 +399,87 @@ static void startVibration() {
   std::thread(vibeThread).detach();
 }
 
+// ---- tilt, like the Knomi's accelerometer and a phone's: a motion sensor that Windows knows about (a
+// tablet's or a handheld's) tilts the game as the device tilts, and a controller's left stick tilts it
+// smoothly (with the gyro mapped to that stick, in Armoury Crate on a ROG Ally, tilting moves the
+// stick). The stick and the D-pad also walk in PokeDungeon. Without either: the arrow keys, as before.
+// Both only while this window is the active one, so playing something else doesn't move the pet. ----
+#define TILT_FULL_G 0.5  // sin(30 degrees): tilting 30 degrees is all the way, as on a phone
+#define PAD_SCAN_MS 2000 // with no controller, the slots are asked again this often (an empty one is slow)
+static ISensor *gAccel = NULL;
+static std::atomic<bool> gTiltOn{true};  // "Tilt with the device" in the menu, shown with a sensor
+static int gPad = -1;
+static DWORD gPadScanT = 0;
+static bool gPadL = false, gPadR = false, gPadU = false, gPadD = false;
+static bool gLeft = false, gRight = false, gUp = false, gDown = false;  // the keyboard's arrows
+
+static void startTiltSensor() {
+  ISensorManager *mgr = NULL;
+  if (FAILED(CoCreateInstance(CLSID_SensorManager, NULL, CLSCTX_INPROC_SERVER, IID_ISensorManager, (void **)&mgr))) return;
+  ISensorCollection *list = NULL;
+  ULONG n = 0;
+  if (SUCCEEDED(mgr->GetSensorsByType(SENSOR_TYPE_ACCELEROMETER_3D, &list)) && SUCCEEDED(list->GetCount(&n)) && n)
+    list->GetAt(0, &gAccel);
+  if (list) list->Release();
+  mgr->Release();
+  Preferences p;
+  p.begin(PREFS_NS, true);
+  gTiltOn = p.getBool("tilt", true);
+  p.end();
+}
+
+// across the screen, in g: positive with the right side down, held flat or upright
+static bool accelX(double &x) {
+  ISensorDataReport *r = NULL;
+  if (!gAccel || FAILED(gAccel->GetData(&r)) || !r) return false;
+  PROPVARIANT v;
+  PropVariantInit(&v);
+  bool ok = SUCCEEDED(r->GetSensorValue(SENSOR_DATA_TYPE_ACCELERATION_X_G, &v)) && v.vt == VT_R8;
+  if (ok) x = v.dblVal;
+  PropVariantClear(&v);
+  r->Release();
+  return ok;
+}
+
+static float stickAxis(SHORT v, SHORT dead) {  // -1..1 outside the dead zone, 0 inside
+  int a = v < 0 ? -(int)v : v;
+  if (a <= dead) return 0;
+  float t = (float)(a - dead) / (32767 - dead);
+  return v < 0 ? -fminf(t, 1) : fminf(t, 1);
+}
+
+static void applyKeys();
+static void readTilt() {  // each tick, on the game's thread
+  bool active = GetForegroundWindow() == gWnd;
+  float sx = 0, sy = 0;
+  WORD buttons = 0;
+  XINPUT_STATE st;
+  if (gXGet && active && (gPad >= 0 || timeGetTime() - gPadScanT > PAD_SCAN_MS)) {
+    if (gPad < 0) {
+      gPadScanT = timeGetTime();
+      gPad = controllerIndex();
+    }
+    if (gPad >= 0 && gXGet(gPad, &st) == ERROR_SUCCESS) {
+      sx = stickAxis(st.Gamepad.sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+      sy = stickAxis(st.Gamepad.sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+      buttons = st.Gamepad.wButtons;
+    } else {
+      gPad = -1;
+    }
+  }
+  bool l = sx < -0.5f || (buttons & XINPUT_GAMEPAD_DPAD_LEFT), r = sx > 0.5f || (buttons & XINPUT_GAMEPAD_DPAD_RIGHT);
+  bool u = sy > 0.5f || (buttons & XINPUT_GAMEPAD_DPAD_UP), d = sy < -0.5f || (buttons & XINPUT_GAMEPAD_DPAD_DOWN);
+  if (l != gPadL || r != gPadR || u != gPadU || d != gPadD) {
+    gPadL = l, gPadR = r, gPadU = u, gPadD = d;
+    applyKeys();
+  }
+  double ax;
+  if (sx != 0) hostTiltSensor(sx);                                   // the stick, when it's pushed
+  else if (gLeft || gRight || gPadL || gPadR) hostTiltSensor(NAN);   // an arrow key or the D-pad, held
+  else if (active && gTiltOn && accelX(ax)) hostTiltSensor((float)(ax / TILT_FULL_G));
+  else hostTiltSensor(NAN);                                          // the keys
+}
+
 // ---- the window: one layered (per-pixel transparent) bitmap, drawn here: the Pokeball frame and the
 // game's canvas inside. Outside the circle the window does not exist: clicks pass through. ----
 static int gSize = DEFAULT_SIZE;  // points, at rest
@@ -408,7 +492,7 @@ static HBITMAP gBitmap = NULL;
 static HDC gDC = NULL;
 static uint8_t gCanvas[HOST_CANVAS_SIZE * HOST_CANVAS_SIZE * 4];
 static int gTouchX, gTouchY;  // where the finger is, in canvas coordinates
-static bool gTouching = false, gLeft = false, gRight = false, gUp = false, gDown = false;
+static bool gTouching = false;
 static POINT gLastCursor = {-1, -1};
 
 static int screenOffset() { return (int)lround(RING_HOVER * gScale); }
@@ -570,9 +654,9 @@ static void canvasPoint(int x, int y, int &cx, int &cy) {
   cy = (int)((y - screenOffset()) * k);
 }
 
-static void applyKeys() {
-  hostTiltKeys(gLeft, gRight);
-  hostArrowKeys(gUp, gDown);
+static void applyKeys() {  // the keyboard's arrows and a controller's, together
+  hostTiltKeys(gLeft || gPadL, gRight || gPadR);
+  hostArrowKeys(gUp || gPadU, gDown || gPadD);
 }
 
 // without focus the key-up never arrives: the key would stay pressed forever
@@ -606,6 +690,8 @@ static void showMenu(POINT at) {
   AppendMenuW(m, MF_STRING | (hostSoundEnabled() ? 0 : MF_CHECKED), ID_MUTE, L"Mute Sound");
   if (gXSet && controllerIndex() >= 0)  // only with a controller that can buzz
     AppendMenuW(m, MF_STRING | (gVibeOn ? MF_CHECKED : 0), ID_VIBE, L"Vibration");
+  if (gAccel)  // only with a motion sensor
+    AppendMenuW(m, MF_STRING | (gTiltOn ? MF_CHECKED : 0), ID_TILT, L"Tilt with the Device");
   std::wstring upd = gNewVersion.empty() ? L"Check for Updates…" : L"Download Version " + wide(gNewVersion) + L"…";
   AppendMenuW(m, MF_STRING, ID_UPDATE, upd.c_str());
   AppendMenuW(m, MF_SEPARATOR, 0, NULL);
@@ -828,6 +914,7 @@ static void consoleThread() {
 static DWORD gLastTick = 0;  // timeGetTime(): to the millisecond with timeBeginPeriod(1)
 static void tick() {
   gLastTick = timeGetTime();
+  if (!gConsole) readTilt();  // tests steer with their own commands
   hostTick();
   bool dirty = hostFrameDirty();
   if (dirty) hostFrameRGBA(gCanvas);
@@ -957,6 +1044,14 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
           if (gVibeOn) haptic(0);  // a taste of it
           break;
         }
+        case ID_TILT: {
+          gTiltOn = !gTiltOn;
+          Preferences p;
+          p.begin(PREFS_NS);
+          p.putBool("tilt", gTiltOn);
+          p.end();
+          break;
+        }
         case ID_UPDATE: checkForUpdates(true); break;
         case ID_QUIT: quit(); break;
       }
@@ -1063,7 +1158,9 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
   }
   std::string res = unpackResources();
   hostInit(res.c_str(), saveDir.c_str());
+  CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);  // the sensors are COM
   startVibration();
+  startTiltSensor();
 
   WNDCLASSEXW wc = {sizeof(wc)};
   wc.lpfnWndProc = wndProc;
