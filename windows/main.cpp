@@ -11,9 +11,12 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <winhttp.h>
+#include <xinput.h>
 #include <math.h>
 #include <stdio.h>
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -64,7 +67,7 @@ enum {
 };
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
 enum {
-  ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT,
+  ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT, ID_VIBE,
 };
 
 static HWND gWnd;
@@ -314,6 +317,85 @@ static void audioThread() {
   }
 }
 
+// ---- vibration: a buzz with each sound effect on a game controller, through XInput: the built-in one
+// of a handheld PC (ROG Ally and the like) or an Xbox controller. Its own switch in the menu, on by
+// default and kept with the window's settings; muting the sound doesn't stop it. ----
+typedef DWORD(WINAPI *XInputGetStateFn)(DWORD, XINPUT_STATE *);
+typedef DWORD(WINAPI *XInputSetStateFn)(DWORD, XINPUT_VIBRATION *);
+static XInputGetStateFn gXGet = NULL;
+static XInputSetStateFn gXSet = NULL;
+static std::atomic<bool> gVibeOn{true};
+static std::mutex gVibeLock;
+static std::condition_variable gVibeWake;
+static int gVibeNext = -1;  // the effect to play, from the game's thread
+
+// per effect, in audio.h's Sfx order: milliseconds on, off, on... and how hard. The browser's patterns
+// (webgame/shell.html), a little longer: a rumble motor needs a moment to spin up
+struct Buzz { uint8_t count; uint16_t ms[5]; uint16_t strength; };
+static const Buzz kBuzz[] = {
+  {1, {30}, 0x5000},                       // tap
+  {1, {45}, 0x9000},                       // eat
+  {1, {30}, 0x6000},                       // minigame point
+  {3, {30, 50, 30}, 0x8000},               // likes it
+  {3, {60, 60, 100}, 0xC000},              // hatch
+  {5, {80, 60, 80, 60, 150}, 0xC000},      // evolution
+  {3, {50, 50, 80}, 0xB000},               // medal
+  {3, {60, 40, 60}, 0x9000},               // not allowed
+  {1, {120}, 0xA000},                      // goodbye
+  {3, {40, 50, 60}, 0xB000},               // level up
+  {1, {50}, 0x9000}, {1, {50}, 0x9000}, {1, {50}, 0xA000},  // the ball rocks: one, two, three
+};
+
+static int controllerIndex() {  // the first one connected, or -1
+  XINPUT_STATE st;
+  for (DWORD i = 0; gXGet && i < XUSER_MAX_COUNT; i++)
+    if (gXGet(i, &st) == ERROR_SUCCESS) return (int)i;
+  return -1;
+}
+
+static void haptic(uint8_t sfx) {  // the game's thread: hands the effect over, never waits
+  if (!gVibeOn || !gXSet || sfx >= sizeof(kBuzz) / sizeof(kBuzz[0])) return;
+  std::lock_guard<std::mutex> l(gVibeLock);
+  gVibeNext = sfx;
+  gVibeWake.notify_one();
+}
+
+static void vibeThread() {
+  std::unique_lock<std::mutex> l(gVibeLock);
+  for (;;) {
+    gVibeWake.wait(l, [] { return gVibeNext >= 0; });
+    const Buzz &b = kBuzz[gVibeNext];
+    gVibeNext = -1;
+    l.unlock();
+    int pad = controllerIndex();
+    l.lock();
+    if (pad < 0) continue;
+    for (int i = 0; i < b.count && gVibeNext < 0; i++) {  // a new effect cuts this one short
+      XINPUT_VIBRATION v = {};
+      if (i % 2 == 0) v.wLeftMotorSpeed = v.wRightMotorSpeed = b.strength;
+      gXSet(pad, &v);
+      gVibeWake.wait_for(l, std::chrono::milliseconds(b.ms[i]), [] { return gVibeNext >= 0; });
+    }
+    XINPUT_VIBRATION off = {};
+    gXSet(pad, &off);
+  }
+}
+
+static void startVibration() {
+  HMODULE x = LoadLibraryW(L"xinput1_4.dll");  // Windows 10 and 11; older ones have 9_1_0
+  if (!x) x = LoadLibraryW(L"xinput9_1_0.dll");
+  if (!x) return;
+  gXGet = (XInputGetStateFn)(void *)GetProcAddress(x, "XInputGetState");
+  gXSet = (XInputSetStateFn)(void *)GetProcAddress(x, "XInputSetState");
+  if (!gXGet || !gXSet) return;
+  Preferences p;
+  p.begin(PREFS_NS, true);
+  gVibeOn = p.getBool("vibe", true);
+  p.end();
+  hostSetHaptic(haptic);
+  std::thread(vibeThread).detach();
+}
+
 // ---- the window: one layered (per-pixel transparent) bitmap, drawn here: the Pokeball frame and the
 // game's canvas inside. Outside the circle the window does not exist: clicks pass through. ----
 static int gSize = DEFAULT_SIZE;  // points, at rest
@@ -522,6 +604,8 @@ static void showMenu(POINT at) {
   AppendMenuW(m, MF_POPUP, (UINT_PTR)sizes, L"Size");
   // the same setting as the game's SND button on the clock screen, saved with the game
   AppendMenuW(m, MF_STRING | (hostSoundEnabled() ? 0 : MF_CHECKED), ID_MUTE, L"Mute Sound");
+  if (gXSet && controllerIndex() >= 0)  // only with a controller that can buzz
+    AppendMenuW(m, MF_STRING | (gVibeOn ? MF_CHECKED : 0), ID_VIBE, L"Vibration");
   std::wstring upd = gNewVersion.empty() ? L"Check for Updates…" : L"Download Version " + wide(gNewVersion) + L"…";
   AppendMenuW(m, MF_STRING, ID_UPDATE, upd.c_str());
   AppendMenuW(m, MF_SEPARATOR, 0, NULL);
@@ -864,6 +948,15 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
           saveWindowPlace();
           break;
         case ID_MUTE: hostSetSoundEnabled(!hostSoundEnabled()); break;
+        case ID_VIBE: {
+          gVibeOn = !gVibeOn;
+          Preferences p;
+          p.begin(PREFS_NS);
+          p.putBool("vibe", gVibeOn);
+          p.end();
+          if (gVibeOn) haptic(0);  // a taste of it
+          break;
+        }
         case ID_UPDATE: checkForUpdates(true); break;
         case ID_QUIT: quit(); break;
       }
@@ -970,6 +1063,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
   }
   std::string res = unpackResources();
   hostInit(res.c_str(), saveDir.c_str());
+  startVibration();
 
   WNDCLASSEXW wc = {sizeof(wc)};
   wc.lpfnWndProc = wndProc;

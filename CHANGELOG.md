@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Vibration on Windows:** PokeWinGochi buzzes with the game's sound effects on a controller that can rumble: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. **Vibration** in its menu turns it off.
+
 ## [1.35] - 2026-11-04
 
 - **Back out of a trade any time:** the screen where you pick a Pokémon to give now shows an ✕ (it worked before, but you couldn't see it), and so does waiting for your buddy after you've picked or confirmed. Backing out leaves both Pokédexes as they were.

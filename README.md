@@ -286,6 +286,8 @@ Your pet, sound setting and window size and place are saved in `%APPDATA%\PokeWi
 
 **Updates:** it checks for a new version when it opens and once a day, and tells you once when one is out. Quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one. Your pet stays.
 
+**Vibration:** on a handheld PC with a built-in controller, like the ROG Ally, or with an Xbox controller connected, it buzzes softly with taps, meals, medals and catches. **Vibration** in the menu turns it off; it only shows when a controller is connected.
+
 **Buddies:** Knomis, Macs, PCs and browsers find each other, the same as the Mac app.
 
 To build it yourself, run `windows/build.sh` on a Mac or Linux with [llvm-mingw](https://github.com/mstorsjo/llvm-mingw). [host/README.md](host/README.md) explains how it works.
