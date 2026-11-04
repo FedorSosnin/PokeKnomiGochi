@@ -11,11 +11,17 @@
 // Knomi uses the home's shared IPv4: devices look their IPv4 up and send it, and are grouped by it.
 // Text frames from the relay tell each device how many others share its group: {"n": 2}. A device
 // that is alone sends nothing, which keeps the relay within Cloudflare's free plan.
+//
+//   https://<relay>/stats  ->  {"online": 12}
+//
+// How many devices are connected right now, all of them together (Knomis on Wi-Fi, the Mac and
+// Windows apps, open browser tabs). Only the number: nothing about who or where.
 
 const MSG_SIZE = 65;
 const MAX_PER_GROUP = 16;  // a home has a few devices: more is someone filling a group on purpose
 const RATE_PER_S = 8;      // the game sends a few messages a second at most, during a battle
 const BURST = 16;
+const STATS_CACHE_S = 60;  // the count is kept a minute: looking often doesn't wake the lobby each time
 
 export default {
   async fetch(request, env) {
@@ -28,6 +34,24 @@ export default {
       const fwd = new Request(request);
       fwd.headers.set('X-Groups', keys.join(','));
       return lobby.fetch(fwd);
+    }
+    if (url.pathname === '/stats') {
+      const cache = caches.default;
+      const key = new Request(url.origin + '/stats');
+      let res = await cache.match(key);
+      if (!res) {
+        const lobby = env.LOBBY.get(env.LOBBY.idFromName('lobby'));
+        const { online } = await (await lobby.fetch(new Request(url.origin + '/stats'))).json();
+        res = new Response(JSON.stringify({ online }), {
+          headers: {
+            'content-type': 'application/json',
+            'cache-control': `public, max-age=${STATS_CACHE_S}`,
+            'access-control-allow-origin': '*',  // a dashboard on another site can read it
+          },
+        });
+        await cache.put(key, res.clone());
+      }
+      return res;
     }
     return new Response('PokeKnomiGochi buddy relay. See https://github.com/FedorSosnin/PokeKnomiGochi\n', {
       headers: { 'content-type': 'text/plain' },
@@ -72,6 +96,8 @@ export class Lobby {
   }
 
   async fetch(request) {
+    if (new URL(request.url).pathname === '/stats')  // each socket once, whatever its groups
+      return Response.json({ online: this.ctx.getWebSockets().length });
     const groups = (request.headers.get('X-Groups') || '').split(',').filter(Boolean);
     for (const g of groups)
       if (this.ctx.getWebSockets(g).length >= MAX_PER_GROUP) return new Response('group full', { status: 429 });
