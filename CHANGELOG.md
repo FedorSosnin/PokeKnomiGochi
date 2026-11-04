@@ -8,7 +8,10 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.32] - 2026-11-03
+
 - **Poké Ball Volley** uses the new Poké Ball from the home screen.
+- **The Poké Ball has a round button**, like the real one: a thick black ring around a white center, instead of a square. It's the same ball on the home screen, in catches and in Poké Ball Volley.
 
 ## [1.31] - 2026-11-03
 
