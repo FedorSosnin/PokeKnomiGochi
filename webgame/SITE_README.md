@@ -51,7 +51,7 @@ Each one stops at 100. The **Training** page on your Pokémon's card shows how f
 
 ## Moves
 
-Your Pokémon fights with two moves: on the right the strongest of its own type, on the left the strongest of any other type. They are the attacks its species learns in Pokémon Red and Blue, up to its level, and it gains a level every hour, asleep or awake. Only levels teach moves, not training or wins. When a stronger one takes over a button, the next wild battle opens with **Learned …!** A Charmander starts with Scratch, learns Ember at level 9, Slash at 30 and Flamethrower at 38.
+Your Pokémon fights with two moves: on the right the strongest of its own type, on the left the strongest of any other type. They are the attacks its species learns in Pokémon Red and Blue, up to its level, and it gains a level every hour, asleep or awake. Only levels teach moves, not training or wins. When a stronger one takes over a button, the next wild battle opens with **Learned …!** A Charmander starts with Scratch, learns Ember at level 9, Slash at 30 and Flamethrower at 38. The [moves chart](https://github.com/FedorSosnin/PokeKnomiGochi/blob/main/docs/MOVES.md) has every Pokémon's moves and the level it evolves at.
 
 ## Your save
 

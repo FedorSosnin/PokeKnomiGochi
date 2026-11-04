@@ -85,6 +85,8 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 
 ### Raising your next Pokémon
 
+When your Pokémon is ready to evolve, a red **Evolve** button appears: tap it to evolve, or **Keep** to stay as it is, and the button comes back an hour later. [Moves](docs/MOVES.md) shows the level each species evolves at.
+
 A fully evolved Pokémon that is at least 3 days old offers a goodbye. If you choose to stay together, it won't ask again: whenever you're ready, hold your finger on it to bring the goodbye back. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from your Pokédex. It hatches from an egg, so only first forms can be chosen: Pikachu, not Raichu. A shiny you have shows as its own square with sparkles, and picking it hatches a shiny for sure; a regular one has a 1 in 4 chance of hatching shiny. If you neglect a Pokémon until it runs away, you get a random common egg instead.
 
 Levels stop at **100**, since a Pokémon past that would be too strong to battle; one that is already older stays at 100. For the end game, raising 3, 5 and 10 different Pokémon to level 100 earns the **Level 100 ×3**, **×5** and **×10** medals, on their own page of achievements.
