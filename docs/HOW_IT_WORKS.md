@@ -113,7 +113,7 @@ Joy also drops 2 more per minute while 🍖 is below 30, and 2 more while 🧼 i
 | 🛡️ **Defense** | +1 for every 12 hours in a row with all four needs at 40 or above |
 | ⚠️ **Care mistake** | A need at 10 or below counts as a mistake, at most once an hour, and costs 1 💞 |
 | 🏃 **Running away** | With all four needs at 0 for an hour, it's ready to leave. One bit of care resets the clock. |
-| 👋 **Goodbye** | A fully evolved Pokémon offers a goodbye from 3 days old. You can put it off for as long as you like. |
+| 👋 **Goodbye** | A fully evolved Pokémon offers a goodbye from 3 days old. Choose to stay together and it won't ask again; hold your finger on it whenever you're ready. |
 | 🥚 **Next Pokémon** | After a goodbye or letting one go, choose any Pokémon from your Pokédex, with a 25% chance of it being shiny ✨ |
 
 ## Medals

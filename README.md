@@ -83,7 +83,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 
 ### Raising your next Pokémon
 
-A fully evolved Pokémon that is at least 3 days old offers a goodbye, which you can put off as long as you like. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from any Pokémon in your Pokédex, with a 1 in 4 chance that it hatches shiny. If you neglect a Pokémon until it runs away, you get a random common egg instead.
+A fully evolved Pokémon that is at least 3 days old offers a goodbye. If you choose to stay together, it won't ask again: whenever you're ready, hold your finger on it to bring the goodbye back. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from any Pokémon in your Pokédex, with a 1 in 4 chance that it hatches shiny. If you neglect a Pokémon until it runs away, you get a random common egg instead.
 
 ### Battles and catching
 
@@ -158,6 +158,8 @@ The time zone is currently fixed to US Eastern time. You can set the clock by ha
 ### Updates over Wi-Fi
 
 Once it's on Wi-Fi, the Knomi looks for a new version once a day while the screen is dimmed. To update, swipe down, swipe left, and tap **Check for update**. If a new version is out, the button changes to **Update to v…**: tap it and wait about a minute while it downloads and restarts. Your Pokémon, Pokédex and Wi-Fi are kept. If the new version ever fails to start, the Knomi goes back to the one it had.
+
+On version 1.30 or older, **Update** could fail while buddies were connected through the internet relay: the two secure connections didn't fit in memory together. If yours says "Update failed", install 1.31 or newer once with the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/) and a USB cable, without ticking "Erase device". It keeps your Pokémon, and from then on updates over Wi-Fi work.
 
 ## 3D-printed case
 

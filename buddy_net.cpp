@@ -33,6 +33,7 @@ static NetworkClientSecure *rc = nullptr;
 static bool relayOn = false;
 static int relayOthers = 0;  // the relay's {"n": ...}: alone, nothing is sent
 static uint32_t relayT = 0, relayWait = RELAY_FIRST_MS, relayPingT = 0;
+static bool relayHeld = false;  // buddyNetRelayHold: closed for a Wi-Fi update
 
 static void relayClose(bool failed) {
   if (rc) {
@@ -83,7 +84,7 @@ static void relayConnect() {
   }
   rc->printf("GET " BUDDY_RELAY_PATH " HTTP/1.1\r\nHost: " BUDDY_RELAY_HOST "\r\nUpgrade: websocket\r\n"
              "Connection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n"
-             "User-Agent: PokeKnomiGochi\r\n\r\n", key);
+             "User-Agent: PokeKnomiGochi/2\r\n\r\n", key);  // /2: steps aside for Wi-Fi updates (1.31 on)
   rc->setTimeout(4000);
   String status = rc->readStringUntil('\n');
   if (!status.startsWith("HTTP/1.1 101")) {
@@ -104,7 +105,7 @@ static void relayConnect() {
 
 static void relayTick(bool wifi) {
   uint32_t now = millis();
-  if (!wifi) {
+  if (!wifi || relayHeld) {
     if (rc) relayClose(false);
     return;
   }
@@ -200,9 +201,21 @@ void buddyNetSetPeer(uint32_t id) {
   peerId = id;
 }
 
+void buddyNetRelayHold(bool hold) {
+  if (hold == relayHeld) return;
+  relayHeld = hold;
+  if (hold) {
+    if (rc) relayClose(false);  // frees its TLS memory now
+  } else {
+    relayT = millis();
+    relayWait = 2000;  // back soon after
+  }
+}
+
 #else
 
 uint32_t buddyNetId() { return 1; }
+void buddyNetRelayHold(bool) {}
 bool buddyNetUp() { return false; }
 bool buddyNetPoll(BuddyMsg &) { return false; }
 void buddyNetSend(const BuddyMsg &) {}

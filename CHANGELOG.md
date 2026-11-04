@@ -8,6 +8,11 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Wi-Fi updates work with buddies around:** the update check and install failed ("Update failed") while the Knomi was connected to the buddy relay, because two secure connections at once don't fit in its memory. The update now closes the relay first and reconnects it afterwards. Knomis on 1.30 or older need one USB install from the web installer to get this fix.
+- **"... wants to tell you" only once:** after you choose to stay together, the goodbye isn't offered again by itself (it used to come back daily and after every restart). A note says how to bring it back: hold your finger on your Pokémon.
+- **A bigger ✕:** the close button is a little larger and much easier to hit, especially just beside and below it at the bottom of the round screen.
+- **Lag report:** the Knomi logs any pass of its loop longer than 150 ms over USB, with how much went to the network and to drawing, and the slowest in its 5-minute health line.
+
 ## [1.30] - 2026-11-03
 
 - **Friends' stats:** on Party Boost, tap a friend to see its stats first: level, HP, ATK, DEF and SPD, and a buddy's Pokédex count. Swipe to its Battle, Trade and Play menu, and the ✕ goes back to Party Boost. The visitor has a stats page too, with its minutes left. Tapping a buddy's Pokémon on the main screen still opens its menu first, with its stats a swipe away. Buddies now send their stats; one on an older version shows "?".

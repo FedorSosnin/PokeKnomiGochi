@@ -484,6 +484,7 @@ void Pet::hatch() {
   geneDef = 90 + random(21);
   geneSpe = 90 + random(21);
   trAtk = trDef = trSpe = 0;
+  farewellQuiet = false;
   battleWins = 0;
   movesSeen = 1;
   berryKnown = false;
@@ -871,6 +872,7 @@ void Pet::save() {
   prefs.putUChar("mist", careMistakes);
   prefs.putBool("sleep", sleeping);
   prefs.putUChar("lend", lastEnd);
+  prefs.putBool("fquiet", farewellQuiet);
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putBytes("dexreg", dexReg, sizeof(dexReg));
   prefs.putUShort("strk", streak);
@@ -937,6 +939,7 @@ void Pet::load() {
   careMistakes = prefs.getUChar("mist", 0);
   sleeping = prefs.getBool("sleep", false);
   lastEnd = prefs.getUChar("lend", CER_NONE);
+  farewellQuiet = prefs.getBool("fquiet", false);
   prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
   streak = prefs.getUShort("strk", 0);
   bestStreak = prefs.getUShort("bstrk", 0);

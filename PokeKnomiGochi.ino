@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.30"
+#define FW_VERSION "1.31"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -193,6 +193,7 @@ uint8_t bsKind = 0;
 uint32_t bsId = 0, bsT = 0, bsResendT = 0, buddyHelloT = 0;
 bool buddyMenuOpen = false;
 bool partyOpen = false;  // the Party Boost screen: who is around and what it gives
+uint32_t farHintUntil = 0;  // after "stay together": how to get the goodbye back
 bool partyVisitor = false;  // ...showing the visitor's stats
 uint8_t buddyPage = 1;      // the buddy view: 0 its stats, 1 Battle/Trade/Play
 bool buddyFromParty = false;  // opened from Party Boost: closing goes back there
@@ -440,8 +441,25 @@ void ensureMon() {
   }
 }
 
+// loop timing, for lag reports: the slowest pass since the last HEALTH line, and its parts
+static uint32_t loopNetMs = 0, loopDrawMs = 0, loopMaxMs = 0, loopSlowCount = 0;
+
+void loopTiming(uint32_t start) {
+  uint32_t total = millis() - start;
+  if (total > loopMaxMs) loopMaxMs = total;
+#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
+  if (total > 150) {  // a hitch you can feel
+    loopSlowCount++;
+    Serial.printf("SLOW loop=%lu net=%lu draw=%lu heap=%u\n", (unsigned long)total, (unsigned long)loopNetMs,
+                  (unsigned long)loopDrawMs, ESP.getFreeHeap());
+  }
+#endif
+}
+
 void loop() {
   uint32_t now = millis();
+  uint32_t loopStart = now;
+  loopNetMs = loopDrawMs = 0;
   pet.update(now);
 
   // the amplifier follows the sleep state (the call returns early if unchanged).
@@ -466,7 +484,9 @@ void loop() {
   autoRotateTick(now);
 #endif
   visitTick(now);
+  uint32_t netT = millis();
   buddyTick(now);
+  loopNetMs = millis() - netT;
   handleSerial();
   ensureMon();
 
@@ -539,10 +559,12 @@ void loop() {
   static uint32_t lastHealth = 0;
   if (now - lastHealth > 300000) {
     lastHealth = now;
-    Serial.printf("HEALTH up=%lus heap=%u min=%u bat=%d%% mv=%d chg=%d usb=%d dim=%u off=%d\n",
+    Serial.printf("HEALTH up=%lus heap=%u min=%u bat=%d%% mv=%d chg=%d usb=%d dim=%u off=%d slowest=%lums slow=%lu\n",
                   (unsigned long)(now / 1000), ESP.getFreeHeap(), ESP.getMinFreeHeap(),
                   batPercent(), batMillivolts(), batCharging() ? 1 : 0,
-                  usbPresent() ? 1 : 0, dimStage, screenOff ? 1 : 0);
+                  usbPresent() ? 1 : 0, dimStage, screenOff ? 1 : 0, (unsigned long)loopMaxMs,
+                  (unsigned long)loopSlowCount);
+    loopMaxMs = loopSlowCount = 0;
   }
 
   // Draw rate (power.h): 10 fps while the pet is in use, lower the longer it goes untouched,
@@ -563,8 +585,11 @@ void loop() {
   bool drewFrame = false;
   if (interval && now - lastRender >= interval) {
     lastRender = now;
+    uint32_t drawT = millis();
     drewFrame = render();
+    loopDrawMs = millis() - drawT;
   }
+  loopTiming(loopStart);
   // yields the CPU on passes that don't draw: without this the loop spins at full speed
   // between frames; 1 ms is unnoticeable on touch (read every 20 ms) and the frame isn't delayed
   if (!drewFrame) idleWait(pc);
@@ -904,9 +929,10 @@ void handleSerial() {
     Serial.println();
     Serial.println("DONE");
   } else if (line == "HEALTH") {
-    Serial.printf("up=%lus heap=%u min=%u sd=%d mon=%d\n",
+    Serial.printf("up=%lus heap=%u min=%u sd=%d mon=%d slowest=%lums slow=%lu\n",
                   (unsigned long)(millis() / 1000), ESP.getFreeHeap(),
-                  ESP.getMinFreeHeap(), sdReady, pmd.loaded || mon.loaded);
+                  ESP.getMinFreeHeap(), sdReady, pmd.loaded || mon.loaded, (unsigned long)loopMaxMs,
+                  (unsigned long)loopSlowCount);
     Serial.println("DONE");
   } else if (line == "STATS") {
     Serial.printf("spec=%d lv=%u food=%u joy=%u energy=%u hyg=%u mistakes=%u sd=%d mon=%d bat=%d usb=%d rtc=%u\n",
@@ -1081,7 +1107,12 @@ void handleTouch() {
     if (!holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen && !buddyMenuOpen && !partyOpen && !tradeOpen && millis() - tStart > 3000 &&
         abs(tXl - tX0) < 30 && abs(tYl - tY0) < 30 && inPetZone(tX0, tY0) &&
         !pet.isEgg() && !confirmUntil && !pet.ceremony) {
-      confirmUntil = millis() + 10000;
+      if (pet.canFarewellNow()) {  // a goodbye it's ready for (put off before): that dialog again
+        choiceKind = 2;
+        choiceUntil = millis() + 12000;
+      } else {
+        confirmUntil = millis() + 10000;
+      }
       holdFired = true;
     }
   }
@@ -1280,7 +1311,10 @@ void onTap(int16_t x, int16_t y) {
       else if (b2) pet.declineEvolve();
     } else if (choiceKind == 2) {          // farewell
       if (b1) pet.startFarewell();
-      else if (b2) pet.declineFarewell();
+      else if (b2) {
+        pet.declineFarewell();
+        farHintUntil = millis() + 6000;
+      }
     } else if (choiceKind == 4) {          // runaway: caring for it is the top option
       if (b1) pet.rescue();
       else if (b2) pet.startRunaway();
@@ -1885,6 +1919,18 @@ bool render() {
   if (choiceKind) {
     if (!timeLeft(choiceUntil)) choiceKind = 0;
     else drawChoiceDialog();
+  } else if (timeLeft(farHintUntil)) {  // after "stay together": the way back to the goodbye
+    setSize(2);
+    int w1 = textW(T(S_FAREWELL_HINT1), 2), w2 = textW(T(S_FAREWELL_HINT2), 2);
+    int w = (w1 > w2 ? w1 : w2) + 40;  // as wide as the longer line
+    if (w > 404) w = 404;
+    gfx->fillRoundRect(CX - w / 2, 196, w, 84, 16, UI_WHITE);
+    gfx->drawRoundRect(CX - w / 2, 196, w, 84, 16, UI_INK);
+    gfx->setTextColor(UI_INK);
+    setCur(centerX(T(S_FAREWELL_HINT1), 2), 218);
+    printT(T(S_FAREWELL_HINT1));
+    setCur(centerX(T(S_FAREWELL_HINT2), 2), 246);
+    printT(T(S_FAREWELL_HINT2));
   }
 
   gfx->flush();
@@ -6988,19 +7034,21 @@ const char *statusMsg() {
 // One round X, at the bottom in the middle, closes whatever it's on: the menus, the card, the
 // Pokedex, the zones, the clock. (Swipes still work too; games in play keep swiping up to quit.)
 #define CLOSE_Y 422  // its centre on most screens
-#define CLOSE_R 21
+#define CLOSE_R 24
 void drawCloseButtonAt(int cy) {  // a gray disc with a white X
   gfx->fillCircle(CX, cy, CLOSE_R, C565(0x8e, 0x8c, 0x96));
-  const int a = 8;
+  const int a = 9;
   for (int o = -1; o <= 1; o++) {
     gfx->drawLine(CX - a + o, cy - a, CX + a + o, cy + a, UI_WHITE);
     gfx->drawLine(CX + a + o, cy - a, CX - a + o, cy + a, UI_WHITE);
   }
 }
 void drawCloseButton() { drawCloseButtonAt(CLOSE_Y); }
-bool closeHitAt(int16_t x, int16_t y, int cy) {  // a little more generous than what's drawn
+// Much more generous than what's drawn, mostly sideways and below where nothing else is: at the
+// bottom of the round screen fingers land wide of it
+bool closeHitAt(int16_t x, int16_t y, int cy) {
   int dx = x - CX, dy = y - cy;
-  return dx * dx + dy * dy <= (CLOSE_R + 10) * (CLOSE_R + 10);
+  return dx >= -60 && dx <= 60 && dy >= -(CLOSE_R + 8) && dy <= CLOSE_R + 40;
 }
 bool closeHit(int16_t x, int16_t y) { return closeHitAt(x, y, CLOSE_Y); }
 

@@ -205,9 +205,12 @@ public:
   bool canRunawayNow() const;   // total abandonment 1h: ready to run away (sad button)
   // the user decides in a dialog; "keep/stay together" postpones and re-offers later
   bool wantEvolveButton() const { return canEvolveNow() && level() > evoDeclinedLv; }
-  bool wantFarewellButton() const { return canFarewellNow() && ageMinutes >= farDeclinedAge; }
+  bool wantFarewellButton() const { return canFarewellNow() && !farewellQuiet; }
   void declineEvolve() { evoDeclinedLv = level(); }              // re-offers on level up
-  void declineFarewell() { farDeclinedAge = ageMinutes + 1440; } // re-offers within 1 day
+  void declineFarewell() {  // "stay together": not offered again (holding the pet brings it back)
+    farewellQuiet = true;
+    save();
+  }
   // first game: the player picks a starter (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }
   void chooseStarter(int16_t dex) { eggTarget = dex; starterPick = eggPick = false; save(); }
@@ -274,7 +277,7 @@ private:
   uint8_t ticksSinceSave = 0;
   bool pendingSave = false;     // periodic save pending flush
   uint16_t evoDeclinedLv = 0;   // "keep form": don't offer evolution until leveling up
-  uint32_t farDeclinedAge = 0;  // "stay together": don't offer goodbye until this age
+  bool farewellQuiet = false;  // chose "stay together" once: the goodbye isn't offered by itself again
   bool starterPick = false;     // first game: waiting for the player to pick a starter
   bool eggPick = false;         // new egg: waiting for the player to pick from the pokedex
   uint8_t neglectTicks = 0;

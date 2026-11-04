@@ -11,12 +11,20 @@
 #include <mbedtls/sha256.h>
 #include "ota.h"
 #include "ota_roots.h"
+#include "buddy_net.h"
 
 static OtaState state = OTA_IDLE;
 static char newVer[16] = "", spritesSha[65] = "";
 static uint32_t spritesSize = 0;
 static bool fwNewer = false, spritesStale = false;
 static uint8_t buf[4096];  // one flash sector: sprite reads, writes and the held-back header
+
+// The buddy relay's TLS connection closed while an update talks to the site: two at once don't
+// fit in memory (1.22 on a Knomi: 111 KB free before the relay, 66 KB after, http -1)
+struct RelayHold {
+  RelayHold() { buddyNetRelayHold(true); }
+  ~RelayHold() { buddyNetRelayHold(false); }
+};
 
 OtaState otaState() { return state; }
 const char *otaNewVersion() { return newVer; }
@@ -67,6 +75,7 @@ bool otaCheck(const char *current) {
     state = OTA_FAILED;
     return false;
   }
+  RelayHold hold;
   NetworkClientSecure client;
   client.setCACert(OTA_ROOTS);
   HTTPClient http;
@@ -160,6 +169,7 @@ static uint8_t gFrom = 0, gTo = 100;
 
 bool otaInstall(OtaProgressCb cb) {
   if (state != OTA_AVAILABLE || WiFi.status() != WL_CONNECTED) return false;
+  RelayHold hold;
   bool both = fwNewer && spritesStale;
   if (cb) cb(0);
   // firmware first: if it fails nothing has changed. It only becomes the boot slot once complete.

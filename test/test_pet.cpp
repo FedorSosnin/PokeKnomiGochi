@@ -1054,6 +1054,21 @@ TEST(ceremony, farewell_only_in_final_form_and_after_3_days) {
   CHECK(!q.canFarewellNow());
 }
 
+TEST(ceremony, staying_together_is_remembered) {
+  Pet p;
+  makePet(p, 6);
+  p.ageMinutes = FAREWELL_AGE_MIN;
+  CHECK(p.wantFarewellButton());
+  p.declineFarewell();
+  CHECK(!p.wantFarewellButton());
+  CHECK(p.canFarewellNow());  // still possible: holding the pet offers it
+  p.ageMinutes += 3 * 1440;
+  CHECK(!p.wantFarewellButton());  // not again by itself, days later...
+  Pet q;
+  q.begin();
+  CHECK(!q.wantFarewellButton());  // ...nor after a restart
+}
+
 TEST(ceremony, farewell_leaves_a_new_egg) {
   Pet p;
   makePet(p, 6);
