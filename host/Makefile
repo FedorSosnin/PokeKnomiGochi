@@ -12,6 +12,8 @@ DEFS     := -DBOARD_HOST -DBOARD_KNOMI_V2
 INCLUDES := -I. -I shim -I $(ROOT)
 CXXFLAGS ?= -std=c++17 -O2 -g -Wall -Wextra -Wno-unused-parameter
 ALLFLAGS := $(CXXFLAGS) $(DEFS) $(INCLUDES)
+# The oldest macOS the Mac app runs on (mac/Info.plist says the same); without it, clang targets the Mac it builds on
+export MACOSX_DEPLOYMENT_TARGET ?= 12.0
 
 LAYER_SRC := host_canvas.cpp host_prefs.cpp host_runtime.cpp host_board.cpp host_buddy.cpp host_audio.cpp
 GAME_SRC  := $(ROOT)/pet.cpp $(ROOT)/i18n.cpp $(ROOT)/sdmon.cpp $(ROOT)/ota_update.cpp

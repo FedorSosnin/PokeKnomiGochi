@@ -254,7 +254,7 @@ To build it yourself, run `webgame/build.sh` (needs [Emscripten](https://emscrip
 
 ## PokeMacGochi (Mac)
 
-The same game as a small round window on your Mac desktop, in a Poké Ball ring. It has no Dock icon; it lives in the menu bar.
+The same game as a small round window on your Mac desktop, in a Poké Ball ring. It has no Dock icon; it lives in the menu bar. It needs an Apple silicon Mac (M1 or later) with macOS 12 Monterey or newer.
 
 1. Download `PokeMacGochi.dmg` from the [latest release](https://github.com/FedorSosnin/PokeKnomiGochi/releases), open it and drag **PokeMacGochi** to **Applications**.
 2. Open it once. macOS warns that it can't check the app, because it isn't signed by an Apple developer account. Click **Done**.

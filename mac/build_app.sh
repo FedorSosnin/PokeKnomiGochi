@@ -5,11 +5,20 @@
 set -e
 cd "${0:A:h}/.."
 
+# The oldest macOS it runs on, the same as LSMinimumSystemVersion in mac/Info.plist. Without it, clang
+# targets the Mac it builds on, and older ones refuse to open the app.
+export MACOSX_DEPLOYMENT_TARGET=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' mac/Info.plist)
+# The host library must be built for the same target: rebuild it if it was built for another one.
+STAMP=build/host/.macos-target
+if [[ "$(cat $STAMP 2>/dev/null)" != "$MACOSX_DEPLOYMENT_TARGET" ]]; then
+  make -C host clean >/dev/null
+  mkdir -p build/host && echo "$MACOSX_DEPLOYMENT_TARGET" > $STAMP
+fi
 make -C host -j8 >/dev/null
 
 APP=build/mac/PokeMacGochi.app
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/fonts"
-clang++ -std=c++17 -fobjc-arc -O2 -Wall -Wextra -Wno-unused-parameter \
+clang++ -std=c++17 -fobjc-arc -O2 -Wall -Wextra -Wno-unused-parameter -Wunguarded-availability \
   -I host mac/main.mm build/host/libpokehost.a \
   -framework AppKit -framework AudioToolbox -framework QuartzCore \
   -o "$APP/Contents/MacOS/PokeMacGochi"
