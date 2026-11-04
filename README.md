@@ -4,7 +4,7 @@
 
 A Pokémon tamagotchi for the **BTT Knomi V2**, the little round screen made for 3D printers. Raise any of the original 151, battle wild Pokémon, catch them to fill your Pokédex, and play mini games by tapping and tilting.
 
-<p align="center"><img src="docs/images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a Knomi in its printed Poké Ball case" width="360"> <img src="docs/images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, its Pokémon asleep" width="360"></p>
+<p align="center"><img src="docs/images/knomi-updated.jpg" alt="PokeKnomiGochi on a Knomi in its printed Poké Ball case on a desk: a level 99 Venusaur with Party Boost and three buddies, at night" width="720"></p>
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows).
 
@@ -66,7 +66,7 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 The screen turns to follow however you hold the Knomi. It starts ready for your right hand with the cable going off to the left, so the button is under your finger.
 
-See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does.
+See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does, and [Moves](docs/MOVES.md) for when every Pokémon learns each move.
 
 | Do this | What happens |
 |---|---|
@@ -77,7 +77,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | **Swipe up** | See its card: profile, battle stats, training and progress |
 | **Tap its name on the card** (✏️) | Rename it |
 | **Swipe from left to right** | Open the Pokédex |
-| **Swipe from right to left** | See your achievements: every medal, 6 to a page |
+| **Swipe from right to left** | See your achievements: every medal, 6 to a page. A new medal drops in from the top; tap it to see it there |
 | **Swipe down** | Set the clock, then swipe left for settings |
 | **Press the button** | Start a wild battle |
 | **Hold the button for 1–3 seconds** | Turn the screen on or off |
@@ -85,7 +85,9 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 
 ### Raising your next Pokémon
 
-A fully evolved Pokémon that is at least 3 days old offers a goodbye. If you choose to stay together, it won't ask again: whenever you're ready, hold your finger on it to bring the goodbye back. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from any Pokémon in your Pokédex, with a 1 in 4 chance that it hatches shiny. If you neglect a Pokémon until it runs away, you get a random common egg instead.
+A fully evolved Pokémon that is at least 3 days old offers a goodbye. If you choose to stay together, it won't ask again: whenever you're ready, hold your finger on it to bring the goodbye back. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from your Pokédex. It hatches from an egg, so only first forms can be chosen: Pikachu, not Raichu. A shiny you have shows as its own square with sparkles, and picking it hatches a shiny for sure; a regular one has a 1 in 4 chance of hatching shiny. If you neglect a Pokémon until it runs away, you get a random common egg instead.
+
+Levels stop at **100**, since a Pokémon past that would be too strong to battle; one that is already older stays at 100. For the end game, raising 3, 5 and 10 different Pokémon to level 100 earns the **Level 100 ×3**, **×5** and **×10** medals, on their own page of achievements.
 
 ### Battles and catching
 
@@ -96,6 +98,19 @@ Winning trains your Pokémon. Losing earns nothing and leaves it nearly out of e
 **RUN** leaves a wild battle, but 1 time in 20 it fails: the button turns red and says **Couldn't get away!**, and you have to fight it out. A battle with a buddy can always be left.
 
 <p align="center"><img src="docs/images/run-fail.png" alt="A wild battle where running failed: the RUN button now says Couldn't get away!" width="240"></p>
+
+### Moves
+
+Your Pokémon fights with two moves, one on each battle button:
+
+- **Right:** the strongest move of its own type that it knows, like Ember for Charmander.
+- **Left:** its strongest move of any other type, like Scratch.
+
+While it knows only one attack, that one gets a single wide button.
+
+It knows every attack its species learns by leveling up in Pokémon Red and Blue, up to its current level, and it gains a level every hour of age, asleep or awake. Only levels teach moves: training and winning don't. When a stronger move takes over a button, the next wild battle opens with **Learned Flamethrower!** A new move that is weaker than the one on its button doesn't replace it.
+
+Charmander, for example, starts with Scratch, learns Ember at level 9, Slash at 30 (in place of Scratch) and Flamethrower at 38 (in place of Ember). After evolving, it follows the new form's list, so a move can come a few levels earlier or later: Charmeleon learns Slash at 33 and Flamethrower at 42. Ditto has no moves of its own: it copies the wild Pokémon's. **[Moves](docs/MOVES.md)** lists every Pokémon's moves and the level it learns each one.
 
 ### Training
 
@@ -119,8 +134,8 @@ If you beat a Pokémon you haven't caught yet, you get three Poké Balls, and it
 Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
 - **Battle:** pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. The physical button still starts a random battle.
-- **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
-- **PokeRun:** tap to jump over rocks and bushes in a forest that keeps getting faster. How long can you last?
+- **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
+- **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?
 - **Who's That Pokémon?:** name the silhouette, five rounds per game.
 - **Tilt Catch:** lean left and right to catch falling berries. They fall faster with every catch, with no top speed, so every game ends.
 
@@ -132,7 +147,7 @@ If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over 
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, you swap: the one you gave leaves your Pokédex. A shiny is its own square, so you can trade it and keep the regular one. Your own partner can't be traded, so with only one Pokémon, Trade is greyed out. Changed your mind? The **✕** backs out at any point before the swap, and nothing changes hands.
 - **Play:** games only buddies can play together, with joy and bond for both afterwards, a bit more for the winner, and the **Playmate** medal.
   - **Who's That? Showdown** shows you both the same silhouette at the same moment: the first to tap the right name gets the point, and a wrong tap is out for that round. 10 questions.
-  - **Poké Ball Volley:** your screen is your half of the court and your Pokémon is the paddle; tilt or drag to move. A ball over the top of your screen drops in on your buddy's. Every shot curves and the ball slowly speeds up, so a match to 3 points lasts about a minute.
+  - **Poké Ball Volley:** your screen is your half of the court and your Pokémon is the paddle; tilt or drag to move, and it runs left and right with you, facing you when it stands still. A ball over the top of your screen drops in on your buddy's. Every shot curves and the ball slowly speeds up, so a match to 3 points lasts about a minute.
 
 ### Party Boost
 

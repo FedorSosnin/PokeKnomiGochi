@@ -64,7 +64,7 @@ jobs:
       # anyone who edits the output instead of the generator, or forgets to regenerate
       # after touching the source data.
       - name: Fail if regenerating produced a diff
-        run: git diff --exit-code -- dex.h moves.h species.h dexfacts.h
+        run: git diff --exit-code -- dex.h moves.h species.h dexfacts.h docs/MOVES.md
 
   tools-lint:
     name: Lint tools/ (ruff)

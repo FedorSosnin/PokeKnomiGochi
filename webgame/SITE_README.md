@@ -49,6 +49,10 @@ Each one stops at 100. The **Training** page on your Pokémon's card shows how f
 
 <img src="images/training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each">
 
+## Moves
+
+Your Pokémon fights with two moves: on the right the strongest of its own type, on the left the strongest of any other type. They are the attacks its species learns in Pokémon Red and Blue, up to its level, and it gains a level every hour, asleep or awake. Only levels teach moves, not training or wins. When a stronger one takes over a button, the next wild battle opens with **Learned …!** A Charmander starts with Scratch, learns Ember at level 9, Slash at 30 and Flamethrower at 38.
+
 ## Your save
 
 Your Pokémon is saved in this browser automatically. Clearing the browser's data erases it, so use **Export save** now and then for a backup file. **Import save** brings it back, or moves your Pokémon to another browser or computer. The game plays in one tab at a time, and a new version arrives by itself the next time you open it.
@@ -64,6 +68,8 @@ Anyone else playing on the same home Wi-Fi shows up on your screen: up to four a
 You meet players of the browser version, the [Mac and Windows apps](https://github.com/FedorSosnin/PokeKnomiGochi/releases) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
 
 ## Want a real one?
+
+<p align="center"><img src="images/knomi-updated.jpg" alt="PokeKnomiGochi on a BTT Knomi V2 in a 3D-printed Poké Ball case on a desk: a level 99 Venusaur with three buddies" width="720"></p>
 
 <p align="center"><img src="images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a BTT Knomi V2 in a 3D-printed Poké Ball case" width="360"> <img src="images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, its Pokémon asleep" width="360"></p>
 

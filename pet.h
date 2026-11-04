@@ -30,6 +30,7 @@
 #define WGT_FIT 20               // the Fit medal: this or less
 #define EVOLVE_ANIM_MS 5200UL              // evolution animation (longer = more epic)
 #define CEREMONY_MS 10000UL                // duration of the goodbye on screen
+#define CELEBRATE_MS 5000UL                // a new medal or streak milestone on screen
 #define FAREWELL_AGE_MIN (3UL * 24 * 60)   // says goodbye after 3 game days (in final form)
 #define SHINY_AFTER_GOODBYE 4              // 1 in 4 after a goodbye or release
 #define RUNAWAY_TICKS 60                   // runs away after 1 h with EVERYTHING at zero
@@ -66,10 +67,14 @@ enum : uint32_t {
   // a zone completed: every Pokemon in it caught, the legendary too (in zone order)
   MED_ZONE_FOREST = 1UL << 17, MED_ZONE_BEACH = 1UL << 18, MED_ZONE_CAVE = 1UL << 19,
   MED_ZONE_MANSION = 1UL << 20, MED_ZONE_FIELD = 1UL << 21,
+  // the end game: 3, 5 and 10 Pokemon raised to level 100 (lv100Count)
+  MED_LV100_3 = 1UL << 22, MED_LV100_5 = 1UL << 23, MED_LV100_10 = 1UL << 24,
 };
 #define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer
 #define MED_FIRST_ZONE 17  // MED_ZONE_FOREST's bit: the zone medals have their own card page
-#define MED_COUNT 22
+#define MED_FIRST_LV100 22  // MED_LV100_3's bit: the level 100 medals too
+#define MED_COUNT 25
+#define LEVEL_MAX 100  // past it a Pokemon would be too strong to battle: it stays at 100
 #define PARTY_SIZE 5  // MED_PARTY: yours and 4 buddies at once
 
 class Pet {
@@ -107,7 +112,9 @@ public:
   char nick[12] = "";    // nickname (empty = species name)
   // medals: the individual's + cumulative counter across all raisings
   uint16_t medals = 0, totalMedals = 0;
-  uint32_t trainerMedals = 0;  // MED_SHINY..MED_PLAYMATE: never reset by a new pet
+  uint32_t trainerMedals = 0;  // MED_SHINY..MED_LV100_10: never reset by a new pet
+  uint8_t lv100Count = 0;      // Pokemon raised to LEVEL_MAX, this one included once it gets there
+  bool counted100 = false;     // this one is in lv100Count
   uint32_t newMedal = 0;   // just earned, to celebrate
   uint16_t lastMilestone = 0;  // streak milestone already celebrated
   uint16_t gameHi = 0;     // minigame record (the player's)
@@ -208,9 +215,9 @@ public:
   bool canFarewellNow() const;  // final form + 7 days: ready to say goodbye (button)
   bool canRunawayNow() const;   // total abandonment 1h: ready to run away (sad button)
   // the user decides in a dialog; "keep/stay together" postpones and re-offers later
-  bool wantEvolveButton() const { return canEvolveNow() && level() > evoDeclinedLv; }
+  bool wantEvolveButton() const { return canEvolveNow() && ageMinutes >= evoAskAgain; }
   bool wantFarewellButton() const { return canFarewellNow() && !farewellQuiet; }
-  void declineEvolve() { evoDeclinedLv = level(); }              // re-offers on level up
+  void declineEvolve() { evoAskAgain = ageMinutes + MINUTES_PER_LEVEL; }  // offered again an hour later
   void declineFarewell() {  // "stay together": not offered again (holding the pet brings it back)
     farewellQuiet = true;
     save();
@@ -220,17 +227,20 @@ public:
   void chooseStarter(int16_t dex) { eggTarget = dex; starterPick = eggPick = false; save(); }
   // after a goodbye or release the next egg is chosen from those already registered
   bool awaitingEggPick() const { return eggPick; }
-  bool chooseEgg(int16_t dex);
+  bool chooseEgg(int16_t dex, bool shinyForm = false);  // a shiny form hatches shiny
   int16_t registeredAt(int idx) const;  // the idx-th registered by dex number, 0 if none
+  // what an egg can be: a form in the Pokedex (regular or shiny) of a base form (Pikachu, not
+  // Raichu), since it hatches at level 1
+  bool eggChoice(int16_t dex, bool shinyForm) const;
+  int16_t eggChoiceAt(int idx, bool &shinyForm) const;  // the idx-th of those by dex number, regular first; 0 if none
+  uint16_t eggChoiceCount() const;
   void factoryReset() { prefs.clear(); }  // wipes the NVS (test: serial command WIPE)
   void dbgRunawayReady() { fullness = joy = energy = hygiene = 0; neglectTicks = RUNAWAY_TICKS; }  // test
-  // uint16_t, not uint8_t: with MINUTES_PER_LEVEL=60 the level is hours, so
-  // a uint8_t wraps to 0 at level 256, after ~10.6 days. And that is
-  // reached in normal play, because "stay together" allows postponing the
-  // goodbye indefinitely. It is capped at 999 instead of overflowing.
+  // with MINUTES_PER_LEVEL=60 the level is hours of age; "stay together" keeps a Pokemon as long as
+  // you like, so it would keep rising: it stops at LEVEL_MAX (a Pokemon already past it comes back to it)
   uint16_t level() const {
     uint32_t lv = 1 + ageMinutes / MINUTES_PER_LEVEL;
-    return lv > 999 ? 999 : (uint16_t)lv;
+    return lv > LEVEL_MAX ? LEVEL_MAX : (uint16_t)lv;
   }
   bool isRegistered(int16_t dex) const {
     return dex >= 1 && dex <= 151 && (dexReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
@@ -257,6 +267,8 @@ public:
   bool hasMedal(uint32_t m) const { return (medals | trainerMedals) & m; }
   bool showMedal() const { return timeLeft(medalUntil) > 0; }
   bool showMilestone() const { return timeLeft(milestoneUntil) > 0; }
+  uint32_t celebrateLeft() const { return timeLeft(showMedal() ? medalUntil : milestoneUntil); }
+  void endCelebration() { medalUntil = milestoneUntil = 0; }  // tapped: it has been seen
   int careBonus() const;  // egg improvement from streak + bond
 
   // deferred periodic save: tick() flags it pending and the loop flushes it
@@ -280,7 +292,8 @@ private:
   uint8_t mistakeCooldown = 0;
   uint8_t ticksSinceSave = 0;
   bool pendingSave = false;     // periodic save pending flush
-  uint16_t evoDeclinedLv = 0;   // "keep form": don't offer evolution until leveling up
+  uint32_t evoAskAgain = 0;     // "keep form": the age (minutes) when evolving is offered again. By age, not
+                                // level: at the top level the level never rises again
   bool farewellQuiet = false;  // chose "stay together" once: the goodbye isn't offered by itself again
   bool starterPick = false;     // first game: waiting for the player to pick a starter
   bool eggPick = false;         // new egg: waiting for the player to pick from the pokedex

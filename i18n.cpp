@@ -46,6 +46,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ENTRENO FUE AL MAXIMO", "ENTRENO", "GANA COMBATES", "6H DE BUEN CUIDADO", "MINIJUEGOS", "COMER SUMA, JUGAR QUEMA",
     "BONUS DE GRUPO", "GASTO ENERGIA", "%u MIN", "PS", "%s trajo un caramelo!", "Para despedirte luego,", "manten pulsado tu Pokemon.",
     "No pudiste huir!",
+    "NIVEL 100 %d/%d",
   },
   // ---------------- EN ----------------
   {
@@ -86,6 +87,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ATK TRAINING MAXED", "TRAINING", "WIN BATTLES", "6H OF GOOD CARE", "PLAY MINI GAMES", "FOOD ADDS, PLAY BURNS",
     "PARTY BOOST", "ENERGY DRAIN", "%u MIN", "HP", "%s brought a candy!", "To say goodbye later,", "press and hold your Pokemon.",
     "Couldn't get away!",
+    "LEVEL 100 %d/%d",
   },
   // ---------------- FR ----------------
   {
@@ -126,6 +128,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ENTRAINEMENT ATQ AU MAX", "ENTRAINEMENT", "GAGNE DES COMBATS", "6H DE BONS SOINS", "MINI-JEUX", "MANGER GROSSIT, JOUER BRULE",
     "BONUS D'EQUIPE", "PERTE ENERGIE", "%u MIN", "PV", "%s apporte un bonbon!", "Pour lui dire au revoir,", "maintiens ton Pokemon.",
     "Fuite ratee!",
+    "NIVEAU 100 %d/%d",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -171,6 +174,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ANG-TRAINING MAXIMAL", "TRAINING", "SIEGE IM KAMPF", "6 STD. GUTE PFLEGE", "MINISPIELE", "ESSEN RAUF, SPIELEN RUNTER",
     "PARTY-BONUS", "ENERGIEVERBRAUCH", "%u MIN", "KP", "%s bringt ein Bonbon!", "Zum Abschied sp\204ter", "halte dein Pokemon gedr\201ckt.",
     "Flucht misslang!",
+    "LEVEL 100 %d/%d",
   },
   // ---------------- IT ----------------
   {
@@ -211,6 +215,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ALLENAMENTO ATT AL MASSIMO", "ALLENAMENTO", "VINCI LE BATTAGLIE", "6 ORE DI BUONE CURE", "MINIGIOCHI", "MANGIARE SU, GIOCARE GIU",
     "BONUS SQUADRA", "CALO ENERGIA", "%u MIN", "PS", "%s porta una caramella!", "Per salutarlo dopo,", "tieni premuto il Pokemon.",
     "Fuga fallita!",
+    "LV. 100 %d/%d",
   },
   // ---------------- PT ----------------
   {
@@ -251,6 +256,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "TREINO ATQ NO MAXIMO", "TREINO", "VENCER BATALHAS", "6H DE BOM CUIDADO", "MINIJOGOS", "COMER SOBE, JOGAR QUEIMA",
     "BONUS DE GRUPO", "GASTO ENERGIA", "%u MIN", "PS", "%s trouxe um doce!", "Para se despedir depois,", "segure seu Pokemon.",
     "Fuga falhou!",
+    "NIVEL 100 %d/%d",
   },
   // ---------------- JA ----------------
   {
@@ -314,6 +320,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "こうげきの くんれん MAX", "くんれん", "バトルに かつ", "6じかん おせわ", "ミニゲーム", "たべると ふえる、あそぶと へる",
     "パーティ ボーナス", "つかれかた", "あと %u ふん", "HP", "%sが おかしを くれた!", "あとで おわかれするには", "ポケモンを ながおししてね",
     "にげられない!",
+    "レベル100 %d/%d",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -359,71 +366,72 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "공격 훈련 최대", "훈련", "배틀 승리", "6시간 잘 돌보기", "미니게임", "먹으면 늘고, 놀면 줄어요",
     "파티 보너스", "에너지 소모", "%u분 남음", "HP", "%s 사탕을 줬어요!", "나중에 작별하려면", "포켓몬을 길게 눌러 주세요",
     "도망칠 수 없다!",
+    "레벨 100 %d/%d",
   },
 };
 
 // Medal names in their three lengths [language][medal].
 static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Nv.10", "Nv.25", "Nv.50", "BAYA", "RACHA 7", "VINCULO", "FORMA TOPE", "EN FORMA",
-    "VARIOCOLOR", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Nv.100", "AMIGO", "FIESTA", "JUGAR", "BOSQUE", "PLAYA", "CUEVA", "MANSION", "CAMPO" },
+    "VARIOCOLOR", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Nv.100", "AMIGO", "FIESTA", "JUGAR", "BOSQUE", "PLAYA", "CUEVA", "MANSION", "CAMPO", "Nv.100 x3", "Nv.100 x5", "Nv.100 x10" },
   { "Lv.10", "Lv.25", "Lv.50", "BERRY", "7 STREAK", "BOND", "TOP FORM", "IN SHAPE",
-    "SHINY!", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "BUDDY", "PARTY", "PLAYMATE", "FOREST", "BEACH", "CAVE", "MANSION", "FIELD" },
+    "SHINY!", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "BUDDY", "PARTY", "PLAYMATE", "FOREST", "BEACH", "CAVE", "MANSION", "FIELD", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
   { "Niv.10", "Niv.25", "Niv.50", "BAIE", "SERIE 7", "LIEN", "FORME MAX", "EN FORME",
-    "CHROMATIQUE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "COPAIN", "FETE", "JOUER", "FORET", "PLAGE", "GROTTE", "MANOIR", "CHAMP" },
+    "CHROMATIQUE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "COPAIN", "FETE", "JOUER", "FORET", "PLAGE", "GROTTE", "MANOIR", "CHAMP", "Niv.100 x3", "Niv.100 x5", "Niv.100 x10" },
   { "Lv.10", "Lv.25", "Lv.50", "BEERE", "7 SERIE", "BINDUNG", "ENDFORM", "FIT",
-    "SCHILLERND", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "KUMPEL", "PARTY", "SPIELEN", "WALD", "STRAND", "HOEHLE", "SPUKHAUS", "WIESE" },
+    "SCHILLERND", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "KUMPEL", "PARTY", "SPIELEN", "WALD", "STRAND", "HOEHLE", "SPUKHAUS", "WIESE", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
   { "Lv.10", "Lv.25", "Lv.50", "BACCA", "SERIE 7", "LEGAME", "FORMA MAX", "IN FORMA",
-    "CROMATICO", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "AMICO", "FESTA", "GIOCARE", "FORESTA", "SPIAGGIA", "GROTTA", "VILLA", "PRATO" },
+    "CROMATICO", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "AMICO", "FESTA", "GIOCARE", "FORESTA", "SPIAGGIA", "GROTTA", "VILLA", "PRATO", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
   { "Niv.10", "Niv.25", "Niv.50", "BAGA", "SEQ 7", "LACO", "FORMA MAX", "EM FORMA",
-    "BRILHANTE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "AMIGO", "FESTA", "JOGAR", "FLORESTA", "PRAIA", "CAVERNA", "SOLAR", "CAMPO" },
+    "BRILHANTE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "AMIGO", "FESTA", "JOGAR", "FLORESTA", "PRAIA", "CAVERNA", "SOLAR", "CAMPO", "Niv.100 x3", "Niv.100 x5", "Niv.100 x10" },
   { "Lv.10", "Lv.25", "Lv.50", "きのみ", "7にち", "なかよし", "さいしゅう", "げんき",
-    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "Lv.100", "ともだち", "パーティ", "あそぼう", "もり", "うみべ", "どうくつ", "やかた", "のはら" },
+    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "Lv.100", "ともだち", "パーティ", "あそぼう", "もり", "うみべ", "どうくつ", "やかた", "のはら", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
   { "Lv.10", "Lv.25", "Lv.50", "열매", "연속 7일", "유대", "최고 컨디션", "건강함",
-    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "Lv.100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판" },
+    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "Lv.100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
 };
 static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Nv10", "Nv25", "Nv50", "BAYA", "7DIAS", "VINC", "TOPE", "SANO",
-    "VARIO", "DEX10", "DEX50", "DEX100", "DEX151", "Nv100", "AMIGO", "FIESTA", "JUEGO", "BOSQUE", "PLAYA", "CUEVA", "MANS", "CAMPO" },
+    "VARIO", "DEX10", "DEX50", "DEX100", "DEX151", "Nv100", "AMIGO", "FIESTA", "JUEGO", "BOSQUE", "PLAYA", "CUEVA", "MANS", "CAMPO", "100x3", "100x5", "100x10" },
   { "Lv10", "Lv25", "Lv50", "BERRY", "7DAYS", "BOND", "TOP", "FIT",
-    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "BUDDY", "PARTY", "PLAY", "FOREST", "BEACH", "CAVE", "MANSN", "FIELD" },
+    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "BUDDY", "PARTY", "PLAY", "FOREST", "BEACH", "CAVE", "MANSN", "FIELD", "100x3", "100x5", "100x10" },
   { "Niv10", "Niv25", "Niv50", "BAIE", "7JRS", "LIEN", "MAX", "FORME",
-    "CHROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "COPAIN", "FETE", "JEU", "FORET", "PLAGE", "GROTTE", "MANOIR", "CHAMP" },
+    "CHROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "COPAIN", "FETE", "JEU", "FORET", "PLAGE", "GROTTE", "MANOIR", "CHAMP", "100x3", "100x5", "100x10" },
   { "Lv10", "Lv25", "Lv50", "BEERE", "7TAGE", "BND", "END", "FIT",
-    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "KUMPEL", "PARTY", "SPIEL", "WALD", "STRAND", "HOEHLE", "SPUK", "WIESE" },
+    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "KUMPEL", "PARTY", "SPIEL", "WALD", "STRAND", "HOEHLE", "SPUK", "WIESE", "100x3", "100x5", "100x10" },
   { "Lv10", "Lv25", "Lv50", "BACCA", "7GG", "LEG", "MAX", "FIT",
-    "CROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "AMICO", "FESTA", "GIOCO", "FOREST", "SPIAGG", "GROTTA", "VILLA", "PRATO" },
+    "CROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "AMICO", "FESTA", "GIOCO", "FOREST", "SPIAGG", "GROTTA", "VILLA", "PRATO", "100x3", "100x5", "100x10" },
   { "Niv10", "Niv25", "Niv50", "BAGA", "7DIAS", "LACO", "MAX", "FIT",
-    "BRILHO", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "AMIGO", "FESTA", "JOGO", "FLORES", "PRAIA", "CAVERN", "SOLAR", "CAMPO" },
+    "BRILHO", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "AMIGO", "FESTA", "JOGO", "FLORES", "PRAIA", "CAVERN", "SOLAR", "CAMPO", "100x3", "100x5", "100x10" },
   { "Lv10", "Lv25", "Lv50", "きのみ", "7にち", "なかよし", "しんか", "げんき",
-    "いろ", "ずかん10", "ずかん50", "ずかん100", "ずかん151", "Lv100", "とも", "パーティ", "あそび", "もり", "うみべ", "どうくつ", "やかた", "のはら" },
+    "いろ", "ずかん10", "ずかん50", "ずかん100", "ずかん151", "Lv100", "とも", "パーティ", "あそび", "もり", "うみべ", "どうくつ", "やかた", "のはら", "100x3", "100x5", "100x10" },
   { "Lv10", "Lv25", "Lv50", "열매", "7일", "유대", "최고", "건강",
-    "이로치", "도감10", "도감50", "도감100", "도감151", "Lv100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판" },
+    "이로치", "도감10", "도감50", "도감100", "도감151", "Lv100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판", "100x3", "100x5", "100x10" },
 };
 static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAYA HALLADA",
     "RACHA 7 DIAS", "VINCULO MAX", "FORMA FINAL", "EN FORMA",
-    "VARIOCOLOR", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "PRIMER AMIGO", "FIESTA DE 5", "JUGAR JUNTOS", "BOSQUE 100%", "PLAYA 100%", "CUEVA 100%", "MANSION 100%", "CAMPO 100%" },
+    "VARIOCOLOR", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "PRIMER AMIGO", "FIESTA DE 5", "JUGAR JUNTOS", "BOSQUE 100%", "PLAYA 100%", "CUEVA 100%", "MANSION 100%", "CAMPO 100%", "NV.100 x3", "NV.100 x5", "NV.100 x10" },
   { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BERRY FOUND",
     "7 DAY STREAK", "MAX BOND", "FINAL FORM", "IN SHAPE",
-    "SHINY FOUND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "FIRST BUDDY", "PARTY OF 5", "PLAY TOGETHER", "FOREST 100%", "BEACH 100%", "CAVE 100%", "MANSION 100%", "FIELD 100%" },
+    "SHINY FOUND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "FIRST BUDDY", "PARTY OF 5", "PLAY TOGETHER", "FOREST 100%", "BEACH 100%", "CAVE 100%", "MANSION 100%", "FIELD 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10" },
   { "NIVEAU 10", "NIVEAU 25", "NIVEAU 50", "BAIE TROUVEE",
     "SERIE 7 JOURS", "LIEN MAX", "FORME FINALE", "EN FORME",
-    "CHROMATIQUE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEAU 100", "1ER COPAIN", "FETE A 5", "JOUER ENSEMBLE", "FORET 100%", "PLAGE 100%", "GROTTE 100%", "MANOIR 100%", "CHAMP 100%" },
+    "CHROMATIQUE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEAU 100", "1ER COPAIN", "FETE A 5", "JOUER ENSEMBLE", "FORET 100%", "PLAGE 100%", "GROTTE 100%", "MANOIR 100%", "CHAMP 100%", "NIV.100 x3", "NIV.100 x5", "NIV.100 x10" },
   { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BEERE GEFUNDEN",
     "7 TAGE SERIE", "MAX BINDUNG", "ENDFORM", "FIT",
-    "SCHILLERND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "1. KUMPEL", "PARTY ZU 5", "MITSPIELEN", "WALD 100%", "STRAND 100%", "HOEHLE 100%", "SPUKHAUS 100%", "WIESE 100%" },
+    "SCHILLERND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "1. KUMPEL", "PARTY ZU 5", "MITSPIELEN", "WALD 100%", "STRAND 100%", "HOEHLE 100%", "SPUKHAUS 100%", "WIESE 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10" },
   { "LIVELLO 10", "LIVELLO 25", "LIVELLO 50", "BACCA TROVATA",
     "SERIE 7 GIORNI", "LEGAME MAX", "FORMA FINALE", "IN FORMA",
-    "CROMATICO", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LIVELLO 100", "PRIMO AMICO", "FESTA DA 5", "GIOCO INSIEME", "FORESTA 100%", "SPIAGGIA 100%", "GROTTA 100%", "VILLA 100%", "PRATO 100%" },
+    "CROMATICO", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LIVELLO 100", "PRIMO AMICO", "FESTA DA 5", "GIOCO INSIEME", "FORESTA 100%", "SPIAGGIA 100%", "GROTTA 100%", "VILLA 100%", "PRATO 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10" },
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAGA ACHADA",
     "SEQ 7 DIAS", "LACO MAX", "FORMA FINAL", "EM FORMA",
-    "BRILHANTE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "AMIGO NOVO", "FESTA DE 5", "JOGAR JUNTOS", "FLORESTA 100%", "PRAIA 100%", "CAVERNA 100%", "SOLAR 100%", "CAMPO 100%" },
+    "BRILHANTE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "AMIGO NOVO", "FESTA DE 5", "JOGAR JUNTOS", "FLORESTA 100%", "PRAIA 100%", "CAVERNA 100%", "SOLAR 100%", "CAMPO 100%", "NIV.100 x3", "NIV.100 x5", "NIV.100 x10" },
   { "レベル 10", "レベル 25", "レベル 50", "きのみ はっけん",
     "7にち れんぞく", "なかよし MAX", "さいしゅうしんか", "げんきいっぱい",
-    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "レベル 100", "はじめての ともだち", "5ひき パーティ", "いっしょに あそぶ", "もり 100%", "うみべ 100%", "どうくつ 100%", "やかた 100%", "のはら 100%" },
+    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "レベル 100", "はじめての ともだち", "5ひき パーティ", "いっしょに あそぶ", "もり 100%", "うみべ 100%", "どうくつ 100%", "やかた 100%", "のはら 100%", "レベル100 x3", "レベル100 x5", "レベル100 x10" },
   { "레벨 10", "레벨 25", "레벨 50", "열매 발견",
     "연속 7일", "유대감 최대", "최종 진화", "건강함",
-    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "레벨 100", "첫 친구", "5마리 파티", "함께 놀기", "숲 100%", "해변 100%", "동굴 100%", "저택 100%", "들판 100%" },
+    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "레벨 100", "첫 친구", "5마리 파티", "함께 놀기", "숲 100%", "해변 100%", "동굴 100%", "저택 100%", "들판 100%", "레벨100 x3", "레벨100 x5", "레벨100 x10" },
 };
 
 const char *T(StrId id) { return STRINGS[gLang][id]; }

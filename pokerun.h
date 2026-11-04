@@ -25,7 +25,10 @@
 #define RUN_PET_HALF_W 15
 #define RUN_FORGIVE 4
 
-enum RunKind : uint8_t { RUN_ROCK, RUN_BUSH, RUN_DOUBLE };
+// the single ones come in turn at random; RUN_DOUBLE (two rocks) only later on
+enum RunKind : uint8_t { RUN_ROCK, RUN_BUSH, RUN_DOUBLE, RUN_LOG, RUN_STUMP, RUN_MUSHROOM };
+static const RunKind RUN_SINGLES[] = { RUN_ROCK, RUN_BUSH, RUN_LOG, RUN_STUMP, RUN_MUSHROOM };
+#define RUN_SINGLE_KINDS 5
 struct RunObstacle { float x; RunKind kind; bool on; };
 
 struct RunState {
@@ -38,8 +41,26 @@ struct RunState {
   bool dead, jumped;   // jumped: jumped in this step
 };
 
-inline int runObstacleW(RunKind k) { return k == RUN_BUSH ? 44 : k == RUN_DOUBLE ? 78 : 34; }
-inline int runObstacleH(RunKind k) { return k == RUN_BUSH ? 44 : 30; }
+// all of them no taller than the bush and no wider than the double: every jump clears any of them
+inline int runObstacleW(RunKind k) {
+  switch (k) {
+    case RUN_BUSH: return 44;
+    case RUN_DOUBLE: return 78;
+    case RUN_LOG: return 64;
+    case RUN_STUMP: return 36;
+    case RUN_MUSHROOM: return 38;
+    default: return 34;
+  }
+}
+inline int runObstacleH(RunKind k) {
+  switch (k) {
+    case RUN_BUSH: return 44;
+    case RUN_LOG: return 24;
+    case RUN_STUMP: return 36;
+    case RUN_MUSHROOM: return 40;
+    default: return 30;
+  }
+}
 
 inline float runSpeed(float t) {
   float v = RUN_SPEED_START + RUN_SPEED_GAIN * t;
@@ -67,7 +88,7 @@ inline void runStart(RunState &s, uint32_t seed) {
 }
 
 inline void runSpawn(RunState &s) {
-  RunKind k = (runRand(s) & 1) ? RUN_BUSH : RUN_ROCK;
+  RunKind k = RUN_SINGLES[runRand(s) % RUN_SINGLE_KINDS];
   // doubles appear gradually: up to one in three
   float dbl = (s.t - RUN_DOUBLE_FROM) / 90.0f;
   if (dbl > 0.33f) dbl = 0.33f;

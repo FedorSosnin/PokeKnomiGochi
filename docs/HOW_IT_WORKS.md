@@ -55,6 +55,21 @@ Your Pokémon needs at least 15 ⚡ to fight.
 
 **RUN** leaves a wild battle, but 1 time in 20 it fails: the button says **Couldn't get away!** for the rest of that fight, so it's fight or lose. A battle with a buddy can always be left.
 
+### Moves
+
+Two moves, one per button: on the right the strongest of its own type, on the left the strongest of any other type. They come from its species' Red and Blue level-up attacks (moves that do no damage are left out), up to its level, which goes up 1 every hour of age. Training and wins don't teach moves. A new move shows as **Learned …!** at the start of the next wild battle, and only if it's stronger than the one on its button. Evolving switches to the new form's list.
+
+| Charmander's level | Left | Right |
+|---|---|---|
+| 1 | Scratch (one wide button) | |
+| 9 | Scratch | Ember |
+| 30 | Slash | Ember |
+| 38 | Slash | Flamethrower |
+
+Ditto copies the wild Pokémon's moves. **[Every Pokémon's moves and levels](MOVES.md)** has the whole list for all 151.
+
+### Results
+
 A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it while it runs back and forth trying to get away. Where the ball lands, against the rings that run with it, decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
 
 ## Training
@@ -111,16 +126,17 @@ Joy also drops 2 more per minute while 🍖 is below 30, and 2 more while 🧼 i
 
 | What | How |
 |---|---|
-| ⬆️ **Level** | +1 for every hour of age |
+| ⬆️ **Level** | +1 for every hour of age, up to 100. A Pokémon stays at 100 from then on, so it doesn't grow too strong for battles |
 | 🛡️ **Defense** | +1 for every 6 hours with all four needs at 40 or above (asleep counts, short dips are forgiven) |
 | ⚠️ **Care mistake** | A need at 10 or below counts as a mistake, at most once an hour, and costs 1 💞 |
 | 🏃 **Running away** | With all four needs at 0 for an hour, it's ready to leave. One bit of care resets the clock. |
+| 🔄 **Evolving** | At its evolution level (one level later for each care mistake), with all four needs at 40 or more, a red **Evolve** button appears. Tap it to evolve, or **Keep** to stay as it is: the button comes back an hour later. Tapping away from the question leaves the button there. Every species' level is in [Moves](MOVES.md) |
 | 👋 **Goodbye** | A fully evolved Pokémon offers a goodbye from 3 days old. Choose to stay together and it won't ask again; hold your finger on it whenever you're ready. |
-| 🥚 **Next Pokémon** | After a goodbye or letting one go, choose any Pokémon from your Pokédex, with a 25% chance of it being shiny ✨ |
+| 🥚 **Next Pokémon** | After a goodbye or letting one go, choose a first form from your Pokédex (Pikachu, not Raichu). A shiny one you have is its own square and always hatches shiny ✨; a regular one has a 25% chance |
 
 ## Medals
 
-Swipe from right to left on the home screen to see them all, 6 to a page; the ones you have earned are green with a check mark.
+Swipe from right to left on the home screen to see them all, 6 to a page; the ones you have earned are green with a check mark. A new medal drops in from the top of the screen on a ribbon; tap it to jump to its page and see it turn green.
 
 | Medal | How to earn it |
 |---|---|
@@ -151,3 +167,13 @@ These stay with you across every Pokémon you raise.
 | Medal | How to earn it |
 |---|---|
 | 🌲 **Forest** / 🏖️ **Beach** / 🪨 **Cave** / 👻 **Mansion** / 🌾 **Field** | Catch every Pokémon in that zone, legendary included |
+
+### Level 100 medals
+
+For the end game: each Pokémon you raise to level 100 counts once, and these stay with you.
+
+| Medal | How to earn it |
+|---|---|
+| 🏆 **Level 100 ×3** | Raise 3 Pokémon to level 100 |
+| 🏆 **Level 100 ×5** | Raise 5 Pokémon to level 100 |
+| 👑 **Level 100 ×10** | Raise 10 Pokémon to level 100 |

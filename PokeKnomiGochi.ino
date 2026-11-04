@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.38"
+#define FW_VERSION "1.39"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -108,6 +108,7 @@ bool galleryDirty = false;
 int galleryPage = 0;        // 10 pages of 16
 int eggPickPage = 0;        // egg choice: grid with only what is registered
 int16_t eggPickDetail = 0;
+bool eggPickShiny = false;  // the chosen form is the shiny one
 bool eggPickDirty = true;
 int16_t galleryDetail = 0;  // dex in detail view, 0 = grid
 
@@ -120,7 +121,7 @@ int cardNameBottom = 84;      // where the card's name (and the species under a 
 uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 training, 3 progress; the achievements: their pages
 #define CARD_PAGES 4
 bool cardAch = false;         // the same screen showing the achievements (swipe right to left from home)
-#define ACH_PAGES 5           // the pet's medals (2 pages), the trainer's (2), the zones' (1): 6 at most a page
+#define ACH_PAGES 6           // the pet's medals (2 pages), the trainer's (2), the zones' (1), level 100 (1): 6 at most a page
 #define cardPageCount() (cardAch ? ACH_PAGES : CARD_PAGES)  // a macro: a function here would come before the sketch's prototypes
 uint8_t clockPage = 0;        // 0 time, 1 settings (Knomi only)
 uint8_t wifiListPage = 0, wifiKbLayer = 0;
@@ -217,6 +218,7 @@ bool vbOpen = false, vbHost = false, vbRewarded = false, vbMineLast = false;
 VbPhase vbPhase = VB_READY;
 VbBall vbBall;
 float vbPadX = 233, vbSpeed0 = VB_SPEED0;
+float vbPadVX = 0;  // the paddle's speed, px/s, smoothed: it runs that way, or faces you when still
 uint8_t vbMine = 0, vbTheirs = 0, vbSeqOut = 0, vbSeqIn = 0xFF;
 bool vbOutPending = false, vbMissPending = false;  // a crossing / a point not acknowledged yet
 VbBall vbOut;                                      // the crossing being sent
@@ -1189,7 +1191,7 @@ void onSwipe(int dir) {
     return;
   }
   if (pet.awaitingEggPick()) {
-    int pages = (pet.registeredCount() + 15) / 16;
+    int pages = (pet.eggChoiceCount() + 15) / 16;
     int np = eggPickPage - dir;  // swiping left advances a page
     if (!eggPickDetail && np >= 0 && np < pages) {
       eggPickPage = np;
@@ -1362,6 +1364,7 @@ void onTap(int16_t x, int16_t y) {
     sfxPlay(SFX_TAP);
     return;
   }
+  if (celebrationTap(x, y)) return;
   if (partyPillAt(x, y)) {  // the Party Boost button
     sfxPlay(SFX_TAP);
     partyOpen = true;
@@ -3412,12 +3415,13 @@ void renderDungeon() {
     for (int tx = tx0 < 0 ? 0 : tx0; tx < DN_W && ox + tx * DN_TILE < 466; tx++)
       dnDrawTile(tx, ty, ox + tx * DN_TILE, oy + ty * DN_TILE);
 
+  // the berries: one of the food menu's three, picked by where it lies, so it doesn't change as you walk
+  static const char *const *const BERRY[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
   for (auto &b : dn.berry) {
     if (!b.on) continue;
     int bx = ox + b.x * DN_TILE + DN_TILE / 2, by = oy + b.y * DN_TILE + DN_TILE / 2;
-    gfx->fillCircle(bx, by + 4, 12, C565(0xd8, 0x3a, 0x4a));
-    gfx->fillCircle(bx - 4, by, 3, C565(0xf4, 0xa0, 0xa8));
-    gfx->fillRect(bx - 1, by - 14, 3, 8, C565(0x3c, 0xa0, 0x50));
+    uint8_t kind = (uint8_t)((b.x * 31 + b.y * 17 + dn.floor * 7) % 3);
+    drawMap(BERRY[kind], HOME_ICON_N, bx - 3 * HOME_ICON_N / 2, by - 3 * HOME_ICON_N / 2, 3, false);
   }
 
   for (auto &m : dn.mon) {
@@ -3575,6 +3579,35 @@ void drawRunObstacle(const RunObstacle &o, bool night) {
   } else if (o.kind == RUN_DOUBLE) {
     drawRunRock(x, 36, h, night);
     drawRunRock(x + w - 36, 36, h, night);
+  } else if (o.kind == RUN_LOG) {  // a fallen log, its cut end toward you
+    uint16_t bark = night ? C565(0x4a, 0x34, 0x24) : C565(0x7a, 0x52, 0x32), dk = night ? C565(0x34, 0x24, 0x18) : C565(0x58, 0x3a, 0x22);
+    uint16_t wood = night ? C565(0x9a, 0x80, 0x5a) : C565(0xd8, 0xb4, 0x7c);
+    int y = RUN_GROUND_Y - h, r = h / 2;
+    gfx->fillRoundRect(x, y, w, h + 2, r, bark);
+    for (int bx = x + 18; bx < x + w - 14; bx += 12) gfx->fillRect(bx, y + 5, 6, 3, dk);
+    gfx->fillCircle(x + r, y + r, r, wood);
+    gfx->drawCircle(x + r, y + r, r - 4, dk);
+    gfx->drawCircle(x + r, y + r, r, dk);
+  } else if (o.kind == RUN_STUMP) {  // a tree stump with its rings on top
+    uint16_t bark = night ? C565(0x4a, 0x34, 0x24) : C565(0x7a, 0x52, 0x32), dk = night ? C565(0x34, 0x24, 0x18) : C565(0x58, 0x3a, 0x22);
+    uint16_t wood = night ? C565(0x9a, 0x80, 0x5a) : C565(0xd8, 0xb4, 0x7c);
+    int y = RUN_GROUND_Y - h;
+    gfx->fillRect(x + 3, y + 5, w - 6, h - 1, bark);
+    gfx->fillRect(x, RUN_GROUND_Y - 6, w, 8, bark);  // roots
+    gfx->fillRect(x + 10, y + 12, 3, h - 14, dk);
+    gfx->fillRect(x + w - 14, y + 16, 3, h - 18, dk);
+    gfx->fillRoundRect(x + 3, y, w - 6, 10, 5, wood);
+    gfx->drawRoundRect(x + 10, y + 2, w - 20, 6, 3, dk);
+  } else if (o.kind == RUN_MUSHROOM) {  // a big red mushroom
+    uint16_t cap = night ? C565(0x9a, 0x2a, 0x2a) : C565(0xd8, 0x3a, 0x3a), dot = night ? C565(0xc0, 0xb8, 0xb0) : UI_WHITE;
+    uint16_t stem = night ? C565(0xb0, 0xa8, 0x98) : C565(0xf0, 0xe6, 0xd2);
+    int y = RUN_GROUND_Y - h;
+    gfx->fillRoundRect(x + w / 2 - 8, y + 18, 16, h - 16, 5, stem);
+    gfx->fillRoundRect(x, y + 4, w, 18, 9, cap);
+    gfx->fillCircle(x + w / 2, y + 12, 12, cap);
+    gfx->fillCircle(x + 9, y + 12, 3, dot);
+    gfx->fillCircle(x + w / 2 + 2, y + 6, 4, dot);
+    gfx->fillCircle(x + w - 9, y + 14, 3, dot);
   } else {
     drawRunRock(x, w, h, night);
   }
@@ -4132,36 +4165,120 @@ void drawStreakBadge() {
   printT(s);
 }
 
-// temporary banner: new medal or streak milestone
+// temporary banner: new medal or streak milestone. It drops in from the top with a medal on a
+// ribbon above it (a flame for a streak), settles with a little bounce, sparkles, and goes back up.
+#define CELEB_X 73
+#define CELEB_W 320
+#define CELEB_TOP 104     // the ribbon's top
+#define CELEB_BOX_Y 168
+#define CELEB_BOX_H 96
+#define CELEB_IN_MS 600
+#define CELEB_OUT_MS 350
+#define MEDAL_GOLD C565(0xf2, 0xb8, 0x2a)
+#define MEDAL_DARK C565(0xc0, 0x84, 0x10)
+
+// how far above its place the banner is now (0 = in place), from how long it has left
+int celebOffset() {
+  uint32_t left = pet.celebrateLeft(), t = CELEBRATE_MS - left;
+  int away = CELEB_BOX_Y + CELEB_BOX_H + 10;  // all of it off the top of the screen
+  if (t < CELEB_IN_MS) {  // ease out with a small overshoot: it lands, not just stops
+    float p = t / (float)CELEB_IN_MS - 1, e = 1 + 2.4f * p * p * p + 1.4f * p * p;
+    return (int)(away * (1 - e));
+  }
+  if (left < CELEB_OUT_MS) {
+    float p = 1 - left / (float)CELEB_OUT_MS;
+    return (int)(away * p * p);
+  }
+  return 0;
+}
+
+// a five-pointed star, point up
+void fillStar(int cx, int cy, int r, uint16_t c) {
+  int16_t px[10], py[10];
+  for (int i = 0; i < 10; i++) {
+    float a = -1.5708f + i * 0.6283f, rr = (i & 1) ? r * 0.45f : r;
+    px[i] = cx + (int)(cosf(a) * rr);
+    py[i] = cy + (int)(sinf(a) * rr);
+  }
+  for (int i = 0; i < 10; i++) gfx->fillTriangle(cx, cy, px[i], py[i], px[(i + 1) % 10], py[(i + 1) % 10], c);
+}
+
 void drawCelebration() {
   const char *l1 = nullptr, *l2 = nullptr;
   // 32 and not 20: "%u にちれんぞく！" already exceeds 20 with a single digit, and snprintf
   // cut in the middle of a 3-byte character.
   char buf[32];
-  if (pet.showMedal()) {
+  bool medal = pet.showMedal();
+  if (medal) {
     for (int i = 0; i < MED_COUNT; i++)
-      if (pet.newMedal & (1 << i)) { l2 = medalName(i); break; }
+      if (pet.newMedal & (1UL << i)) { l2 = medalName(i); break; }
     l1 = T(S_MEDAL_BANNER);
   } else if (pet.showMilestone()) {
     snprintf(buf, sizeof(buf), T(S_STREAK_DAYS_FMT), pet.streak);
     l1 = T(S_GREAT);
     l2 = buf;
   }
-  if (!l1) return;
-  gfx->fillRoundRect(73, 150, 320, 96, 16, UI_BAR_WARN);
-  gfx->drawRoundRect(73, 150, 320, 96, 16, UI_INK);
+  if (!l1 || !l2) return;
+  int dy = -celebOffset(), by = CELEB_BOX_Y + dy;
+  gfx->fillRoundRect(CELEB_X, by, CELEB_W, CELEB_BOX_H, 16, UI_BAR_WARN);
+  gfx->drawRoundRect(CELEB_X, by, CELEB_W, CELEB_BOX_H, 16, UI_INK);
+  gfx->drawRoundRect(CELEB_X + 4, by + 4, CELEB_W - 8, CELEB_BOX_H - 8, 12, MEDAL_GOLD);
+  // the ribbon, then the medal hanging from it over the banner's top edge
+  int my = by - 4, top = CELEB_TOP + dy;
+  uint16_t ribL = medal ? C565(0xd8, 0x3a, 0x3a) : C565(0xe8, 0x6a, 0x1c), ribR = medal ? C565(0x3a, 0x6c, 0xd8) : C565(0xd8, 0x3a, 0x3a);
+  gfx->fillTriangle(CX - 30, top, CX - 12, top, CX + 2, my - 10, ribL);
+  gfx->fillTriangle(CX - 30, top, CX + 2, my - 10, CX - 14, my - 10, ribL);
+  gfx->fillTriangle(CX + 30, top, CX + 12, top, CX - 2, my - 10, ribR);
+  gfx->fillTriangle(CX + 30, top, CX - 2, my - 10, CX + 14, my - 10, ribR);
+  gfx->fillCircle(CX, my, 30, UI_INK);
+  gfx->fillCircle(CX, my, 28, MEDAL_GOLD);
+  gfx->drawCircle(CX, my, 21, MEDAL_DARK);
+  if (medal) {
+    fillStar(CX, my + 1, 17, MEDAL_DARK);
+    fillStar(CX, my, 15, C565(0xff, 0xf0, 0xb0));
+  } else {  // a streak: a flame, round at the bottom and pointed at the top
+    gfx->fillCircle(CX, my + 6, 12, UI_BAR_BAD);
+    gfx->fillTriangle(CX + 2, my - 20, CX - 12, my + 4, CX + 12, my + 4, UI_BAR_BAD);
+    gfx->fillCircle(CX, my + 9, 6, C565(0xff, 0xe0, 0x60));
+    gfx->fillTriangle(CX + 1, my - 4, CX - 6, my + 8, CX + 6, my + 8, C565(0xff, 0xe0, 0x60));
+  }
+  if (dy == 0) {  // settled: it shines
+    uint32_t now = millis();
+    drawSparkles(CELEB_X, by, CELEB_X + CELEB_W, by + CELEB_BOX_H, now);
+    uint32_t beat = now % 1200;  // a glint crossing the medal
+    if (beat < 400) drawSparkle(CX - 16 + (int)(32 * beat / 400), my - 12 + (int)(16 * beat / 400), 5);
+  }
   gfx->setTextColor(UI_INK);
   setSize(3);
-  setCur(centerX(l1, 3), 176);
+  setCur(centerX(l1, 3), by + 34);
   printT(l1);
   setSize(2);
-  setCur(centerX(l2, 2), 212);
+  setCur(centerX(l2, 2), by + 68);
   printT(l2);
+}
+
+// a tap on the banner: a medal opens the achievements at its page, to see it in green; either way
+// the tap stops there instead of reaching the Pokemon underneath
+bool celebrationTap(int16_t x, int16_t y) {
+  if (!pet.showMedal() && !pet.showMilestone()) return false;
+  int dy = -celebOffset();
+  if (x < CELEB_X || x > CELEB_X + CELEB_W || y < CELEB_TOP + dy || y > CELEB_BOX_Y + CELEB_BOX_H + dy) return false;
+  sfxPlay(SFX_TAP);
+  if (pet.showMedal()) {
+    for (int i = 0; i < MED_COUNT; i++)
+      if (pet.newMedal & (1UL << i)) {
+        cardOpen = cardAch = true;
+        cardPage = achPageOf(i);
+        break;
+      }
+  }
+  pet.endCelebration();
+  return true;
 }
 
 // medals on the card: badge with label, colored if earned
 void drawMedalBadge(int x, int y, int i) {
-  bool got = pet.hasMedal(1 << i);
+  bool got = pet.hasMedal(1UL << i);
   gfx->fillRoundRect(x, y, 100, 24, 6, got ? UI_BAR_OK : UI_TRACK);
   if (!got) gfx->drawRoundRect(x, y, 100, 24, 6, UI_TRACK);
   gfx->setTextColor(got ? UI_BG_DAY : 0x9492);
@@ -4331,11 +4448,12 @@ void renderCardTraining() {
 #define ACH_GAP 10
 // page p: its group (first medal, how many in all, title) and which of them it shows
 static void achPage(uint8_t p, int &first, int &count, StrId &title, int &from, int &n) {
-  static const struct { uint8_t first, count; StrId title; } G[3] = {
+  static const struct { uint8_t first, count; StrId title; } G[4] = {
     { 0, MED_PET_COUNT, S_MEDALS_FMT },
     { MED_PET_COUNT, MED_FIRST_ZONE - MED_PET_COUNT, S_TRAINER_FMT },
-    { MED_FIRST_ZONE, MED_COUNT - MED_FIRST_ZONE, S_ZONE_MEDALS_FMT } };
-  for (int g = 0, page = 0; g < 3; g++) {
+    { MED_FIRST_ZONE, MED_FIRST_LV100 - MED_FIRST_ZONE, S_ZONE_MEDALS_FMT },
+    { MED_FIRST_LV100, MED_COUNT - MED_FIRST_LV100, S_LV100_FMT } };
+  for (int g = 0, page = 0; g < 4; g++) {
     int pages = (G[g].count + ACH_PER_PAGE - 1) / ACH_PER_PAGE;
     if (p < page + pages) {
       first = G[g].first;
@@ -4349,6 +4467,17 @@ static void achPage(uint8_t p, int &first, int &count, StrId &title, int &from, 
   }
   first = count = from = n = 0;
   title = S_MEDALS_FMT;
+}
+
+// the achievements page that shows medal i
+uint8_t achPageOf(int i) {
+  for (uint8_t p = 0; p < ACH_PAGES; p++) {
+    int first, count, from, n;
+    StrId title;
+    achPage(p, first, count, title, from, n);
+    if (i >= from && i < from + n) return p;
+  }
+  return 0;
 }
 
 static void drawCheck(int x, int y, uint16_t c) {  // a check mark, 3 px thick
@@ -4428,14 +4557,16 @@ void renderCardProgress() {
   setCur(centerX(lv, 5), 86);
   printT(lv);
 
-  // progress bar to the next level (1 level = 60 min of play)
+  // progress bar to the next level (1 level = 60 min of play); full, and MAX, at the top level
+  bool top = pet.level() >= LEVEL_MAX;
   uint8_t into = pet.ageMinutes % MINUTES_PER_LEVEL;
   int bx = 93, bw = 280, by = 158, bh = 22;
   gfx->fillRoundRect(bx, by, bw, bh, 6, UI_TRACK);
-  int fw = (bw - 4) * into / MINUTES_PER_LEVEL;
+  int fw = top ? bw - 4 : (bw - 4) * into / MINUTES_PER_LEVEL;
   if (fw > 0) gfx->fillRoundRect(bx + 2, by + 2, fw, bh - 4, 5, UI_BAR_OK);
   char nx[32];
-  snprintf(nx, sizeof(nx), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, pet.level() + 1);
+  if (top) strlcpy(nx, "MAX", sizeof(nx));
+  else snprintf(nx, sizeof(nx), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, pet.level() + 1);
   gfx->setTextColor(UI_INK);
   setSize(2);
   setCur(centerX(nx, 2), by + 32);
@@ -4737,7 +4868,7 @@ void galleryTap(int16_t x, int16_t y) {
 }
 
 // ---------- egg choice ----------
-// same grid as the Pokedex, but without gaps: only what has already been registered
+// same grid as the Pokedex, but without gaps: only base forms already registered (an egg hatches at level 1)
 
 #define PICK_BTN_Y 316
 #define PICK_BTN_H 56
@@ -4753,7 +4884,8 @@ void renderEggPick() {
     setCur(centerX(name, 3), 56);
     printT(name);
     if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 240, millis(), true, false, 4);
-    else if (const uint8_t *t = thumbs.get(eggPickDetail)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
+    else if (const uint8_t *t = thumbs.getForm(eggPickDetail, eggPickShiny)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
+    if (eggPickShiny) drawShinyMark(CX - 84, 116, 168);
     drawDexInfo(eggPickDetail, false);
     gfx->fillRoundRect(CX - 110, PICK_BTN_Y, 220, PICK_BTN_H, 14, C565(0x1e, 0x7d, 0x3c));
     gfx->setTextColor(UI_WHITE);
@@ -4770,23 +4902,25 @@ void renderEggPick() {
 
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
-  drawOwnedGrid(T(S_CHOOSE_POKEMON), eggPickPage, 0);
+  drawOwnedGrid(T(S_CHOOSE_POKEMON), eggPickPage);
   gfx->flush();
 }
 
-// grid of what is registered, without gaps
-// locked: shown grey and can't be picked (the one you are raising, when trading); 0 = none
-void drawOwnedGrid(const char *title, int page, int16_t locked) {
+// grid of the egg choices, without gaps: each form on its own, the shiny one with its sparkle
+void drawOwnedGrid(const char *title, int page) {
   gfx->setTextColor(UI_INK);
   setSize(2);
   setCur(centerX(title, 2), 50);
   printT(title);
   for (int i = 0; i < 16; i++) {
-    int16_t dex = pet.registeredAt(page * 16 + i);
+    bool shiny;
+    int16_t dex = pet.eggChoiceAt(page * 16 + i, shiny);
     if (!dex) break;
-    if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, GAL_X + (i % 4) * GAL_CELL, GAL_Y + (i / 4) * GAL_CELL, 2, dex == locked);
+    int x = GAL_X + (i % 4) * GAL_CELL, y = GAL_Y + (i / 4) * GAL_CELL;
+    if (const uint8_t *t = thumbs.getForm(dex, shiny)) drawThumb(t, x, y, 2, false);
+    if (shiny) drawShinyMark(x, y, GAL_CELL);
   }
-  int pages = (pet.registeredCount() + 15) / 16;
+  int pages = (pet.eggChoiceCount() + 15) / 16;
   if (pages > 1) {
     for (int i = 0; i < pages; i++) {
       int dotX = CX + (i * 2 - (pages - 1)) * 7;
@@ -4796,17 +4930,17 @@ void drawOwnedGrid(const char *title, int page, int16_t locked) {
   }
 }
 
-int16_t ownedGridAt(int16_t x, int16_t y, int page) {
+int16_t ownedGridAt(int16_t x, int16_t y, int page, bool &shiny) {
   if (x < GAL_X || y < GAL_Y) return 0;
   int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
   if (c > 3 || r > 3) return 0;
-  return pet.registeredAt(page * 16 + r * 4 + c);
+  return pet.eggChoiceAt(page * 16 + r * 4 + c, shiny);
 }
 
 void eggPickTap(int16_t x, int16_t y) {
   if (eggPickDetail) {
     if (y >= PICK_BTN_Y && y < PICK_BTN_Y + PICK_BTN_H && abs(x - CX) <= 110) {
-      pet.chooseEgg(eggPickDetail);
+      pet.chooseEgg(eggPickDetail, eggPickShiny);
       sfxPlay(SFX_TAP);
     } else if (closeHit(x, y)) {
       sfxPlay(SFX_TAP);
@@ -4819,11 +4953,13 @@ void eggPickTap(int16_t x, int16_t y) {
     galleryUnload();
     return;
   }
-  int16_t dex = ownedGridAt(x, y, eggPickPage);
+  bool shiny;
+  int16_t dex = ownedGridAt(x, y, eggPickPage, shiny);
   if (!dex) return;
   sfxPlay(SFX_TAP);
   eggPickDetail = dex;
-  galleryPmd.load(dex, false);  // the shiny remains a surprise
+  eggPickShiny = shiny;
+  galleryPmd.load(dex, shiny);  // the regular form can still hatch shiny: that stays a surprise
 }
 
 // ---------- buddy: another PokeKnomiGochi on the same wifi ----------
@@ -5913,6 +6049,7 @@ void vbStart(bool host) {
   vbSeqIn = 0xFF;
   vbOutPending = vbMissPending = false;
   vbPadX = CX;
+  vbPadVX = 0;
   vbPhase = VB_READY;
   vbT = millis();
   tiltZero();
@@ -5979,6 +6116,7 @@ void vbTick(uint32_t now) {
   // the paddle: your finger where it touches, or the tilt (arrow keys on a computer)
   float dt = (now - vbStepT) / 1000.0f;
   if (dt > 0.1f) dt = 0.1f;
+  float padFrom = vbPadX;
   if (vbBot) {  // a player who moves at most this fast: it misses once the ball is quick
     static float to = CX;  // aims like a person: a fresh look every 0.3 s, a tilting hand's speed
     static uint32_t lookT = 0;
@@ -5996,6 +6134,10 @@ void vbTick(uint32_t now) {
   }
   if (vbPadX < VB_LEFT) vbPadX = VB_LEFT;
   if (vbPadX > VB_RIGHT) vbPadX = VB_RIGHT;
+  if (dt > 0) {
+    float k = dt * 12 > 1 ? 1 : dt * 12;  // smoothed over ~80 ms, so a still frame doesn't flicker it
+    vbPadVX += ((vbPadX - padFrom) / dt - vbPadVX) * k;
+  }
 
   if ((vbOutPending || vbMissPending) && now - vbSendT >= 300) {
     vbSendT = now;
@@ -6075,7 +6217,9 @@ void renderVolley() {
   printT(b);
   // your Pokemon is the paddle
   gPmdForceScale = 2;
-  drawPmdAct(PMD_IDLE, (int)vbPadX, VB_PADDLE_Y + 40, millis(), true, false, 2);
+  uint8_t act = vbPadVX > 40 ? PMD_WALKR : vbPadVX < -40 ? PMD_WALKL : PMD_IDLE;
+  if (!pmd.has(act)) act = PMD_IDLE;
+  drawPmdAct(act, (int)vbPadX, VB_GROUND_Y, millis(), true, false, 2);
   gPmdForceScale = 0;
   // the home screen's Poke Ball: 18 px drawn x4 (a little over the 64 px it hits with), and x2 on the paddle
   if (vbPhase == VB_PLAY) drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)vbBall.x - 36, (int)vbBall.y - 36, 4, false);

@@ -163,7 +163,7 @@ void Pet::tick() {
     return;
   }
 
-  if (ageMinutes % MINUTES_PER_LEVEL == 0) sfxPlay(SFX_LEVEL);  // leveled up (awake)
+  if (ageMinutes % MINUTES_PER_LEVEL == 0 && ageMinutes / MINUTES_PER_LEVEL < LEVEL_MAX) sfxPlay(SFX_LEVEL);  // leveled up (awake)
 
   fullness = clamp100(fullness - 2);
   // with company (Party Boost) energy only drops every other minute
@@ -272,9 +272,10 @@ int16_t Pet::pickEggSpecies() {
   return CLASSIC_DEX[random(NUM_CLASSIC_DEX)];  // unreachable, just in case
 }
 
-bool Pet::chooseEgg(int16_t dex) {
-  if (!eggPick || !isRegistered(dex)) return false;
+bool Pet::chooseEgg(int16_t dex, bool shinyForm) {
+  if (!eggPick || !eggChoice(dex, shinyForm)) return false;
   eggTarget = dex;
+  if (shinyForm) eggShiny = true;  // otherwise the roll from newEgg() stays: a surprise
   eggPick = false;
   save();
   return true;
@@ -284,6 +285,26 @@ int16_t Pet::registeredAt(int idx) const {
   for (int16_t d = 1; d <= 151; d++)
     if (isRegistered(d) && idx-- == 0) return d;
   return 0;
+}
+
+bool Pet::eggChoice(int16_t dex, bool shinyForm) const {
+  return hasForm(dex, shinyForm) && DEX_TBL[dex].rarity != R_EVO;
+}
+
+int16_t Pet::eggChoiceAt(int idx, bool &shinyForm) const {
+  for (int16_t d = 1; d <= 151; d++)
+    for (int f = 0; f < 2; f++)
+      if (eggChoice(d, f) && idx-- == 0) {
+        shinyForm = f;
+        return d;
+      }
+  return 0;
+}
+
+uint16_t Pet::eggChoiceCount() const {
+  uint16_t n = 0;
+  for (int16_t d = 1; d <= 151; d++) n += eggChoice(d, false) + eggChoice(d, true);
+  return n;
 }
 
 static void setDexBit(uint8_t *bits, int16_t dex, bool on) {
@@ -358,7 +379,7 @@ void Pet::registerCare() {
               : (streak >= 7)   ? 7   : (streak >= 3)  ? 3 : 0;
   if (ms > lastMilestone) {
     lastMilestone = ms;
-    milestoneUntil = millis() + 4500;
+    milestoneUntil = millis() + CELEBRATE_MS;
   }
   checkMedals();
   save();
@@ -389,7 +410,15 @@ void Pet::checkMedals() {
   if (caught >= 50) trainerMedals |= MED_DEX50;
   if (caught >= 100) trainerMedals |= MED_DEX100;
   if (caught >= 151) trainerMedals |= MED_DEX151;
-  if (level() >= 100) trainerMedals |= MED_LV100;
+  if (level() >= LEVEL_MAX) trainerMedals |= MED_LV100;
+  if (level() >= LEVEL_MAX && !counted100) {  // each Pokemon counts once
+    counted100 = true;
+    lv100Count++;
+    save();
+  }
+  if (lv100Count >= 3) trainerMedals |= MED_LV100_3;
+  if (lv100Count >= 5) trainerMedals |= MED_LV100_5;
+  if (lv100Count >= 10) trainerMedals |= MED_LV100_10;
   if (buddyPeak >= 1) trainerMedals |= MED_BUDDY;
   if (buddyPeak + 1 >= PARTY_SIZE) trainerMedals |= MED_PARTY;
   for (uint8_t z = 0; z < ZONE_COUNT; z++)
@@ -398,7 +427,7 @@ void Pet::checkMedals() {
   if (gained) {
     for (uint32_t m = gained; m; m &= (m - 1)) totalMedals++;
     newMedal = gained;
-    medalUntil = millis() + 4000;
+    medalUntil = millis() + CELEBRATE_MS;
     if (!sleeping) sfxPlay(SFX_MEDAL);
     save();
   }
@@ -499,6 +528,8 @@ void Pet::hatch() {
   farewellQuiet = false;
   battleWins = 0;
   movesSeen = 1;
+  counted100 = false;
+  evoAskAgain = 0;
   berryKnown = false;
   bond = 0;          // bond, medals and name belong to the individual
   bondToday = 0;
@@ -703,7 +734,7 @@ void Pet::showdownResult(uint8_t mine, uint8_t theirs) {
   if (trainerMedals != before) {
     totalMedals++;
     newMedal = MED_PLAYMATE;
-    medalUntil = millis() + 4000;
+    medalUntil = millis() + CELEBRATE_MS;
     if (!sleeping) sfxPlay(SFX_MEDAL);
   }
   save();
@@ -906,6 +937,8 @@ void Pet::save() {
   prefs.putUInt("cdyg", candyGiftDay);
   prefs.putUShort("bwin", battleWins);
   prefs.putUChar("bmov", movesSeen);
+  prefs.putUChar("l100n", lv100Count);
+  prefs.putBool("l100c", counted100);
   prefs.putUInt("vday", visitorDay);
   prefs.putShort("vdex", visitDex);
   prefs.putUChar("vmin", visitMin);
@@ -973,6 +1006,10 @@ void Pet::load() {
   candyGiftDay = prefs.getUInt("cdyg", 0);
   battleWins = prefs.getUShort("bwin", 0);
   movesSeen = prefs.getUChar("bmov", 1);
+  lv100Count = prefs.getUChar("l100n", 0);
+  counted100 = prefs.getBool("l100c", false);
+  // from before the count: the Level 100 medal means one got there. If it isn't this one, count it
+  if (!prefs.isKey("l100n") && (trainerMedals & MED_LV100) && level() < LEVEL_MAX) lv100Count = 1;
   visitorDay = prefs.getUInt("vday", 0);
   visitDex = prefs.getShort("vdex", 0);
   visitMin = prefs.getUChar("vmin", 0);

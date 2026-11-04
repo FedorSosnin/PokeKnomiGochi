@@ -8,6 +8,21 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.39] - 2026-11-04
+
+- **Your next Pokémon is a first form:** after a goodbye or letting one go, the Pokédex grid you choose from shows only first forms, since the new one hatches from an egg: Pikachu, not Raichu.
+- **Pick a shiny:** a shiny in your Pokédex is its own square with sparkles there, and picking it hatches a shiny for sure. A regular one still has its 1 in 4 chance.
+- **Levels stop at 100:** past that a Pokémon would be too strong to battle, so it stays at 100; one that is already older comes back to 100 and stays. The progress page shows a full bar and MAX.
+- **Level 100 medals:** a new page of achievements for raising 3, 5 and 10 Pokémon to level 100. Each Pokémon counts once, the one you have now too when it's already there.
+- **Poké Ball Volley:** your Pokémon runs left and right as you move it and faces you when it stands still, on the ground instead of just above it.
+- **PokeRun:** fallen logs, tree stumps and big mushrooms join the rocks and bushes.
+- **PokeDungeon:** the berries are the Razz, Oran and Pinap Berries from the food menu.
+- **Keep form, then evolve later:** choosing Keep hides the Evolve button for an hour, then it comes back. Before, it waited for the next level, which never comes at level 100. A new Pokémon also no longer inherits the last one's Keep.
+- **Medals arrive in style:** a new medal drops in from the top on a red and blue ribbon, a gold medal with a star over the banner, settles with a little bounce and sparkles. Tap it to open your achievements at its page and see it in green; the tap no longer goes through to your Pokémon. A streak milestone drops in the same way, with a flame.
+- **A new photo:** the Knomi in its Poké Ball case running the latest game now opens the README and the PokeWebGochi page's Knomi section.
+- **[Moves chart](docs/MOVES.md):** every Pokémon's moves and the level it learns each one, with when it evolves. It's generated from the game's own move data, so it always matches.
+- **Moves explained:** the README, How it works and the PokeWebGochi page say how the two battle moves are picked and when new ones are learned.
+
 ## [1.38] - 2026-11-04
 
 - **Tilt Catch keeps speeding up:** the berries stopped getting faster after 40 catches, so with arrow keys a game could go on forever. Now they keep speeding up, slowly, with no limit, until your Pokémon can't get under them in time. Your record stays.

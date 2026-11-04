@@ -360,11 +360,11 @@ TEST(level, one_level_per_game_hour) {
 TEST(level, does_not_overflow_with_long_lived_pets) {
   Pet p;
   makePet(p, 4);
-  p.ageMinutes = 254 * 60;
-  uint8_t before = p.level();
-  CHECK_EQ(before, (uint8_t)255);
-  p.ageMinutes = 255 * 60;  // level 256 -> should keep rising (or saturate)
-  CHECK_MSG(p.level() >= before, "the level should never drop with age");
+  p.ageMinutes = 99 * 60;
+  uint16_t before = p.level();
+  CHECK_EQ(before, (uint16_t)LEVEL_MAX);
+  p.ageMinutes = 255 * 60;  // a uint8_t level would wrap at 256: it stays at the top instead
+  CHECK_EQ(p.level(), before);
 }
 
 // ---------------------------------------------------------------- evolution
@@ -461,8 +461,19 @@ TEST(evolve, evolve_button_is_postponed_when_declined) {
   p.declineEvolve();
   CHECK_MSG(!p.wantEvolveButton(), "'keep form' removes the button");
   CHECK_MSG(p.canEvolveNow(), "but the evolution is still available");
-  p.ageMinutes = 16 * 60;  // levels up: it is offered again
+  p.ageMinutes = 16 * 60;  // an hour later: it is offered again
   CHECK(p.wantEvolveButton());
+}
+
+TEST(evolve, declined_at_level_100_is_offered_again_an_hour_later) {
+  Pet p;
+  makePet(p, 4);
+  p.ageMinutes = 150 * 60;  // level 100 and staying there
+  CHECK(p.wantEvolveButton());
+  p.declineEvolve();
+  CHECK(!p.wantEvolveButton());
+  p.ageMinutes += 60;
+  CHECK_MSG(p.wantEvolveButton(), "the level can't rise any more, but an hour still brings it back");
 }
 
 // ---------------------------------------------------------------- stats
@@ -911,6 +922,43 @@ TEST(egg, registered_list_is_in_order) {
   CHECK_EQ(p.registeredAt(3), (int16_t)0);
 }
 
+TEST(egg, only_base_forms_can_be_chosen) {
+  Pet p;
+  makePet(p, 25);
+  p.catchWild(26);   // Raichu
+  p.catchWild(102);
+  p.catchWild(134);  // Vaporeon, without Eevee
+  bool shiny = true;
+  CHECK_EQ(p.eggChoiceCount(), (uint16_t)2);
+  CHECK_EQ(p.eggChoiceAt(0, shiny), (int16_t)25);
+  CHECK(!shiny);
+  CHECK_EQ(p.eggChoiceAt(1, shiny), (int16_t)102);
+  CHECK_EQ(p.eggChoiceAt(2, shiny), (int16_t)0);
+  p.startFarewell();
+  p.newEgg();
+  CHECK_MSG(!p.chooseEgg(26), "an evolved form cannot be chosen");
+  CHECK_MSG(!p.chooseEgg(134), "nor one whose base form is missing");
+  CHECK(p.chooseEgg(25));
+}
+
+TEST(egg, a_shiny_in_the_pokedex_can_be_chosen_and_hatches_shiny) {
+  Pet p;
+  makePet(p, 25);
+  p.catchWild(102, true);  // a shiny Exeggcute only
+  p.catchWild(26, true);   // a shiny Raichu: evolved, so not offered
+  bool shiny = false;
+  CHECK_EQ(p.eggChoiceCount(), (uint16_t)2);
+  CHECK_EQ(p.eggChoiceAt(1, shiny), (int16_t)102);
+  CHECK(shiny);
+  p.startFarewell();
+  p.newEgg();
+  CHECK_MSG(!p.chooseEgg(102, false), "the regular form isn't in the Pokedex");
+  CHECK(p.chooseEgg(102, true));
+  hatchNow(p);
+  CHECK_EQ(p.speciesId, (int16_t)102);
+  CHECK(p.shiny);
+}
+
 TEST(egg, runaway_penalizes_rarity) {
   Pet p;
   makePet(p, 4);
@@ -1073,6 +1121,36 @@ TEST(medals, level_100_is_a_trainer_medal) {
   CHECK_EQ(p.level(), (uint16_t)100);
   CHECK(p.hasMedal(MED_LV100));
   CHECK(p.trainerMedals & MED_LV100);
+}
+
+TEST(medals, level_stops_at_100) {
+  Pet p;
+  makePet(p, 4);
+  p.ageMinutes = 400 * MINUTES_PER_LEVEL;  // an old one, from before the cap
+  CHECK_EQ(p.level(), (uint16_t)LEVEL_MAX);
+  advance(p, 1);
+  CHECK_EQ(p.level(), (uint16_t)LEVEL_MAX);
+}
+
+TEST(medals, raising_3_to_level_100_earns_a_medal) {
+  Pet p;
+  makePet(p, 4);
+  for (int i = 0; i < 3; i++) {
+    p.ageMinutes = 99 * MINUTES_PER_LEVEL;
+    advance(p, 1);
+    advance(p, 1);  // still the same Pokemon: it counts once
+    CHECK_EQ(p.lv100Count, (uint8_t)(i + 1));
+    CHECK(p.hasMedal(MED_LV100_3) == (i == 2));
+    p.newEgg();
+    p.chooseStarter(4);
+    p.eggTap(); p.eggTap(); p.eggTap();
+  }
+  CHECK(!p.hasMedal(MED_LV100_5));
+  p.flushSave();
+  Pet again;
+  again.begin();
+  CHECK_EQ(again.lv100Count, (uint8_t)3);
+  CHECK(again.hasMedal(MED_LV100_3));
 }
 
 // ---------------------------------------------------------------- ceremonies
