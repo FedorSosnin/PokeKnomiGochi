@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **A livelier Poké Ball:** a thrown ball spins all the way to the Pokémon, and during the count to 3 it tips over to one side on each count, as if the Pokémon inside is trying to get out.
+
 ## [1.36] - 2026-11-04
 
 - **The wild Pokémon runs for it:** after the battle, while you throw Poké Balls, it runs back and forth across the field in its walking animation, facing the way it goes, with a shadow and a little dust behind it, instead of sliding along the horizon. The rings run with it and the ball lands on the field; how to aim and the odds are the same.

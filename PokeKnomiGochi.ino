@@ -2570,6 +2570,8 @@ float bCatchX = CX;                      // where the ball landed: the foe stops
 // After the battle the wild Pokemon runs back and forth on the field, trying to get away
 #define CATCH_RUN_MS 4500.0f  // one run there and back
 #define CATCH_GROUND_Y 268    // its feet: on the field, not along the horizon
+#define CATCH_SPIN_DEG_MS 0.6f  // the thrown ball spins: 0.6 degrees a millisecond, nearly two turns a second
+#define CATCH_TIP_DEG 30        // how far the ball tips over on each count
 float battleFoeSway(uint32_t now) { return CX + 110.0f * sinf(now * 6.28318f / CATCH_RUN_MS); }
 int battleFoeDir(uint32_t now) { return cosf(now * 6.28318f / CATCH_RUN_MS) >= 0 ? 1 : -1; }  // 1: running right
 
@@ -2843,17 +2845,22 @@ void renderCatch() {
     float k = (now - bBallT) / 1500.0f;
     if (k > 1) k = 1;
     int y = 360 - (int)((360 - catchRingY()) * k), s = k < 0.5f ? 3 : 2;  // moves away, to the rings
-    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bBallX - 9 * s, y - 9 * s, s, false);
+    float spin = (now - bBallT) * CATCH_SPIN_DEG_MS;  // spinning all the way there
+    drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, s, spin, bBallX, y, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
   } else if (bPhase == BP_MISS) {  // bounces and falls: clearly it didn't go in
     float k = (now - bPhaseT) / 700.0f;
     if (k > 1) k = 1;
-    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)(bBallX + (bBallX < foeX ? -70 : 70) * k) - 18, catchRingY() - 18 + (int)(200 * k * k), 2, false);
-  } else if (bPhase == BP_SHAKE) {  // on the ground, rocking to one side on each count
+    float spin = (1500 + now - bPhaseT) * CATCH_SPIN_DEG_MS * (bBallX < foeX ? -1 : 1);  // still spinning as it falls
+    drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, 2, spin, bBallX + (bBallX < foeX ? -70 : 70) * k, catchRingY() + 200 * k * k,
+                  HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
+  } else if (bPhase == BP_SHAKE) {  // on the ground, tipping over to one side on each count: it wants out
     uint32_t t = now - bPhaseT;
     uint32_t in = t % CATCH_SHAKE_MS;
-    float k = in < 420 ? sinf(in * 3.14159f / 420) : 0;  // a rock, then still until the next count
+    float k = in < 420 ? sinf(in * 3.14159f / 420) : 0;  // a tip, then still until the next count
     int side = (t / CATCH_SHAKE_MS) % 2 ? 1 : -1;
-    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bCatchX - 27 + (int)(side * 14 * k), ballGround + (int)(4 * k), 3, false);
+    float pivotX = bCatchX + side * 3 * HOME_ICON_N / 2.0f * k * 0.35f;  // rolling a little on its edge
+    drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, 3, side * CATCH_TIP_DEG * k, pivotX, ballGround + 3 * HOME_ICON_N - 3,
+                  HOME_ICON_N / 2.0f, HOME_ICON_N - 1);
   } else if (bPhase == BP_CAUGHT) {
     drawCatchShine((int)bFoeX, ballGround + 27, now - bPhaseT);
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, ballGround, 3, false);
@@ -7095,6 +7102,31 @@ void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette
     const char *row = map[r];
     forRuns(n, [&](int c) { return charKey(row[c], silhouette); },
             [&](int c0, int len, int k) { gfx->fillRect(x + c0 * s, y + r * s, len * s, s, silhouette ? INK_K : spriteColor((char)k)); });
+  }
+}
+
+// drawMap turned by deg (clockwise) around a pivot: (px, py) on the screen, (ax, ay) the same point in the
+// map, in map pixels. It turns on the map's own pixel grid (each s x s block takes the map pixel under
+// its centre), so the turned sprite is still clean pixel art, not a ragged edge.
+void drawMapTurned(const char *const *map, int n, int s, float deg, float px, float py, float ax, float ay) {
+  float a = deg * 0.0174533f, ca = cosf(a), sa = sinf(a), reach = 0;
+  for (int i = 0; i < 4; i++)  // the corner farthest from the pivot bounds what can be covered
+    reach = fmaxf(reach, hypotf(((i & 1) ? n : 0) - ax, ((i & 2) ? n : 0) - ay));
+  int cells = (int)reach + 1;
+  for (int cy = -cells; cy < cells; cy++) {
+    int runC = 0, runK = -1;
+    for (int cx = -cells; cx <= cells; cx++) {
+      int k = -1;
+      if (cx < cells) {
+        float dx = cx + 0.5f, dy = cy + 0.5f;
+        float u = dx * ca + dy * sa + ax, v = dy * ca - dx * sa + ay;  // back into the map
+        if (u >= 0 && v >= 0 && u < n && v < n) k = charKey(map[(int)v][(int)u], false);
+      }
+      if (k == runK) continue;
+      if (runK >= 0) gfx->fillRect((int)px + runC * s, (int)py + cy * s, (cx - runC) * s, s, spriteColor((char)runK));
+      runC = cx;
+      runK = k;
+    }
   }
 }
 
