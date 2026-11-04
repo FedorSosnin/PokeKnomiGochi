@@ -8,6 +8,11 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.38] - 2026-11-04
+
+- **Tilt Catch keeps speeding up:** the berries stopped getting faster after 40 catches, so with arrow keys a game could go on forever. Now they keep speeding up, slowly, with no limit, until your Pokémon can't get under them in time. Your record stays.
+- **Real berries in Tilt Catch:** the falling berries are the Razz, Oran and Pinap Berries from the food menu, a random one each time, slowly turning as they fall.
+- **Live players:** PokeWebGochi shows how many are playing right now (Knomis, apps and browser tabs together) next to its buttons, and the READMEs show it as a badge.
 - **PokeMacGochi runs on older macOS** (PokeMacGochi 1.22): it opens on macOS 12 Monterey and newer, including Sequoia. It only opened on the latest macOS before, because it was built for the Mac that built it.
 
 ## [1.37] - 2026-11-04

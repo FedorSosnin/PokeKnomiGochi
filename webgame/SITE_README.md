@@ -1,5 +1,7 @@
 # PokeWebGochi
 
+[![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](https://pokewebgochi.3dprintsos.com)
+
 **A Pokémon virtual pet in your browser.** Raise one of the original 151, battle and catch wild Pokémon, fill your Pokédex, play mini games and meet your buddies. Free, with nothing to install.
 
 ### [▶ Play now at pokewebgochi.3dprintsos.com](https://pokewebgochi.3dprintsos.com)

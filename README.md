@@ -1,5 +1,7 @@
 # PokeKnomiGochi
 
+[![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](relay/README.md)
+
 A Pokémon tamagotchi for the **BTT Knomi V2**, the little round screen made for 3D printers. Raise any of the original 151, battle wild Pokémon, catch them to fill your Pokédex, and play mini games by tapping and tilting.
 
 <p align="center"><img src="docs/images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a Knomi in its printed Poké Ball case" width="360"> <img src="docs/images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, its Pokémon asleep" width="360"></p>
@@ -120,7 +122,7 @@ Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the 
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks and bushes in a forest that keeps getting faster. How long can you last?
 - **Who's That Pokémon?:** name the silhouette, five rounds per game.
-- **Tilt Catch:** lean left and right to catch falling berries.
+- **Tilt Catch:** lean left and right to catch falling berries. They fall faster with every catch, with no top speed, so every game ends.
 
 ### Buddies
 

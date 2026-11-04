@@ -65,6 +65,7 @@
   <button id="vibe" type="button" hidden>Vibration: On</button>
   <button id="export" type="button">Export save</button>
   <label>Import save<input id="import" type="file" accept=".prefs,.txt" hidden></label>
+  <span id="live" hidden></span>
   <a href="https://github.com/FedorSosnin/PokeKnomiGochi" style="color:#666">About</a>
 </div>
 <script>
@@ -76,7 +77,7 @@ const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = 'e538eb6fd8';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = '0788ab4f7b';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -131,6 +132,8 @@ function startGame() {
     Module._webStart();
     requestAnimationFrame(frame);
     connectRelay();
+    showLive();
+    setInterval(showLive, 60000);
     setInterval(() => { if (running) sync(); }, 5000);  // the game writes its files on its own; this keeps IndexedDB current
     updateSoundButton();
   });
@@ -335,6 +338,17 @@ async function connectRelay() {
   };
 }
 
+// ---- live players: how many Knomis, apps and tabs the relay has right now (it keeps the number a minute) ----
+async function showLive() {
+  const live = document.getElementById('live');
+  try {
+    const url = UTF8ToString(Module._webRelayUrl()).replace(/^ws/, 'http').replace(/\/ws$/, '/stats');
+    const { online } = await (await fetch(url)).json();
+    live.textContent = 'Live players: ' + online;
+    live.hidden = !(online > 0);
+  } catch (e) { live.hidden = true; }
+}
+
 // ---- size: like the Mac app; each one shrinks to fit a smaller screen ----
 const SIZES = [['Small', 260], ['Medium', 380], ['Large', 520]];
 let sizeAt = 0;  // Small, unless they picked another
@@ -390,6 +404,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=e538eb6fd8"></script>
+<script src="pokewebgochi.js?v=0788ab4f7b"></script>
 </body>
 </html>

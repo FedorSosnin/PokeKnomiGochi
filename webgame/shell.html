@@ -65,6 +65,7 @@
   <button id="vibe" type="button" hidden>Vibration: On</button>
   <button id="export" type="button">Export save</button>
   <label>Import save<input id="import" type="file" accept=".prefs,.txt" hidden></label>
+  <span id="live" hidden></span>
   <a href="https://github.com/FedorSosnin/PokeKnomiGochi" style="color:#666">About</a>
 </div>
 <script>
@@ -131,6 +132,8 @@ function startGame() {
     Module._webStart();
     requestAnimationFrame(frame);
     connectRelay();
+    showLive();
+    setInterval(showLive, 60000);
     setInterval(() => { if (running) sync(); }, 5000);  // the game writes its files on its own; this keeps IndexedDB current
     updateSoundButton();
   });
@@ -333,6 +336,17 @@ async function connectRelay() {
     Module._webRelayUp(0);
     if (running) setTimeout(connectRelay, Math.min(60000, 2000 * 2 ** relayTries++));  // back off, then try again
   };
+}
+
+// ---- live players: how many Knomis, apps and tabs the relay has right now (it keeps the number a minute) ----
+async function showLive() {
+  const live = document.getElementById('live');
+  try {
+    const url = UTF8ToString(Module._webRelayUrl()).replace(/^ws/, 'http').replace(/\/ws$/, '/stats');
+    const { online } = await (await fetch(url)).json();
+    live.textContent = 'Live players: ' + online;
+    live.hidden = !(online > 0);
+  } catch (e) { live.hidden = true; }
 }
 
 // ---- size: like the Mac app; each one shrinks to fit a smaller screen ----

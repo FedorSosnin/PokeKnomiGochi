@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.37"
+#define FW_VERSION "1.38"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -244,6 +244,10 @@ RunState run;
 uint32_t runLast = 0, runOverT = 0, runFrames = 0;
 uint8_t runScale = 2;
 float ballX, ballY, ballVX, ballVY, gamePetX, gamePetVX = 0;
+uint8_t ballKind = 0;         // which berry falls: Razz, Oran or Pinap
+int8_t ballSpin = 1;          // which way it turns as it falls
+uint32_t ballSpawnT = 0;
+#define TC_SPIN_DEG_MS 0.09f  // a slow turn: about a quarter of a turn a second
 uint32_t gameStartT = 0;
 uint32_t lastGameStep = 0;  // last call to stepGame(): physics by real time, not per frame
 uint8_t gameScore, gameMisses;
@@ -1956,8 +1960,12 @@ void respawnBall() {
   ballX = 96 + random(275);
   ballY = 96;
   ballVX = 0;
-  float sp = 8.0f + gameScore * 0.25f;  // faster and faster
-  ballVY = sp > 18.0f ? 18.0f : sp;
+  ballKind = random(3);
+  ballSpin = random(2) ? 1 : -1;
+  ballSpawnT = millis();
+  // faster and faster: quickly up to 40 caught, then slowly and with no limit, until the
+  // Pokemon can't get under it in time (about 120-150 for a quick player)
+  ballVY = gameScore <= 40 ? 8.0f + gameScore * 0.25f : 18.0f + (gameScore - 40) * 0.15f;
 }
 
 // swipe up in any game: out immediately and with no reward (the reward is given when
@@ -2039,7 +2047,8 @@ void stepGame() {
   gamePetVX = tilt;
 
   ballY += ballVY * k;
-  if (ballY >= 330 && ballY <= 392 && fabsf(ballX - gamePetX) < 54) {  // into the mouth
+  // into the mouth: also when it went past the mouth in this step, since a fast berry can skip it
+  if (ballY >= 330 && fabsf(ballX - gamePetX) < 54) {
     if (gameScore < 255) gameScore++;
     hitX = ballX;
     hitY = ballY;
@@ -3280,10 +3289,10 @@ void renderGame() {
     gfx->drawCircle((int)hitX, (int)hitY, rad - 2, C565(0xff, 0xd9, 0x8a));
   }
 
-  // the berry
-  gfx->fillCircle((int)ballX, (int)ballY, 16, C565(0xd8, 0x3a, 0x3a));
-  gfx->fillCircle((int)ballX - 5, (int)ballY - 5, 4, C565(0xff, 0xa0, 0xa0));
-  gfx->fillRoundRect((int)ballX - 3, (int)ballY - 24, 14, 8, 3, C565(0x3c, 0x8a, 0x4c));
+  // the berry, one of the three from the food menu, slowly turning as it falls
+  static const char *const *const BERRY[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
+  drawMapTurned(BERRY[ballKind], HOME_ICON_N, 3, (millis() - ballSpawnT) * TC_SPIN_DEG_MS * ballSpin, ballX, ballY,
+                HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
   if (millis() - gameStartT < 3000) {
     gfx->setTextColor(ink);
     setSize(2);
