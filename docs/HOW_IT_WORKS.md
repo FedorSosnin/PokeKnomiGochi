@@ -98,7 +98,7 @@ The **daily visitor** brings a candy (a third one that day) and stays 60 awake m
 
 There are two ways to start a battle:
 
-- 🔘 **The physical button:** a random wild Pokémon from anywhere.
+- 🔘 **The physical button, or Random Battle in Games > Battle:** a random wild Pokémon from anywhere. The Mac, Windows and web versions have no button, so Random Battle is the way there (or Space on a keyboard).
 - 🎮 **Games > Battle:** pick a zone and hunt there. Missing Pokémon show as silhouettes, and each Search favors them.
 
 | Zone | Pokémon | Who lives there | Legendary ⭐ |

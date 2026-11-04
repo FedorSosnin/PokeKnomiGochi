@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.39"
+#define FW_VERSION "1.40"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -3181,11 +3181,8 @@ void renderBattle() {
 }
 
 // minigame background: the pet's habitat (sky by hour + biome ground)
-void drawGameScene() {
-  if (zoneBg) {
-    gfx->draw16bitRGBBitmap(0, 0, zoneBg, 466, BTL_BAND_Y);
-    return;
-  }
+// the sky down to hor, by the hour, with stars at night; true at night
+bool drawSky(int hor) {
   int hh = sceneHour();
   bool night = hh < 6 || hh >= 20;
   uint16_t top, bot;
@@ -3193,15 +3190,101 @@ void drawGameScene() {
   else if (hh < 8) { top = C565(0xd1, 0x6a, 0x86); bot = C565(0xf3, 0xb8, 0x7c); }
   else if (hh < 18){ top = C565(0x8f, 0xc8, 0xea); bot = C565(0xdc, 0xee, 0xe6); }
   else             { top = C565(0xc7, 0x5a, 0x4a); bot = C565(0xf0, 0xae, 0x64); }
-  int hor = 376;
   for (int y = 0; y < hor; y += 8)
     gfx->fillRect(0, y, 466, 8, lerp565(top, bot, y, hor));
   if (night)
     for (auto &st : STARS) gfx->fillRect(st[0], st[1], 4, 4, UI_WHITE);
+  return night;
+}
+
+#define NIGHT_TINT C565(0x16, 0x1c, 0x30)
+uint16_t sceneShade(uint16_t c, bool night) { return night ? lerp565(c, NIGHT_TINT, 9, 16) : c; }
+
+void drawGameScene() {
+  if (zoneBg) {
+    gfx->draw16bitRGBBitmap(0, 0, zoneBg, 466, BTL_BAND_Y);
+    return;
+  }
+  int hor = 376;
+  bool night = drawSky(hor);
   uint8_t bio = pet.isEgg() ? 0 : DEX_TBL[pet.speciesId].biome;
   uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
-  if (night) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
+  if (night) soil = lerp565(soil, NIGHT_TINT, 9, 16);
   gfx->fillRect(0, hor, 466, 466 - hor, soil);
+}
+
+// Tilt Catch's woods: two tall trees frame the screen, their leafy tops meet over the corners with
+// berries growing in them and vines hanging down, and a treeline behind. The middle of the sky stays
+// open for the score, and the falling berry has plain sky behind it most of the way.
+void drawCatchScene() {
+  int hor = 376;
+  bool night = drawSky(hor);
+  uint16_t far = sceneShade(C565(0x8c, 0xc4, 0x8e), night), farDk = sceneShade(C565(0x6c, 0xa8, 0x72), night);
+  uint16_t bark = sceneShade(C565(0x6e, 0x4a, 0x2e), night), barkDk = sceneShade(C565(0x4e, 0x32, 0x1e), night);
+  uint16_t leaf = sceneShade(C565(0x2e, 0x7a, 0x3c), night), leafHi = sceneShade(C565(0x4a, 0x9c, 0x4e), night);
+  uint16_t vine = sceneShade(C565(0x3a, 0x8a, 0x3e), night);
+  uint16_t grass = sceneShade(C565(0x4f, 0x9a, 0x4a), night), floor = sceneShade(C565(0x3e, 0x6e, 0x34), night);
+  // the treeline behind: pines, then round bushes along the horizon
+  for (int x = 10; x < 466; x += 58) {
+    int t = 268 + (x * 37) % 40;
+    gfx->fillTriangle(x, t, x - 30, hor, x + 30, hor, (x / 58) & 1 ? far : farDk);
+  }
+  for (int x = 0; x < 480; x += 44) gfx->fillCircle(x, hor - 4, 22 + (x % 3) * 3, farDk);
+  // the ground
+  gfx->fillRect(0, hor, 466, 14, grass);
+  gfx->fillRect(0, hor + 14, 466, 466 - hor - 14, floor);
+  for (int x = 6; x < 466; x += 34) gfx->fillTriangle(x, hor - 6, x - 4, hor + 2, x + 4, hor + 2, grass);
+  // two tall trunks, with bark and roots
+  for (int side = 0; side < 2; side++) {
+    int x = side ? 386 : 28;
+    gfx->fillRect(x, 0, 52, hor + 4, bark);
+    for (int bx = x + 10; bx < x + 46; bx += 14) gfx->fillRect(bx, 40, 3, hor - 60, barkDk);
+    gfx->fillTriangle(x - 18, hor + 6, x, hor - 30, x + 8, hor + 6, bark);
+    gfx->fillTriangle(x + 44, hor + 6, x + 52, hor - 30, x + 70, hor + 6, bark);
+  }
+  // their leafy tops over the corners: the same shape, mirrored
+  static const int16_t CLUMP[][3] = { { 58, 42, 72 }, { 128, 8, 50 }, { 16, 132, 58 }, { 104, 92, 40 }, { 150, 52, 26 } };
+  static const int16_t BERRY[][3] = { { 72, 98, 0 }, { 148, 66, 1 }, { 34, 178, 2 }, { 120, 120, 2 }, { 96, 40, 1 } };
+  static const uint16_t BERRY_C[3] = { C565(0xd8, 0x3a, 0x4a), C565(0x3a, 0x6c, 0xd8), C565(0xf2, 0xb8, 0x2a) };
+  for (int side = 0; side < 2; side++) {
+    for (auto &c : CLUMP) gfx->fillCircle(side ? 466 - c[0] : c[0], c[1], c[2], leaf);
+    for (auto &c : CLUMP) gfx->fillCircle((side ? 466 - c[0] : c[0]) - c[2] / 4, c[1] - c[2] / 4, c[2] / 2, leafHi);
+    for (auto &b : BERRY) {
+      int bx = side ? 466 - b[0] : b[0];
+      gfx->fillCircle(bx, b[1], 7, sceneShade(BERRY_C[b[2]], night));
+      gfx->fillRect(bx - 2, b[1] - 3, 3, 3, sceneShade(UI_WHITE, night));
+    }
+    // a vine down from each, swaying a little with its leaves
+    int vx = side ? 466 - 118 : 118, len = side ? 196 : 236;
+    for (int y = 90; y < len; y += 4) gfx->fillRect(vx + (int)(5 * sinf(y * 0.06f)), y, 3, 4, vine);
+    for (int y = 104, k = 0; y < len - 6; y += 22, k++) {
+      int lx = vx + (int)(5 * sinf(y * 0.06f));
+      gfx->fillCircle(lx + (k & 1 ? 7 : -5), y, 5, leafHi);
+    }
+  }
+}
+
+// Poke Ball Volley's court, from above: your half, the net along the top where the ball crosses to
+// your buddy's screen, the side lines where it bounces and the attack line.
+void drawCourtScene() {
+  int hh = sceneHour();
+  bool night = hh < 6 || hh >= 20;
+  uint16_t out = sceneShade(C565(0xc0, 0x6a, 0x48), night), court = sceneShade(C565(0x3c, 0x7c, 0xc0), night);
+  uint16_t line = sceneShade(UI_WHITE, night), post = sceneShade(C565(0x5a, 0x5e, 0x6a), night);
+  uint16_t mesh = sceneShade(C565(0x26, 0x2a, 0x34), night);
+  gfx->fillRect(0, 0, 466, 466, out);
+  gfx->fillRect(VB_LEFT, VB_TOP, VB_RIGHT - VB_LEFT, 466 - VB_TOP, court);
+  for (int y = VB_TOP + 30; y < 466; y += 60) gfx->fillRect(VB_LEFT, y, VB_RIGHT - VB_LEFT, 30, lerp565(court, out, 1, 12));  // light stripes
+  gfx->fillRect(VB_LEFT - 3, VB_TOP, 6, 466 - VB_TOP, line);   // side lines
+  gfx->fillRect(VB_RIGHT - 3, VB_TOP, 6, 466 - VB_TOP, line);
+  gfx->fillRect(VB_LEFT, 196, VB_RIGHT - VB_LEFT, 5, line);    // attack line
+  // the net: posts outside the side lines, a mesh band and its white top tape at VB_TOP
+  gfx->fillRect(VB_LEFT - 30, VB_TOP - 24, 12, 40, post);
+  gfx->fillRect(VB_RIGHT + 18, VB_TOP - 24, 12, 40, post);
+  gfx->fillRect(VB_LEFT - 18, VB_TOP + 2, VB_RIGHT - VB_LEFT + 36, 22, mesh);
+  for (int x = VB_LEFT - 18; x < VB_RIGHT + 18; x += 8) gfx->fillRect(x, VB_TOP + 2, 1, 22, lerp565(mesh, line, 5, 16));
+  for (int y = VB_TOP + 8; y < VB_TOP + 24; y += 7) gfx->fillRect(VB_LEFT - 18, y, VB_RIGHT - VB_LEFT + 36, 1, lerp565(mesh, line, 5, 16));
+  gfx->fillRect(VB_LEFT - 18, VB_TOP - 3, VB_RIGHT - VB_LEFT + 36, 6, line);
 }
 
 void renderGame() {
@@ -3212,7 +3295,7 @@ void renderGame() {
   uint16_t ink = night ? UI_INK_NIGHT : UI_INK;
 
   if (gameOverUntil) {
-    drawGameScene();
+    drawCatchScene();
     if (!timeLeft(gameOverUntil)) {
       gameOpen = false;
       return;
@@ -3243,7 +3326,7 @@ void renderGame() {
     return;
   }
 
-  drawGameScene();
+  drawCatchScene();
   stepGame();
 
   // score, record and lives
@@ -3559,57 +3642,25 @@ void drawForest(float dist, bool night) {
   }
 }
 
-void drawRunRock(int x, int w, int h, bool night) {
-  uint16_t c = night ? C565(0x5c, 0x62, 0x70) : C565(0x8c, 0x8c, 0x90), hi = night ? C565(0x7c, 0x84, 0x92) : C565(0xbc, 0xbc, 0xc0);
-  gfx->fillRoundRect(x, RUN_GROUND_Y - h, w, h + 4, 10, c);
-  gfx->fillRoundRect(x + 6, RUN_GROUND_Y - h + 4, w - 16, 8, 4, hi);
+// one obstacle's pixel art (sprites.py), with the art's left edge at x and its outline on the grass:
+// its map and size, and its leftmost column and bottom row inside the map
+void drawRunArt(RunKind k, int x) {
+  const char *const *map = SPR_RUN_ROCK;
+  int n = 12, left = 1, bottom = 10;
+  if (k == RUN_BUSH) map = SPR_RUN_BUSH, n = 15, bottom = 13;
+  else if (k == RUN_LOG) map = SPR_RUN_LOG, n = 22, left = 2, bottom = 20;
+  else if (k == RUN_STUMP) map = SPR_RUN_STUMP;
+  else if (k == RUN_MUSHROOM) map = SPR_RUN_MUSHROOM, n = 13, bottom = 11;
+  drawMap(map, n, x - left * RUN_ART_S, RUN_GROUND_Y + RUN_ART_S - (bottom + 1) * RUN_ART_S, RUN_ART_S, false);
 }
 
-void drawRunObstacle(const RunObstacle &o, bool night) {
-  int x = (int)o.x, w = runObstacleW(o.kind), h = runObstacleH(o.kind);
-  if (o.kind == RUN_BUSH) {
-    uint16_t c = night ? C565(0x1c, 0x5a, 0x34) : C565(0x24, 0x7c, 0x3c), hi = night ? C565(0x2c, 0x74, 0x44) : C565(0x3c, 0xa0, 0x50);
-    gfx->fillCircle(x + 12, RUN_GROUND_Y - 13, 14, c);
-    gfx->fillCircle(x + w - 12, RUN_GROUND_Y - 13, 14, c);
-    gfx->fillCircle(x + w / 2, RUN_GROUND_Y - h + 16, 17, c);
-    gfx->fillRect(x + 6, RUN_GROUND_Y - 14, w - 12, 17, c);
-    gfx->fillCircle(x + w / 2 - 5, RUN_GROUND_Y - h + 12, 6, hi);
-    gfx->fillCircle(x + 11, RUN_GROUND_Y - 16, 3, C565(0xd8, 0x3a, 0x3a));
-    gfx->fillCircle(x + w - 13, RUN_GROUND_Y - 20, 3, C565(0xd8, 0x3a, 0x3a));
-  } else if (o.kind == RUN_DOUBLE) {
-    drawRunRock(x, 36, h, night);
-    drawRunRock(x + w - 36, 36, h, night);
-  } else if (o.kind == RUN_LOG) {  // a fallen log, its cut end toward you
-    uint16_t bark = night ? C565(0x4a, 0x34, 0x24) : C565(0x7a, 0x52, 0x32), dk = night ? C565(0x34, 0x24, 0x18) : C565(0x58, 0x3a, 0x22);
-    uint16_t wood = night ? C565(0x9a, 0x80, 0x5a) : C565(0xd8, 0xb4, 0x7c);
-    int y = RUN_GROUND_Y - h, r = h / 2;
-    gfx->fillRoundRect(x, y, w, h + 2, r, bark);
-    for (int bx = x + 18; bx < x + w - 14; bx += 12) gfx->fillRect(bx, y + 5, 6, 3, dk);
-    gfx->fillCircle(x + r, y + r, r, wood);
-    gfx->drawCircle(x + r, y + r, r - 4, dk);
-    gfx->drawCircle(x + r, y + r, r, dk);
-  } else if (o.kind == RUN_STUMP) {  // a tree stump with its rings on top
-    uint16_t bark = night ? C565(0x4a, 0x34, 0x24) : C565(0x7a, 0x52, 0x32), dk = night ? C565(0x34, 0x24, 0x18) : C565(0x58, 0x3a, 0x22);
-    uint16_t wood = night ? C565(0x9a, 0x80, 0x5a) : C565(0xd8, 0xb4, 0x7c);
-    int y = RUN_GROUND_Y - h;
-    gfx->fillRect(x + 3, y + 5, w - 6, h - 1, bark);
-    gfx->fillRect(x, RUN_GROUND_Y - 6, w, 8, bark);  // roots
-    gfx->fillRect(x + 10, y + 12, 3, h - 14, dk);
-    gfx->fillRect(x + w - 14, y + 16, 3, h - 18, dk);
-    gfx->fillRoundRect(x + 3, y, w - 6, 10, 5, wood);
-    gfx->drawRoundRect(x + 10, y + 2, w - 20, 6, 3, dk);
-  } else if (o.kind == RUN_MUSHROOM) {  // a big red mushroom
-    uint16_t cap = night ? C565(0x9a, 0x2a, 0x2a) : C565(0xd8, 0x3a, 0x3a), dot = night ? C565(0xc0, 0xb8, 0xb0) : UI_WHITE;
-    uint16_t stem = night ? C565(0xb0, 0xa8, 0x98) : C565(0xf0, 0xe6, 0xd2);
-    int y = RUN_GROUND_Y - h;
-    gfx->fillRoundRect(x + w / 2 - 8, y + 18, 16, h - 16, 5, stem);
-    gfx->fillRoundRect(x, y + 4, w, 18, 9, cap);
-    gfx->fillCircle(x + w / 2, y + 12, 12, cap);
-    gfx->fillCircle(x + 9, y + 12, 3, dot);
-    gfx->fillCircle(x + w / 2 + 2, y + 6, 4, dot);
-    gfx->fillCircle(x + w - 9, y + 14, 3, dot);
+void drawRunObstacle(const RunObstacle &o, bool night) {  // the art is the same by night, like the Pokemon
+  int x = (int)o.x;
+  if (o.kind == RUN_DOUBLE) {  // two rocks
+    drawRunArt(RUN_ROCK, x);
+    drawRunArt(RUN_ROCK, x + runObstacleW(RUN_DOUBLE) - runObstacleW(RUN_ROCK));
   } else {
-    drawRunRock(x, w, h, night);
+    drawRunArt(o.kind, x);
   }
 }
 
@@ -6206,10 +6257,8 @@ void vbTick(uint32_t now) {
 
 void renderVolley() {
   if (!vbOpen) return;
-  drawGameScene();
+  drawCourtScene();  // the net at its top: past it, the buddy's side
   char b[48];
-  // the net: past it, the buddy's side
-  for (int x = VB_LEFT - 20; x < VB_RIGHT + 20; x += 18) gfx->fillRect(x, VB_TOP - 2, 10, 4, UI_WHITE);
   gfx->setTextColor(UI_WHITE);
   setSize(2);
   snprintf(b, sizeof(b), "%s %u : %u %s", T(S_SD_YOU_LBL), vbMine, vbTheirs, buddyName());
@@ -6217,12 +6266,21 @@ void renderVolley() {
   printT(b);
   // your Pokemon is the paddle
   gPmdForceScale = 2;
+  int vbH = sceneHour();
+  gfx->fillRoundRect((int)vbPadX - 26, VB_GROUND_Y - 5, 52, 10, 5, sceneShade(C565(0x2a, 0x56, 0x8a), vbH < 6 || vbH >= 20));  // its shadow on the court
   uint8_t act = vbPadVX > 40 ? PMD_WALKR : vbPadVX < -40 ? PMD_WALKL : PMD_IDLE;
   if (!pmd.has(act)) act = PMD_IDLE;
   drawPmdAct(act, (int)vbPadX, VB_GROUND_Y, millis(), true, false, 2);
   gPmdForceScale = 0;
   // the home screen's Poke Ball: 18 px drawn x4 (a little over the 64 px it hits with), and x2 on the paddle
-  if (vbPhase == VB_PLAY) drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)vbBall.x - 36, (int)vbBall.y - 36, 4, false);
+  // it spins slowly as it flies, the way it's heading: added up, so a bounce turns it back smoothly
+  static float spin = 0;
+  static uint32_t spinT = 0;
+  uint32_t nowMs = millis();
+  if (vbPhase == VB_PLAY) spin += (nowMs - spinT) * VB_SPIN_DEG_MS * (vbBall.vx < 0 ? -1 : 1);
+  spinT = nowMs;
+  if (vbPhase == VB_PLAY)
+    drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, 4, spin, vbBall.x, vbBall.y, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
   if (vbPhase == VB_SERVE) drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)vbPadX - 18, VB_PADDLE_Y - 36, 2, false);
   const char *line = nullptr;
   if (vbPhase == VB_READY) line = T(S_SD_READY);
@@ -6386,7 +6444,12 @@ void tradeTap(int16_t x, int16_t y) {
 #define ZONE_BTN_H 56
 #define ZONE_IDLE_MS 30000UL
 
-static const int16_t ZONE_XY[ZONE_COUNT][2] = { { 155, 112 }, { 311, 112 }, { 93, 258 }, { 233, 258 }, { 373, 258 } };
+static const int16_t ZONE_XY[ZONE_COUNT][2] = { { 155, 104 }, { 311, 104 }, { 93, 246 }, { 233, 246 }, { 373, 246 } };
+// under the zones: a wild battle with no zone, like the Knomi's button (the apps and the web have none)
+#define ZONE_RAND_X 123
+#define ZONE_RAND_Y 348
+#define ZONE_RAND_W 220
+#define ZONE_RAND_H 40
 static const StrId ZONE_NAME[ZONE_COUNT] = { S_ZONE_FOREST, S_ZONE_BEACH, S_ZONE_CAVE, S_ZONE_MANSION, S_ZONE_FIELD };
 static const uint16_t ZONE_COLOR[ZONE_COUNT] = { C565(0x3a, 0x8a, 0x4f), C565(0x2f, 0x7f, 0xb5), C565(0x6b, 0x5a, 0x8a), C565(0x7a, 0x3f, 0x8f), C565(0xc9, 0x8a, 0x1e) };
 
@@ -6471,6 +6534,12 @@ void zoneTap(int16_t x, int16_t y) {
     return;
   }
   if (zoneScreen == ZS_PICK) {
+    if (y >= ZONE_RAND_Y && y < ZONE_RAND_Y + ZONE_RAND_H && x >= ZONE_RAND_X && x < ZONE_RAND_X + ZONE_RAND_W) {
+      sfxPlay(SFX_TAP);
+      zoneScreen = ZS_NONE;
+      startBattle();  // its end comes back home, as from the button
+      return;
+    }
     for (uint8_t z = 0; z < ZONE_COUNT; z++) {
       int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
       if (dx * dx + dy * dy < (ZONE_ICON_R + 6) * (ZONE_ICON_R + 6) || (abs(dx) < 66 && dy > 0 && dy < ZONE_ICON_R + 44)) {
@@ -6538,6 +6607,10 @@ void renderZones() {
       setCur(cx - textW(b, 2) / 2, y + 18);
       printT(b);
     }
+    gfx->fillRoundRect(ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H, 12, C565(0x1c, 0x96, 0x96));  // teal: apart from the zones
+    gfx->setTextColor(UI_WHITE);
+    setCur(centerX(T(S_RANDOM_BATTLE), 2), ZONE_RAND_Y + 13);
+    printT(T(S_RANDOM_BATTLE));
     drawCloseButton();
     gfx->flush();
     return;
@@ -7346,6 +7419,8 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, GAMES_ROW_X, GAMES_ROW_Y + row * (GAMES_ROW_H + GAMES_ROW_GAP), GAMES_ROW_W, GAMES_ROW_H, gameLabel(row));
   }
   if (zoneScreen == ZS_PICK) {
+    if (pressIn(x, y, ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H))
+      return pressSet(t, ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H, T(S_RANDOM_BATTLE));
     for (uint8_t z = 0; z < ZONE_COUNT; z++) {
       int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
       if (dx * dx + dy * dy < (ZONE_ICON_R + 6) * (ZONE_ICON_R + 6) || (abs(dx) < 66 && dy > 0 && dy < ZONE_ICON_R + 44))

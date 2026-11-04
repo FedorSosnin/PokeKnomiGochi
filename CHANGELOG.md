@@ -8,6 +8,13 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.40] - 2026-11-04
+
+- **Random Battle:** a teal button under the zones in Games > Battle meets a wild Pokémon from anywhere, like the Knomi's physical button. The Mac, Windows and web versions have no button, so this is their way to a random battle (Space on a keyboard still works too).
+- **PokeRun's obstacles as pixel art:** rocks, bushes, logs, stumps and mushrooms are now drawn like the Pokémon and the home icons, with a thin black outline, and each one's hit box is the size of its art.
+- **Tilt Catch in the woods:** two tall trees frame the screen with berries growing in their leaves and vines hanging down, a treeline behind, and darker colors at night.
+- **Volleyball court:** Poké Ball Volley is played on a court seen from above, with side lines, an attack line and the net along the top where the ball crosses to your buddy. Your Pokémon has a shadow on the court, and the Poké Ball spins slowly as it flies.
+
 ## [1.39] - 2026-11-04
 
 - **Your next Pokémon is a first form:** after a goodbye or letting one go, the Pokédex grid you choose from shows only first forms, since the new one hatches from an egg: Pikachu, not Raichu.

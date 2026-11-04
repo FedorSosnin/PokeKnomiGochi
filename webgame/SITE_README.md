@@ -35,7 +35,7 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 
 - **Tap your Pokémon** to pet it. The buttons along the bottom feed it, open the games, turn off the light at bedtime and give it a bath.
 - **Swipe up** for its card and stats (tap its name there to rename it), **from left to right** for the Pokédex, **from right to left** for your achievements, and **down** for the clock and settings. The round **✕** at the bottom closes any of them.
-- **Battle** from the games menu: pick a zone, search, and catch what you beat to fill your Pokédex. Land the Poké Ball in the small green circle and the catch is sure.
+- **Battle** from the games menu: pick a zone and search, or tap **Random Battle** for a wild Pokémon from anywhere, and catch what you beat to fill your Pokédex. Land the Poké Ball in the small green circle and the catch is sure.
 - On a computer, the mouse is a finger: it presses when you click. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
 
 ## Training

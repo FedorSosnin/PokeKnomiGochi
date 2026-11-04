@@ -41,24 +41,27 @@ struct RunState {
   bool dead, jumped;   // jumped: jumped in this step
 };
 
-// all of them no taller than the bush and no wider than the double: every jump clears any of them
+// the size of each one's pixel art (SPR_RUN_* drawn RUN_ART_S times bigger, outline included): what
+// you see is what you hit. None is taller than the bush, and every jump clears any of them
+#define RUN_ART_S 4
+#define RUN_DOUBLE_GAP 12  // between the two rocks of a double
 inline int runObstacleW(RunKind k) {
   switch (k) {
-    case RUN_BUSH: return 44;
-    case RUN_DOUBLE: return 78;
-    case RUN_LOG: return 64;
-    case RUN_STUMP: return 36;
-    case RUN_MUSHROOM: return 38;
-    default: return 34;
+    case RUN_BUSH: return 13 * RUN_ART_S;
+    case RUN_DOUBLE: return 2 * 11 * RUN_ART_S + RUN_DOUBLE_GAP;
+    case RUN_LOG: return 20 * RUN_ART_S;
+    case RUN_STUMP: return 10 * RUN_ART_S;
+    case RUN_MUSHROOM: return 11 * RUN_ART_S;
+    default: return 11 * RUN_ART_S;
   }
 }
 inline int runObstacleH(RunKind k) {
   switch (k) {
-    case RUN_BUSH: return 44;
-    case RUN_LOG: return 24;
-    case RUN_STUMP: return 36;
-    case RUN_MUSHROOM: return 40;
-    default: return 30;
+    case RUN_BUSH: return 11 * RUN_ART_S;
+    case RUN_LOG: return 6 * RUN_ART_S;
+    case RUN_STUMP: return 8 * RUN_ART_S;
+    case RUN_MUSHROOM: return 10 * RUN_ART_S;
+    default: return 7 * RUN_ART_S;
   }
 }
 

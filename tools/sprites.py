@@ -448,6 +448,71 @@ def icon_play():
     return g.rows()
 
 
+# PokeRun's obstacles, in the same style as the Pokemon: shaded shapes with an outline. Each sits on
+# the bottom of its square and is drawn at 3x, about the size of its hit box in pokerun.h.
+def run_rock():
+    g = G(12)
+    g.disk(6, 7.0, 5.6, 3.7, 's', 'S')
+    g.disk(4.4, 5.6, 1.6, 0.9, 'w')
+    g.px(8, 4, 'w')
+    g.px(7, 8, 'S'); g.px(3, 9, 'S')
+    g.outline()
+    return g.rows()
+
+
+def run_bush():
+    g = G(15)
+    g.disk(7, 9.4, 6.4, 4.0, 'g', 'G')
+    g.disk(4.2, 7.2, 3.4, 3.4, 'g', 'G')
+    g.disk(10, 6.4, 3.8, 3.8, 'g', 'G')
+    g.disk(6.8, 4.8, 3.0, 2.8, 'g', 'G')
+    g.px(5, 4, 't'); g.px(9, 4, 't'); g.px(3, 6, 't')
+    for x, y in ((4, 9), (9, 8), (11, 11), (6, 12)):
+        g.px(x, y, 'r')
+    g.outline()
+    return g.rows()
+
+
+def run_log():
+    g = G(22)
+    g.rect(5, 15, 19, 20, 'c')
+    g.disk(19.4, 17.5, 1.8, 3.0, 'c', 'C')
+    g.rect(5, 20, 20, 20, 'C')
+    for x, y in ((8, 16), (13, 17), (17, 16), (10, 19), (15, 19)):
+        g.rect(x, y, x + 2, y, 'C')
+    g.disk(4.5, 17.5, 3.0, 3.1, 'y', 'Y')
+    g.px(4, 17, 'C'); g.px(5, 17, 'C'); g.px(4, 18, 'C'); g.px(5, 18, 'C')
+    g.outline()
+    return g.rows()
+
+
+def run_stump():
+    g = G(12)
+    g.rect(2, 4, 9, 10, 'c')
+    g.rect(1, 9, 10, 10, 'c')
+    g.rect(7, 5, 9, 10, 'C')
+    g.px(4, 7, 'C'); g.px(4, 8, 'C')
+    g.disk(5.5, 4.0, 3.9, 1.6, 'y', 'Y')
+    g.px(5, 4, 'C'); g.px(6, 4, 'C')
+    g.outline()
+    return g.rows()
+
+
+def run_mushroom():
+    g = G(13)
+    g.disk(6, 7.0, 5.9, 5.6, 'r', 'R')
+    g.rect(0, 7, 12, 12, '.')  # a dome: flat underneath
+    g.rect(1, 6, 11, 6, 'R')
+    g.rect(4, 7, 8, 11, 'y')
+    g.rect(7, 7, 8, 11, 'Y')
+    g.rect(3, 11, 9, 11, 'y')
+    g.disk(3.6, 4.0, 1.2, 1.0, 'w')
+    g.disk(8.4, 3.0, 1.3, 1.0, 'w')
+    g.px(6, 4, 'w')
+    g.outline()
+    return g.rows()
+
+
 # The home screen's buttons, the food and the card's pencil: hand-drawn pixel art, kept as drawn
 # (18x18 drawn at 3x without a box; the pencil 10x10, the trophy 12x12)
 HAND_ICONS = {
@@ -636,6 +701,11 @@ SPRITES = {
     "EGG": egg(),
     "POOP": poop(),
     "HEART": heart(),
+    "RUN_ROCK": run_rock(),
+    "RUN_BUSH": run_bush(),
+    "RUN_LOG": run_log(),
+    "RUN_STUMP": run_stump(),
+    "RUN_MUSHROOM": run_mushroom(),
 }
 
 # anchors (3x4 eyes / mouth) and body color for the overlaid expressions

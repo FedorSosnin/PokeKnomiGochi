@@ -135,11 +135,11 @@ If you beat a Pokémon you haven't caught yet, you get three Poké Balls, and it
 
 Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
-- **Battle:** pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. The physical button still starts a random battle.
+- **Battle:** pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. **Random Battle** under the zones meets a wild Pokémon from anywhere, just like pressing the physical button.
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?
 - **Who's That Pokémon?:** name the silhouette, five rounds per game.
-- **Tilt Catch:** lean left and right to catch falling berries. They fall faster with every catch, with no top speed, so every game ends.
+- **Tilt Catch:** in the woods under two tall berry trees, lean left and right to catch falling berries. They fall faster with every catch, with no top speed, so every game ends.
 
 ### Buddies
 
@@ -149,7 +149,7 @@ If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over 
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, you swap: the one you gave leaves your Pokédex. A shiny is its own square, so you can trade it and keep the regular one. Your own partner can't be traded, so with only one Pokémon, Trade is greyed out. Changed your mind? The **✕** backs out at any point before the swap, and nothing changes hands.
 - **Play:** games only buddies can play together, with joy and bond for both afterwards, a bit more for the winner, and the **Playmate** medal.
   - **Who's That? Showdown** shows you both the same silhouette at the same moment: the first to tap the right name gets the point, and a wrong tap is out for that round. 10 questions.
-  - **Poké Ball Volley:** your screen is your half of the court and your Pokémon is the paddle; tilt or drag to move, and it runs left and right with you, facing you when it stands still. A ball over the top of your screen drops in on your buddy's. Every shot curves and the ball slowly speeds up, so a match to 3 points lasts about a minute.
+  - **Poké Ball Volley:** your screen is your half of a volleyball court, with the net along the top, and your Pokémon is the paddle; tilt or drag to move, and it runs left and right with you, facing you when it stands still. A ball over the top of your screen drops in on your buddy's. Every shot curves and the ball slowly speeds up, so a match to 3 points lasts about a minute.
 
 ### Party Boost
 

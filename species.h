@@ -697,6 +697,95 @@ static const char* const SPR_HEART[32] = {  // 32x32
   "................................",
 };
 
+static const char* const SPR_RUN_ROCK[12] = {  // 12x12
+  "............",
+  "............",
+  "............",
+  "............",
+  "...kkkkkkk..",
+  "..kswwssssk.",
+  ".kswwwssssSk",
+  ".kssssssssSk",
+  ".ksssssSssSk",
+  "..kSsssssSk.",
+  "...kkkkkkk..",
+  "............",
+};
+
+static const char* const SPR_RUN_BUSH[15] = {  // 15x15
+  "...............",
+  "...............",
+  "...............",
+  ".....kkkkkkk...",
+  "....ktgggtggk..",
+  "..kkgggggGgggk.",
+  "..ktgggggGgggk.",
+  ".kggggGGGggggk.",
+  ".kgggggggrggGk.",
+  ".kggrgGGgGGGGk.",
+  ".kgGGGGggGGGGk.",
+  "..kggggggggrk..",
+  "...kkgrggGkk...",
+  ".....kkkkk.....",
+  "...............",
+};
+
+static const char* const SPR_RUN_LOG[22] = {  // 22x22
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "...kkkkkkkkkkkkkkkkkk.",
+  "..kyyyyyCCCccccccCCCk.",
+  "..kyCCyYcccccCCCccccck",
+  "..kyCCyYccccccccccccck",
+  "..kyyyYYccCCCccCCCcck.",
+  "...kkkkkkkkkkkkkkkkkk.",
+  "......................",
+};
+
+static const char* const SPR_RUN_STUMP[12] = {  // 12x12
+  "............",
+  "............",
+  "............",
+  "...kkkkkk...",
+  "..kyyCCyyk..",
+  "..kyyyyYYk..",
+  "..kccccCCk..",
+  "..kcCccCCk..",
+  "..kcCccCCk..",
+  ".kcccccCCCk.",
+  ".kkkkkkkkkk.",
+  "............",
+};
+
+static const char* const SPR_RUN_MUSHROOM[13] = {  // 13x13
+  ".............",
+  ".............",
+  "....kkkkk....",
+  "..kkrrrrwkk..",
+  "..kwwrwrrrk..",
+  ".krrrrrrrrrk.",
+  ".kkkRRRRRkkk.",
+  "....kyyYk....",
+  "....kyyYk....",
+  "....kyyYk....",
+  "....kyyYk....",
+  "...kkkkkkk...",
+  ".............",
+};
+
 static const Species SPECIES[NUM_SPECIES] = {
   { "CHARMANDER", TYPE_FIRE, SPR_CHARMANDER, 5, SP_CHARMELEON, 16, 6, 9, 17, 12, 13, 0xF427, 0xEA87 },
   { "CHARMELEON", TYPE_FIRE, SPR_CHARMELEON, 6, SP_CHARIZARD, 36, 6, 8, 16, 12, 12, 0xEA87, 0xEA87 },
