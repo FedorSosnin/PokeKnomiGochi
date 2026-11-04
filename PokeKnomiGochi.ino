@@ -1863,13 +1863,6 @@ bool render() {
     else if (pet.wantFarewellButton()) drawFarewellButton();  // gold CTA: farewell
   }
 
-  if (pet.sleeping) {
-    gfx->setTextColor(UI_INK_NIGHT);
-    setSize(3);
-    setCur(320, 130);
-    printT("Zz");
-  }
-
   // food picker
   if (feedMenuUntil) {
     if (!timeLeft(feedMenuUntil)) {

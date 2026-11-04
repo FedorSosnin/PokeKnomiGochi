@@ -27,7 +27,7 @@
 
 Open [pokewebgochi.3dprintsos.com](https://pokewebgochi.3dprintsos.com) and tap **Share → Add to Home Screen** (iPhone) or **Install app** (Android). It gets its own icon and opens full screen, like an app.
 
-Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones ask once whether the page may use motion.
+Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones ask once whether the page may use motion. On Android, the phone buzzes softly with taps, meals, medals and catches; the **Vibration** button under the screen turns it off.
 
 ## How to play
 

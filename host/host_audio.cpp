@@ -22,8 +22,13 @@ void audioBegin() {
   p.end();
 }
 
+static HostHaptic gHaptic = nullptr;
+void hostSetHaptic(HostHaptic fn) { gHaptic = fn; }
+
 void sfxPlay(uint8_t id) {
-  if (!gOn || gSleeping || id >= SFX_COUNT) return;
+  if (gSleeping || id >= SFX_COUNT) return;
+  if (gHaptic) gHaptic(id);  // with the sound muted too: it has its own switch
+  if (!gOn) return;
   uint32_t head = gHead.load(std::memory_order_relaxed);
   if (head - gTail.load(std::memory_order_acquire) >= QUEUE_LEN) return;  // drop if full
   gQueue[head % QUEUE_LEN] = id;

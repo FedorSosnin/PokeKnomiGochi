@@ -47,6 +47,11 @@ void hostSerialPush(const char *line);
 bool hostSoundEnabled(void);
 void hostSetSoundEnabled(bool on);
 
+// Haptics: the front end gets each sound effect's id (audio.h's Sfx), even with the sound off,
+// and may buzz for it (the browser does on Android phones). NULL: none.
+typedef void (*HostHaptic)(uint8_t sfx);
+void hostSetHaptic(HostHaptic fn);
+
 // Buddy relay (relay/ on Cloudflare): the front end keeps a WebSocket to HOST_RELAY_URL, adding
 // "?v4=<its public IPv4>" when it can learn it, and passes things through on the game's thread.
 #define HOST_RELAY_URL "wss://pokeknomigochi-relay.fedor-dd0.workers.dev/ws"
