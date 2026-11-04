@@ -45,6 +45,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ZONAS %d/%d", "%s variocolor!",
     "ENTRENO FUE AL MAXIMO", "ENTRENO", "GANA COMBATES", "12H DE BUEN CUIDADO", "MINIJUEGOS", "COMER SUMA, JUGAR QUEMA",
     "BONUS DE GRUPO", "GASTO ENERGIA", "%u MIN", "PS", "%s trajo un caramelo!", "Para despedirte luego,", "manten pulsado tu Pokemon.",
+    "No pudiste huir!",
   },
   // ---------------- EN ----------------
   {
@@ -84,6 +85,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ZONES %d/%d", "Shiny %s!",
     "ATK TRAINING MAXED", "TRAINING", "WIN BATTLES", "12H OF GOOD CARE", "PLAY MINI GAMES", "FOOD ADDS, PLAY BURNS",
     "PARTY BOOST", "ENERGY DRAIN", "%u MIN", "HP", "%s brought a candy!", "To say goodbye later,", "press and hold your Pokemon.",
+    "Couldn't get away!",
   },
   // ---------------- FR ----------------
   {
@@ -123,6 +125,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ZONES %d/%d", "%s chromatique!",
     "ENTRAINEMENT ATQ AU MAX", "ENTRAINEMENT", "GAGNE DES COMBATS", "12H DE BONS SOINS", "MINI-JEUX", "MANGER GROSSIT, JOUER BRULE",
     "BONUS D'EQUIPE", "PERTE ENERGIE", "%u MIN", "PV", "%s apporte un bonbon!", "Pour lui dire au revoir,", "maintiens ton Pokemon.",
+    "Fuite ratee!",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -167,6 +170,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ZONEN %d/%d", "Schillerndes %s!",
     "ANG-TRAINING MAXIMAL", "TRAINING", "SIEGE IM KAMPF", "12 STD. GUTE PFLEGE", "MINISPIELE", "ESSEN RAUF, SPIELEN RUNTER",
     "PARTY-BONUS", "ENERGIEVERBRAUCH", "%u MIN", "KP", "%s bringt ein Bonbon!", "Zum Abschied sp\204ter", "halte dein Pokemon gedr\201ckt.",
+    "Flucht misslang!",
   },
   // ---------------- IT ----------------
   {
@@ -206,6 +210,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ZONE %d/%d", "%s cromatico!",
     "ALLENAMENTO ATT AL MASSIMO", "ALLENAMENTO", "VINCI LE BATTAGLIE", "12 ORE DI BUONE CURE", "MINIGIOCHI", "MANGIARE SU, GIOCARE GIU",
     "BONUS SQUADRA", "CALO ENERGIA", "%u MIN", "PS", "%s porta una caramella!", "Per salutarlo dopo,", "tieni premuto il Pokemon.",
+    "Fuga fallita!",
   },
   // ---------------- PT ----------------
   {
@@ -245,6 +250,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ZONAS %d/%d", "%s brilhante!",
     "TREINO ATQ NO MAXIMO", "TREINO", "VENCER BATALHAS", "12H DE BOM CUIDADO", "MINIJOGOS", "COMER SOBE, JOGAR QUEIMA",
     "BONUS DE GRUPO", "GASTO ENERGIA", "%u MIN", "PS", "%s trouxe um doce!", "Para se despedir depois,", "segure seu Pokemon.",
+    "Fuga falhou!",
   },
   // ---------------- JA ----------------
   {
@@ -307,6 +313,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ゾーン %d/%d", "いろちがいの%s!",
     "こうげきの くんれん MAX", "くんれん", "バトルに かつ", "12じかん おせわ", "ミニゲーム", "たべると ふえる、あそぶと へる",
     "パーティ ボーナス", "つかれかた", "あと %u ふん", "HP", "%sが おかしを くれた!", "あとで おわかれするには", "ポケモンを ながおししてね",
+    "にげられない!",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -351,6 +358,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "지역 %d/%d", "이로치 %s!",
     "공격 훈련 최대", "훈련", "배틀 승리", "12시간 잘 돌보기", "미니게임", "먹으면 늘고, 놀면 줄어요",
     "파티 보너스", "에너지 소모", "%u분 남음", "HP", "%s 사탕을 줬어요!", "나중에 작별하려면", "포켓몬을 길게 눌러 주세요",
+    "도망칠 수 없다!",
   },
 };
 

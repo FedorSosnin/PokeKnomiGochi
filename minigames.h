@@ -4,6 +4,7 @@
 
 #define CATCH_BALLS 3         // throws per encounter
 #define WILD_SHINY_PCT 1      // one wild Pokemon in 100 is shiny
+#define RUN_FAIL_PCT 5        // one run in 20 from a wild battle fails: no running for the rest of that fight
 #define CATCH_SHAKES 3
 #define CATCH_SHAKE_MS 900    // one rock to the side, with its tone
 // Three rings around the Pokemon: the closer to its middle the ball lands, the surer the catch

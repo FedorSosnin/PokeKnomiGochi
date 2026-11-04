@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.33"
+#define FW_VERSION "1.34"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -225,6 +225,7 @@ bool vbBot = false;  // test mode: the paddle chases the ball, at a limited spee
 char buddyNote[44] = "";
 uint32_t buddyNoteUntil = 0;
 bool bPvp = false, bPvpGone = false;   // this battle is against the buddy
+bool bRunFailed = false;               // tried to run and couldn't: no running for the rest of this fight
 uint32_t bRng = 0;
 uint8_t bPvpTurn = 0, bPvpMine = 0, bPvpMinePrev = 0;
 int16_t bPvpFoeTurn = -1;              // buddy's turn and move, when they arrive
@@ -765,6 +766,9 @@ void handleSerial() {
   } else if (line == "AWAKE" && pet.noSave) {  // test mode only
     pet.sleeping = false;
     pet.energy = 100;
+    Serial.println("DONE");
+  } else if (line == "RUNFAIL" && pet.noSave && battleOpen) {  // as if a run had just failed (screenshots)
+    bRunFailed = true;
     Serial.println("DONE");
   } else if (line == "BTLWIN" && pet.noSave && battleOpen) {
     bFoe.hp = 0;
@@ -2422,6 +2426,7 @@ void handleKnomiButton(uint32_t now) {
 #define BTL_ME_GROUND 322
 
 void battleSetPhase(BattlePhase p) {
+  if (p == BP_INTRO) bRunFailed = false;  // every battle starts there
   bPhase = p;
   bPhaseT = millis();
 }
@@ -2502,6 +2507,12 @@ void battleTap(int16_t x, int16_t y) {
   }
   if (bPhase != BP_CHOOSE) return;
   if (y >= 392 && x >= 160 && x <= 306) {
+    if (bRunFailed) { sfxPlay(SFX_DENY); return; }
+    if (!bPvp && random(100) < RUN_FAIL_PCT) {  // a buddy battle can always be left
+      bRunFailed = true;
+      sfxPlay(SFX_DENY);
+      return;
+    }
     sfxPlay(SFX_TAP);
     battleSetPhase(BP_RAN);
     return;
@@ -3077,9 +3088,17 @@ void renderBattle() {
         setCur((x0 + x1) / 2 - (int)strlen(m.name) * 6, 359);
         printT(m.name);
       }
-      gfx->fillRoundRect(160, 394, 146, 38, 10, UI_TRACK);
-      gfx->setTextColor(UI_INK);
-      battleCenterLine(T(S_BTL_RUN), 406);
+      if (bRunFailed) {  // stays for the rest of the fight, in place of RUN
+        const char *s = T(S_BTL_NO_ESCAPE);
+        int w = textW(s, 2) + 24;
+        gfx->fillRoundRect(CX - w / 2, 394, w, 38, 10, UI_BAR_BAD);
+        gfx->setTextColor(UI_WHITE);
+        battleCenterLine(s, 406);
+      } else {
+        gfx->fillRoundRect(160, 394, 146, 38, 10, UI_TRACK);
+        gfx->setTextColor(UI_INK);
+        battleCenterLine(T(S_BTL_RUN), 406);
+      }
       break;
     case BP_ATTACK:
     case BP_HIT: {
@@ -7085,7 +7104,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   // --- game screens (handleTouch's first branch) ---
   if (battleOpen) {
     if (bPhase != BP_CHOOSE) return false;
-    if (y >= 392 && x >= 160 && x <= 306) return pressSet(t, 160, 394, 146, 38, T(S_BTL_RUN));
+    if (y >= 392 && x >= 160 && x <= 306) return !bRunFailed && pressSet(t, 160, 394, 146, 38, T(S_BTL_RUN));
     if (y < 344 || y > 386) return false;
     for (uint8_t i = 0; i < bMeMoves.count; i++) {
       int x0, x1;

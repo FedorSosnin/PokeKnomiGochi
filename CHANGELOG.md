@@ -8,7 +8,10 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.34] - 2026-11-04
+
 - **PokeWinGochi, the game on Windows:** the same round window as the Mac app, for Windows 10 and 11, in one `.exe` with nothing to install. It meets Knomis, Macs and browsers as buddies, lives in the taskbar's notification area, and checks for its own updates.
+- **Running can fail:** 1 run in 20 from a wild battle fails. The RUN button turns red and says "Couldn't get away!" for the rest of that fight. A battle with a buddy can always be left.
 - **Shinies are rarer:** about 1 wild Pokémon in 100 is shiny now, instead of 1 in 50.
 
 ## [1.33] - 2026-11-03

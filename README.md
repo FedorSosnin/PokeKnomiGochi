@@ -91,6 +91,10 @@ Press the button to meet a wild Pokémon in a simple turn-based fight, inspired 
 
 Winning trains your Pokémon. Losing earns nothing and leaves it nearly out of energy, so it has to sleep before it can fight again.
 
+**RUN** leaves a wild battle, but 1 time in 20 it fails: the button turns red and says **Couldn't get away!**, and you have to fight it out. A battle with a buddy can always be left.
+
+<p align="center"><img src="docs/images/run-fail.png" alt="A wild battle where running failed: the RUN button now says Couldn't get away!" width="240"></p>
+
 ### Training
 
 Your Pokémon's ATK, DEF and SPD grow as it levels up, and training adds more on top:
@@ -141,7 +145,7 @@ It's the same boost however many friends are around. Tap **PARTY BOOST** to see 
 |:---:|:---:|:---:|
 | **Who's here, and the boost** | **A buddy's stats, then swipe to play** | **The visitor, and its candy** |
 
-To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac version (PokeMacGochi) and the browser version (PokeWebGochi), in any mix.
+To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac version (PokeMacGochi), the Windows version (PokeWinGochi) and the browser version (PokeWebGochi), in any mix.
 
 ### Daily visitor
 

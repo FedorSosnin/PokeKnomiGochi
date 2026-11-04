@@ -59,13 +59,13 @@ Anyone else playing on the same home Wi-Fi shows up on your screen: up to four a
 |:---:|:---:|
 | **Party Boost** | **Tap a friend for its stats** |
 
-You meet players of the browser version, the [Mac app](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
+You meet players of the browser version, the [Mac and Windows apps](https://github.com/FedorSosnin/PokeKnomiGochi/releases) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
 
 ## Want a real one?
 
 <p align="center"><img src="images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a BTT Knomi V2 in a 3D-printed Poké Ball case" width="360"> <img src="images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, its Pokémon asleep" width="360"></p>
 
-The same game runs on the **BIGTREETECH Knomi V2**, a little round touchscreen made for 3D printers. Put it in a 3D-printed Poké Ball case and you have a pocket tamagotchi that tilts, buzzes and meets the browser and Mac players as buddies.
+The same game runs on the **BIGTREETECH Knomi V2**, a little round touchscreen made for 3D printers. Put it in a 3D-printed Poké Ball case and you have a pocket tamagotchi that tilts, buzzes and meets the browser, Mac and Windows players as buddies.
 
 1. **Get a Knomi V2:** [BIGTREETECH Knomi V2](https://www.awin1.com/pclick.php?p=43148197656&a=2034499&m=95665). This is an affiliate link from [deals.3dprintsos.com](https://deals.3dprintsos.com): buying through it supports this project at no extra cost to you.
 2. **Install the game** from your browser with the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/) (Chrome or Edge, a USB-C data cable). After that it updates itself over Wi-Fi.
@@ -73,9 +73,9 @@ The same game runs on the **BIGTREETECH Knomi V2**, a little round touchscreen m
 
 More in the [PokeKnomiGochi README](https://github.com/FedorSosnin/PokeKnomiGochi#3d-printed-case).
 
-## Also on a Mac
+## Also on Mac and Windows
 
-**PokeMacGochi** is the same game as a small round window on your Mac desktop: [download it](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest). Everything starts from [**PokeKnomiGochi**](https://github.com/FedorSosnin/PokeKnomiGochi).
+**PokeMacGochi** and **PokeWinGochi** are the same game as a small round window on your Mac or Windows desktop: [download them](https://github.com/FedorSosnin/PokeKnomiGochi/releases). Everything starts from [**PokeKnomiGochi**](https://github.com/FedorSosnin/PokeKnomiGochi).
 
 ## Credits
 
