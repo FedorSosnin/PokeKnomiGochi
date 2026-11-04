@@ -55,7 +55,7 @@ Your Pokémon needs at least 15 ⚡ to fight.
 
 **RUN** leaves a wild battle, but 1 time in 20 it fails: the button says **Couldn't get away!** for the rest of that fight, so it's fight or lose. A battle with a buddy can always be left.
 
-A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it. Where the ball lands decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
+A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it while it runs back and forth trying to get away. Where the ball lands, against the rings that run with it, decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
 
 ## Training
 

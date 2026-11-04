@@ -2567,7 +2567,11 @@ uint8_t bBreakAt = 0, bShakesHeard = 0;  // the throw that hit: when it breaks o
 float bCatchX = CX;                      // where the ball landed: the foe stops swaying in it
 
 // the foe sways side to side so you have to aim
-float battleFoeSway(uint32_t now) { return CX + 110.0f * sinf(now * 6.28318f / 4500.0f); }
+// After the battle the wild Pokemon runs back and forth on the field, trying to get away
+#define CATCH_RUN_MS 4500.0f  // one run there and back
+#define CATCH_GROUND_Y 268    // its feet: on the field, not along the horizon
+float battleFoeSway(uint32_t now) { return CX + 110.0f * sinf(now * 6.28318f / CATCH_RUN_MS); }
+int battleFoeDir(uint32_t now) { return cosf(now * 6.28318f / CATCH_RUN_MS) >= 0 ? 1 : -1; }  // 1: running right
 
 void battleThrowStep(uint32_t now) {
   static uint32_t last = 0;
@@ -2757,7 +2761,7 @@ int catchRingY() {
       if (a.data[r * a.w + c] != 0xFF) { top = r; break; }
   uint8_t s = a.h ? 170 / a.h : 3;
   s = s < 2 ? 2 : s > 3 ? 3 : s;
-  return 216 - ((a.base ? a.base : a.h) - top) * s / 2;
+  return CATCH_GROUND_Y - ((a.base ? a.base : a.h) - top) * s / 2;
 }
 void drawCatchRings(int cx) {
   int cy = catchRingY();
@@ -2815,29 +2819,44 @@ void renderCatch() {
     int dir = bCatchX < CX ? -1 : 1;
     int x = (int)bCatchX + dir * (int)(t > 400 ? (t - 400) * 0.25f : 0);
     uint8_t act = dir > 0 ? PMD_WALKR : PMD_WALKL;
-    drawPmdActM(wildPmd, wildPmd.has(act) && t > 400 ? act : PMD_IDLE, x, 216, t, true, false, 3);
+    drawPmdActM(wildPmd, wildPmd.has(act) && t > 400 ? act : PMD_IDLE, x, CATCH_GROUND_Y, t, true, false, 3);
   } else if (bPhase != BP_CAUGHT && bPhase != BP_FLED && bPhase != BP_SHAKE) {
-    drawPmdActM(wildPmd, PMD_IDLE, (int)foeX, 216, now - bPhaseT, true, false, 3);
-    if (bPhase == BP_AIM || bPhase == BP_THROW) drawCatchRings((int)foeX);
+    // running, facing the way it goes, with its shadow and a little dust kicked up behind
+    int dir = battleFoeDir(now);
+    uint8_t act = dir > 0 ? PMD_WALKR : PMD_WALKL;
+    if (!wildPmd.has(act)) act = PMD_IDLE;
+    int fx = (int)foeX;
+    gfx->fillRoundRect(fx - 26, CATCH_GROUND_Y - 4, 52, 9, 4, lerp565(soil, RGB565_BLACK, 5, 16));
+    float speed = fabsf(cosf(now * 6.28318f / CATCH_RUN_MS));  // slows to turn at each end
+    if (speed > 0.35f) {
+      uint16_t dust = lerp565(soil, UI_WHITE, 9, 16);
+      for (int i = 0; i < 3; i++) {
+        uint32_t age = (now + i * 120) % 360;  // each puff lives 360 ms
+        gfx->fillCircle(fx - dir * (22 + (int)age / 12), CATCH_GROUND_Y - 3 - (int)age / 60, 2 + age / 120, dust);
+      }
+    }
+    drawPmdActM(wildPmd, act, fx, CATCH_GROUND_Y, now - bPhaseT, true, false, 3);
+    if (bPhase == BP_AIM || bPhase == BP_THROW) drawCatchRings(fx);
   }
+  int ballGround = CATCH_GROUND_Y - 51;  // a ball at 3x resting on the ground
   if (bPhase == BP_THROW) {
     float k = (now - bBallT) / 1500.0f;
     if (k > 1) k = 1;
-    int y = 360 - (int)(200 * k), s = k < 0.5f ? 3 : 2;  // moves away
+    int y = 360 - (int)((360 - catchRingY()) * k), s = k < 0.5f ? 3 : 2;  // moves away, to the rings
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bBallX - 9 * s, y - 9 * s, s, false);
   } else if (bPhase == BP_MISS) {  // bounces and falls: clearly it didn't go in
     float k = (now - bPhaseT) / 700.0f;
     if (k > 1) k = 1;
-    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)(bBallX + (bBallX < foeX ? -70 : 70) * k) - 18, 142 + (int)(200 * k * k), 2, false);
+    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)(bBallX + (bBallX < foeX ? -70 : 70) * k) - 18, catchRingY() - 18 + (int)(200 * k * k), 2, false);
   } else if (bPhase == BP_SHAKE) {  // on the ground, rocking to one side on each count
     uint32_t t = now - bPhaseT;
     uint32_t in = t % CATCH_SHAKE_MS;
     float k = in < 420 ? sinf(in * 3.14159f / 420) : 0;  // a rock, then still until the next count
     int side = (t / CATCH_SHAKE_MS) % 2 ? 1 : -1;
-    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bCatchX - 27 + (int)(side * 14 * k), 165 + (int)(4 * k), 3, false);
+    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bCatchX - 27 + (int)(side * 14 * k), ballGround + (int)(4 * k), 3, false);
   } else if (bPhase == BP_CAUGHT) {
-    drawCatchShine((int)bFoeX, 165 + 27, now - bPhaseT);
-    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, 165, 3, false);
+    drawCatchShine((int)bFoeX, ballGround + 27, now - bPhaseT);
+    drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, ballGround, 3, false);
   }
 
   gfx->fillRect(0, BTL_BAND_Y, 466, 466 - BTL_BAND_Y, UI_BG_DAY);
