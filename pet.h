@@ -8,6 +8,8 @@
 // Game minutes per level. With 60, CHARMANDER evolves at ~16 h
 // of play with perfect care. Lower to 1 to see evolutions instantly.
 #define MINUTES_PER_LEVEL 60
+#define GOOD_CARE_MIN 360  // 6 h of good care (sleep included) = +1 defense training
+#define CARE_GRACE_MIN 15  // a need may stay under 40 this long (awake) before the streak is lost
 #define VISIT_MINUTES 60     // the daily visitor stays this long (awake minutes, kept over sleep and restarts)
 #define BTL_WIN_TRAIN 6      // ATK per battle won
 #define BTL_ENERGY_COST 12
@@ -82,6 +84,8 @@ public:
   // genes (90-110%, rolled at hatching) and training (0-100)
   uint8_t geneAtk = 100, geneDef = 100, geneSpe = 100;
   uint8_t trAtk = 0, trDef = 0, trSpe = 0;
+  uint16_t goodTicks = 0;  // well-cared streak, in minutes (asleep too): forges DEF
+  uint8_t lowTicks = 0;    // awake minutes in a row with a need under 40 (forgiven up to CARE_GRACE_MIN)
   bool berryKnown = false;  // already discovered its favorite berry
   bool shiny = false;       // rare color variant (rolled in the egg)
   uint32_t ageMinutes = 0;
@@ -281,7 +285,7 @@ private:
   bool starterPick = false;     // first game: waiting for the player to pick a starter
   bool eggPick = false;         // new egg: waiting for the player to pick from the pokedex
   uint8_t neglectTicks = 0;
-  uint16_t goodTicks = 0;  // well-cared streak: forges DEF
+  void careMinute(bool asleep);
   uint32_t ceremonyUntil = 0;
   uint8_t bondToday = 0;       // daily cap on bond gain
   uint32_t medalUntil = 0;     // medal celebration on screen

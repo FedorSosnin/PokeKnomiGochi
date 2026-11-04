@@ -82,12 +82,14 @@ void Pet::syncClock(uint32_t nowEpoch) {
         joy = dropTo(joy, 1, 35);
       }
       if (ageMinutes % 3 == 0) hygiene = dropTo(hygiene, 1, 45);
+      careMinute(true);
       continue;
     }
     fullness = dropTo(fullness, 2, 15);
     energy = dropTo(energy, 1, 15);
     hygiene = dropTo(hygiene, 1, 15);
     joy = dropTo(joy, 1, 15);
+    careMinute(false);
   }
   if (!isEgg()) {
     if (!sleeping) {  // no pooping while sleeping
@@ -113,6 +115,22 @@ void Pet::update(uint32_t nowMs) {
   }
 }
 
+// Good care forges defense: every GOOD_CARE_MIN minutes of it = +1 DEF. Sleep counts (needs dip
+// overnight by design, and waking it starts the grace again); awake, a need under 40 is forgiven for
+// CARE_GRACE_MIN minutes, about the time to notice and feed it, and then the streak starts over.
+void Pet::careMinute(bool asleep) {
+  if (asleep || lowestStat() >= 40) lowTicks = 0;
+  else if (lowTicks <= CARE_GRACE_MIN) lowTicks++;
+  if (lowTicks > CARE_GRACE_MIN) {
+    goodTicks = 0;
+    return;
+  }
+  if (++goodTicks >= GOOD_CARE_MIN) {
+    goodTicks = 0;
+    if (trDef < 100) trDef++;
+  }
+}
+
 void Pet::tick() {
   if (ceremony != CER_NONE) return;  // time stops during the goodbye
   if (eggPick) return;      // same as when picking the starter: the egg has no species yet
@@ -130,7 +148,7 @@ void Pet::tick() {
   // sleep is rest: energy recovers and needs drop MUCH
   // slower than awake and with a floor (it wakes up wanting some cuddles, not at
   // zero, no neglect or runaways). awake: food -2/min, hyg/joy -1/min.
-  // Weight still burns; the good-care streak (goodTicks) is paused.
+  // Weight still burns, and the good-care streak keeps counting.
   if (sleeping) {
     energy = clamp100(energy + 6);
     if (weight > 0 && ageMinutes % (2 * WGT_BURN_MIN) == 0) weight--;
@@ -139,6 +157,7 @@ void Pet::tick() {
       joy = dropTo(joy, 1, 35);
     }
     if (ageMinutes % 3 == 0) hygiene = dropTo(hygiene, 1, 45);
+    careMinute(true);
     checkMedals();  // can still cross a level by age while sleeping
     if (++ticksSinceSave >= 5) pendingSave = true;
     return;
@@ -157,15 +176,7 @@ void Pet::tick() {
   if (weight > 50 && tires) energy = clamp100(energy - 1);
   if (weight > 0 && ageMinutes % WGT_BURN_MIN == 0) weight--;
 
-  // discipline forges defense: 12 h in a row well cared for = +1 DEF
-  if (lowestStat() >= 40) {
-    if (++goodTicks >= 720) {
-      goodTicks = 0;
-      if (trDef < 100) trDef++;
-    }
-  } else {
-    goodTicks = 0;
-  }
+  careMinute(false);
 
   int dJoy = -1;
   if (fullness < 30) dJoy -= 2;
@@ -484,6 +495,7 @@ void Pet::hatch() {
   geneDef = 90 + random(21);
   geneSpe = 90 + random(21);
   trAtk = trDef = trSpe = 0;
+  goodTicks = lowTicks = 0;
   farewellQuiet = false;
   battleWins = 0;
   movesSeen = 1;
@@ -858,6 +870,8 @@ void Pet::save() {
   prefs.putUChar("tatk", trAtk);
   prefs.putUChar("tdef", trDef);
   prefs.putUChar("tspe", trSpe);
+  prefs.putUShort("good", goodTicks);
+  prefs.putUChar("lowt", lowTicks);
   prefs.putBool("bk", berryKnown);
   prefs.putBool("shy", shiny);
   prefs.putBool("eshy", eggShiny);
@@ -916,6 +930,8 @@ void Pet::load() {
   trAtk = prefs.getUChar("tatk", 0);
   trDef = prefs.getUChar("tdef", 0);
   trSpe = prefs.getUChar("tspe", 0);
+  goodTicks = prefs.getUShort("good", 0);
+  lowTicks = prefs.getUChar("lowt", 0);
   berryKnown = prefs.getBool("bk", false);
   shiny = prefs.getBool("shy", false);
   eggShiny = prefs.getBool("eshy", false);

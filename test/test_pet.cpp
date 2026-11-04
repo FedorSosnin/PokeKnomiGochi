@@ -296,15 +296,51 @@ TEST(tick, neglect_cools_bond_without_wiping_it) {
   CHECK_MSG(p.bond == 1, "the bond does not fall below 1");
 }
 
-TEST(tick, good_care_for_12h_builds_defense) {
+TEST(tick, good_care_for_6h_builds_defense) {
   Pet p;
   makePet(p, 4);
   CHECK_EQ(p.trDef, (uint8_t)0);
-  for (int h = 0; h < 720; h++) {  // keep everything >= 40 for 12 h
+  for (int m = 0; m < GOOD_CARE_MIN - 1; m++) {  // keep everything >= 40 for 6 h
     setStats(p, 100, 100, 100, 100);
     advance(p, 1);
   }
+  CHECK_EQ(p.trDef, (uint8_t)0);
+  advance(p, 1);
   CHECK_EQ(p.trDef, (uint8_t)1);
+}
+
+TEST(tick, sleep_counts_toward_defense) {
+  Pet p;
+  makePet(p, 4);
+  for (int m = 0; m < GOOD_CARE_MIN / 2; m++) {
+    setStats(p, 100, 100, 100, 100);
+    advance(p, 1);
+  }
+  p.sleeping = true;  // the other half asleep, with needs dipping overnight as they do
+  setStats(p, 35, 35, 20, 50);
+  advance(p, GOOD_CARE_MIN / 2);
+  CHECK_MSG(p.trDef == 1, "hours asleep count as good care");
+}
+
+TEST(tick, short_dips_under_40_are_forgiven) {
+  Pet p;
+  makePet(p, 4);
+  for (int m = 0; m < 100; m++) { setStats(p, 100, 100, 100, 100); advance(p, 1); }
+  for (int m = 0; m < CARE_GRACE_MIN; m++) { setStats(p, 30, 100, 100, 100); advance(p, 1); }  // hungry for a while
+  CHECK_MSG(p.goodTicks == 100 + CARE_GRACE_MIN, "a dip shorter than the grace keeps the streak");
+  for (int m = 0; m < 5; m++) { setStats(p, 100, 100, 100, 100); advance(p, 1); }
+  for (int m = 0; m <= CARE_GRACE_MIN; m++) { setStats(p, 30, 100, 100, 100); advance(p, 1); }
+  CHECK_MSG(p.goodTicks == 0, "left under 40 longer than the grace: the streak starts over");
+}
+
+TEST(tick, defense_streak_survives_a_restart) {
+  Pet p;
+  makePet(p, 4);
+  for (int m = 0; m < 200; m++) { setStats(p, 100, 100, 100, 100); advance(p, 1); }
+  p.flushSave();
+  Pet q;
+  q.begin();
+  CHECK_EQ(q.goodTicks, (uint16_t)200);
 }
 
 // ---------------------------------------------------------------- levels

@@ -39,7 +39,7 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 ## Training
 
 - **Winning a battle** adds attack training.
-- **Every 12 hours in a row of good care** adds defense training.
+- **Every 6 hours of good care** adds defense training.
 - **Mini games** add speed training.
 - **Weight** goes up with food (candy the most) and down with play. Over 50, your Pokémon tires twice as fast.
 

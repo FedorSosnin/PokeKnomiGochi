@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Defense training is fairer:** good care now adds +1 every 6 hours instead of 12, hours asleep count, a need can dip under 40 for up to 15 minutes before the count starts over, and the count is saved, so a restart or an update no longer wipes it.
+
 ## [1.34] - 2026-11-04
 
 - **PokeWinGochi, the game on Windows:** the same round window as the Mac app, for Windows 10 and 11, in one `.exe` with nothing to install. It meets Knomis, Macs and browsers as buddies, lives in the taskbar's notification area, and checks for its own updates.

@@ -60,7 +60,7 @@ A loss earns nothing: no training and no bond. After a loss, your Pokémon has t
 ## Training
 
 - **Winning a battle** adds attack training (+6 a win).
-- **Every 12 hours in a row of good care** adds defense training (+1). Good care means every need stays at 40 or more.
+- **Every 6 hours of good care** adds defense training (+1). Good care means every need stays at 40 or more. Hours asleep count too, and a need can dip under 40 for up to 15 minutes while it's awake (time to notice and feed it) before the 6 hours start over. The count is saved, so a restart or an update doesn't lose it.
 - **Mini games** add speed training: Tilt Catch, PokeRun and PokeDungeon add 1 for every 5 points.
 - **Weight** isn't training: every berry adds 4 and candy 12 (6 more if it was already 80% full). Games, battles and time burn it off. Over 50, energy drops twice as fast; 20 or less earns the Fit medal.
 
@@ -112,7 +112,7 @@ Joy also drops 2 more per minute while 🍖 is below 30, and 2 more while 🧼 i
 | What | How |
 |---|---|
 | ⬆️ **Level** | +1 for every hour of age |
-| 🛡️ **Defense** | +1 for every 12 hours in a row with all four needs at 40 or above |
+| 🛡️ **Defense** | +1 for every 6 hours with all four needs at 40 or above (asleep counts, short dips are forgiven) |
 | ⚠️ **Care mistake** | A need at 10 or below counts as a mistake, at most once an hour, and costs 1 💞 |
 | 🏃 **Running away** | With all four needs at 0 for an hour, it's ready to leave. One bit of care resets the clock. |
 | 👋 **Goodbye** | A fully evolved Pokémon offers a goodbye from 3 days old. Choose to stay together and it won't ask again; hold your finger on it whenever you're ready. |

@@ -100,7 +100,7 @@ Winning trains your Pokémon. Losing earns nothing and leaves it nearly out of e
 Your Pokémon's ATK, DEF and SPD grow as it levels up, and training adds more on top:
 
 - **Winning a battle** adds attack training.
-- **Every 12 hours in a row of good care** (every need at 40 or more) adds defense training.
+- **Every 6 hours of good care** (every need at 40 or more) adds defense training. Sleep counts, and a need can dip under 40 for up to 15 minutes before the 6 hours start over.
 - **Mini games** (Tilt Catch, PokeRun, PokeDungeon) add speed training.
 - **Weight** isn't training: food adds it (candy the most), and games, battles and time burn it off. Over 50, your Pokémon tires twice as fast.
 
