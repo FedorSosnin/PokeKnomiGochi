@@ -6026,8 +6026,9 @@ void renderVolley() {
   gPmdForceScale = 2;
   drawPmdAct(PMD_IDLE, (int)vbPadX, VB_PADDLE_Y + 40, millis(), true, false, 2);
   gPmdForceScale = 0;
-  if (vbPhase == VB_PLAY) drawMap(SPR_ICON_PLAY, 16, (int)vbBall.x - VB_BALL_R, (int)vbBall.y - VB_BALL_R, 4, false);
-  if (vbPhase == VB_SERVE) drawMap(SPR_ICON_PLAY, 16, (int)vbPadX - 16, VB_PADDLE_Y - 34, 2, false);
+  // the home screen's Poke Ball: 18 px drawn x4 (a little over the 64 px it hits with), and x2 on the paddle
+  if (vbPhase == VB_PLAY) drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)vbBall.x - 36, (int)vbBall.y - 36, 4, false);
+  if (vbPhase == VB_SERVE) drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)vbPadX - 18, VB_PADDLE_Y - 36, 2, false);
   const char *line = nullptr;
   if (vbPhase == VB_READY) line = T(S_SD_READY);
   else if (vbPhase == VB_SERVE) line = T(S_VB_SERVE);

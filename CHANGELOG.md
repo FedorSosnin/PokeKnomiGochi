@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Poké Ball Volley** uses the new Poké Ball from the home screen.
+
 ## [1.31] - 2026-11-03
 
 - **Wi-Fi updates work with buddies around:** the update check and install failed ("Update failed") while the Knomi was connected to the buddy relay, because two secure connections at once don't fit in its memory. The update now closes the relay first and reconnects it afterwards. Knomis on 1.30 or older need one USB install from the web installer to get this fix.
