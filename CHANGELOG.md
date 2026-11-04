@@ -8,6 +8,13 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.30] - 2026-11-03
+
+- **Friends' stats:** on Party Boost, tap a friend to see its stats first: level, HP, ATK, DEF and SPD, and a buddy's Pokédex count. Swipe to its Battle, Trade and Play menu, and the ✕ goes back to Party Boost. The visitor has a stats page too, with its minutes left. Tapping a buddy's Pokémon on the main screen still opens its menu first, with its stats a swipe away. Buddies now send their stats; one on an older version shows "?".
+- **Candy refills energy** to full, as well as food and joy.
+- **The visitor brings a candy:** a third one on the day it visits ("PIDGEY brought a candy!"), shown on its stats page.
+- **Candies left:** a red badge on the food menu's candy says how many are left today.
+
 ## [1.29] - 2026-11-03
 
 - **Party Boost:** while a buddy or the daily visitor is around, energy drains half as fast and your Pokémon has +2 ATK, DEF and SPD in wild battles and PokeDungeon. It's the same however many friends are around. The green button at the top now says **PARTY BOOST +2**. Tap it for who's here and what you get, and tap a buddy there for its menu. The Battle Stats page shows the +2.

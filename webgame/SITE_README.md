@@ -53,7 +53,13 @@ Your Pokémon is saved in this browser automatically. Clearing the browser's dat
 
 ## Buddies
 
-Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle, trade Pokédex entries, or **play** a game together: in **Who's That? Showdown** you both see the same silhouette and race to name it first, and in **Poké Ball Volley** your screens are the two halves of one court. Trades are a real swap: the Pokémon you give leaves your Pokédex. Shinies (about 1 wild Pokémon in 50) sparkle, have their own place in the Pokédex and can be traded too. While anyone's around, your Pokémon gets a **Party Boost**: energy drains half as fast, and it has +2 ATK, DEF and SPD in wild battles. Tap the green **PARTY BOOST** button to see who's here. A wild Pokémon also visits once a day for an hour and counts for the boost too. You meet players of the browser version, the [Mac app](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
+Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle, trade Pokédex entries, or **play** a game together: in **Who's That? Showdown** you both see the same silhouette and race to name it first, and in **Poké Ball Volley** your screens are the two halves of one court. Trades are a real swap: the Pokémon you give leaves your Pokédex. Shinies (about 1 wild Pokémon in 50) sparkle, have their own place in the Pokédex and can be traded too. While anyone's around, your Pokémon gets a **Party Boost**: energy drains half as fast, and it has +2 ATK, DEF and SPD in wild battles. Tap the green **PARTY BOOST** button to see who's here, and tap a friend for its stats. A wild Pokémon also visits once a day for an hour, brings a candy and counts for the boost too. 
+
+| ![Party Boost: who's here and the boost](images/party.png) | ![A buddy's stats](images/friend-stats.png) |
+|:---:|:---:|
+| **Party Boost** | **Tap a friend for its stats** |
+
+You meet players of the browser version, the [Mac app](https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
 
 ## Want a real one?
 

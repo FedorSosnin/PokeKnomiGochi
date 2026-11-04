@@ -23,7 +23,7 @@ Everything your Pokémon needs, what each action does, and how to fill the Poké
 | 🤚 **Pet** | | +5 | | | +1 | | Only the first 3 pets each hour add joy |
 | 🍓 **Favorite berry** | +35 | +10 | | | +2 | | |
 | 🫐 **Other berries** | +25 | | | | | | |
-| 🍬 **Candy** | +10 | +12 | | | | +12 | 2 a day, then it leaves the menu |
+| 🍬 **Candy** | +10 | +12 | Full | | | +12 | 2 a day (3 on the day the visitor brings one): a red number on it shows how many are left, and it leaves the menu at 0 |
 | 🛁 **Bath** | | | | Full | +1 | | Also clears every poop |
 | 🌙 **Sleep** | | | +6 a minute | | | | Turn the light off, then back on to wake it |
 
@@ -73,9 +73,9 @@ While at least one buddy or the daily visitor is on your screen:
 | ⚡ **Energy drain** | Half: it drops every other minute instead of every minute (overweight too) |
 | 💪 **ATK, DEF, SPD** | +2 each in wild battles and PokeDungeon (not in battles between buddies) |
 
-It's the same with one friend or five, so extra devices don't stack it. Tap the green **PARTY BOOST** button for the list of who's here, where a buddy opens its menu.
+It's the same with one friend or five, so extra devices don't stack it. Tap the green **PARTY BOOST** button for the list of who's here. Tap a friend for its stats (level, HP, ATK, DEF, SPD, and a buddy's Pokédex count), then swipe to a buddy's Battle, Trade and Play menu. The ✕ goes back to the list.
 
-The **daily visitor** stays 60 awake minutes. It steps out while yours sleeps (or while four buddies fill the row) and comes back the same day, and its time survives a restart. Leftover minutes end at midnight.
+The **daily visitor** brings a candy (a third one that day) and stays 60 awake minutes. It steps out while yours sleeps (or while four buddies fill the row) and comes back the same day, and its time survives a restart. Leftover minutes end at midnight.
 
 ## Zones
 

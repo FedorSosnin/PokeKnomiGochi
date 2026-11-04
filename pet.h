@@ -112,6 +112,7 @@ public:
   uint32_t petJoyStart = 0;
   uint8_t candyToday = 0;  // treats given on day candyDay
   uint32_t candyDay = 0;
+  uint32_t candyGiftDay = 0;  // the day the visitor brought one more candy
   uint8_t dungeonHi = 0;   // deepest floor of PokeDungeon
   uint16_t battleWins = 0; // battles won by this individual
   uint32_t visitorDay = 0;  // last day with a visit
@@ -134,8 +135,14 @@ public:
   void playResult(uint8_t score);  // minigame reward (trains SPE)
   void runResult(uint16_t secs);   // PokeRun: same, every 4 s counts as one point
   void dungeonResult(uint8_t floor);
+  int candiesLeft() const {  // today's candies still to have (the visitor's included)
+    int limit = CANDY_PER_DAY + (today() != 0 && candyGiftDay == today() ? 1 : 0);
+    int had = (today() != 0 && today() != candyDay) ? 0 : candyToday;
+    return had < limit ? limit - had : 0;
+  }
   bool canHaveCandy() const {  // without a clock it isn't known yet whether it's another day: keeps counting the last one
-    return (today() != 0 && today() != candyDay) || candyToday < CANDY_PER_DAY;
+    int limit = CANDY_PER_DAY + (today() != 0 && candyGiftDay == today() ? 1 : 0);
+    return (today() != 0 && today() != candyDay) || candyToday < limit;
   }
   void friendlyBattle(bool won);  // against a buddy: cheers up, but doesn't tire or train
   // battle: trains ATK and tires. Returns the ATK gain.

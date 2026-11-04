@@ -113,6 +113,7 @@ struct BuddyPeer {
   uint8_t level = 1, shiny = 0;
   char nick[12] = "";
   uint8_t reg[19] = {};
+  uint16_t hp = 0, atk = 0, def = 0, spe = 0;  // its battle stats, from its greetings (0: an older version)
 };
 
 // true if it has just arrived
@@ -127,6 +128,12 @@ inline bool buddyPeerHello(BuddyPeer &p, const BuddyMsg &m, uint32_t now) {
   p.shiny = m.shiny;
   memcpy(p.nick, m.nick, sizeof(p.nick));
   memcpy(p.reg, m.reg, sizeof(p.reg));
+  // older versions send zeros here; nonsense counts as unknown too
+  bool ok = m.hp <= BUDDY_MAX_STAT && m.atk <= BUDDY_MAX_STAT && m.def <= BUDDY_MAX_STAT && m.spe <= BUDDY_MAX_STAT;
+  p.hp = ok ? m.hp : 0;
+  p.atk = ok ? m.atk : 0;
+  p.def = ok ? m.def : 0;
+  p.spe = ok ? m.spe : 0;
   return arrived;
 }
 

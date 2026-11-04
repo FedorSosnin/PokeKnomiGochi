@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.29"
+#define FW_VERSION "1.30"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -193,6 +193,9 @@ uint8_t bsKind = 0;
 uint32_t bsId = 0, bsT = 0, bsResendT = 0, buddyHelloT = 0;
 bool buddyMenuOpen = false;
 bool partyOpen = false;  // the Party Boost screen: who is around and what it gives
+bool partyVisitor = false;  // ...showing the visitor's stats
+uint8_t buddyPage = 1;      // the buddy view: 0 its stats, 1 Battle/Trade/Play
+bool buddyFromParty = false;  // opened from Party Boost: closing goes back there
 // With a buddy or the visitor around, ATK, DEF and SPD in wild battles: the same however many are
 // around, so extra browsers or devices don't stack it (energy also drains half as fast: pet.cpp)
 #define PARTY_STAT_BONUS 2
@@ -771,6 +774,12 @@ void handleSerial() {
       p.id = 0xFA41 + 2 * slot;
       p.dex = dex;
       p.level = lv > 0 ? lv : 5;
+      BtlFighter f = btlMakeWild(dex, p.level, btlWildGene(dex));  // stats, as a real buddy's greetings carry
+      p.hp = f.maxHp;
+      p.atk = f.atk;
+      p.def = f.def;
+      p.spe = f.spe;
+      for (int d = 1; d <= 151 && d <= 2 * p.level; d++) p.reg[(d - 1) >> 3] |= 1 << ((d - 1) & 7);  // a Pokedex to show
       strlcpy(p.nick, nick, sizeof(p.nick));
       p.seen = millis();
       buddyFake = true;
@@ -1129,14 +1138,9 @@ void onSwipeV(int dir) {
 // swipe: dir +1 = to the right
 void onSwipe(int dir) {
   if (partyOpen) return;
-  if (buddyMenuOpen) {  // several buddies: left and right go through them
-    for (int k = 1; k < BUDDY_MAX && bsState == BS_IDLE; k++) {
-      int i = (bCur + (dir > 0 ? BUDDY_MAX - k : k)) % BUDDY_MAX;
-      if (bPeers[i].on) {
-        buddySelect(i);
-        break;
-      }
-    }
+  if (buddyMenuOpen) {  // its stats and Battle/Trade/Play: left advances, as on the card
+    int p = (int)buddyPage + (dir > 0 ? -1 : 1);
+    if (p >= 0 && p <= 1) buddyPage = p;
     return;
   }
   if (tradeOpen) {
@@ -1319,12 +1323,15 @@ void onTap(int16_t x, int16_t y) {
   if (partyPillAt(x, y)) {  // the Party Boost button
     sfxPlay(SFX_TAP);
     partyOpen = true;
+    partyVisitor = false;
     return;
   }
   int bt = buddyAt(x, y);
   if (bt >= 0) {
     sfxPlay(SFX_TAP);
     if (bsState == BS_IDLE) buddySelect(bt);
+    buddyPage = 1;  // straight to Battle/Trade/Play; its stats are a swipe away
+    buddyFromParty = false;
     buddyMenuOpen = true;
     return;
   }
@@ -1841,6 +1848,7 @@ bool render() {
       gfx->drawRoundRect(x0, 288, count * 66, 64, 14, inkColor());
       static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
       for (int i = 0; i < count; i++) drawMap(FOOD[i], HOME_ICON_N, x0 + 6 + 66 * i, 293, 3, false);
+      if (count == 4) drawCandyCount(x0 + 6 + 66 * 3, 293, pet.candiesLeft());
     }
   }
 
@@ -2239,7 +2247,12 @@ void visitTick(uint32_t now) {
     return;
   }
   uint32_t t = now - visitT;
-  if (visitPhase == VP_ANNOUNCE && t > VISIT_ANNOUNCE_MS) { visitPhase = VP_ENTER; visitT = now; }
+  if (visitPhase == VP_ANNOUNCE && t > VISIT_ANNOUNCE_MS) {  // a new visit walks in, with a candy
+    visitPhase = VP_ENTER;
+    visitT = now;
+    snprintf(buddyNote, sizeof(buddyNote), T(S_VISIT_CANDY_FMT), dexName(visitDex));
+    buddyNoteUntil = now + 3500;
+  }
   else if (visitPhase == VP_ENTER && t > VISIT_ENTER_MS) { visitPhase = VP_HANG; visitT = now; }
   else if (visitPhase == VP_HANG && t >= VISIT_MINUTE_MS) {
     visitT += VISIT_MINUTE_MS;
@@ -3555,7 +3568,7 @@ void renderRun() {
 // original value as a floor (so nothing changes in Latin languages).
 // Requires text size 2 to be already set, because textW() needs it.
 static int statBarX() {
-  const StrId ids[] = { S_STAT_ATK, S_STAT_DEF, S_STAT_SPE, S_STAT_WGT, S_VIN };
+  const StrId ids[] = { S_STAT_HP, S_STAT_ATK, S_STAT_DEF, S_STAT_SPE, S_STAT_WGT, S_VIN };
   int width = 0;
   for (StrId id : ids) {
     int w = textW(T(id), 2);
@@ -4753,6 +4766,11 @@ void buddySendHello() {
   strlcpy(m.nick, pet.nick, sizeof(m.nick));
   for (int16_t d = 1; d <= 151; d++)
     if (pet.isRegistered(d)) m.reg[(d - 1) >> 3] |= 1 << ((d - 1) & 7);
+  BtlFighter f = petFighter(m.level);  // for the buddy's stats page (older versions ignore them)
+  m.hp = f.maxHp;
+  m.atk = f.atk;
+  m.def = f.def;
+  m.spe = f.spe;
   buddyNetSend(m);
 }
 
@@ -5210,36 +5228,100 @@ int buddyAt(int16_t x, int16_t y) {
 static const StrId BUDDY_ROW_LABEL[BUDDY_ROWS] = { S_BUDDY_BATTLE, S_BUDDY_TRADE, S_PLAY_BTN };
 static const uint16_t BUDDY_ROW_COLOR[BUDDY_ROWS] = { UI_BAR_BAD, C565(0x1e, 0x7d, 0x3c), TYPE_ACCENT[TY_PSYCHIC] };
 
+// a friend's stats (a buddy's, or the visitor's): sprite, level, and the bars of the stats pages
+void drawFriendStatRow(int y, const char *label, uint16_t val, uint16_t color) {
+  if (val) {
+    drawCardStat(y, label, val, 260, color);
+    return;
+  }
+  drawCardStat(y, label, 0, 260, color);  // an older version that doesn't send them: unknown
+  gfx->fillRect(330, y, 60, 16, UI_BG_DAY);
+  gfx->setTextColor(UI_TRACK);
+  setCur(330, y);
+  printT("?");
+}
+
+void drawFriendStats(PmdMon &mon, const char *name, uint8_t level, const char *extra, uint16_t hp, uint16_t atk,
+                     uint16_t def, uint16_t spe) {
+  gfx->setTextColor(UI_INK);
+  setSize(3);
+  setCur(centerX(name, 3), 44);
+  printT(name);
+  setSize(2);
+  char b[40], lv[16];
+  snprintf(lv, sizeof(lv), T(S_LVL_FMT), level);
+  if (extra) snprintf(b, sizeof(b), "%s  %s", lv, extra);
+  else snprintf(b, sizeof(b), "%s", lv);
+  gfx->setTextColor(lerp565(UI_TRACK, UI_INK, 11, 16));
+  setCur(centerX(b, 2), 78);
+  printT(b);
+  if (mon.loaded) drawPmdActM(mon, PMD_IDLE, CX, 190, millis(), true, false, 3);
+  drawFriendStatRow(200, T(S_STAT_HP), hp, UI_BAR_OK);
+  drawFriendStatRow(232, T(S_STAT_ATK), atk, UI_BAR_BAD);
+  drawFriendStatRow(264, T(S_STAT_DEF), def, 0x4C98);
+  drawFriendStatRow(296, T(S_STAT_SPE), spe, UI_BAR_WARN);
+}
+
+void drawPageDots(int pages, int cur) {  // as on the card
+  for (int i = 0; i < pages; i++) {
+    int dx = CX + (2 * i - (pages - 1)) * 13;
+    if (i == cur) gfx->fillCircle(dx, 374, 5, UI_INK);
+    else gfx->drawCircle(dx, 374, 4, UI_INK);
+  }
+}
+
+// a buddy: page 0 its stats and Pokedex, page 1 Battle/Trade/Play
 void renderBuddyMenu() {
   if (!bPeers[bCur].on) { buddyMenuOpen = false; return; }
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
   char b[44];
-  snprintf(b, sizeof(b), T(S_BUDDY_HERE_FMT), buddyName());
-  gfx->setTextColor(UI_INK);
-  setSize(2);
-  setCur(centerX(b, 2), 66);
-  printT(b);
-  if (buddyPmd[bCur].loaded) drawPmdActM(buddyPmd[bCur], PMD_IDLE, CX, 160, millis(), true, false, 2);
-  int n = buddyCount(bPeers);
-  if (n > 1) {  // several: swipe to the others
-    int pos = 1;
-    for (int i = 0; i < bCur; i++) pos += bPeers[i].on;
-    snprintf(b, sizeof(b), "< %d/%d >", pos, n);
-    gfx->setTextColor(UI_TRACK);
-    setCur(centerX(b, 2), 92);
+  if (buddyPage == 0) {
+    const BuddyPeer &p = bPeers[bCur];
+    drawFriendStats(buddyPmd[bCur], buddyName(), p.level, p.shiny ? "*" : nullptr, p.hp, p.atk, p.def, p.spe);
+    int caught = 0;
+    for (int d = 1; d <= 151; d++) caught += buddyRegHas(p.reg, d);
+    snprintf(b, sizeof(b), T(S_POKEDEX_FMT), caught);
+    gfx->setTextColor(UI_INK);
+    setCur(centerX(b, 2), 334);
     printT(b);
+  } else {
+    snprintf(b, sizeof(b), T(S_BUDDY_HERE_FMT), buddyName());
+    gfx->setTextColor(UI_INK);
+    setSize(2);
+    setCur(centerX(b, 2), 66);
+    printT(b);
+    if (buddyPmd[bCur].loaded) drawPmdActM(buddyPmd[bCur], PMD_IDLE, CX, 160, millis(), true, false, 2);
+    for (int i = 0; i < BUDDY_ROWS; i++) {
+      int y = BUDDY_ROW_Y + i * BUDDY_ROW_STEP;
+      bool off = i == 1 && !buddyTradeOk();  // Trade: nothing to trade on one side
+      gfx->fillRoundRect(CX - 130, y, 260, BUDDY_ROW_H, 14, off ? UI_TRACK : BUDDY_ROW_COLOR[i]);
+      gfx->setTextColor(off ? 0x8410 : UI_WHITE);
+      setCur(centerX(T(BUDDY_ROW_LABEL[i]), 2), y + 17);
+      printT(T(BUDDY_ROW_LABEL[i]));
+    }
   }
-  for (int i = 0; i < BUDDY_ROWS; i++) {
-    int y = BUDDY_ROW_Y + i * BUDDY_ROW_STEP;
-    bool off = i == 1 && !buddyTradeOk();  // Trade: nothing to trade on one side
-    gfx->fillRoundRect(CX - 130, y, 260, BUDDY_ROW_H, 14, off ? UI_TRACK : BUDDY_ROW_COLOR[i]);
-    gfx->setTextColor(off ? 0x8410 : UI_WHITE);
-    setCur(centerX(T(BUDDY_ROW_LABEL[i]), 2), y + 17);
-    printT(T(BUDDY_ROW_LABEL[i]));
-  }
+  drawPageDots(2, buddyPage);
   drawCloseButton();
   gfx->flush();
+}
+
+// the candies left today, on the food menu's candy (icon at x, y, 54 px): a red badge, like an app's
+void drawCandyCount(int x, int y, int n) {
+  char b[8];
+  snprintf(b, sizeof(b), "%d", n);
+  setSize(2);
+  gfx->fillCircle(x + 52, y + 4, 13, UI_BAR_BAD);
+  gfx->drawCircle(x + 52, y + 4, 13, UI_WHITE);
+  gfx->setTextColor(UI_WHITE);
+  setCur(x + 52 - textW(b, 2) / 2 + 1, y - 3);
+  printT(b);
+}
+
+// closing the buddy view: back to Party Boost if it came from there
+void buddyMenuClose() {
+  buddyMenuOpen = false;
+  if (buddyFromParty && partyBoostOn()) partyOpen = true;
 }
 
 // the visitor counts once it has walked in, until it starts to leave
@@ -5264,10 +5346,10 @@ int partyRowY() {         // where the list starts
   int h = partyFriends(who) * partyRowStep() + PARTY_BOOST_H;
   return (PARTY_TOP + PARTY_BOTTOM - h) / 2;
 }
-int partyRowAt(int16_t x, int16_t y) {  // the row under a touch, -1 if none (or the visitor's: not tappable)
+int partyRowAt(int16_t x, int16_t y) {  // the row under a touch, -1 if none
   int8_t who[BUDDY_MAX + 1];
   int n = partyFriends(who), y0 = partyRowY(), r = (y - y0) / partyRowStep();
-  if (abs(x - CX) > PARTY_ROW_W / 2 || y < y0 || r >= n || who[r] < 0) return -1;
+  if (partyVisitor || abs(x - CX) > PARTY_ROW_W / 2 || y < y0 || r >= n) return -1;
   return r;
 }
 const char *partyRowName(int r) {
@@ -5290,6 +5372,21 @@ void renderParty() {
   if (!n) { partyOpen = false; return; }  // everyone left
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  if (partyVisitor && !visitorHere()) partyVisitor = false;  // it left meanwhile
+  if (partyVisitor) {  // the visitor's stats: a wild one of its level, and how long it stays
+    uint8_t lvl = btlCapLevel(pet.level());
+    BtlFighter f = btlMakeWild(visitDex, lvl, btlWildGene(8));
+    char m[24];
+    snprintf(m, sizeof(m), T(S_VISIT_MIN_FMT), (unsigned)(pet.visitMin ? pet.visitMin : 1));
+    drawFriendStats(visitPmd, dexName(visitDex), lvl, m, f.maxHp, f.atk, f.def, f.spe);
+    drawMap(SPR_CANDY, HOME_ICON_N, CX - 44, 322, 2, false);  // it brought a candy
+    gfx->setTextColor(UI_INK);
+    setCur(CX + 0, 333);
+    printT("x1");
+    drawCloseButton();
+    gfx->flush();
+    return;
+  }
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(T(S_PARTY_BOOST), 3), 48);
@@ -5309,16 +5406,16 @@ void renderParty() {
     gfx->setTextColor(UI_INK);
     setCur(x0 + 58, y + h / 2 - 7);
     printT(partyRowName(r));
-    char b[24];
-    if (visitor) {
+    gfx->setTextColor(green);  // each opens its stats
+    setCur(x0 + PARTY_ROW_W - 14 - textW(">", 2), y + h / 2 - 7);
+    printT(">");
+    if (visitor) {  // and how long the visitor stays
+      char b[24];
       snprintf(b, sizeof(b), T(S_VISIT_MIN_FMT), (unsigned)(pet.visitMin ? pet.visitMin : 1));
       gfx->setTextColor(lerp565(UI_TRACK, UI_INK, 11, 16));
-    } else {
-      snprintf(b, sizeof(b), ">");
-      gfx->setTextColor(green);
+      setCur(x0 + PARTY_ROW_W - 34 - textW(b, 2), y + h / 2 - 7);
+      printT(b);
     }
-    setCur(x0 + PARTY_ROW_W - 14 - textW(b, 2), y + h / 2 - 7);
-    printT(b);
   }
 
   // what it gives, like the stats pages
@@ -5343,13 +5440,26 @@ void renderParty() {
 }
 
 void partyTap(int16_t x, int16_t y) {
+  if (partyVisitor) {  // the visitor's stats: the close button goes back to the list
+    if (closeHit(x, y)) {
+      sfxPlay(SFX_TAP);
+      partyVisitor = false;
+    }
+    return;
+  }
   int r = partyRowAt(x, y);
-  if (r >= 0) {  // a buddy: its menu, as tapping it on the main screen
+  if (r >= 0) {  // a friend: its stats first (a buddy's, then a swipe to Battle/Trade/Play)
     int8_t who[BUDDY_MAX + 1];
     partyFriends(who);
     sfxPlay(SFX_TAP);
+    if (who[r] < 0) {
+      partyVisitor = true;
+      return;
+    }
     partyOpen = false;
     if (bsState == BS_IDLE) buddySelect(who[r]);
+    buddyPage = 0;
+    buddyFromParty = true;
     buddyMenuOpen = true;
     return;
   }
@@ -5363,12 +5473,13 @@ void partyTap(int16_t x, int16_t y) {
 bool buddyTradeOk() { return pet.tradeableCount() > 0 && buddyTradeable(bPeers[bCur]) > 0; }
 
 void buddyMenuTap(int16_t x, int16_t y) {
-  int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
-  if (abs(x - CX) > 130 || y < BUDDY_ROW_Y || row >= BUDDY_ROWS) {  // the close button, or outside the rows
-    if (closeHit(x, y)) sfxPlay(SFX_TAP);
-    buddyMenuOpen = false;
+  if (closeHit(x, y)) {
+    sfxPlay(SFX_TAP);
+    buddyMenuClose();
     return;
   }
+  int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
+  if (buddyPage == 0 || abs(x - CX) > 130 || y < BUDDY_ROW_Y || row >= BUDDY_ROWS) return;  // its stats: nothing to tap
   if (row == 1 && !buddyTradeOk()) {  // greyed out: the menu stays
     sfxPlay(SFX_DENY);
     Serial.println("buddy: nothing to trade");
@@ -6993,12 +7104,15 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (partyOpen) {
+    if (partyVisitor) return closeHit(x, y) && pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     int r = partyRowAt(x, y);
     if (r >= 0) return pressSet(t, CX - PARTY_ROW_W / 2, partyRowY() + r * partyRowStep(), PARTY_ROW_W, partyRowStep() - 6, partyRowName(r));
     if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     return false;
   }
   if (buddyMenuOpen) {
+    if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+    if (buddyPage == 0) return false;
     if (abs(x - CX) > 130 || y < BUDDY_ROW_Y || y >= BUDDY_ROW_Y + BUDDY_ROWS * BUDDY_ROW_STEP) return false;
     int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
     return pressSet(t, CX - 130, BUDDY_ROW_Y + row * BUDDY_ROW_STEP, 260, BUDDY_ROW_H, T(BUDDY_ROW_LABEL[row]));

@@ -150,9 +150,11 @@ TEST(feed, candy_fattens) {
   makePet(p, 4);
   p.fullness = 50;
   p.joy = 50;
+  p.energy = 20;
   p.feedCandy();
   CHECK_EQ(p.fullness, (uint8_t)60);
   CHECK_EQ(p.joy, (uint8_t)62);
+  CHECK_EQ(p.energy, (uint8_t)100);  // and it refills energy
   CHECK_EQ(p.weight, (uint8_t)WGT_CANDY);
 }
 
@@ -1301,6 +1303,28 @@ TEST(joy, only_three_pets_per_hour_raise_joy) {
   mockSetMillis(millis() + PET_JOY_WINDOW_MS);
   p.caress();
   CHECK_EQ(p.joy, (uint8_t)70);
+}
+
+TEST(joy, the_visitor_brings_a_third_candy) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(86400UL * 1000 + 20 * 3600);
+  p.feedCandy();
+  p.feedCandy();
+  CHECK(!p.canHaveCandy());
+  p.visitorArrived(16);
+  CHECK(p.canHaveCandy());   // its candy
+  p.feedCandy();
+  CHECK(!p.canHaveCandy());
+  Pet q;  // saved
+  q.begin();
+  q.setClock(86400UL * 1000 + 21 * 3600);
+  CHECK(!q.canHaveCandy());
+  q.setClock(86400UL * 1001 + 20 * 3600);  // the next day: 2 again, until its visitor comes
+  CHECK(q.canHaveCandy());
+  q.feedCandy();
+  q.feedCandy();
+  CHECK(!q.canHaveCandy());
 }
 
 TEST(joy, two_candies_a_day) {

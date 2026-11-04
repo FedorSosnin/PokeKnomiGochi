@@ -567,6 +567,7 @@ void Pet::feedCandy() {
   gainWeight(WGT_CANDY);  // treats take their toll
   fullness = clamp100(fullness + 10);
   joy = clamp100(joy + 12);
+  energy = 100;  // a sugar rush: worth it, being only 2 a day
   eatUntil = millis() + EAT_ANIM_MS;
   registerCare();
   save();
@@ -702,6 +703,7 @@ bool Pet::visitorDueNow() const {
 
 void Pet::visitorArrived(int16_t dex) {
   visitorDay = today();
+  candyGiftDay = today();  // it brings a candy: a third one today
   visitDex = dex;
   visitMin = VISIT_MINUTES;
   save();
@@ -885,6 +887,7 @@ void Pet::save() {
   prefs.putUChar("dhi", dungeonHi);
   prefs.putUChar("cdyn", candyToday);
   prefs.putUInt("cdyd", candyDay);
+  prefs.putUInt("cdyg", candyGiftDay);
   prefs.putUShort("bwin", battleWins);
   prefs.putUChar("bmov", movesSeen);
   prefs.putUInt("vday", visitorDay);
@@ -948,6 +951,7 @@ void Pet::load() {
   dungeonHi = prefs.getUChar("dhi", 0);
   candyToday = prefs.getUChar("cdyn", 0);
   candyDay = prefs.getUInt("cdyd", 0);
+  candyGiftDay = prefs.getUInt("cdyg", 0);
   battleWins = prefs.getUShort("bwin", 0);
   movesSeen = prefs.getUChar("bmov", 1);
   visitorDay = prefs.getUInt("vday", 0);

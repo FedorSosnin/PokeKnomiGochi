@@ -69,7 +69,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | Do this | What happens |
 |---|---|
 | **Tap the Pokémon** | Pet it |
-| **Tap the bottom icons** | Feed it, open games, turn the light off for bed, or give it a bath |
+| **Tap the bottom icons** | Feed it (a candy refills its energy: 2 a day, 3 when the visitor brings one, and a red number shows how many are left), open games, turn the light off for bed, or give it a bath |
 | **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
 | **Swipe up** | See its card: profile, battle stats, training and progress |
@@ -135,15 +135,17 @@ Your Pokémon does better with company. While at least one buddy or the daily vi
 - **Energy drains half as fast.**
 - **+2 ATK, DEF and SPD** in wild battles and PokeDungeon.
 
-It's the same boost however many friends are around. Tap **PARTY BOOST** to see who's here and what you get. Tap a buddy there for its Battle, Trade and Play menu, just like tapping its Pokémon. While the boost is on, the Battle Stats page shows each stat with its **+2**. Battles between buddies don't use it, since both sides would have it.
+It's the same boost however many friends are around. Tap **PARTY BOOST** to see who's here and what you get. Tap a friend there to see its stats: level, HP, ATK, DEF and SPD, and a buddy's Pokédex count. Swipe from there to a buddy's Battle, Trade and Play menu, and the ✕ goes back to Party Boost. Tapping a buddy's Pokémon on the main screen still opens its menu first, with its stats a swipe away. While the boost is on, the Battle Stats page shows each stat with its **+2**. Battles between buddies don't use it, since both sides would have it.
 
-<img src="docs/images/party.png" width="240" alt="The Party Boost screen: Pikachu and Charizard as buddies, Eevee visiting for 60 more minutes, energy drain -50% and ATK DEF SPD +2">
+| ![The Party Boost screen: Pikachu and Charizard as buddies, Eevee visiting for 60 more minutes, energy drain -50% and ATK DEF SPD +2](docs/images/party.png) | ![Pikachu's stats: level, HP, ATK, DEF, SPD and its Pokédex, with a dot for the Battle, Trade and Play page](docs/images/friend-stats.png) | ![The visitor's stats, its minutes left and the candy it brought](docs/images/visitor-stats.png) |
+|:---:|:---:|:---:|
+| **Who's here, and the boost** | **A buddy's stats, then swipe to play** | **The visitor, and its candy** |
 
 To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac version (PokeMacGochi) and the browser version (PokeWebGochi), in any mix.
 
 ### Daily visitor
 
-Once a day, a wild Pokémon drops by and stays for an hour. It joins any buddies in the row, counts for the Party Boost, and shows how many minutes it has left on the Party Boost screen. While your Pokémon sleeps it steps out, and it comes back when yours wakes up, the same day. It remembers its time even if the Knomi is unplugged. When its hour is up, it says goodbye and cheers yours up.
+Once a day, a wild Pokémon drops by with a candy, a third one for that day, and stays for an hour. It joins any buddies in the row, counts for the Party Boost, and shows how many minutes it has left on the Party Boost screen. While your Pokémon sleeps it steps out, and it comes back when yours wakes up, the same day. It remembers its time even if the Knomi is unplugged. When its hour is up, it says goodbye and cheers yours up.
 
 ### Wi-Fi and the clock
 

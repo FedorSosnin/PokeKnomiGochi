@@ -80,6 +80,23 @@ TEST(buddy, arrives_stays_and_leaves) {
   CHECK_EQ(p.id, (uint32_t)5);
 }
 
+TEST(buddy, greetings_carry_its_stats) {
+  BuddyPeer p;
+  BuddyMsg m = hello(5, 25);
+  m.hp = 61; m.atk = 55; m.def = 40; m.spe = 90;
+  buddyPeerHello(p, m, 1000);
+  CHECK_EQ(p.hp, (uint16_t)61);
+  CHECK_EQ(p.spe, (uint16_t)90);
+  BuddyPeer old;  // an older version sends zeros: unknown
+  buddyPeerHello(old, hello(6, 25), 1000);
+  CHECK_EQ(old.atk, (uint16_t)0);
+  BuddyPeer odd;  // nonsense counts as unknown too
+  BuddyMsg n = hello(7, 25);
+  n.hp = 61; n.atk = BUDDY_MAX_STAT + 1;
+  buddyPeerHello(odd, n, 1000);
+  CHECK_EQ(odd.hp, (uint16_t)0);
+}
+
 TEST(buddy, the_buddys_pokedex) {
   uint8_t reg[19] = {};
   reg[0] = 1;
