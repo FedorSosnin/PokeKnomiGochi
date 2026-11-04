@@ -11,7 +11,7 @@ B=build/win
 mkdir -p $B/obj $B/res
 
 if [[ -z $ZLIB_DIR ]]; then
-  for d in $HOME/emsdk/upstream/emscripten/cache/ports/zlib/zlib-* $B/zlib-1.3.1; do
+  for d in $HOME/emsdk/upstream/emscripten/cache/ports/zlib/zlib-*(N) $B/zlib-1.3.1(N); do  # (N): none is fine
     [[ -f $d/inflate.c ]] && ZLIB_DIR=$d
   done
 fi
