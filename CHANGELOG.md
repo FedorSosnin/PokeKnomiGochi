@@ -8,7 +8,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
-- **A livelier Poké Ball:** a thrown ball spins all the way to the Pokémon, and during the count to 3 it tips over to one side on each count, as if the Pokémon inside is trying to get out.
+- **A livelier Poké Ball:** a thrown ball spins all the way to the Pokémon, and during the count to 3 it tips over to one side on each count, as if the Pokémon inside is trying to get out. A red number on the Poké Ball shows how many you have left, like the one on the candy.
 
 ## [1.36] - 2026-11-04
 

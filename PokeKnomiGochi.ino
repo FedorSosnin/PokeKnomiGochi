@@ -2875,14 +2875,15 @@ void renderCatch() {
     case BP_AIM:
       battleCenterLine(T(S_THROW_HINT), 350);
       drawMap(SPR_HOME_BALL, HOME_ICON_N, CX - 36, 372, 4, false);  // the pokeball is the button
-      for (uint8_t i = 0; i < bBalls; i++) gfx->fillCircle(CX + 56 + i * 16, 408, 5, UI_BAR_BAD);
+      drawCountBadge(CX + 32, 378, bBalls);                           // how many are left, as on the candy
       break;
     case BP_THROW:
       battleCenterLine(T(S_TILT_HINT), 380);
       break;
     case BP_MISS:
       catchBanner(T(S_MISSED), C565(0xb8, 0x2e, 0x2a));
-      for (uint8_t i = 0; i < bBalls; i++) gfx->fillCircle(CX + (i * 2 - (bBalls - 1)) * 12, 416, 6, UI_BAR_BAD);
+      drawMap(SPR_HOME_BALL, HOME_ICON_N, CX - 18, 398, 2, false);  // the ones left
+      drawCountBadge(CX + 18, 402, bBalls);
       break;
     case BP_SHAKE: {  // the count to three, big
       uint32_t t = millis() - bPhaseT;
@@ -5391,16 +5392,19 @@ void renderBuddyMenu() {
 }
 
 // the candies left today, on the food menu's candy (icon at x, y, 54 px): a red badge, like an app's
-void drawCandyCount(int x, int y, int n) {
+// how many are left, on an icon's corner: a red badge with a white number (candies, Poke Balls)
+void drawCountBadge(int cx, int cy, int n) {
   char b[8];
   snprintf(b, sizeof(b), "%d", n);
   setSize(2);
-  gfx->fillCircle(x + 52, y + 4, 13, UI_BAR_BAD);
-  gfx->drawCircle(x + 52, y + 4, 13, UI_WHITE);
+  gfx->fillCircle(cx, cy, 13, UI_BAR_BAD);
+  gfx->drawCircle(cx, cy, 13, UI_WHITE);
   gfx->setTextColor(UI_WHITE);
-  setCur(x + 52 - textW(b, 2) / 2 + 1, y - 3);
+  setCur(cx - textW(b, 2) / 2 + 1, cy - 7);
   printT(b);
 }
+
+void drawCandyCount(int x, int y, int n) { drawCountBadge(x + 52, y + 4, n); }
 
 // closing the buddy view: back to Party Boost if it came from there
 void buddyMenuClose() {
