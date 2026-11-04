@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.31] - 2026-11-03
+
 - **Wi-Fi updates work with buddies around:** the update check and install failed ("Update failed") while the Knomi was connected to the buddy relay, because two secure connections at once don't fit in its memory. The update now closes the relay first and reconnects it afterwards. Knomis on 1.30 or older need one USB install from the web installer to get this fix.
 - **"... wants to tell you" only once:** after you choose to stay together, the goodbye isn't offered again by itself (it used to come back daily and after every restart). A note says how to bring it back: hold your finger on your Pokémon.
 - **A bigger ✕:** the close button is a little larger and much easier to hit, especially just beside and below it at the bottom of the round screen.
