@@ -131,15 +131,15 @@ About 1 wild Pokémon in 100 is **shiny**: official shiny colors with gold spark
 
 Every wild Pokémon you beat can be caught, even one you already have: you get three Poké Balls, and it runs back and forth across the field trying to get away, at its own speed: a Slowpoke ambles, an Electrode darts, and the quick ones sometimes turn back halfway. Tap to throw, then lean the Knomi left and right to steer. Rings show around the Pokémon as it runs: land the ball in the small green circle and it always holds, in the next ring three times in four, and in the outer ring only one time in four. The ball spins all the way there, then tips over to one side on each count to 3, as if the Pokémon is trying to get out, then the Pokémon joins your Pokédex or breaks out and runs away.
 
-**Stars:** every Pokémon in your Pokédex has 1 to 3 ★, its genes kept simple, and the regular and shiny forms each have their own. Once the ball holds, a screen of its own shows the catch and its stars. A new one goes into your Pokédex; if you already have it and the new one has more stars, it replaces yours. Stars show on each Pokémon's Pokédex page and in trades, a 3★ form gets a gold outline in the Pokédex grid, and they matter when you choose your next Pokémon: picking a 3★ form hatches a 3★ Pokémon, with better stats.
+**Stars:** every Pokémon in your Pokédex has 1 to 3 ★, its genes kept simple, and the regular and shiny forms each have their own. Once the ball holds, a screen of its own shows the catch and its stars. A new one goes into your Pokédex; if you already have it and the new one has more stars, it replaces yours. Stars show on each Pokémon's Pokédex page and in trades, a 3★ form gets three small gold stars under it in the Pokédex grid, and they matter when you choose your next Pokémon: picking a 3★ form hatches a 3★ Pokémon, with better stats.
 
 ### Battles
 
-Tap the **Poké Ball** icon in the middle of the home screen to pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. **Random Battle** under the zones meets a wild Pokémon from anywhere, just like pressing the physical button. Battles train attack.
+Tap the **Poké Ball** icon in the middle of the home screen to pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. **Random Battle**, the last circle (a pie of all five zones), meets a wild Pokémon from anywhere, just like pressing the physical button. Battles train attack.
 
 ### Games
 
-Tap the **handheld** icon, second from the left, to open the mini games. They train speed. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
+Tap the **handheld** icon, second from the left, to open the mini games: each has a round window onto the game, with your Pokémon in it. They train speed. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?

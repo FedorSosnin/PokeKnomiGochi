@@ -86,7 +86,7 @@ Every form in the Pokédex (regular and shiny count apart) has 1–3 ★: its ge
 - **Raising:** hatching or evolving registers the form with your Pokémon's own stars, and never lowers a form you have.
 - **Choosing your next Pokémon:** its genes are rolled inside the band of the form you pick, so a 3★ form hatches a 3★ Pokémon. A random egg rolls 90–110.
 - **Trading:** the stars go with the Pokémon. If you already have the form you get, you keep the higher. From a buddy on an older version, the stars are rolled.
-- **Where:** each Pokémon's Pokédex page, under its sprite (each form its own row), the trade screen and the next-Pokémon choice. In the Pokédex and zone grids, a Pokémon with a 3★ form (regular or shiny) has a gold outline.
+- **Where:** each Pokémon's Pokédex page, under its sprite (each form its own row), the trade screen and the next-Pokémon choice. In the Pokédex and zone grids, a Pokémon with a 3★ form (regular or shiny) has three small gold stars under it.
 
 ## Training
 
@@ -114,7 +114,7 @@ The **daily visitor** brings a candy (a third one that day) and stays 60 awake m
 
 There are two ways to start a battle:
 
-- 🔘 **The physical button, or Random Battle under the zones:** a random wild Pokémon from anywhere. The Mac, Windows and web versions have no button, so Random Battle is the way there (or Space on a keyboard).
+- 🔘 **The physical button, or Random Battle (the last circle, after the zones):** a random wild Pokémon from anywhere. The Mac, Windows and web versions have no button, so Random Battle is the way there (or Space on a keyboard).
 - ⚪ **The Poké Ball icon on the home screen:** pick a zone and hunt there. Missing Pokémon show as silhouettes, and each Search favors them.
 
 | Zone | Pokémon | Who lives there | Legendary ⭐ |

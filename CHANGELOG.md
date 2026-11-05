@@ -8,6 +8,15 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.43] - 2026-11-05
+
+- **Sharper on the Knomi:** the Knomi shows the game's 466-pixel picture on its 240-pixel screen. Each screen pixel now comes from a fixed pair of picture pixels (they used to drift by one every 16), and the Pokémon, icons and text are drawn on even pixels so they land whole: no more blurred bands. The Pokédex thumbnails are cropped to the Pokémon, so tall ones like Charmeleon are no longer shrunk by dropping rows, and the web version scales the screen smoothly when it's shown smaller than its own size.
+- **The Knomi stays dim asleep:** turning the light off could send the screen to full brightness when the backlight chip had lost count of its level (after an update, for example). Every brightness change now starts the chip from a known level.
+- **Games menu:** a round window onto each game, as on the Battle screen, with your own Pokémon in it: the woods of Tilt Catch, a Who's That? silhouette, the PokeRun trail and a PokeDungeon room. They follow day and night.
+- **Battle screen:** the zones in two rows of three, with Random Battle last as a round button whose window is a pie of all five zones.
+- **Pokédex:** the Pokémon a little smaller and crisper; three small gold stars under a Pokémon with a 3 ★ form, instead of the gold outline; and no thin black ring around the edge of the Pokédex or any other menu.
+- **Winning a battle** says "Pikachu fainted..." (the wild one's name) instead of "YOU WON!".
+
 ## [1.42] - 2026-11-05
 
 - **Every Pokémon runs its own way:** after a battle, the wild Pokémon's run in front of the Poké Ball follows its speed. A Slowpoke ambles there and back in about 6 seconds, a Pikachu in 4½, an Electrode darts across in under 3. Each one also speeds up and slows down a little, never the same twice, and the quick ones sometimes turn back halfway.
