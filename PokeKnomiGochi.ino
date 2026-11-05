@@ -175,6 +175,7 @@ bool quizOpen = false;
 #define CELEB_HOLD_MS 500     // home not drawn for this long: a medal banner waits for it
 uint32_t lastCelebDraw = 0;  // the last time the home screen, where the banner shows, was drawn
 uint8_t gPmdForceScale = 0;  // if not 0, fixed scale for the next sprite
+uint16_t gPmdBorder = 0;     // if not 0, the next sprite gets a border of this colour (a 3-star entry: gold)
 QuizPhase quizPhase = QP_ASK;
 uint32_t quizT = 0;
 uint8_t quizRound = 0, quizScore = 0;
@@ -5105,7 +5106,7 @@ void drawShinyMark(int x, int y, int cell) { drawSparkle(x + cell - 12, y + 12, 
 
 // ---------- the Pokedex grids: the Pokedex and each zone's, 3 x 3 ----------
 // Big sprites, each fitted to its square. A shiny caught moves, with its sparkles, as on its own
-// page; an entry with a 3-star form (either one) has a gold glow behind it.
+// page; an entry with a 3-star form (either one) has a gold border around it.
 
 // the page's shinies load their sprite (only when it changes: loading takes a moment); the rest unload
 void dexGridSync(const int16_t *dex) {
@@ -5122,18 +5123,33 @@ void dexGridUnload() {
   dexGridSync(none);
 }
 
-// either form has 3 stars
+// either form has 3 stars: a gold border
 bool dexHasGold(int16_t dex) {
   return (pet.hasForm(dex, false) && pet.starsOf(dex, false) >= 3) || (pet.hasForm(dex, true) && pet.starsOf(dex, true) >= 3);
 }
 
-// a soft gold glow: rings from the background to gold, strongest in the middle
-void drawGoldGlow(int cx, int cy, int r) {
-  for (int i = r; i > 0; i -= 2) gfx->fillCircle(cx, cy, i, lerp565(UI_BG_DAY, MEDAL_GOLD, (r - i) * 12 / r + 2, 16));
+// a border around what an indexed picture fills (0xFF: see-through), one of its pixels thick: as
+// thick as the black outline the sprites already have
+void drawPixelBorder(const uint8_t *d, int w, int h, int ox, int oy, int s, uint16_t col) {
+  auto solid = [&](int c, int r) { return c >= 0 && r >= 0 && c < w && r < h && d[r * w + c] != 0xFF; };
+  for (int r = -1; r <= h; r++) {
+    int run = -1;
+    for (int c = -1; c <= w + 1; c++) {
+      bool edge = c <= w && !solid(c, r) &&
+                  (solid(c - 1, r - 1) || solid(c, r - 1) || solid(c + 1, r - 1) || solid(c - 1, r) ||
+                   solid(c + 1, r) || solid(c - 1, r + 1) || solid(c, r + 1) || solid(c + 1, r + 1));
+      if (edge && run < 0) run = c;
+      if (!edge && run >= 0) {
+        gfx->fillRect(ox + run * s, oy + r * s, (c - run) * s, s, col);
+        run = -1;
+      }
+    }
+  }
 }
 
-// a thumbnail as big as it fits (up to maxS), what it fills centred on cx, cy; box gets what it covers
-void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS, bool sil, int *box) {
+// a thumbnail as big as it fits (up to maxS), what it fills centred on cx, cy, with a border if one is
+// given (0: none); box gets what it covers
+void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS, bool sil, uint16_t border, int *box) {
   uint8_t w = b[0], h = b[1], n = b[2];
   const uint8_t *pal = b + 3;
   const uint8_t *d = pal + n * 2;
@@ -5152,6 +5168,7 @@ void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS
   if (s > maxS) s = maxS;
   if (s < 1) s = 1;
   int ox = cx - bw * s / 2 - l * s, oy = cy - bh * s / 2 - t * s;
+  if (border) drawPixelBorder(d, w, h, ox, oy, s, border);
   for (int y = t; y <= bt; y++) {
     const uint8_t *row = d + y * w;
     forRuns(w, [&](int c) { return indexedKey(row[c], sil); },
@@ -5172,7 +5189,7 @@ void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS
 bool drawDexCell(int16_t dex, int slot, int x, int y, int cell) {
   int cx = x + cell / 2, cy = y + cell / 2;
   bool reg = pet.isRegistered(dex);
-  if (reg && dexHasGold(dex)) drawGoldGlow(cx, cy, cell / 2 - 1);
+  uint16_t border = reg && dexHasGold(dex) ? MEDAL_GOLD : 0;
   int maxW = cell - 14, maxH = cell - 14;
   PmdMon &m = dexGridPmd[slot];
   if (dexGridPmdDex[slot] == dex && m.loaded) {  // a shiny: its idle, sparkles and all
@@ -5184,8 +5201,10 @@ bool drawDexCell(int16_t dex, int slot, int x, int y, int cell) {
       int ground = cy + ((base - top) - (bottom + 1 - base)) * s / 2;
       int px = cx - ((left + right + 1) - a.w) * s / 2;
       gPmdForceScale = s;
+      gPmdBorder = border;
       drawPmdActM(m, PMD_IDLE, px, ground, millis() + slot * 337, true, false, s);
       gPmdForceScale = 0;
+      gPmdBorder = 0;
       return true;
     }
   }
@@ -5193,7 +5212,7 @@ bool drawDexCell(int16_t dex, int slot, int x, int y, int cell) {
   const uint8_t *t = thumbs.getForm(dex, shiny);
   if (t) {
     int box[4];
-    drawThumbFit(t, cx, cy, maxW, maxH, DEXG_SPRITE_S, !reg, box);
+    drawThumbFit(t, cx, cy, maxW, maxH, DEXG_SPRITE_S, !reg, border, box);
     if (shiny) drawSparkles(box[0], box[1], box[2], box[3], millis() + slot * 337);  // no sprite to move: still the sparkles
     return shiny;
   }
@@ -7466,6 +7485,7 @@ void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool
   // anchor by the feet (a.base), not by the canvas height: that way actions
   // with different padding (Hurt, Eat...) all end up at the same ground height
   int x0 = cx - a.w * s / 2, y0 = groundY - (a.base ? a.base : a.h) * s;
+  if (gPmdBorder && !sil) drawPixelBorder(fr, a.w, a.h, x0, y0, s, gPmdBorder);
   int left = a.w, right = -1, top = -1;  // what it fills, for the sparkles
   for (int r = 0; r < a.h; r++) {
     const uint8_t *row = fr + r * a.w;
