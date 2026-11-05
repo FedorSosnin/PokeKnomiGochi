@@ -121,6 +121,8 @@ int16_t galleryDetail = 0;  // dex in detail view, 0 = grid
 #define DEXG_Y 84
 #define DEXG_CELL 98
 #define DEXG_PAGE_Y 386    // "Page 1 of 17"
+#define DEXG_ARROW_DX 181  // the page arrows, either side of the grid, from the middle
+#define ZONE_ARROW_DX 160
 PmdMon dexGridPmd[DEXG_PAGE];       // the page's shinies, animated
 int16_t dexGridPmdDex[DEXG_PAGE];   // which one each holds (0: none)
 bool galleryAnim = false;           // the Pokedex page has a shiny: redrawn every frame
@@ -179,6 +181,8 @@ uint8_t gPmdForceScale = 0;  // if not 0, fixed scale for the next sprite
 // that starts on an even pixel (ScaledCanvas::flush). Pixel art and text that start on an even
 // pixel land whole on the panel's pixels and stay sharp; one pixel off, every edge blurs.
 #define SNAP2(v) ((v) & ~1)
+#define CLOSE_Y 422  // the round X: its centre on most screens
+#define CLOSE_R 24   // its radius (the page arrows are the same)
 #define DN_TILE 64  // PokeDungeon's tiles (the games menu draws a room too)
 QuizPhase quizPhase = QP_ASK;
 uint32_t quizT = 0;
@@ -326,7 +330,7 @@ struct Btn {
 #define HOME_PANEL_Y 296  // the bottom panel: the bars, then the icons
 #define FEED_Y 272        // the food picker, just over the bars
 Btn buttons[BTN_COUNT] = {
-  { 116, 382, SPR_HOME_FOOD },    // eat
+  { 116, 382, SPR_HOME_BAG },     // the bag: berries and candy (more items later)
   { 174, 403, SPR_HOME_GAMES },   // the mini games
   { 233, 410, SPR_HOME_BALL },    // battle: the zones
   { 298, 402, SPR_HOME_MOON },    // light
@@ -2135,7 +2139,8 @@ void stepGame() {
 #define GAME_ICON_R 50
 #define GAME_ART (2 * GAME_ICON_R)
 #define GAME_GLIMPSE_K 2  // each window shows a 200 x 200 piece of its game, at half size
-static const int16_t GAME_XY[GAMES_COUNT][2] = { { 155, 124 }, { 311, 124 }, { 155, 278 }, { 311, 278 } };
+// centred between the title (ends at 50) and the X (starts at 398): windows and names 276 tall
+static const int16_t GAME_XY[GAMES_COUNT][2] = { { 155, 136 }, { 311, 136 }, { 155, 290 }, { 311, 290 } };
 uint16_t *gameArt = nullptr;  // the 4 windows, painted each time the menu opens (day or night, your Pokemon)
 
 const char *gameLabel(int row) {
@@ -2143,23 +2148,30 @@ const char *gameLabel(int row) {
   return T(L[row]);
 }
 
-// copies the 200 x 200 piece of the canvas around (fx, fy) into art, at half size (2 x 2 averaged)
-void gameGlimpseGrab(uint16_t *art, int fx, int fy) {
+// copies an n x n picture out of the canvas, each pixel the average of the k x k block from (x0, y0)
+void grabArt(uint16_t *art, int n, int x0, int y0, int k) {
   const uint16_t *fb = gfx->getFramebuffer();
-  int x0 = fx - GAME_ICON_R * GAME_GLIMPSE_K, y0 = fy - GAME_ICON_R * GAME_GLIMPSE_K;
-  for (int y = 0; y < GAME_ART; y++)
-    for (int x = 0; x < GAME_ART; x++) {
-      uint32_t sum = 0;
-      for (int k = 0; k < 4; k++) {
-        int sx = x0 + x * 2 + (k & 1), sy = y0 + y * 2 + (k >> 1);
-        sx = sx < 0 ? 0 : sx > 465 ? 465 : sx;
-        sy = sy < 0 ? 0 : sy > 465 ? 465 : sy;
-        uint16_t c = fb[sy * 466 + sx];
-        sum += (c | ((uint32_t)c << 16)) & 0x07E0F81F;
-      }
-      sum = (sum >> 2) & 0x07E0F81F;
-      art[y * GAME_ART + x] = (uint16_t)(sum | (sum >> 16));
+  for (int y = 0; y < n; y++)
+    for (int x = 0; x < n; x++) {
+      uint32_t r = 0, g = 0, b = 0;
+      for (int j = 0; j < k; j++)
+        for (int i = 0; i < k; i++) {
+          int sx = x0 + x * k + i, sy = y0 + y * k + j;
+          sx = sx < 0 ? 0 : sx > 465 ? 465 : sx;
+          sy = sy < 0 ? 0 : sy > 465 ? 465 : sy;
+          uint16_t c = fb[sy * 466 + sx];
+          r += c >> 11;
+          g += (c >> 5) & 0x3F;
+          b += c & 0x1F;
+        }
+      int kk = k * k;
+      art[y * n + x] = (uint16_t)(((r / kk) << 11) | ((g / kk) << 5) | (b / kk));
     }
+}
+
+// the 200 x 200 piece of the canvas around (fx, fy), at half size
+void gameGlimpseGrab(uint16_t *art, int fx, int fy) {
+  grabArt(art, GAME_ART, fx - GAME_ICON_R * GAME_GLIMPSE_K, fy - GAME_ICON_R * GAME_GLIMPSE_K, GAME_GLIMPSE_K);
 }
 
 // paints a moment of each game on the canvas (not shown) and keeps the piece for its window
@@ -3038,10 +3050,7 @@ void renderCatch() {
   bool held = bPhase == BP_SHAKE || bPhase == BP_CAUGHT;  // in the ball, where it landed
   float foeX = held ? bCatchX : battleFoeSway(now);
   bFoeX = foeX;
-  uint8_t bio = DEX_TBL[bFoe.dex].biome;
-  uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
-  if (sceneHour() < 6 || sceneHour() >= 20) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
-  if (!zoneBg) gfx->fillRect(0, 216, 466, BTL_BAND_Y - 216, soil);
+  uint16_t soil = battleSoil();
   if (bPhase == BP_BROKE) {  // out of the ball and off it runs
     uint32_t t = now - bPhaseT;
     int dir = bCatchX < CX ? -1 : 1;
@@ -3350,14 +3359,7 @@ void renderBattle() {
   drawGameScene();
   bool tired = bPhase == BP_TIRED;
   if (!tired) {
-    uint8_t bio = DEX_TBL[bFoe.dex].biome;
-    uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
-    if (sceneHour() < 6 || sceneHour() >= 20) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
-    if (zoneBg) {
-      soil = ZONE_GROUND[bZone];  // the foe stands on its zone's ground
-    } else {
-      gfx->fillRect(0, 232, 466, BTL_BAND_Y - 232, soil);
-    }
+    uint16_t soil = battleSoil();
     gfx->fillRoundRect(BTL_FOE_X - 70, BTL_FOE_GROUND - 10, 140, 24, 12, soil);
     // the on-screen HP chases the real one
     bShownMe += (bMe.hp - bShownMe) * 0.28f;
@@ -3472,17 +3474,28 @@ bool drawSky(int hor) {
 #define NIGHT_TINT C565(0x16, 0x1c, 0x30)
 uint16_t sceneShade(uint16_t c, bool night) { return night ? lerp565(c, NIGHT_TINT, 9, 16) : c; }
 
+// your Pokemon's home: the biome of its species, as on the main screen
+uint8_t homeBiome() {
+  uint8_t b = pet.isEgg() ? 0 : DEX_TBL[pet.speciesId].biome;
+  return b < 6 ? b : 0;
+}
+
+// a battle's backdrop: its zone's picture, or a Wild Encounter (and a buddy's battle) at home, in the
+// very scene of the main screen
 void drawGameScene() {
   if (zoneBg) {
     gfx->draw16bitRGBBitmap(0, 0, zoneBg, 466, BTL_BAND_Y);
     return;
   }
-  int hor = 376;
-  bool night = drawSky(hor);
-  uint8_t bio = pet.isEgg() ? 0 : DEX_TBL[pet.speciesId].biome;
-  uint16_t soil = BIOME_SOIL[bio < 6 ? bio : 0];
-  if (night) soil = lerp565(soil, NIGHT_TINT, 9, 16);
-  gfx->fillRect(0, hor, 466, 466 - hor, soil);
+  drawScene(homeBiome(), millis(), sceneHour() < 6 || sceneHour() >= 20);
+}
+
+// the ground the fighters stand on: the zone's, or home's
+uint16_t battleSoil() {
+  if (zoneBg) return ZONE_GROUND[bZone];
+  uint16_t soil = BIOME_SOIL[homeBiome()];
+  if (sceneHour() < 6 || sceneHour() >= 20) soil = lerp565(soil, C565(0x16, 0x1c, 0x30), 9, 16);
+  return soil;
 }
 
 // Tilt Catch's woods: two tall trees frame the screen, their leafy tops meet over the corners with
@@ -5325,6 +5338,27 @@ void drawDexGridPage(int page, int pages, int y) {
   printT(b);
 }
 
+// a page arrow: a round grey button like the X, a white triangle pointing left (dir -1) or right (1)
+void drawPageArrow(int cx, int cy, int dir) {
+  gfx->fillCircle(cx, cy, CLOSE_R, C565(0x8e, 0x8c, 0x96));
+  gfx->fillTriangle(cx + dir * 10, cy, cx - dir * 7, cy - 11, cx - dir * 7, cy + 11, UI_WHITE);
+}
+bool pageArrowHit(int16_t x, int16_t y, int cx, int cy) {
+  int dx = x - cx, dy = y - cy;
+  return dx * dx + dy * dy <= (CLOSE_R + 14) * (CLOSE_R + 14);  // a little more than drawn
+}
+// the arrows a grid shows: none past the first or the last page
+void drawPageArrows(int page, int pages, int cy, int dx) {
+  if (page > 0) drawPageArrow(CX - dx, cy, -1);
+  if (page < pages - 1) drawPageArrow(CX + dx, cy, 1);
+}
+// which arrow a tap is on: -1 back, 1 on, 0 neither (or one not shown)
+int pageArrowAt(int16_t x, int16_t y, int page, int pages, int cy, int dx) {
+  if (page > 0 && pageArrowHit(x, y, CX - dx, cy)) return -1;
+  if (page < pages - 1 && pageArrowHit(x, y, CX + dx, cy)) return 1;
+  return 0;
+}
+
 // the square under a tap (its place on the page), or -1
 int dexGridAt(int16_t x, int16_t y, int x0, int y0, int cell) {
   if (x < x0 || y < y0) return -1;  // filter before dividing
@@ -5358,6 +5392,7 @@ void renderGallery() {
   for (int i = 0; i < DEXG_PAGE && dex[i]; i++)
     if (drawDexCell(dex[i], i, DEXG_X + (i % DEXG_COLS) * DEXG_CELL, DEXG_Y + (i / DEXG_COLS) * DEXG_CELL, DEXG_CELL)) galleryAnim = true;
   drawDexGridPage(galleryPage, DEX_PAGES, DEXG_PAGE_Y);
+  drawPageArrows(galleryPage, DEX_PAGES, DEXG_Y + 3 * DEXG_CELL / 2, DEXG_ARROW_DX);
   drawCloseButtonAt(GAL_CLOSE_Y);
   gfx->flush();
 }
@@ -5375,6 +5410,12 @@ void galleryTap(int16_t x, int16_t y) {
     galleryOpen = false;
     galleryUnload();
     dexGridUnload();
+    return;
+  }
+  if (int d = pageArrowAt(x, y, galleryPage, DEX_PAGES, DEXG_Y + 3 * DEXG_CELL / 2, DEXG_ARROW_DX)) {  // a page on or back
+    sfxPlay(SFX_TAP);
+    galleryPage += d;
+    galleryDirty = true;
     return;
   }
   int i = dexGridAt(x, y, DEXG_X, DEXG_Y, DEXG_CELL);
@@ -6915,11 +6956,13 @@ void tradeTap(int16_t x, int16_t y) {
 #define ZONE_PAGE_Y 384
 #define ZONE_CLOSE_Y 430  // a little lower than elsewhere, to make room for the page
 
-// two rows of three: the five zones, then Random Battle (a wild Pokemon from anywhere, like the
-// Knomi's button; the apps and the web have none), its window a pie of the five scenes
+// two rows of three: the five zones, then Wild Encounter (a wild Pokemon from anywhere, like the
+// Knomi's button; the apps and the web have none), met at home: its window is your Pokemon's own
+// scene, as on the main screen, and the battle is set there
 #define ZONE_PICKS (ZONE_COUNT + 1)
 #define ZONE_RANDOM ZONE_COUNT  // the last pick
-static const int16_t ZONE_XY[ZONE_PICKS][2] = { { 103, 118 }, { 233, 118 }, { 363, 118 }, { 103, 266 }, { 233, 266 }, { 363, 266 } };
+// centred between the title (ends at 50) and the X (starts at 398): windows, names and counts 288 tall
+static const int16_t ZONE_XY[ZONE_PICKS][2] = { { 103, 130 }, { 233, 130 }, { 363, 130 }, { 103, 278 }, { 233, 278 }, { 363, 278 } };
 static const StrId ZONE_NAME[ZONE_COUNT] = { S_ZONE_FOREST, S_ZONE_BEACH, S_ZONE_CAVE, S_ZONE_MANSION, S_ZONE_FIELD };
 static const uint16_t ZONE_COLOR[ZONE_COUNT] = { C565(0x3a, 0x8a, 0x4f), C565(0x2f, 0x7f, 0xb5), C565(0x6b, 0x5a, 0x8a), C565(0x7a, 0x3f, 0x8f), C565(0xc9, 0x8a, 0x1e) };
 
@@ -6929,9 +6972,9 @@ void openZones() {
     zoneArt = (uint16_t *)ps_malloc(ZONE_PICKS * ZONE_ART * ZONE_ART * sizeof(uint16_t));
     if (zoneArt) {
       for (uint8_t z = 0; z < ZONE_COUNT; z++) zoneArtDraw(zoneArt + z * ZONE_ART * ZONE_ART, z);
-      zonePieDraw(zoneArt + ZONE_RANDOM * ZONE_ART * ZONE_ART, zoneArt);
     }
   }
+  if (zoneArt) zoneHomeDraw(zoneArt + ZONE_RANDOM * ZONE_ART * ZONE_ART);  // each time: day or night, its Pokemon
   zoneScreen = ZS_PICK;
 }
 
@@ -7017,6 +7060,12 @@ void zoneTap(int16_t x, int16_t y) {
     zoneSearch();
     return;
   }
+  int zpages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
+  if (int d = pageArrowAt(x, y, zonePage, zpages, ZONE_GRID_Y + 3 * ZONE_CELL / 2, ZONE_ARROW_DX)) {  // a page on or back
+    sfxPlay(SFX_TAP);
+    zoneTurnPage(d);
+    return;
+  }
   int i = dexGridAt(x, y, ZONE_GRID_X, ZONE_GRID_Y, ZONE_CELL);
   if (i < 0) return;
   int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + i);
@@ -7044,21 +7093,11 @@ void zoneDrawIcon(uint8_t z) {
   drawRoundArt(zoneArt ? zoneArt + z * ZONE_ART * ZONE_ART : nullptr, ZONE_XY[z][0], ZONE_XY[z][1], ZONE_ICON_R, plain);
 }
 
-// Random Battle's window: a pie of the five zones, each slice its own scene (the same part of it),
-// the first one from the top going clockwise, with thin ink cuts between them
-void zonePieDraw(uint16_t *pie, const uint16_t *zones) {
-  const float slice = 6.28318f / ZONE_COUNT, c = ZONE_ART / 2.0f;
-  for (int y = 0; y < ZONE_ART; y++)
-    for (int x = 0; x < ZONE_ART; x++) {
-      float dx = x + 0.5f - c, dy = y + 0.5f - c;
-      float a = atan2f(dx, -dy);  // 0 at the top, clockwise
-      if (a < 0) a += 6.28318f;
-      int z = (int)(a / slice);
-      if (z >= ZONE_COUNT) z = ZONE_COUNT - 1;
-      float off = a - z * slice;  // how far past the cut before it, and short of the next
-      float edge = fminf(off, slice - off) * sqrtf(dx * dx + dy * dy);  // in pixels, along the arc
-      pie[y * ZONE_ART + x] = edge < 1.1f ? UI_INK : zones[z * ZONE_ART * ZONE_ART + y * ZONE_ART + x];
-    }
+// Wild Encounter's window: home's scene (drawn on the canvas, not shown), a 400 x 400 view of it
+// at a quarter size
+void zoneHomeDraw(uint16_t *art) {
+  drawScene(homeBiome(), millis(), sceneHour() < 6 || sceneHour() >= 20);
+  grabArt(art, ZONE_ART, CX - 2 * ZONE_ART, 240 - 2 * ZONE_ART, 4);
 }
 
 // the pick under a tap (its window or its name): a zone, ZONE_RANDOM, or -1
@@ -7135,7 +7174,9 @@ void renderZones() {
   setSize(2);
   setCur(centerX(T(S_ZONE_SEARCH), 2), ZONE_BTN_Y + 14);
   printT(T(S_ZONE_SEARCH));
-  drawDexGridPage(zonePage, (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE, ZONE_PAGE_Y);
+  int zpages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
+  drawDexGridPage(zonePage, zpages, ZONE_PAGE_Y);
+  drawPageArrows(zonePage, zpages, ZONE_GRID_Y + 3 * ZONE_CELL / 2, ZONE_ARROW_DX);
   drawCloseButtonAt(ZONE_CLOSE_Y);  // how to leave, as on the zone picker
   gfx->flush();
 }
@@ -7832,8 +7873,6 @@ const char *statusMsg() {
 // ---------- the close button ----------
 // One round X, at the bottom in the middle, closes whatever it's on: the menus, the card, the
 // Pokedex, the zones, the clock. (Swipes still work too; games in play keep swiping up to quit.)
-#define CLOSE_Y 422  // its centre on most screens
-#define CLOSE_R 24
 void drawCloseButtonAt(int cy) {  // a gray disc with a white X
   gfx->fillCircle(CX, cy, CLOSE_R, C565(0x8e, 0x8c, 0x96));
   const int a = 9;
@@ -7956,6 +7995,8 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     if (zoneDetail) return false;  // an entry: tap anywhere to go back
     if (y >= ZONE_BTN_Y && y < ZONE_BTN_Y + ZONE_BTN_H && x >= ZONE_BTN_X && x < ZONE_BTN_X + ZONE_BTN_W)
       return pressSet(t, ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, T(S_ZONE_SEARCH));
+    if (int d = pageArrowAt(x, y, zonePage, (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE, ZONE_GRID_Y + 3 * ZONE_CELL / 2, ZONE_ARROW_DX))
+      return pressSet(t, CX + d * ZONE_ARROW_DX - CLOSE_R, ZONE_GRID_Y + 3 * ZONE_CELL / 2 - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
     return false;  // Pokedex grids (here and below) swipe between pages: a slow swipe must not pick a square
   }
   if (gameOpen || runOpen || dungeonOpen || vbOpen) return false;  // aiming, jumping, walking, volleying: no buttons
@@ -8008,7 +8049,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     return false;
   }
-  if (galleryOpen) return false;
+  if (galleryOpen) {
+    if (galleryDetail) return false;
+    if (int d = pageArrowAt(x, y, galleryPage, DEX_PAGES, DEXG_Y + 3 * DEXG_CELL / 2, DEXG_ARROW_DX))
+      return pressSet(t, CX + d * DEXG_ARROW_DX - CLOSE_R, DEXG_Y + 3 * DEXG_CELL / 2 - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+    return false;
+  }
   if (kbOpen) {
     if (x < KB_X || y < KB_Y) return false;
     int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;
