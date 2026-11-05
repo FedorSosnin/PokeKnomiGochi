@@ -41,6 +41,7 @@ PALETTE = {
     'u': '#73baf0',  # the Oran Berry's bright blues
     'v': '#2a7ad8',
     'V': '#1a529a',
+    'e': '#5b3b25',  # dark leather (the bag's straps and trim)
 }
 
 W = H = 32
@@ -628,24 +629,24 @@ HAND_ICONS = {
         "......kkkkkk......",
         "..................",
     ],
-    "HOME_BAG": [  # the bag on the home screen: its berries and candy now, more items later
-        "......kkkkkk......",
-        ".....kk....kk.....",
-        "...kkkkkkkkkkkk...",
-        "..kwcccccccccCCk..",
-        ".kwccccccccccccCk.",
-        ".kcccccccccccccCk.",
-        ".kCCCCCkffkCCCCCk.",
-        ".kooookkffkkoooOk.",
-        ".kwoooookkoooooOk.",
-        ".kwooooooooooooOk.",
-        ".koookkkkkkkkooOk.",
-        ".koookcccccCkooOk.",
-        ".koookcccccCkooOk.",
-        ".koookkkkkkkkooOk.",
-        ".kOoooooooooooOOk.",
-        "..kOOOOOOOOOOOOk..",
-        "...kkkkkkkkkkkk...",
+    "HOME_BAG": [  # the bag on the home screen, a leather backpack: its berries and candy now, more items later
+        "........kkkk......",
+        ".....kkkeeeek.....",
+        "....kekekkkkekk...",
+        "..kkekccccccccck..",
+        ".kee.CCccccccccck.",
+        ".kee.CCcSSSSSSSCk.",
+        ".kee.CCcccccccsCk.",
+        ".kee.CCcccccccsCk.",
+        ".kee.CCccccccccCk.",
+        ".kee.CCccccccccCk.",
+        ".kee.CCCcccccccCk.",
+        ".kee.CCCSSSSSSSCk.",
+        "..keeCCCCsCCCCCCk.",
+        "...kkCCCCCCCCCCCk.",
+        "....kCCCCCCCCCCCk.",
+        "....keeeeeeeeeeek.",
+        ".....kkkkkkkkkkk..",
         "..................",
     ],
     "HOME_GAMES": [  # the Games menu: a little handheld

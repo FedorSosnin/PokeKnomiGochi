@@ -77,6 +77,7 @@ static inline uint16_t spriteColor(char ch) {
     case 'u': return 0x75DE;  // #73baf0
     case 'v': return 0x2BDB;  // #2a7ad8
     case 'V': return 0x1A93;  // #1a529a
+    case 'e': return 0x59C4;  // #5b3b25
     default: return 0;
   }
 }
@@ -536,23 +537,23 @@ static const char* const SPR_HOME_BALL[18] = {  // 18x18
 };
 
 static const char* const SPR_HOME_BAG[18] = {  // 18x18
-  "......kkkkkk......",
-  ".....kk....kk.....",
-  "...kkkkkkkkkkkk...",
-  "..kwcccccccccCCk..",
-  ".kwccccccccccccCk.",
-  ".kcccccccccccccCk.",
-  ".kCCCCCkffkCCCCCk.",
-  ".kooookkffkkoooOk.",
-  ".kwoooookkoooooOk.",
-  ".kwooooooooooooOk.",
-  ".koookkkkkkkkooOk.",
-  ".koookcccccCkooOk.",
-  ".koookcccccCkooOk.",
-  ".koookkkkkkkkooOk.",
-  ".kOoooooooooooOOk.",
-  "..kOOOOOOOOOOOOk..",
-  "...kkkkkkkkkkkk...",
+  "........kkkk......",
+  ".....kkkeeeek.....",
+  "....kekekkkkekk...",
+  "..kkekccccccccck..",
+  ".kee.CCccccccccck.",
+  ".kee.CCcSSSSSSSCk.",
+  ".kee.CCcccccccsCk.",
+  ".kee.CCcccccccsCk.",
+  ".kee.CCccccccccCk.",
+  ".kee.CCccccccccCk.",
+  ".kee.CCCcccccccCk.",
+  ".kee.CCCSSSSSSSCk.",
+  "..keeCCCCsCCCCCCk.",
+  "...kkCCCCCCCCCCCk.",
+  "....kCCCCCCCCCCCk.",
+  "....keeeeeeeeeeek.",
+  ".....kkkkkkkkkkk..",
   "..................",
 };
 
