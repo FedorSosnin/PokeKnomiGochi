@@ -5,6 +5,7 @@
 Every Pokémon and the level it learns each move at, from its level-up moves in Pokémon Red and Blue. Only moves that do damage are kept. A Pokémon gains a level every hour of age, up to 100.
 
 - **Level 1** moves are known from the start.
+- The number after each move is its **power** as this game counts it: its Red and Blue power with accuracy, hits in a row and turns spent charging folded in (Struggle is 50). Higher hits harder, so you can see when an evolved form learns a strong move later than its earlier form does, and when waiting to evolve is worth it.
 - **Bold** moves are the Pokémon's own type: the strongest of those goes on the right battle button, and the strongest of the rest on the left. A new move only takes over a button if it is stronger, so some listed here never show up.
 - Moves learned before evolving are kept, so an evolved form also lists the ones it could have learned as its earlier form.
 - **Evolves** is the level it is ready to evolve at; each care mistake puts that off by a level.
@@ -14,154 +15,154 @@ See [How it works](HOW_IT_WORKS.md#moves) for how moves are picked in a battle.
 
 | # | Pokémon | Type | Moves by level | Evolves |
 |---:|---|---|---|---|
-| 1 | Bulbasaur | Grass | 1 Tackle · 13 **Vine Whip** · 27 **Razor Leaf** · 48 **Solar Beam** | Ivysaur at 16 |
-| 2 | Ivysaur | Grass | 1 Tackle · 13 **Vine Whip** · 30 **Razor Leaf** · 54 **Solar Beam** | Venusaur at 32 |
-| 3 | Venusaur | Grass | 1 **Vine Whip** · 1 Tackle · 30 **Razor Leaf** · 65 **Solar Beam** |  |
-| 4 | Charmander | Fire | 1 Scratch · 9 **Ember** · 22 Rage · 30 Slash · 38 **Flamethrower** · 46 **Fire Spin** | Charmeleon at 16 |
-| 5 | Charmeleon | Fire | 1 Scratch · 1 **Ember** · 24 Rage · 33 Slash · 42 **Flamethrower** · 56 **Fire Spin** | Charizard at 36 |
-| 6 | Charizard | Fire | 1 Scratch · 1 **Ember** · 24 Rage · 33 Slash · 46 **Flamethrower** · 55 **Fire Spin** |  |
-| 7 | Squirtle | Water | 1 Tackle · 8 **Bubble** · 15 **Water Gun** · 22 Bite · 35 Skull Bash · 42 **Hydro Pump** | Wartortle at 16 |
-| 8 | Wartortle | Water | 1 Tackle · 1 **Bubble** · 15 **Water Gun** · 24 Bite · 39 Skull Bash · 47 **Hydro Pump** | Blastoise at 36 |
-| 9 | Blastoise | Water | 1 Tackle · 1 **Water Gun** · 1 **Bubble** · 24 Bite · 42 Skull Bash · 52 **Hydro Pump** |  |
-| 10 | Caterpie | Bug | 1 Tackle | Metapod at 7 |
-| 11 | Metapod | Bug | 1 Tackle | Butterfree at 10 |
-| 12 | Butterfree | Bug | 1 Tackle · 1 Confusion · 32 Psybeam |  |
-| 13 | Weedle | Bug | 1 Poison Sting | Kakuna at 7 |
-| 14 | Kakuna | Bug | 1 Poison Sting | Beedrill at 10 |
-| 15 | Beedrill | Bug | 1 Fury Attack · 1 Poison Sting · 20 **Twineedle** · 25 Rage · 30 **Pin Missile** |  |
-| 16 | Pidgey | Normal | 1 **Gust** · 12 **Quick Attack** · 28 Wing Attack | Pidgeotto at 18 |
-| 17 | Pidgeotto | Normal | 1 **Gust** · 12 **Quick Attack** · 31 Wing Attack | Pidgeot at 36 |
-| 18 | Pidgeot | Normal | 1 **Gust** · 1 **Quick Attack** · 31 Wing Attack |  |
-| 19 | Rattata | Normal | 1 **Tackle** · 7 **Quick Attack** · 14 **Hyper Fang** · 34 **Super Fang** | Raticate at 20 |
-| 20 | Raticate | Normal | 1 **Tackle** · 1 **Quick Attack** · 14 **Hyper Fang** · 41 **Super Fang** |  |
-| 21 | Spearow | Normal | 1 Peck · 15 **Fury Attack** · 29 Drill Peck | Fearow at 20 |
-| 22 | Fearow | Normal | 1 Peck · 15 **Fury Attack** · 34 Drill Peck |  |
-| 23 | Ekans | Poison | 1 Wrap · 10 **Poison Sting** · 17 Bite · 38 **Acid** | Arbok at 22 |
-| 24 | Arbok | Poison | 1 Wrap · 1 **Poison Sting** · 17 Bite · 47 **Acid** |  |
-| 25 | Pikachu | Electric | 1 **Thunder Shock** · 16 Quick Attack · 26 Swift · 43 **Thunder** | Raichu at 30 |
-| 26 | Raichu | Electric | 1 **Thunder Shock** · 16 Quick Attack · 26 Swift |  |
-| 27 | Sandshrew | Ground | 1 Scratch · 17 Slash · 24 Poison Sting · 31 Swift · 38 Fury Swipes | Sandslash at 22 |
-| 28 | Sandslash | Ground | 1 Scratch · 17 Slash · 27 Poison Sting · 36 Swift · 47 Fury Swipes |  |
-| 29 | Nidoran♀ | Poison | 1 Tackle · 8 Scratch · 14 **Poison Sting** · 29 Bite · 36 Fury Swipes · 43 Double Kick | Nidorina at 16 |
-| 30 | Nidorina | Poison | 1 Scratch · 1 Tackle · 14 **Poison Sting** · 32 Bite · 41 Fury Swipes · 50 Double Kick | Nidoqueen at 30 |
-| 31 | Nidoqueen | Poison | 1 Scratch · 1 Tackle · 1 Body Slam · 14 **Poison Sting** |  |
-| 32 | Nidoran♂ | Poison | 1 Tackle · 8 Horn Attack · 14 **Poison Sting** · 29 Fury Attack · 43 Double Kick | Nidorino at 16 |
-| 33 | Nidorino | Poison | 1 Horn Attack · 1 Tackle · 14 **Poison Sting** · 32 Fury Attack · 50 Double Kick | Nidoking at 30 |
-| 34 | Nidoking | Poison | 1 Horn Attack · 1 Tackle · 1 Thrash · 1 **Poison Sting** |  |
-| 35 | Clefairy | Normal | 1 **Pound** · 18 **Double Slap** | Clefable at 30 |
-| 36 | Clefable | Normal | 1 **Pound** · 1 **Double Slap** |  |
-| 37 | Vulpix | Fire | 1 **Ember** · 16 Quick Attack · 35 **Flamethrower** · 42 **Fire Spin** | Ninetales at 30 |
-| 38 | Ninetales | Fire | 1 **Ember** · 1 Quick Attack |  |
-| 39 | Jigglypuff | Normal | Struggle until 9 · 9 **Pound** · 24 **Double Slap** · 34 **Body Slam** · 39 **Double-Edge** | Wigglytuff at 30 |
-| 40 | Wigglytuff | Normal | 1 **Double Slap** · 9 **Pound** |  |
-| 41 | Zubat | Poison | 1 Leech Life · 15 Bite · 28 Wing Attack | Golbat at 22 |
-| 42 | Golbat | Poison | 1 Bite · 1 Leech Life · 32 Wing Attack |  |
-| 43 | Oddish | Grass | 1 **Absorb** · 24 Acid · 33 **Petal Dance** · 46 **Solar Beam** | Gloom at 21 |
-| 44 | Gloom | Grass | 1 **Absorb** · 28 Acid · 38 **Petal Dance** · 52 **Solar Beam** | Vileplume at 36 |
-| 45 | Vileplume | Grass | 1 Acid · 1 **Absorb** · 1 **Petal Dance** |  |
-| 46 | Paras | Bug | 1 Scratch · 20 **Leech Life** · 34 Slash | Parasect at 24 |
-| 47 | Parasect | Bug | 1 Scratch · 1 **Leech Life** · 39 Slash |  |
-| 48 | Venonat | Bug | 1 Tackle · 27 **Leech Life** · 35 Psybeam · 43 Psychic | Venomoth at 31 |
-| 49 | Venomoth | Bug | 1 Tackle · 1 **Leech Life** · 38 Psybeam · 50 Psychic |  |
-| 50 | Diglett | Ground | 1 Scratch · 19 **Dig** · 31 Slash · 40 **Earthquake** | Dugtrio at 26 |
-| 51 | Dugtrio | Ground | 1 Scratch · 1 **Dig** · 35 Slash · 47 **Earthquake** |  |
-| 52 | Meowth | Normal | 1 **Scratch** · 12 **Bite** · 17 **Pay Day** · 33 **Fury Swipes** · 44 **Slash** | Persian at 28 |
-| 53 | Persian | Normal | 1 **Scratch** · 1 **Bite** · 17 **Pay Day** · 37 **Fury Swipes** · 51 **Slash** |  |
-| 54 | Psyduck | Water | 1 Scratch · 36 Confusion · 43 Fury Swipes · 52 **Hydro Pump** | Golduck at 33 |
-| 55 | Golduck | Water | 1 Scratch · 39 Confusion · 48 Fury Swipes · 59 **Hydro Pump** |  |
-| 56 | Mankey | Fighting | 1 Scratch · 15 Karate Chop · 21 Fury Swipes · 33 **Seismic Toss** · 39 Thrash | Primeape at 28 |
-| 57 | Primeape | Fighting | 1 Karate Chop · 1 Scratch · 1 Fury Swipes · 37 **Seismic Toss** · 46 Thrash |  |
-| 58 | Growlithe | Fire | 1 Bite · 18 **Ember** · 30 Take Down · 50 **Flamethrower** | Arcanine at 30 |
-| 59 | Arcanine | Fire | 1 Take Down · 1 Bite · 1 **Ember** |  |
-| 60 | Poliwag | Water | 1 **Bubble** · 19 **Water Gun** · 25 Double Slap · 31 Body Slam · 45 **Hydro Pump** | Poliwhirl at 25 |
-| 61 | Poliwhirl | Water | 1 **Water Gun** · 1 **Bubble** · 25 Double Slap · 33 Body Slam · 49 **Hydro Pump** | Poliwrath at 36 |
-| 62 | Poliwrath | Water | 1 Double Slap · 1 Body Slam · 1 **Water Gun** · 1 **Bubble** |  |
+| 1 | Bulbasaur | Grass | 1 Tackle (33) · 13 **Vine Whip** (35) · 27 **Razor Leaf** (52) · 48 **Solar Beam** (72) | Ivysaur at 16 |
+| 2 | Ivysaur | Grass | 1 Tackle (33) · 13 **Vine Whip** (35) · 30 **Razor Leaf** (52) · 54 **Solar Beam** (72) | Venusaur at 32 |
+| 3 | Venusaur | Grass | 1 **Vine Whip** (35) · 1 Tackle (33) · 30 **Razor Leaf** (52) · 65 **Solar Beam** (72) |  |
+| 4 | Charmander | Fire | 1 Scratch (40) · 9 **Ember** (40) · 22 Rage (20) · 30 Slash (70) · 38 **Flamethrower** (95) · 46 **Fire Spin** (32) | Charmeleon at 16 |
+| 5 | Charmeleon | Fire | 1 Scratch (40) · 1 **Ember** (40) · 24 Rage (20) · 33 Slash (70) · 42 **Flamethrower** (95) · 56 **Fire Spin** (32) | Charizard at 36 |
+| 6 | Charizard | Fire | 1 Scratch (40) · 1 **Ember** (40) · 24 Rage (20) · 33 Slash (70) · 46 **Flamethrower** (95) · 55 **Fire Spin** (32) |  |
+| 7 | Squirtle | Water | 1 Tackle (33) · 8 **Bubble** (20) · 15 **Water Gun** (40) · 22 Bite (60) · 35 Skull Bash (60) · 42 **Hydro Pump** (96) | Wartortle at 16 |
+| 8 | Wartortle | Water | 1 Tackle (33) · 1 **Bubble** (20) · 15 **Water Gun** (40) · 24 Bite (60) · 39 Skull Bash (60) · 47 **Hydro Pump** (96) | Blastoise at 36 |
+| 9 | Blastoise | Water | 1 Tackle (33) · 1 **Water Gun** (40) · 1 **Bubble** (20) · 24 Bite (60) · 42 Skull Bash (60) · 52 **Hydro Pump** (96) |  |
+| 10 | Caterpie | Bug | 1 Tackle (33) | Metapod at 7 |
+| 11 | Metapod | Bug | 1 Tackle (33) | Butterfree at 10 |
+| 12 | Butterfree | Bug | 1 Tackle (33) · 1 Confusion (50) · 32 Psybeam (65) |  |
+| 13 | Weedle | Bug | 1 Poison Sting (15) | Kakuna at 7 |
+| 14 | Kakuna | Bug | 1 Poison Sting (15) | Beedrill at 10 |
+| 15 | Beedrill | Bug | 1 Fury Attack (38) · 1 Poison Sting (15) · 20 **Twineedle** (50) · 25 Rage (20) · 30 **Pin Missile** (36) |  |
+| 16 | Pidgey | Normal | 1 **Gust** (40) · 12 **Quick Attack** (40) · 28 Wing Attack (35) | Pidgeotto at 18 |
+| 17 | Pidgeotto | Normal | 1 **Gust** (40) · 12 **Quick Attack** (40) · 31 Wing Attack (35) | Pidgeot at 36 |
+| 18 | Pidgeot | Normal | 1 **Gust** (40) · 1 **Quick Attack** (40) · 31 Wing Attack (35) |  |
+| 19 | Rattata | Normal | 1 **Tackle** (33) · 7 **Quick Attack** (40) · 14 **Hyper Fang** (72) · 34 **Super Fang** (60) | Raticate at 20 |
+| 20 | Raticate | Normal | 1 **Tackle** (33) · 1 **Quick Attack** (40) · 14 **Hyper Fang** (72) · 41 **Super Fang** (60) |  |
+| 21 | Spearow | Normal | 1 Peck (35) · 15 **Fury Attack** (38) · 29 Drill Peck (80) | Fearow at 20 |
+| 22 | Fearow | Normal | 1 Peck (35) · 15 **Fury Attack** (38) · 34 Drill Peck (80) |  |
+| 23 | Ekans | Poison | 1 Wrap (38) · 10 **Poison Sting** (15) · 17 Bite (60) · 38 **Acid** (40) | Arbok at 22 |
+| 24 | Arbok | Poison | 1 Wrap (38) · 1 **Poison Sting** (15) · 17 Bite (60) · 47 **Acid** (40) |  |
+| 25 | Pikachu | Electric | 1 **Thunder Shock** (40) · 16 Quick Attack (40) · 26 Swift (60) · 43 **Thunder** (84) | Raichu at 30 |
+| 26 | Raichu | Electric | 1 **Thunder Shock** (40) · 16 Quick Attack (40) · 26 Swift (60) |  |
+| 27 | Sandshrew | Ground | 1 Scratch (40) · 17 Slash (70) · 24 Poison Sting (15) · 31 Swift (60) · 38 Fury Swipes (43) | Sandslash at 22 |
+| 28 | Sandslash | Ground | 1 Scratch (40) · 17 Slash (70) · 27 Poison Sting (15) · 36 Swift (60) · 47 Fury Swipes (43) |  |
+| 29 | Nidoran♀ | Poison | 1 Tackle (33) · 8 Scratch (40) · 14 **Poison Sting** (15) · 29 Bite (60) · 36 Fury Swipes (43) · 43 Double Kick (60) | Nidorina at 16 |
+| 30 | Nidorina | Poison | 1 Scratch (40) · 1 Tackle (33) · 14 **Poison Sting** (15) · 32 Bite (60) · 41 Fury Swipes (43) · 50 Double Kick (60) | Nidoqueen at 30 |
+| 31 | Nidoqueen | Poison | 1 Scratch (40) · 1 Tackle (33) · 1 Body Slam (85) · 14 **Poison Sting** (15) |  |
+| 32 | Nidoran♂ | Poison | 1 Tackle (33) · 8 Horn Attack (65) · 14 **Poison Sting** (15) · 29 Fury Attack (38) · 43 Double Kick (60) | Nidorino at 16 |
+| 33 | Nidorino | Poison | 1 Horn Attack (65) · 1 Tackle (33) · 14 **Poison Sting** (15) · 32 Fury Attack (38) · 50 Double Kick (60) | Nidoking at 30 |
+| 34 | Nidoking | Poison | 1 Horn Attack (65) · 1 Tackle (33) · 1 Thrash (90) · 1 **Poison Sting** (15) |  |
+| 35 | Clefairy | Normal | 1 **Pound** (40) · 18 **Double Slap** (38) | Clefable at 30 |
+| 36 | Clefable | Normal | 1 **Pound** (40) · 1 **Double Slap** (38) |  |
+| 37 | Vulpix | Fire | 1 **Ember** (40) · 16 Quick Attack (40) · 35 **Flamethrower** (95) · 42 **Fire Spin** (32) | Ninetales at 30 |
+| 38 | Ninetales | Fire | 1 **Ember** (40) · 1 Quick Attack (40) |  |
+| 39 | Jigglypuff | Normal | Struggle until 9 · 9 **Pound** (40) · 24 **Double Slap** (38) · 34 **Body Slam** (85) · 39 **Double-Edge** (100) | Wigglytuff at 30 |
+| 40 | Wigglytuff | Normal | 1 **Double Slap** (38) · 9 **Pound** (40) |  |
+| 41 | Zubat | Poison | 1 Leech Life (20) · 15 Bite (60) · 28 Wing Attack (35) | Golbat at 22 |
+| 42 | Golbat | Poison | 1 Bite (60) · 1 Leech Life (20) · 32 Wing Attack (35) |  |
+| 43 | Oddish | Grass | 1 **Absorb** (20) · 24 Acid (40) · 33 **Petal Dance** (70) · 46 **Solar Beam** (72) | Gloom at 21 |
+| 44 | Gloom | Grass | 1 **Absorb** (20) · 28 Acid (40) · 38 **Petal Dance** (70) · 52 **Solar Beam** (72) | Vileplume at 36 |
+| 45 | Vileplume | Grass | 1 Acid (40) · 1 **Absorb** (20) · 1 **Petal Dance** (70) |  |
+| 46 | Paras | Bug | 1 Scratch (40) · 20 **Leech Life** (20) · 34 Slash (70) | Parasect at 24 |
+| 47 | Parasect | Bug | 1 Scratch (40) · 1 **Leech Life** (20) · 39 Slash (70) |  |
+| 48 | Venonat | Bug | 1 Tackle (33) · 27 **Leech Life** (20) · 35 Psybeam (65) · 43 Psychic (90) | Venomoth at 31 |
+| 49 | Venomoth | Bug | 1 Tackle (33) · 1 **Leech Life** (20) · 38 Psybeam (65) · 50 Psychic (90) |  |
+| 50 | Diglett | Ground | 1 Scratch (40) · 19 **Dig** (60) · 31 Slash (70) · 40 **Earthquake** (100) | Dugtrio at 26 |
+| 51 | Dugtrio | Ground | 1 Scratch (40) · 1 **Dig** (60) · 35 Slash (70) · 47 **Earthquake** (100) |  |
+| 52 | Meowth | Normal | 1 **Scratch** (40) · 12 **Bite** (60) · 17 **Pay Day** (40) · 33 **Fury Swipes** (43) · 44 **Slash** (70) | Persian at 28 |
+| 53 | Persian | Normal | 1 **Scratch** (40) · 1 **Bite** (60) · 17 **Pay Day** (40) · 37 **Fury Swipes** (43) · 51 **Slash** (70) |  |
+| 54 | Psyduck | Water | 1 Scratch (40) · 36 Confusion (50) · 43 Fury Swipes (43) · 52 **Hydro Pump** (96) | Golduck at 33 |
+| 55 | Golduck | Water | 1 Scratch (40) · 39 Confusion (50) · 48 Fury Swipes (43) · 59 **Hydro Pump** (96) |  |
+| 56 | Mankey | Fighting | 1 Scratch (40) · 15 Karate Chop (50) · 21 Fury Swipes (43) · 33 **Seismic Toss** (60) · 39 Thrash (90) | Primeape at 28 |
+| 57 | Primeape | Fighting | 1 Karate Chop (50) · 1 Scratch (40) · 1 Fury Swipes (43) · 37 **Seismic Toss** (60) · 46 Thrash (90) |  |
+| 58 | Growlithe | Fire | 1 Bite (60) · 18 **Ember** (40) · 30 Take Down (76) · 50 **Flamethrower** (95) | Arcanine at 30 |
+| 59 | Arcanine | Fire | 1 Take Down (76) · 1 Bite (60) · 1 **Ember** (40) |  |
+| 60 | Poliwag | Water | 1 **Bubble** (20) · 19 **Water Gun** (40) · 25 Double Slap (38) · 31 Body Slam (85) · 45 **Hydro Pump** (96) | Poliwhirl at 25 |
+| 61 | Poliwhirl | Water | 1 **Water Gun** (40) · 1 **Bubble** (20) · 25 Double Slap (38) · 33 Body Slam (85) · 49 **Hydro Pump** (96) | Poliwrath at 36 |
+| 62 | Poliwrath | Water | 1 Double Slap (38) · 1 Body Slam (85) · 1 **Water Gun** (40) · 1 **Bubble** (20) |  |
 | 63 | Abra | Psychic | Struggle only | Kadabra at 16 |
-| 64 | Kadabra | Psychic | 1 **Confusion** · 27 **Psybeam** · 38 **Psychic** | Alakazam at 40 |
-| 65 | Alakazam | Psychic | 1 **Confusion** · 27 **Psybeam** · 38 **Psychic** |  |
-| 66 | Machop | Fighting | 1 Karate Chop · 20 **Low Kick** · 39 **Seismic Toss** · 46 **Submission** | Machoke at 28 |
-| 67 | Machoke | Fighting | 1 Karate Chop · 1 **Low Kick** · 44 **Seismic Toss** · 52 **Submission** | Machamp at 40 |
-| 68 | Machamp | Fighting | 1 Karate Chop · 1 **Low Kick** · 44 **Seismic Toss** · 52 **Submission** |  |
-| 69 | Bellsprout | Grass | 1 **Vine Whip** · 13 Wrap · 26 Acid · 33 **Razor Leaf** · 42 Slam | Weepinbell at 21 |
-| 70 | Weepinbell | Grass | 1 **Vine Whip** · 1 Wrap · 29 Acid · 38 **Razor Leaf** · 49 Slam | Victreebel at 36 |
-| 71 | Victreebel | Grass | 1 **Vine Whip** · 1 Wrap · 1 Acid · 1 **Razor Leaf** |  |
-| 72 | Tentacool | Water | 1 Acid · 13 Wrap · 18 Poison Sting · 22 **Water Gun** · 27 Constrict · 48 **Hydro Pump** | Tentacruel at 30 |
-| 73 | Tentacruel | Water | 1 Wrap · 1 Acid · 18 Poison Sting · 22 **Water Gun** · 27 Constrict · 50 **Hydro Pump** |  |
-| 74 | Geodude | Rock | 1 Tackle · 16 **Rock Throw** · 31 Earthquake | Graveler at 25 |
-| 75 | Graveler | Rock | 1 Tackle · 16 **Rock Throw** · 36 Earthquake | Golem at 40 |
-| 76 | Golem | Rock | 1 Tackle · 16 **Rock Throw** · 36 Earthquake |  |
-| 77 | Ponyta | Fire | 1 **Ember** · 32 Stomp · 39 **Fire Spin** · 43 Take Down | Rapidash at 40 |
-| 78 | Rapidash | Fire | 1 Stomp · 1 **Ember** · 39 **Fire Spin** · 47 Take Down |  |
-| 79 | Slowpoke | Water | 1 Confusion · 22 Headbutt · 33 **Water Gun** · 48 Psychic | Slowbro at 37 |
-| 80 | Slowbro | Water | 1 Headbutt · 1 Confusion · 33 **Water Gun** · 55 Psychic |  |
-| 81 | Magnemite | Electric | 1 Tackle · 21 Sonic Boom · 25 **Thunder Shock** · 41 Swift | Magneton at 30 |
-| 82 | Magneton | Electric | 1 Tackle · 1 Sonic Boom · 1 **Thunder Shock** · 46 Swift |  |
-| 83 | Farfetch'd | Normal | 1 Peck · 15 **Fury Attack** · 39 **Slash** |  |
-| 84 | Doduo | Normal | 1 Peck · 24 **Fury Attack** · 30 Drill Peck · 36 **Rage** · 40 **Tri Attack** | Dodrio at 31 |
-| 85 | Dodrio | Normal | 1 **Fury Attack** · 1 Peck · 30 Drill Peck · 39 **Rage** · 45 **Tri Attack** |  |
-| 86 | Seel | Water | 1 Headbutt · 35 Aurora Beam · 45 Take Down · 50 Ice Beam | Dewgong at 34 |
-| 87 | Dewgong | Water | 1 Headbutt · 1 Aurora Beam · 50 Take Down · 56 Ice Beam |  |
-| 88 | Grimer | Poison | 1 Pound · 37 **Sludge** | Muk at 38 |
-| 89 | Muk | Poison | 1 Pound · 37 **Sludge** |  |
-| 90 | Shellder | Water | 1 Tackle · 23 **Clamp** · 30 Aurora Beam · 50 Ice Beam | Cloyster at 30 |
-| 91 | Cloyster | Water | 1 Tackle · 1 Aurora Beam · 1 **Clamp** · 50 Spike Cannon |  |
-| 92 | Gastly | Ghost | 1 **Night Shade** · 1 **Lick** | Haunter at 25 |
-| 93 | Haunter | Ghost | 1 **Night Shade** · 1 **Lick** | Gengar at 40 |
-| 94 | Gengar | Ghost | 1 **Night Shade** · 1 **Lick** |  |
-| 95 | Onix | Rock | 1 Tackle · 15 Bind · 19 **Rock Throw** · 25 Rage · 33 Slam |  |
-| 96 | Drowzee | Psychic | 1 Pound · 17 **Confusion** · 24 Headbutt · 32 **Psychic** | Hypno at 26 |
-| 97 | Hypno | Psychic | 1 Pound · 1 **Confusion** · 24 Headbutt · 37 **Psychic** |  |
-| 98 | Krabby | Water | 1 **Bubble** · 20 Vise Grip · 30 Stomp · 35 **Crabhammer** | Kingler at 28 |
-| 99 | Kingler | Water | 1 Vise Grip · 1 **Bubble** · 34 Stomp · 42 **Crabhammer** |  |
-| 100 | Voltorb | Electric | 1 Tackle · 17 Sonic Boom · 36 Swift | Electrode at 30 |
-| 101 | Electrode | Electric | 1 Tackle · 1 Sonic Boom · 40 Swift |  |
-| 102 | Exeggcute | Grass | 1 Barrage · 42 **Solar Beam** | Exeggutor at 30 |
-| 103 | Exeggutor | Grass | 1 Barrage · 28 Stomp |  |
-| 104 | Cubone | Ground | 1 **Bone Club** · 38 Thrash · 43 **Bonemerang** · 46 Rage | Marowak at 28 |
-| 105 | Marowak | Ground | 1 **Bone Club** · 41 Thrash · 48 **Bonemerang** · 55 Rage |  |
-| 106 | Hitmonlee | Fighting | 1 **Double Kick** · 33 **Rolling Kick** · 38 **Jump Kick** · 48 **High Jump Kick** · 53 Mega Kick |  |
-| 107 | Hitmonchan | Fighting | 1 Comet Punch · 33 Fire Punch · 38 Ice Punch · 43 Thunder Punch · 48 Mega Punch |  |
-| 108 | Lickitung | Normal | 1 **Wrap** · 7 **Stomp** · 31 **Slam** |  |
-| 109 | Koffing | Poison | 1 Tackle · 1 **Smog** · 32 **Sludge** | Weezing at 35 |
-| 110 | Weezing | Poison | 1 Tackle · 1 **Smog** · 1 **Sludge** |  |
-| 111 | Rhyhorn | Ground | 1 Horn Attack · 30 Stomp · 40 Fury Attack · 55 Take Down | Rhydon at 42 |
-| 112 | Rhydon | Ground | 1 Stomp · 1 Horn Attack · 1 Fury Attack · 64 Take Down |  |
-| 113 | Chansey | Normal | 1 **Pound** · 1 **Double Slap** · 54 **Double-Edge** |  |
-| 114 | Tangela | Grass | 1 Bind · 1 Constrict · 29 **Absorb** · 45 Slam |  |
-| 115 | Kangaskhan | Normal | 1 **Comet Punch** · 1 **Rage** · 26 **Bite** · 36 **Mega Punch** · 46 **Dizzy Punch** |  |
-| 116 | Horsea | Water | 1 **Bubble** · 30 **Water Gun** · 45 **Hydro Pump** | Seadra at 32 |
-| 117 | Seadra | Water | 1 **Bubble** · 30 **Water Gun** · 52 **Hydro Pump** |  |
-| 118 | Goldeen | Water | 1 Peck · 24 Horn Attack · 30 Fury Attack · 37 **Waterfall** | Seaking at 33 |
-| 119 | Seaking | Water | 1 Peck · 24 Horn Attack · 30 Fury Attack · 39 **Waterfall** |  |
-| 120 | Staryu | Water | 1 Tackle · 17 **Water Gun** · 32 Swift · 47 **Hydro Pump** | Starmie at 30 |
-| 121 | Starmie | Water | 1 Tackle · 1 **Water Gun** |  |
-| 122 | Mr. Mime | Psychic | 1 **Confusion** · 31 Double Slap |  |
-| 123 | Scyther | Bug | 1 Quick Attack · 29 Slash |  |
-| 124 | Jynx | Ice | 1 Pound · 18 Lick · 23 Double Slap · 31 **Ice Punch** · 39 Body Slam · 47 Thrash · 58 **Blizzard** |  |
-| 125 | Electabuzz | Electric | 1 Quick Attack · 34 **Thunder Shock** · 42 **Thunder Punch** · 54 **Thunder** |  |
-| 126 | Magmar | Fire | 1 **Ember** · 43 **Fire Punch** · 52 Smog · 55 **Flamethrower** |  |
-| 127 | Pinsir | Bug | 1 Vise Grip · 25 Seismic Toss · 49 Slash |  |
-| 128 | Tauros | Normal | 1 **Tackle** · 21 **Stomp** · 44 **Rage** · 51 **Take Down** |  |
-| 129 | Magikarp | Water | Struggle until 15 · 15 Tackle | Gyarados at 20 |
-| 130 | Gyarados | Water | 1 Bite · 1 **Hydro Pump** · 1 Dragon Rage · 15 Tackle · 52 Hyper Beam |  |
-| 131 | Lapras | Water | 1 **Water Gun** · 25 Body Slam · 38 Ice Beam · 46 **Hydro Pump** |  |
+| 64 | Kadabra | Psychic | 1 **Confusion** (50) · 27 **Psybeam** (65) · 38 **Psychic** (90) | Alakazam at 40 |
+| 65 | Alakazam | Psychic | 1 **Confusion** (50) · 27 **Psybeam** (65) · 38 **Psychic** (90) |  |
+| 66 | Machop | Fighting | 1 Karate Chop (50) · 20 **Low Kick** (45) · 39 **Seismic Toss** (60) · 46 **Submission** (64) | Machoke at 28 |
+| 67 | Machoke | Fighting | 1 Karate Chop (50) · 1 **Low Kick** (45) · 44 **Seismic Toss** (60) · 52 **Submission** (64) | Machamp at 40 |
+| 68 | Machamp | Fighting | 1 Karate Chop (50) · 1 **Low Kick** (45) · 44 **Seismic Toss** (60) · 52 **Submission** (64) |  |
+| 69 | Bellsprout | Grass | 1 **Vine Whip** (35) · 13 Wrap (38) · 26 Acid (40) · 33 **Razor Leaf** (52) · 42 Slam (60) | Weepinbell at 21 |
+| 70 | Weepinbell | Grass | 1 **Vine Whip** (35) · 1 Wrap (38) · 29 Acid (40) · 38 **Razor Leaf** (52) · 49 Slam (60) | Victreebel at 36 |
+| 71 | Victreebel | Grass | 1 **Vine Whip** (35) · 1 Wrap (38) · 1 Acid (40) · 1 **Razor Leaf** (52) |  |
+| 72 | Tentacool | Water | 1 Acid (40) · 13 Wrap (38) · 18 Poison Sting (15) · 22 **Water Gun** (40) · 27 Constrict (10) · 48 **Hydro Pump** (96) | Tentacruel at 30 |
+| 73 | Tentacruel | Water | 1 Wrap (38) · 1 Acid (40) · 18 Poison Sting (15) · 22 **Water Gun** (40) · 27 Constrict (10) · 50 **Hydro Pump** (96) |  |
+| 74 | Geodude | Rock | 1 Tackle (33) · 16 **Rock Throw** (32) · 31 Earthquake (100) | Graveler at 25 |
+| 75 | Graveler | Rock | 1 Tackle (33) · 16 **Rock Throw** (32) · 36 Earthquake (100) | Golem at 40 |
+| 76 | Golem | Rock | 1 Tackle (33) · 16 **Rock Throw** (32) · 36 Earthquake (100) |  |
+| 77 | Ponyta | Fire | 1 **Ember** (40) · 32 Stomp (65) · 39 **Fire Spin** (32) · 43 Take Down (76) | Rapidash at 40 |
+| 78 | Rapidash | Fire | 1 Stomp (65) · 1 **Ember** (40) · 39 **Fire Spin** (32) · 47 Take Down (76) |  |
+| 79 | Slowpoke | Water | 1 Confusion (50) · 22 Headbutt (70) · 33 **Water Gun** (40) · 48 Psychic (90) | Slowbro at 37 |
+| 80 | Slowbro | Water | 1 Headbutt (70) · 1 Confusion (50) · 33 **Water Gun** (40) · 55 Psychic (90) |  |
+| 81 | Magnemite | Electric | 1 Tackle (33) · 21 Sonic Boom (40) · 25 **Thunder Shock** (40) · 41 Swift (60) | Magneton at 30 |
+| 82 | Magneton | Electric | 1 Tackle (33) · 1 Sonic Boom (40) · 1 **Thunder Shock** (40) · 46 Swift (60) |  |
+| 83 | Farfetch'd | Normal | 1 Peck (35) · 15 **Fury Attack** (38) · 39 **Slash** (70) |  |
+| 84 | Doduo | Normal | 1 Peck (35) · 24 **Fury Attack** (38) · 30 Drill Peck (80) · 36 **Rage** (20) · 40 **Tri Attack** (80) | Dodrio at 31 |
+| 85 | Dodrio | Normal | 1 **Fury Attack** (38) · 1 Peck (35) · 30 Drill Peck (80) · 39 **Rage** (20) · 45 **Tri Attack** (80) |  |
+| 86 | Seel | Water | 1 Headbutt (70) · 35 Aurora Beam (65) · 45 Take Down (76) · 50 Ice Beam (95) | Dewgong at 34 |
+| 87 | Dewgong | Water | 1 Headbutt (70) · 1 Aurora Beam (65) · 50 Take Down (76) · 56 Ice Beam (95) |  |
+| 88 | Grimer | Poison | 1 Pound (40) · 37 **Sludge** (65) | Muk at 38 |
+| 89 | Muk | Poison | 1 Pound (40) · 37 **Sludge** (65) |  |
+| 90 | Shellder | Water | 1 Tackle (33) · 23 **Clamp** (79) · 30 Aurora Beam (65) · 50 Ice Beam (95) | Cloyster at 30 |
+| 91 | Cloyster | Water | 1 Tackle (33) · 1 Aurora Beam (65) · 1 **Clamp** (79) · 50 Spike Cannon (60) |  |
+| 92 | Gastly | Ghost | 1 **Night Shade** (60) · 1 **Lick** (20) | Haunter at 25 |
+| 93 | Haunter | Ghost | 1 **Night Shade** (60) · 1 **Lick** (20) | Gengar at 40 |
+| 94 | Gengar | Ghost | 1 **Night Shade** (60) · 1 **Lick** (20) |  |
+| 95 | Onix | Rock | 1 Tackle (33) · 15 Bind (34) · 19 **Rock Throw** (32) · 25 Rage (20) · 33 Slam (60) |  |
+| 96 | Drowzee | Psychic | 1 Pound (40) · 17 **Confusion** (50) · 24 Headbutt (70) · 32 **Psychic** (90) | Hypno at 26 |
+| 97 | Hypno | Psychic | 1 Pound (40) · 1 **Confusion** (50) · 24 Headbutt (70) · 37 **Psychic** (90) |  |
+| 98 | Krabby | Water | 1 **Bubble** (20) · 20 Vise Grip (55) · 30 Stomp (65) · 35 **Crabhammer** (76) | Kingler at 28 |
+| 99 | Kingler | Water | 1 Vise Grip (55) · 1 **Bubble** (20) · 34 Stomp (65) · 42 **Crabhammer** (76) |  |
+| 100 | Voltorb | Electric | 1 Tackle (33) · 17 Sonic Boom (40) · 36 Swift (60) | Electrode at 30 |
+| 101 | Electrode | Electric | 1 Tackle (33) · 1 Sonic Boom (40) · 40 Swift (60) |  |
+| 102 | Exeggcute | Grass | 1 Barrage (38) · 42 **Solar Beam** (72) | Exeggutor at 30 |
+| 103 | Exeggutor | Grass | 1 Barrage (38) · 28 Stomp (65) |  |
+| 104 | Cubone | Ground | 1 **Bone Club** (55) · 38 Thrash (90) · 43 **Bonemerang** (90) · 46 Rage (20) | Marowak at 28 |
+| 105 | Marowak | Ground | 1 **Bone Club** (55) · 41 Thrash (90) · 48 **Bonemerang** (90) · 55 Rage (20) |  |
+| 106 | Hitmonlee | Fighting | 1 **Double Kick** (60) · 33 **Rolling Kick** (51) · 38 **Jump Kick** (66) · 48 **High Jump Kick** (76) · 53 Mega Kick (90) |  |
+| 107 | Hitmonchan | Fighting | 1 Comet Punch (46) · 33 Fire Punch (75) · 38 Ice Punch (75) · 43 Thunder Punch (75) · 48 Mega Punch (68) |  |
+| 108 | Lickitung | Normal | 1 **Wrap** (38) · 7 **Stomp** (65) · 31 **Slam** (60) |  |
+| 109 | Koffing | Poison | 1 Tackle (33) · 1 **Smog** (14) · 32 **Sludge** (65) | Weezing at 35 |
+| 110 | Weezing | Poison | 1 Tackle (33) · 1 **Smog** (14) · 1 **Sludge** (65) |  |
+| 111 | Rhyhorn | Ground | 1 Horn Attack (65) · 30 Stomp (65) · 40 Fury Attack (38) · 55 Take Down (76) | Rhydon at 42 |
+| 112 | Rhydon | Ground | 1 Stomp (65) · 1 Horn Attack (65) · 1 Fury Attack (38) · 64 Take Down (76) |  |
+| 113 | Chansey | Normal | 1 **Pound** (40) · 1 **Double Slap** (38) · 54 **Double-Edge** (100) |  |
+| 114 | Tangela | Grass | 1 Bind (34) · 1 Constrict (10) · 29 **Absorb** (20) · 45 Slam (60) |  |
+| 115 | Kangaskhan | Normal | 1 **Comet Punch** (46) · 1 **Rage** (20) · 26 **Bite** (60) · 36 **Mega Punch** (68) · 46 **Dizzy Punch** (70) |  |
+| 116 | Horsea | Water | 1 **Bubble** (20) · 30 **Water Gun** (40) · 45 **Hydro Pump** (96) | Seadra at 32 |
+| 117 | Seadra | Water | 1 **Bubble** (20) · 30 **Water Gun** (40) · 52 **Hydro Pump** (96) |  |
+| 118 | Goldeen | Water | 1 Peck (35) · 24 Horn Attack (65) · 30 Fury Attack (38) · 37 **Waterfall** (80) | Seaking at 33 |
+| 119 | Seaking | Water | 1 Peck (35) · 24 Horn Attack (65) · 30 Fury Attack (38) · 39 **Waterfall** (80) |  |
+| 120 | Staryu | Water | 1 Tackle (33) · 17 **Water Gun** (40) · 32 Swift (60) · 47 **Hydro Pump** (96) | Starmie at 30 |
+| 121 | Starmie | Water | 1 Tackle (33) · 1 **Water Gun** (40) |  |
+| 122 | Mr. Mime | Psychic | 1 **Confusion** (50) · 31 Double Slap (38) |  |
+| 123 | Scyther | Bug | 1 Quick Attack (40) · 29 Slash (70) |  |
+| 124 | Jynx | Ice | 1 Pound (40) · 18 Lick (20) · 23 Double Slap (38) · 31 **Ice Punch** (75) · 39 Body Slam (85) · 47 Thrash (90) · 58 **Blizzard** (108) |  |
+| 125 | Electabuzz | Electric | 1 Quick Attack (40) · 34 **Thunder Shock** (40) · 42 **Thunder Punch** (75) · 54 **Thunder** (84) |  |
+| 126 | Magmar | Fire | 1 **Ember** (40) · 43 **Fire Punch** (75) · 52 Smog (14) · 55 **Flamethrower** (95) |  |
+| 127 | Pinsir | Bug | 1 Vise Grip (55) · 25 Seismic Toss (60) · 49 Slash (70) |  |
+| 128 | Tauros | Normal | 1 **Tackle** (33) · 21 **Stomp** (65) · 44 **Rage** (20) · 51 **Take Down** (76) |  |
+| 129 | Magikarp | Water | Struggle until 15 · 15 Tackle (33) | Gyarados at 20 |
+| 130 | Gyarados | Water | 1 Bite (60) · 1 **Hydro Pump** (96) · 1 Dragon Rage (60) · 15 Tackle (33) · 52 Hyper Beam (81) |  |
+| 131 | Lapras | Water | 1 **Water Gun** (40) · 25 Body Slam (85) · 38 Ice Beam (95) · 46 **Hydro Pump** (96) |  |
 | 132 | Ditto | Normal | Copies the wild Pokémon's moves |  |
-| 133 | Eevee | Normal | 1 **Tackle** · 27 **Quick Attack** · 37 **Bite** · 45 **Take Down** | Vaporeon, Jolteon or Flareon at 30 |
-| 134 | Vaporeon | Water | 1 Tackle · 1 **Water Gun** · 1 Quick Attack · 40 Bite · 54 **Hydro Pump** |  |
-| 135 | Jolteon | Electric | 1 Tackle · 1 **Thunder Shock** · 1 Quick Attack · 42 Double Kick · 48 Pin Missile · 54 **Thunder** |  |
-| 136 | Flareon | Fire | 1 Tackle · 1 **Ember** · 1 Quick Attack · 40 Bite · 44 **Fire Spin** · 48 Rage · 54 **Flamethrower** |  |
-| 137 | Porygon | Normal | 1 **Tackle** · 23 Psybeam · 42 **Tri Attack** |  |
-| 138 | Omanyte | Rock | 1 Water Gun · 34 Horn Attack · 46 Spike Cannon · 53 Hydro Pump | Omastar at 40 |
-| 139 | Omastar | Rock | 1 Horn Attack · 1 Water Gun · 44 Spike Cannon · 49 Hydro Pump |  |
-| 140 | Kabuto | Rock | 1 Scratch · 34 Absorb · 39 Slash · 49 Hydro Pump | Kabutops at 40 |
-| 141 | Kabutops | Rock | 1 Scratch · 1 Absorb · 39 Slash · 53 Hydro Pump |  |
-| 142 | Aerodactyl | Rock | 1 Wing Attack · 38 Bite · 45 Take Down · 54 Hyper Beam |  |
-| 143 | Snorlax | Normal | 1 **Headbutt** · 35 **Body Slam** · 48 **Double-Edge** · 56 **Hyper Beam** |  |
-| 144 | Articuno | Ice | 1 **Ice Beam** · 1 Peck · 51 **Blizzard** |  |
-| 145 | Zapdos | Electric | 1 Drill Peck · 1 **Thunder Shock** · 51 **Thunder** |  |
-| 146 | Moltres | Fire | 1 Peck · 1 **Fire Spin** · 60 Sky Attack |  |
-| 147 | Dratini | Dragon | 1 Wrap · 30 Slam · 40 **Dragon Rage** · 50 Hyper Beam | Dragonair at 30 |
-| 148 | Dragonair | Dragon | 1 Wrap · 30 Slam · 45 **Dragon Rage** · 55 Hyper Beam | Dragonite at 55 |
-| 149 | Dragonite | Dragon | 1 Wrap · 30 Slam · 45 **Dragon Rage** · 55 Hyper Beam |  |
-| 150 | Mewtwo | Psychic | 1 **Confusion** · 1 **Psychic** · 1 Swift |  |
-| 151 | Mew | Psychic | 1 Pound · 20 Mega Punch · 40 **Psychic** |  |
+| 133 | Eevee | Normal | 1 **Tackle** (33) · 27 **Quick Attack** (40) · 37 **Bite** (60) · 45 **Take Down** (76) | Vaporeon, Jolteon or Flareon at 30 |
+| 134 | Vaporeon | Water | 1 Tackle (33) · 1 **Water Gun** (40) · 1 Quick Attack (40) · 40 Bite (60) · 54 **Hydro Pump** (96) |  |
+| 135 | Jolteon | Electric | 1 Tackle (33) · 1 **Thunder Shock** (40) · 1 Quick Attack (40) · 42 Double Kick (60) · 48 Pin Missile (36) · 54 **Thunder** (84) |  |
+| 136 | Flareon | Fire | 1 Tackle (33) · 1 **Ember** (40) · 1 Quick Attack (40) · 40 Bite (60) · 44 **Fire Spin** (32) · 48 Rage (20) · 54 **Flamethrower** (95) |  |
+| 137 | Porygon | Normal | 1 **Tackle** (33) · 23 Psybeam (65) · 42 **Tri Attack** (80) |  |
+| 138 | Omanyte | Rock | 1 Water Gun (40) · 34 Horn Attack (65) · 46 Spike Cannon (60) · 53 Hydro Pump (96) | Omastar at 40 |
+| 139 | Omastar | Rock | 1 Horn Attack (65) · 1 Water Gun (40) · 44 Spike Cannon (60) · 49 Hydro Pump (96) |  |
+| 140 | Kabuto | Rock | 1 Scratch (40) · 34 Absorb (20) · 39 Slash (70) · 49 Hydro Pump (96) | Kabutops at 40 |
+| 141 | Kabutops | Rock | 1 Scratch (40) · 1 Absorb (20) · 39 Slash (70) · 53 Hydro Pump (96) |  |
+| 142 | Aerodactyl | Rock | 1 Wing Attack (35) · 38 Bite (60) · 45 Take Down (76) · 54 Hyper Beam (81) |  |
+| 143 | Snorlax | Normal | 1 **Headbutt** (70) · 35 **Body Slam** (85) · 48 **Double-Edge** (100) · 56 **Hyper Beam** (81) |  |
+| 144 | Articuno | Ice | 1 **Ice Beam** (95) · 1 Peck (35) · 51 **Blizzard** (108) |  |
+| 145 | Zapdos | Electric | 1 Drill Peck (80) · 1 **Thunder Shock** (40) · 51 **Thunder** (84) |  |
+| 146 | Moltres | Fire | 1 Peck (35) · 1 **Fire Spin** (32) · 60 Sky Attack (76) |  |
+| 147 | Dratini | Dragon | 1 Wrap (38) · 30 Slam (60) · 40 **Dragon Rage** (60) · 50 Hyper Beam (81) | Dragonair at 30 |
+| 148 | Dragonair | Dragon | 1 Wrap (38) · 30 Slam (60) · 45 **Dragon Rage** (60) · 55 Hyper Beam (81) | Dragonite at 55 |
+| 149 | Dragonite | Dragon | 1 Wrap (38) · 30 Slam (60) · 45 **Dragon Rage** (60) · 55 Hyper Beam (81) |  |
+| 150 | Mewtwo | Psychic | 1 **Confusion** (50) · 1 **Psychic** (90) · 1 Swift (60) |  |
+| 151 | Mew | Psychic | 1 Pound (40) · 20 Mega Punch (68) · 40 **Psychic** (90) |  |

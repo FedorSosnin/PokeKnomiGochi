@@ -121,8 +121,8 @@ int16_t galleryDetail = 0;  // dex in detail view, 0 = grid
 #define DEXG_Y 84
 #define DEXG_CELL 98
 #define DEXG_PAGE_Y 386    // "Page 1 of 17"
-#define DEXG_ARROW_DX 181  // the page arrows, either side of the grid, from the middle
-#define ZONE_ARROW_DX 160
+#define PAGE_ARROW_Y (DEXG_Y + 3 * DEXG_CELL / 2)  // the page arrows: level with the Pokedex grid's middle, on every grid
+#define PAGE_ARROW_INSET 32  // the page arrows sit as far in from the round edge as the X does from the bottom (464 - 432)
 PmdMon dexGridPmd[DEXG_PAGE];       // the page's shinies, animated
 int16_t dexGridPmdDex[DEXG_PAGE];   // which one each holds (0: none)
 bool galleryAnim = false;           // the Pokedex page has a shiny: redrawn every frame
@@ -5347,13 +5347,20 @@ bool pageArrowHit(int16_t x, int16_t y, int cx, int cy) {
   int dx = x - cx, dy = y - cy;
   return dx * dx + dy * dy <= (CLOSE_R + 14) * (CLOSE_R + 14);  // a little more than drawn
 }
+// how far from the middle the arrows at height cy go: PAGE_ARROW_INSET in from the round edge
+int pageArrowDx(int cy) {
+  int r = 231 - PAGE_ARROW_INSET, dy = cy - CY;
+  return (int)sqrtf((float)(r * r - dy * dy));
+}
 // the arrows a grid shows: none past the first or the last page
-void drawPageArrows(int page, int pages, int cy, int dx) {
+void drawPageArrows(int page, int pages, int cy) {
+  int dx = pageArrowDx(cy);
   if (page > 0) drawPageArrow(CX - dx, cy, -1);
   if (page < pages - 1) drawPageArrow(CX + dx, cy, 1);
 }
 // which arrow a tap is on: -1 back, 1 on, 0 neither (or one not shown)
-int pageArrowAt(int16_t x, int16_t y, int page, int pages, int cy, int dx) {
+int pageArrowAt(int16_t x, int16_t y, int page, int pages, int cy) {
+  int dx = pageArrowDx(cy);
   if (page > 0 && pageArrowHit(x, y, CX - dx, cy)) return -1;
   if (page < pages - 1 && pageArrowHit(x, y, CX + dx, cy)) return 1;
   return 0;
@@ -5392,7 +5399,7 @@ void renderGallery() {
   for (int i = 0; i < DEXG_PAGE && dex[i]; i++)
     if (drawDexCell(dex[i], i, DEXG_X + (i % DEXG_COLS) * DEXG_CELL, DEXG_Y + (i / DEXG_COLS) * DEXG_CELL, DEXG_CELL)) galleryAnim = true;
   drawDexGridPage(galleryPage, DEX_PAGES, DEXG_PAGE_Y);
-  drawPageArrows(galleryPage, DEX_PAGES, DEXG_Y + 3 * DEXG_CELL / 2, DEXG_ARROW_DX);
+  drawPageArrows(galleryPage, DEX_PAGES, PAGE_ARROW_Y);
   drawCloseButtonAt(GAL_CLOSE_Y);
   gfx->flush();
 }
@@ -5412,7 +5419,7 @@ void galleryTap(int16_t x, int16_t y) {
     dexGridUnload();
     return;
   }
-  if (int d = pageArrowAt(x, y, galleryPage, DEX_PAGES, DEXG_Y + 3 * DEXG_CELL / 2, DEXG_ARROW_DX)) {  // a page on or back
+  if (int d = pageArrowAt(x, y, galleryPage, DEX_PAGES, PAGE_ARROW_Y)) {  // a page on or back
     sfxPlay(SFX_TAP);
     galleryPage += d;
     galleryDirty = true;
@@ -7061,7 +7068,7 @@ void zoneTap(int16_t x, int16_t y) {
     return;
   }
   int zpages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
-  if (int d = pageArrowAt(x, y, zonePage, zpages, ZONE_GRID_Y + 3 * ZONE_CELL / 2, ZONE_ARROW_DX)) {  // a page on or back
+  if (int d = pageArrowAt(x, y, zonePage, zpages, PAGE_ARROW_Y)) {  // a page on or back
     sfxPlay(SFX_TAP);
     zoneTurnPage(d);
     return;
@@ -7176,7 +7183,7 @@ void renderZones() {
   printT(T(S_ZONE_SEARCH));
   int zpages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
   drawDexGridPage(zonePage, zpages, ZONE_PAGE_Y);
-  drawPageArrows(zonePage, zpages, ZONE_GRID_Y + 3 * ZONE_CELL / 2, ZONE_ARROW_DX);
+  drawPageArrows(zonePage, zpages, PAGE_ARROW_Y);
   drawCloseButtonAt(ZONE_CLOSE_Y);  // how to leave, as on the zone picker
   gfx->flush();
 }
@@ -7995,8 +8002,8 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     if (zoneDetail) return false;  // an entry: tap anywhere to go back
     if (y >= ZONE_BTN_Y && y < ZONE_BTN_Y + ZONE_BTN_H && x >= ZONE_BTN_X && x < ZONE_BTN_X + ZONE_BTN_W)
       return pressSet(t, ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, T(S_ZONE_SEARCH));
-    if (int d = pageArrowAt(x, y, zonePage, (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE, ZONE_GRID_Y + 3 * ZONE_CELL / 2, ZONE_ARROW_DX))
-      return pressSet(t, CX + d * ZONE_ARROW_DX - CLOSE_R, ZONE_GRID_Y + 3 * ZONE_CELL / 2 - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+    if (int d = pageArrowAt(x, y, zonePage, (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE, PAGE_ARROW_Y))
+      return pressSet(t, CX + d * pageArrowDx(PAGE_ARROW_Y) - CLOSE_R, PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
     return false;  // Pokedex grids (here and below) swipe between pages: a slow swipe must not pick a square
   }
   if (gameOpen || runOpen || dungeonOpen || vbOpen) return false;  // aiming, jumping, walking, volleying: no buttons
@@ -8051,8 +8058,8 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   }
   if (galleryOpen) {
     if (galleryDetail) return false;
-    if (int d = pageArrowAt(x, y, galleryPage, DEX_PAGES, DEXG_Y + 3 * DEXG_CELL / 2, DEXG_ARROW_DX))
-      return pressSet(t, CX + d * DEXG_ARROW_DX - CLOSE_R, DEXG_Y + 3 * DEXG_CELL / 2 - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+    if (int d = pageArrowAt(x, y, galleryPage, DEX_PAGES, PAGE_ARROW_Y))
+      return pressSet(t, CX + d * pageArrowDx(PAGE_ARROW_Y) - CLOSE_R, PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
     return false;
   }
   if (kbOpen) {

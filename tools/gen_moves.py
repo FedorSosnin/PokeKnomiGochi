@@ -81,6 +81,10 @@ def write_chart(sets):
         'Every Pokémon and the level it learns each move at, from its level-up moves in Pokémon Red and Blue. '
         'Only moves that do damage are kept. A Pokémon gains a level every hour of age, up to 100.\n\n',
         '- **Level 1** moves are known from the start.\n',
+        '- The number after each move is its **power** as this game counts it: its Red and Blue power with '
+        'accuracy, hits in a row and turns spent charging folded in (Struggle is 50). Higher hits harder, so you '
+        'can see when an evolved form learns a strong move later than its earlier form does, and when waiting '
+        'to evolve is worth it.\n',
         '- **Bold** moves are the Pokémon\'s own type: the strongest of those goes on the right battle button, '
         'and the strongest of the rest on the left. A new move only takes over a button if it is stronger, '
         'so some listed here never show up.\n',
@@ -95,8 +99,9 @@ def write_chart(sets):
     for num, _, disp, typ, evo, lvl in DEX:
         moves = []
         for lv, mid in sets[num]:
-            name, mtype = MOVES[mid][0], MOVES[mid][1]
-            moves.append(f'{lv} **{name}**' if mtype == typ else f'{lv} {name}')
+            name, mtype, power, acc = MOVES[mid]
+            pw = effective_power(name, power, acc)
+            moves.append(f'{lv} **{name}** ({pw})' if mtype == typ else f'{lv} {name} ({pw})')
         if num == 132:
             cell = 'Copies the wild Pokémon\'s moves'
         else:
