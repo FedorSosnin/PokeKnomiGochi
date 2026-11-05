@@ -846,23 +846,26 @@ int Pet::zoneCaught(uint8_t zone) const {
 
 int16_t Pet::pickZoneSpecies(uint8_t zone, uint8_t lvl) {
   int16_t legend = ZONE_LEGEND[zone];
-  bool complete = true;
-  for (int16_t d = 1; d <= 151 && complete; d++)
-    if (zoneOf(d) == zone && d != legend && !isRegistered(d)) complete = false;
-  if (complete && random(100) < (isRegistered(legend) ? ZONE_LEGEND_SEEN_PCT : ZONE_LEGEND_NEW_PCT)) return legend;
-
-  bool preferNew = random(100) < ZONE_NEW_PCT;
-  for (int pass = 0; pass < 2; pass++) {
+  if (random(1000) < ZONE_LEGEND_PERMIL) return legend;  // any time, but seldom
+  // now and then only the common ones you're missing; otherwise anyone strong enough to be here
+  for (int pass = random(100) < ZONE_NEW_PCT ? 0 : 1; pass < 2; pass++) {
     int16_t cand[151];
-    int n = 0;
+    uint8_t w[151];
+    int n = 0, total = 0;
     for (int16_t d = 1; d <= 151; d++) {
       if (zoneOf(d) != zone || d == legend || btlMinLevel(d) > lvl) continue;
-      if (pass == 0 && preferNew && isRegistered(d)) continue;
-      cand[n++] = d;
+      if (pass == 0 && (isRegistered(d) || zoneIsRare(d))) continue;
+      cand[n] = d;
+      w[n] = zoneWeight(d);
+      total += w[n++];
     }
-    if (n > 0) return cand[random(n)];
+    if (n > 0) {
+      int r = random(total);
+      for (int i = 0; i < n; i++)
+        if ((r -= w[i]) < 0) return cand[i];
+    }
   }
-  return zoneMember(zone, 0);  // unreachable: every zone has base forms
+  return zoneMember(zone, 0);  // unreachable: every zone has first forms
 }
 
 void Pet::play() {

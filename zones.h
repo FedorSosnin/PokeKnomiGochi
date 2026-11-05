@@ -4,7 +4,7 @@
 
 // Battle Zones. Assigned by hand per habitat, not by type: each species has only one type and
 // none is Flying, so type is no use for putting the birds in the field or Zubat
-// in the cave. Each zone keeps a legendary, which appears when the rest of the zone is complete.
+// in the cave. Each zone has a legendary, found on any Search but seldom.
 enum : uint8_t { Z_FOREST, Z_BEACH, Z_CAVE, Z_MANSION, Z_FIELD, ZONE_COUNT };
 
 static const uint8_t ZONE_OF[DEX_COUNT] = {
@@ -28,11 +28,40 @@ static const uint8_t ZONE_OF[DEX_COUNT] = {
 
 static const uint8_t ZONE_LEGEND[ZONE_COUNT] = { 151, 144, 146, 150, 145 };  // Mew, Articuno, Moltres, Mewtwo, Zapdos
 
-#define ZONE_NEW_PCT 70          // how much the missing ones are preferred (as in random battle)
-#define ZONE_LEGEND_NEW_PCT 25   // zone complete and legendary not yet caught
-#define ZONE_LEGEND_SEEN_PCT 3   // already caught: can return, but rarely
+// A zone's Pokemon come in three kinds. The legendary can turn up on any Search, from the first,
+// but only about one in a hundred. The others are drawn by weight: a common first form most often,
+// its evolved forms half as often, and a rare one (and what it evolves into) a third as often again.
+// Searches lean a little toward the common ones still missing, never toward the rare or the legend:
+// filling a zone takes finding them.
+#define ZONE_LEGEND_PERMIL 10    // the legendary: 10 Searches in 1000
+#define ZONE_W_COMMON 6          // weights of the rest
+#define ZONE_W_COMMON_EVO 3
+#define ZONE_W_RARE 2
+#define ZONE_W_RARE_EVO 1
+#define ZONE_NEW_PCT 40          // how often a Search looks only among the common ones you're missing
 
 inline uint8_t zoneOf(int16_t dex) { return ZONE_OF[dex - 1]; }
+
+// the first form of a species' line (Eevee for its three)
+inline int16_t lineBase(int16_t d) {
+  if (d > DEX_EEVEE && d <= DEX_EEVEE + 3) return DEX_EEVEE;
+  for (bool moved = true; moved;) {
+    moved = false;
+    for (int16_t s = 1; s <= DEX_COUNT; s++)
+      if (DEX_TBL[s].evolvesTo == d) { d = s; moved = true; break; }
+  }
+  return d;
+}
+
+// rare: its line starts with a rare Pokemon (Scyther, Lapras, Dratini and on to Dragonite...)
+inline bool zoneIsRare(int16_t d) { return DEX_TBL[lineBase(d)].rarity == R_RARE; }
+
+// how often a Search turns it up, against the others of its zone (the legendary is apart)
+inline uint8_t zoneWeight(int16_t d) {
+  bool evolved = lineBase(d) != d;
+  if (zoneIsRare(d)) return evolved ? ZONE_W_RARE_EVO : ZONE_W_RARE;
+  return evolved ? ZONE_W_COMMON_EVO : ZONE_W_COMMON;
+}
 
 inline int zoneSize(uint8_t z) {
   int n = 0;

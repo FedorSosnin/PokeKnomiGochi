@@ -115,17 +115,21 @@ The **daily visitor** brings a candy (a third one that day) and stays 60 awake m
 There are two ways to start a battle:
 
 - 🔘 **The physical button, or Wild Encounter (the last circle, after the zones):** a random wild Pokémon from anywhere, met at your Pokémon's home. The Mac, Windows and web versions have no button, so Wild Encounter is the way there (or Space on a keyboard).
-- ⚪ **The Poké Ball icon on the home screen:** pick a zone and hunt there. Missing Pokémon show as silhouettes, and each Search favors them.
+- ⚪ **The Poké Ball icon on the home screen:** pick a zone and hunt there. Missing Pokémon show as silhouettes. Each Search leans a little toward the common ones you're missing, never toward the rare ones or the legendary.
 
-| Zone | Pokémon | Who lives there | Legendary ⭐ |
-|---|---|---|---|
-| 🌲 **Forest** | 41 | Grass, bugs and forest animals | Mew |
-| 🏖️ **Beach** | 30 | Water and Ice | Articuno |
-| 🪨 **Cave** | 31 | Rock, Ground, Fighting and Dragon, plus Zubat and Clefairy | Moltres |
-| 👻 **Mansion** | 21 | Ghost, Psychic, poison gas and sludge, and machines | Mewtwo |
-| 🌾 **Field** | 28 | Birds, Normal, Eevee and fire runners | Zapdos |
+| Zone | Pokémon | Who lives there | Rare 💎 | Legendary ⭐ |
+|---|---|---|---|---|
+| 🌲 **Forest** | 41 | Grass, bugs and forest animals | Tangela, Scyther, Pinsir | Mew |
+| 🏖️ **Beach** | 30 | Water and Ice | Jynx, Lapras | Articuno |
+| 🪨 **Cave** | 31 | Rock, Ground, Fighting and Dragon, plus Zubat and Clefairy | Onix, Hitmonlee, Hitmonchan, Rhyhorn, Magmar, Omanyte, Kabuto, Aerodactyl, Dratini | Moltres |
+| 👻 **Mansion** | 21 | Ghost, Psychic, poison gas and sludge, and machines | Grimer, Mr. Mime, Electabuzz, Ditto, Porygon | Mewtwo |
+| 🌾 **Field** | 28 | Birds, Normal, Eevee and fire runners | Growlithe, Ponyta, Farfetch'd, Lickitung, Chansey, Kangaskhan, Tauros, Snorlax | Zapdos |
 
-⭐ A zone's legendary appears only after you've caught everything else there. Each Search then has a 25% chance of finding it, or 3% once it's caught. Evolved forms only appear once your Pokémon is high enough level. All 151 can be caught this way, and catching all of a zone earns its zone medal.
+Every zone's Pokémon are **common**, **rare** or **legendary**:
+
+- **Common** ones turn up all the time. Their evolved forms come half as often.
+- 💎 **Rare** ones, and what they evolve into (Dratini to Dragonite, Growlithe to Arcanine...), come about a third as often as a common one.
+- ⭐ The **legendary** can turn up on any Search, from the very first, but only about 1 Search in 100. Evolved forms only appear once your Pokémon is high enough level. All 151 can be caught this way, and catching all of a zone earns its zone medal.
 
 ✨ About 1 wild Pokémon in 100 is shiny. Its shiny form goes into the Pokédex separately from the regular one, so you can have both, and each can be traded on its own.
 

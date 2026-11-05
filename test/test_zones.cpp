@@ -60,7 +60,6 @@ TEST(Zones, rival_belongs_to_zone_and_respects_level) {
         int16_t d = p.pickZoneSpecies(z, lvl);
         CHECK(zoneOf(d) == z);
         CHECK(btlMinLevel(d) <= lvl);
-        CHECK(d != ZONE_LEGEND[z]);
       }
 }
 
@@ -72,18 +71,46 @@ TEST(Zones, prefers_what_is_missing) {
   CHECK(hits > N * (ZONE_NEW_PCT - 10) / 100);
 }
 
-TEST(Zones, legendary_only_with_complete_zone) {
+// the legendary can turn up on any Search, an empty Pokedex or a full one, about 1 in 100
+TEST(Zones, legendary_any_time_but_seldom) {
   Pet p;
-  zoneCatchAllBut(p, Z_MANSION, 92);  // Gastly is missing: the legendary does not appear
-  for (int i = 0; i < 2000; i++) CHECK(p.pickZoneSpecies(Z_MANSION, 60) != 150);
-  p.catchWild(92);
-  int hits = 0, N = 2000;
-  for (int i = 0; i < N; i++) hits += p.pickZoneSpecies(Z_MANSION, 60) == 150;
-  CHECK(hits > N * (ZONE_LEGEND_NEW_PCT - 8) / 100 && hits < N * (ZONE_LEGEND_NEW_PCT + 8) / 100);
-  p.catchWild(150);  // caught: rare, but does not disappear
+  int hits = 0, N = 40000;
+  for (int i = 0; i < N; i++) hits += p.pickZoneSpecies(Z_MANSION, 5) == 150;
+  CHECK(hits > N * ZONE_LEGEND_PERMIL / 2000 && hits < N * ZONE_LEGEND_PERMIL * 2 / 1000);
+  zoneCatchAllBut(p, Z_MANSION, 150);
+  p.catchWild(150);
   hits = 0;
   for (int i = 0; i < N; i++) hits += p.pickZoneSpecies(Z_MANSION, 60) == 150;
-  CHECK(hits > 0 && hits < N * (ZONE_LEGEND_SEEN_PCT + 5) / 100);
+  CHECK(hits > N * ZONE_LEGEND_PERMIL / 2000 && hits < N * ZONE_LEGEND_PERMIL * 2 / 1000);
+}
+
+// common, rare and legendary: every zone has some of each, and a rare one is much rarer than a common one
+TEST(Zones, rare_ones_are_rarer) {
+  for (uint8_t z = 0; z < ZONE_COUNT; z++) {
+    int common = 0, rare = 0;
+    for (int16_t d = 1; d <= DEX_COUNT; d++) {
+      if (zoneOf(d) != z || d == ZONE_LEGEND[z]) continue;
+      if (zoneIsRare(d)) rare++;
+      else common++;
+      CHECK(zoneWeight(d) >= ZONE_W_RARE_EVO && zoneWeight(d) <= ZONE_W_COMMON);
+    }
+    CHECK(common > 0);
+    CHECK(rare > 0);
+  }
+  CHECK(zoneIsRare(149));   // Dragonite: Dratini's line
+  CHECK(!zoneIsRare(3));    // Venusaur: Bulbasaur's
+  CHECK(!zoneIsRare(136));  // Flareon: Eevee's
+  CHECK_EQ(lineBase(136), 133);
+  CHECK_EQ(lineBase(3), 1);
+  Pet p;  // with everything caught (no leaning), Scyther comes up a third as often as Caterpie
+  for (int16_t d = 1; d <= DEX_COUNT; d++) p.catchWild(d);
+  int scyther = 0, caterpie = 0;
+  for (int i = 0; i < 60000; i++) {
+    int16_t d = p.pickZoneSpecies(Z_FOREST, 100);
+    scyther += d == 123;
+    caterpie += d == 10;
+  }
+  CHECK(scyther * 2 < caterpie && scyther * 5 > caterpie);
 }
 
 TEST(Zones, scene_fits_and_each_is_distinct) {

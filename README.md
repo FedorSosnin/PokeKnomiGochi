@@ -135,7 +135,7 @@ Every wild Pokémon you beat can be caught, even one you already have: you get t
 
 ### Battles
 
-Tap the **Poké Ball** icon in the middle of the home screen to pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. **Wild Encounter**, the last circle, meets a wild Pokémon from anywhere at your Pokémon's home, in the scene of the main screen, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
+Tap the **Poké Ball** icon in the middle of the home screen to pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. **Wild Encounter**, the last circle, meets a wild Pokémon from anywhere at your Pokémon's home, in the scene of the main screen, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
 
 ### Games
 
