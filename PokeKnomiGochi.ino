@@ -166,11 +166,9 @@ enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE };
 ZoneScreen zoneScreen = ZS_NONE;
 uint8_t zoneCur = 0, zonePage = 0;
 int8_t bZone = -1;                  // this battle is in a zone; -1 = random
-uint32_t zoneUntil = 0;
 int16_t zoneDetail = 0;             // the entry opened from the zone's grid (0 = the grid)
 uint16_t *zoneArt = nullptr;        // the 5 frames, painted the first time the menu opens
 uint16_t *zoneBg = nullptr;         // the current battle's one, scaled up to the screen
-uint32_t gamesMenuUntil = 0;
 // who's that pokemon
 enum QuizPhase : uint8_t { QP_ASK, QP_REVEAL, QP_END };
 bool quizOpen = false;
@@ -656,7 +654,10 @@ PowerCtx powerCtx(uint32_t now) {
 #ifdef BOARD_HOST
   if (!c.sleeping) c.idleMs = 0;  // a desktop window has no panel to protect: only the pet's sleep dims it
 #endif
-  c.gameOpen = gameOpen || battleOpen || quizOpen || runOpen || dungeonOpen || sdOpen || vbOpen;
+  // a battle waits for you (it no longer ends by itself): left alone long enough to dim, it is
+  // drawn at the slower rates like any other screen
+  bool battleIdle = battleOpen && c.idleMs > POWER_DIM1_MS;
+  c.gameOpen = gameOpen || (battleOpen && !battleIdle) || quizOpen || runOpen || dungeonOpen || sdOpen || vbOpen;
   c.arcadeOpen = runOpen || dungeonOpen || vbOpen;
   c.usb = usbPresent();
   c.charging = batCharging();
@@ -2226,7 +2227,6 @@ void openGamesMenu() {
   if (pet.isEgg() || pet.sleeping || pet.ceremony) { sfxPlay(SFX_DENY); return; }
   gameGlimpsesPaint();
   gamesMenuOpen = true;
-  gamesMenuUntil = millis() + 20000;
 }
 
 // the game under a tap: its window or its name under it, or -1
@@ -2250,7 +2250,7 @@ void gamesMenuTap(int16_t x, int16_t y) {
 }
 
 void renderGamesMenu() {
-  if (!timeLeft(gamesMenuUntil) || pet.sleeping || pet.ceremony) { gamesMenuOpen = false; return; }
+  if (pet.sleeping || pet.ceremony) { gamesMenuOpen = false; return; }  // left alone it stays open
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
@@ -2835,8 +2835,8 @@ void battleStep() {
       }
       break;
     case BP_LEARNED: if (t > 2000) battleSetPhase(BP_CHOOSE); break;
-    case BP_CHOOSE:  // nobody responds: it flees on its own so the screen can dim
-      if (idleSince(millis(), lastInteract) > 60000) battleSetPhase(BP_RAN);
+    case BP_CHOOSE:  // a wild battle waits for you; a buddy's doesn't keep them waiting: after a minute it's over
+      if (bPvp && idleSince(millis(), lastInteract) > 60000) battleSetPhase(BP_RAN);
       break;
     case BP_WAIT:
       if (bPvpFoeTurn == bPvpTurn) {
@@ -2863,9 +2863,7 @@ void battleStep() {
     case BP_EFFECT: if (t > 1000) battleAfterHit(); break;
     case BP_RAN: if (t > (bPvpGone ? 2500UL : 1200UL)) closeBattle(); break;
     case BP_END: if (t > 3500) battleAfterEnd(); break;
-    case BP_AIM:  // nobody responds: it leaves
-      if (idleSince(millis(), lastInteract) > 60000) battleSetPhase(BP_FLED);
-      break;
+    case BP_AIM: break;  // it keeps running until you throw, however long you wait
     case BP_THROW: battleThrowStep(millis()); break;
     case BP_MISS:
       if (t > 2000) battleSetPhase(bBalls ? BP_AIM : BP_FLED);
@@ -6916,7 +6914,6 @@ void tradeTap(int16_t x, int16_t y) {
 #define ZONE_BTN_H 44
 #define ZONE_PAGE_Y 384
 #define ZONE_CLOSE_Y 430  // a little lower than elsewhere, to make room for the page
-#define ZONE_IDLE_MS 30000UL
 
 // two rows of three: the five zones, then Random Battle (a wild Pokemon from anywhere, like the
 // Knomi's button; the apps and the web have none), its window a pie of the five scenes
@@ -6936,7 +6933,6 @@ void openZones() {
     }
   }
   zoneScreen = ZS_PICK;
-  zoneUntil = millis() + ZONE_IDLE_MS;
 }
 
 // the entry opened from a zone's grid, like the Pokedex's (0 = the grid)
@@ -6950,17 +6946,14 @@ void zoneBack() {
   sfxPlay(SFX_TAP);
   if (zoneDetail) {
     zoneDetailClose();
-    zoneUntil = millis() + ZONE_IDLE_MS;
   } else if (zoneScreen == ZS_ZONE) {
     zoneScreen = ZS_PICK;
-    zoneUntil = millis() + ZONE_IDLE_MS;
   } else {
     zoneScreen = ZS_NONE;  // back home, where its icon is
   }
 }
 
 void zoneTurnPage(int dir) {
-  zoneUntil = millis() + ZONE_IDLE_MS;
   if (zoneScreen != ZS_ZONE || zoneDetail) return;
   int pages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
   int np = (int)zonePage + dir;
@@ -6994,11 +6987,9 @@ void zoneBattleEnded() {
   zoneCur = bZone;
   bZone = -1;
   zoneScreen = ZS_ZONE;  // keep searching, now with the catch on the list
-  zoneUntil = millis() + ZONE_IDLE_MS;
 }
 
 void zoneTap(int16_t x, int16_t y) {
-  zoneUntil = millis() + ZONE_IDLE_MS;
   if (zoneDetail) {
     if (dexArtPet(x, y)) return;  // its sprite: a pat
     zoneDetailClose();            // anywhere else: back to the zone
@@ -7080,7 +7071,7 @@ int zonePickAt(int16_t x, int16_t y) {
 }
 
 void renderZones() {
-  if (!timeLeft(zoneUntil) || pet.sleeping || pet.ceremony || pet.isEgg()) { zoneDetailClose(); zoneScreen = ZS_NONE; return; }
+  if (pet.sleeping || pet.ceremony || pet.isEgg()) { zoneDetailClose(); zoneScreen = ZS_NONE; return; }  // left alone it stays open
   if (zoneDetail) {
     renderDexDetail(zoneDetail);
     return;
