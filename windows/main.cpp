@@ -11,6 +11,7 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <winhttp.h>
+#include <bcrypt.h>
 #include <xinput.h>
 #include <math.h>
 #include <stdio.h>
@@ -28,6 +29,7 @@
 #include "resources.h"
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
 #include "version.h"
+#include "update_key.h"  // checks the updates' signature
 
 #define APP_NAME "PokeWinGochi"
 #define APP_NAME_W L"PokeWinGochi"
@@ -50,11 +52,19 @@ static const int kSizes[] = {190, 240, 300};  // side of the window at rest, fra
 
 // New versions: the newest "win-v*" release on GitHub. Checked at launch and once a day; the player is
 // told once per version and can always check from the menu. The save lives outside the app, so
-// replacing the .exe with the new one keeps the pet.
+// a new .exe keeps the pet.
+// Updating in place, as the Knomi does: the release also carries the .exe's signature
+// (tools/sign_update.sh). The app downloads both itself, checks the signature against
+// UPDATE_PUBLIC_KEY and writes the new .exe beside itself; then it saves the game, renames itself out
+// of the way (Windows lets a running program be renamed, not replaced), puts the new one in its place
+// and starts it. Written by the app and not by a browser, the new .exe has no "from the internet" mark:
+// no SmartScreen warning after the first install. When it can't (an older release, a folder it can't
+// write to), the menu offers the download as before.
 #define GITHUB_API_HOST L"api.github.com"
 #define RELEASES_PATH L"/repos/FedorSosnin/PokeKnomiGochi/releases?per_page=30"
 #define RELEASE_TAG "win-v"
 #define RELEASE_ASSET "PokeWinGochi.exe"
+#define RELEASE_SIG RELEASE_ASSET ".sig"
 #define UPDATE_EVERY_MS (24 * 60 * 60 * 1000)
 
 // The window's size and place live in the save folder (namespace "win"), next to the game they belong
@@ -66,6 +76,7 @@ enum {
   WM_RELAY_MSG,          // a message from the relay thread (wParam: 1 text, 0 binary; lParam: std::string*)
   WM_RELAY_DOWN,         // the relay connection dropped
   WM_UPDATE_FOUND,       // the update check is back (wParam: asked; lParam: UpdateResult*)
+  WM_UPDATE_READY,       // the new .exe is checked and beside this one (lParam: std::wstring*, its path, or empty: failed)
   WM_TEST,               // --console: a test event (lParam: std::string*)
 };
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
@@ -80,6 +91,8 @@ static bool gOwnSave = true;   // false with POKEMACGOCHI_SAVE_DIR: another save
 static HANDLE gLock = INVALID_HANDLE_VALUE;
 static std::string gNewVersion;  // newer than this app, once a check found one
 static std::wstring gNewURL;     // its .exe (or the release page)
+static std::wstring gNewExe, gNewSig;  // the new .exe and its signature: to update in place
+static bool gUpdating = false;
 
 // ---- text ----
 static std::wstring wide(const std::string &s) {
@@ -180,6 +193,46 @@ static bool httpGet(const wchar_t *host, const wchar_t *path, const wchar_t *hea
     DWORD status = 0, len = sizeof(status);
     ok = WinHttpSendRequest(r, headers ? headers : WINHTTP_NO_ADDITIONAL_HEADERS, headers ? (DWORD)-1L : 0,
                             WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+         WinHttpReceiveResponse(r, NULL) &&
+         WinHttpQueryHeaders(r, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX,
+                             &status, &len, WINHTTP_NO_HEADER_INDEX) &&
+         status == 200;
+    for (DWORD avail = 0; ok && WinHttpQueryDataAvailable(r, &avail) && avail;) {
+      size_t at = body.size();
+      body.resize(at + avail);
+      DWORD got = 0;
+      if (!WinHttpReadData(r, &body[at], avail, &got)) ok = false;
+      body.resize(at + got);
+    }
+    WinHttpCloseHandle(r);
+  }
+  if (c) WinHttpCloseHandle(c);
+  return ok;
+}
+
+// one GET of a full URL (GitHub's download links redirect, which WinHTTP follows); http too, for tests
+static bool httpGetUrl(const std::wstring &url, std::string &body) {
+  body.clear();
+  URL_COMPONENTS u = {sizeof(u)};
+  wchar_t host[256] = L"", path[2048] = L"";
+  u.lpszHostName = host;
+  u.dwHostNameLength = 256;
+  u.lpszUrlPath = path;
+  u.dwUrlPathLength = 2048;
+  wchar_t extra[1024] = L"";
+  u.lpszExtraInfo = extra;
+  u.dwExtraInfoLength = 1024;
+  if (!WinHttpCrackUrl(url.c_str(), 0, 0, &u)) return false;
+  std::wstring fullPath = std::wstring(path) + extra;
+  HINTERNET c = WinHttpConnect(httpSession(), host, u.nPort, 0);
+  HINTERNET r = c ? WinHttpOpenRequest(c, L"GET", fullPath.c_str(), NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
+                                       u.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0)
+                  : NULL;
+  bool ok = false;
+  if (r) {
+    WinHttpSetTimeouts(r, 8000, 8000, 30000, 30000);
+    DWORD status = 0, len = sizeof(status);
+    ok = WinHttpSendRequest(r, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
          WinHttpReceiveResponse(r, NULL) &&
          WinHttpQueryHeaders(r, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX,
                              &status, &len, WINHTTP_NO_HEADER_INDEX) &&
@@ -692,8 +745,10 @@ static void showMenu(POINT at) {
     AppendMenuW(m, MF_STRING | (gVibeOn ? MF_CHECKED : 0), ID_VIBE, L"Vibration");
   if (gAccel)  // only with a motion sensor
     AppendMenuW(m, MF_STRING | (gTiltOn ? MF_CHECKED : 0), ID_TILT, L"Tilt with the Device");
-  std::wstring upd = gNewVersion.empty() ? L"Check for Updates…" : L"Download Version " + wide(gNewVersion) + L"…";
-  AppendMenuW(m, MF_STRING, ID_UPDATE, upd.c_str());
+  std::wstring upd = gUpdating            ? L"Updating…"
+                    : gNewVersion.empty() ? L"Check for Updates…"
+                    : (!gNewExe.empty() && !gNewSig.empty() ? L"Update to Version " : L"Download Version ") + wide(gNewVersion) + L"…";
+  AppendMenuW(m, MF_STRING | (gUpdating ? MF_GRAYED : 0), ID_UPDATE, upd.c_str());
   AppendMenuW(m, MF_SEPARATOR, 0, NULL);
   AppendMenuW(m, MF_STRING | MF_GRAYED, 0, L"Drag the ring to move");
   AppendMenuW(m, MF_STRING | MF_GRAYED, 0, L"← → tilt  ·  Space: wild battle");
@@ -732,19 +787,75 @@ static void showAbout() {
 }
 
 // ---- new versions ----
-struct UpdateResult { bool answered = false; std::string version; std::wstring url; };
+struct UpdateResult { bool answered = false; std::string version; std::wstring url, exe, sig; };
+
+// the signature (ECDSA P-256 over SHA-256, DER) of an update, against the key the app carries
+static bool updateSignatureOK(const std::string &data, const std::string &sigDer) {
+  // DER: 30 len 02 lenR R 02 lenS S -> R and S as 32 bytes each, as BCrypt wants them
+  unsigned char rs[64] = {0};
+  const unsigned char *d = (const unsigned char *)sigDer.data();
+  size_t n = sigDer.size(), at = 2;
+  if (n < 8 || d[0] != 0x30) return false;
+  for (int k = 0; k < 2; k++) {
+    if (at + 2 > n || d[at] != 0x02) return false;
+    size_t len = d[at + 1];
+    at += 2;
+    if (at + len > n) return false;
+    const unsigned char *v = d + at;
+    while (len > 32 && *v == 0) { v++; len--; }  // a leading zero keeps the number positive
+    if (len > 32) return false;
+    memcpy(rs + k * 32 + (32 - len), v, len);
+    at += v - (d + at) + len;
+  }
+  BCRYPT_ALG_HANDLE hash = NULL, ecdsa = NULL;
+  BCRYPT_KEY_HANDLE key = NULL;
+  unsigned char digest[32];
+  bool ok = BCryptOpenAlgorithmProvider(&hash, BCRYPT_SHA256_ALGORITHM, NULL, 0) == 0 &&
+            BCryptHash(hash, NULL, 0, (PUCHAR)data.data(), (ULONG)data.size(), digest, sizeof(digest)) == 0;
+  if (ok) {
+    unsigned char blob[sizeof(BCRYPT_ECCKEY_BLOB) + 64];
+    BCRYPT_ECCKEY_BLOB *h = (BCRYPT_ECCKEY_BLOB *)blob;
+    h->dwMagic = BCRYPT_ECDSA_PUBLIC_P256_MAGIC;
+    h->cbKey = 32;
+    memcpy(blob + sizeof(BCRYPT_ECCKEY_BLOB), UPDATE_PUBLIC_KEY + 1, 64);  // X then Y, after the 0x04
+    ok = BCryptOpenAlgorithmProvider(&ecdsa, BCRYPT_ECDSA_P256_ALGORITHM, NULL, 0) == 0 &&
+         BCryptImportKeyPair(ecdsa, NULL, BCRYPT_ECCPUBLIC_BLOB, &key, blob, sizeof(blob), 0) == 0 &&
+         BCryptVerifySignature(key, NULL, digest, sizeof(digest), rs, sizeof(rs), 0) == 0;
+  }
+  if (key) BCryptDestroyKey(key);
+  if (ecdsa) BCryptCloseAlgorithmProvider(ecdsa, 0);
+  if (hash) BCryptCloseAlgorithmProvider(hash, 0);
+  return ok;
+}
+
+static std::wstring exePath() {
+  wchar_t p[MAX_PATH * 2];
+  DWORD n = GetModuleFileNameW(NULL, p, MAX_PATH * 2);
+  return std::wstring(p, n);
+}
+static std::wstring besideExe(const wchar_t *name) {
+  std::wstring p = exePath();
+  return p.substr(0, p.find_last_of(L"\\/") + 1) + name;
+}
 
 // Asks GitHub for the newest Windows release. From the menu (asked) it always answers; the
 // automatic check only speaks up the first time it finds each new version.
+static void offerUpdate();
+static void removeTrayIcon();
 static void checkForUpdates(bool asked) {
-  if (asked && !gNewVersion.empty()) {  // already known: straight to the download
-    ShellExecuteW(NULL, L"open", gNewURL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  if (gUpdating) return;
+  if (asked && !gNewVersion.empty()) {  // already known: update, or straight to the download
+    if (!gNewExe.empty() && !gNewSig.empty()) offerUpdate();
+    else ShellExecuteW(NULL, L"open", gNewURL.c_str(), NULL, NULL, SW_SHOWNORMAL);
     return;
   }
   std::thread([asked] {
     std::string body;
     UpdateResult *res = new UpdateResult;
-    if ((res->answered = httpGet(GITHUB_API_HOST, RELEASES_PATH, L"Accept: application/vnd.github+json\r\n", body))) {
+    // POKEMACGOCHI_UPDATE_API: another release list, for testing the update on a local server
+    const char *api = getenv("POKEMACGOCHI_UPDATE_API");
+    if ((res->answered = api ? httpGetUrl(wide(api), body)
+                             : httpGet(GITHUB_API_HOST, RELEASES_PATH, L"Accept: application/vnd.github+json\r\n", body))) {
       // each release's fields after its "tag_name" (draft, prerelease, assets) come before the next one's
       const std::string key = "\"tag_name\":\"";
       for (size_t at = body.find(key); at != std::string::npos;) {
@@ -758,11 +869,16 @@ static void checkForUpdates(bool asked) {
         if (!res->version.empty() && compareVersions(v, res->version) <= 0) continue;
         res->version = v;
         res->url = wide("https://github.com/FedorSosnin/PokeKnomiGochi/releases/tag/" + tag);
+        res->exe.clear();
+        res->sig.clear();
         const std::string dl = "\"browser_download_url\":\"";
+        auto endsWith = [](const std::string &u, const char *tail) {
+          return u.size() >= strlen(tail) && u.compare(u.size() - strlen(tail), std::string::npos, tail) == 0;
+        };
         for (size_t a = rel.find(dl); a != std::string::npos; a = rel.find(dl, a + 1)) {
           std::string u = rel.substr(a + dl.size(), rel.find('"', a + dl.size()) - a - dl.size());
-          if (u.size() >= strlen(RELEASE_ASSET) && u.compare(u.size() - strlen(RELEASE_ASSET), std::string::npos, RELEASE_ASSET) == 0)
-            res->url = wide(u);
+          if (endsWith(u, "/" RELEASE_ASSET)) res->url = res->exe = wide(u);
+          if (endsWith(u, "/" RELEASE_SIG)) res->sig = wide(u);
         }
       }
     }
@@ -775,6 +891,8 @@ static void updateCheckFound(const UpdateResult &r, bool asked) {
   if (newer) {
     gNewVersion = r.version;
     gNewURL = r.url;
+    gNewExe = r.exe;
+    gNewSig = r.sig;
   }
   Preferences p;
   p.begin(PREFS_NS);
@@ -783,6 +901,10 @@ static void updateCheckFound(const UpdateResult &r, bool asked) {
   if (!asked && (!newer || r.version == told)) { p.end(); return; }
   if (newer) p.putString("told", r.version.c_str());
   p.end();
+  if (newer && !gNewExe.empty() && !gNewSig.empty()) {
+    offerUpdate();
+    return;
+  }
   std::wstring title, text;
   UINT type = MB_ICONINFORMATION | MB_OK;
   if (newer) {
@@ -800,6 +922,89 @@ static void updateCheckFound(const UpdateResult &r, bool asked) {
   }
   if (MessageBoxW(gWnd, text.c_str(), title.c_str(), type | MB_TOPMOST) == IDYES)
     ShellExecuteW(NULL, L"open", r.url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+}
+
+// downloads the new .exe and its signature, checks it and writes it beside this one
+static void installUpdate() {
+  if (gUpdating || gNewExe.empty() || gNewSig.empty()) return;
+  gUpdating = true;
+  std::wstring exeUrl = gNewExe, sigUrl = gNewSig;
+  fprintf(stderr, "update: downloading %s\n", gNewVersion.c_str());
+  std::thread([exeUrl, sigUrl] {
+    std::string sig, exe;
+    std::wstring *out = new std::wstring;
+    if (httpGetUrl(sigUrl, sig) && httpGetUrl(exeUrl, exe) && exe.size() > 4096 && exe[0] == 'M' && exe[1] == 'Z') {
+      if (updateSignatureOK(exe, sig)) {
+        std::wstring fresh = besideExe(L"" APP_NAME_W L".new.exe");
+        HANDLE f = CreateFileW(fresh.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+        DWORD wrote = 0;
+        bool ok = f != INVALID_HANDLE_VALUE && WriteFile(f, exe.data(), (DWORD)exe.size(), &wrote, NULL) && wrote == exe.size();
+        if (f != INVALID_HANDLE_VALUE) CloseHandle(f);
+        if (ok) *out = fresh;
+        else {
+          DeleteFileW(fresh.c_str());
+          *out = L"!The update couldn't be written next to " APP_NAME_W L".";
+        }
+      } else {
+        *out = L"!The update didn't pass its safety check, so it wasn't installed.";
+      }
+    } else {
+      *out = L"!The update couldn't be downloaded.";
+    }
+    PostMessageW(gWnd, WM_UPDATE_READY, 0, (LPARAM)out);
+  }).detach();
+}
+
+static void updateFailed(const std::wstring &why) {
+  gUpdating = false;
+  fprintf(stderr, "update: failed: %s\n", utf8(why).c_str());
+  if (gConsole) return;
+  std::wstring text = why + L"\n\nDownload the new version instead?";
+  if (MessageBoxW(gWnd, text.c_str(), L"Couldn't update", MB_ICONWARNING | MB_YESNO | MB_TOPMOST) == IDYES)
+    ShellExecuteW(NULL, L"open", gNewURL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+}
+
+// the new .exe is beside this one: save, swap the two, start it and quit
+static void swapInUpdate(const std::wstring &fresh) {
+  hostFlushSave();  // the pet first
+  std::wstring cur = exePath(), old = besideExe(L"" APP_NAME_W L".old.exe");
+  DeleteFileW(old.c_str());
+  if (!MoveFileExW(cur.c_str(), old.c_str(), MOVEFILE_REPLACE_EXISTING)) {
+    DeleteFileW(fresh.c_str());
+    updateFailed(L"This copy of " APP_NAME_W L" couldn't be replaced.");
+    return;
+  }
+  if (!MoveFileExW(fresh.c_str(), cur.c_str(), MOVEFILE_REPLACE_EXISTING)) {
+    MoveFileExW(old.c_str(), cur.c_str(), MOVEFILE_REPLACE_EXISTING);  // put this one back
+    DeleteFileW(fresh.c_str());
+    updateFailed(L"The new " APP_NAME_W L" couldn't be put in place.");
+    return;
+  }
+  fprintf(stderr, "update: installed, reopening\n");
+  // the new one starts with the same arguments and environment (a test copy keeps its own save); the
+  // save's lock goes first, or it would think this one is still open
+  if (gLock != INVALID_HANDLE_VALUE) {
+    CloseHandle(gLock);
+    gLock = INVALID_HANDLE_VALUE;
+  }
+  std::wstring cmd = GetCommandLineW();
+  STARTUPINFOW si = {sizeof(si)};
+  PROCESS_INFORMATION pi = {};
+  if (CreateProcessW(cur.c_str(), &cmd[0], NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+  }
+  removeTrayIcon();
+  ExitProcess(0);
+}
+
+// "Update now?", then the update in place (a test copy doesn't wait for a click)
+static void offerUpdate() {
+  std::wstring title = APP_NAME_W L" " + wide(gNewVersion) + L" is available";
+  std::wstring text = L"You have version " + wide(APP_VERSION) + L". Updating takes a few seconds: " APP_NAME_W
+                      L" closes and opens again on the new version, with your pet just as it was.\n\nUpdate now?";
+  if (gConsole || MessageBoxW(gWnd, text.c_str(), title.c_str(), MB_ICONINFORMATION | MB_YESNO | MB_TOPMOST) == IDYES)
+    installUpdate();
 }
 
 // ---- the notification-area icon (the Mac's menu bar Poke Ball) ----
@@ -1071,6 +1276,13 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
       delete r;
       return 0;
     }
+    case WM_UPDATE_READY: {
+      std::wstring *path = (std::wstring *)lp;
+      if (!path->empty() && (*path)[0] != L'!') swapInUpdate(*path);
+      else updateFailed(path->empty() ? L"The update failed." : path->substr(1));
+      delete path;
+      return 0;
+    }
     case WM_TEST: {
       std::string *s = (std::string *)lp;
       testEvent(*s);
@@ -1133,6 +1345,13 @@ static bool lockSave(const std::string &saveDir) {
 
 int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
   gInst = inst;
+  // after an update: the old .exe, renamed out of the way while it ran (it may still be closing)
+  std::thread([] {
+    for (int i = 0; i < 20 && GetFileAttributesW(besideExe(L"" APP_NAME_W L".old.exe").c_str()) != INVALID_FILE_ATTRIBUTES; i++) {
+      DeleteFileW(besideExe(L"" APP_NAME_W L".old.exe").c_str());
+      Sleep(500);
+    }
+  }).detach();
   int argc = 0;
   wchar_t **argv = CommandLineToArgvW(GetCommandLineW(), &argc);
   for (int i = 1; i < argc; i++)

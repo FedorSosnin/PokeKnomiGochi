@@ -290,7 +290,7 @@ The same game as a small round window on your Mac desktop, in a Poké Ball ring.
 
 Your pet, sound setting and window size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 
-**Updates:** PokeMacGochi checks for a new version when it opens and once a day, and tells you once when one is out. **Download** gets the new DMG; quit PokeMacGochi, open the DMG and drag it into Applications, choosing **Replace**. Your pet stays, since it's saved outside the app.
+**Updates:** PokeMacGochi checks for a new version when it opens and once a day, and tells you once when one is out. From 1.30 on it updates itself, like the Knomi: click **Update** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and reopens on it a few seconds later. Your pet stays, since it's saved outside the app. Older versions get the new DMG instead: quit PokeMacGochi, open the DMG and drag it into Applications, choosing **Replace**.
 
 **Buddies:** a Knomi or another PokeMacGochi on the same Wi-Fi shows up as a buddy, just like between two Knomis. The first time, macOS asks whether PokeMacGochi may find devices on your local network: click **Allow**. If you clicked **Don't Allow**, turn PokeMacGochi on in **System Settings → Privacy & Security → Local Network** and reopen it.
 
@@ -308,7 +308,7 @@ The same game as a small round window on your Windows desktop, for Windows 10 an
 
 Your pet, sound setting and window size and place are saved in `%APPDATA%\PokeWinGochi`, separate from the app; the game's pictures are unpacked to `%LOCALAPPDATA%\PokeWinGochi`. Only one copy runs on that save at a time.
 
-**Updates:** it checks for a new version when it opens and once a day, and tells you once when one is out. Quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one. Your pet stays.
+**Updates:** it checks for a new version when it opens and once a day, and tells you once when one is out. From 1.13 on it updates itself, like the Knomi: click **Yes** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and starts again on it a few seconds later. Your pet stays. On older versions, quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one.
 
 **Tilt and controllers:** a controller's left stick tilts smoothly (for Tilt Catch and aiming Poké Balls), and the stick or D-pad walks in PokeDungeon: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. If Windows has a motion sensor, as many tablets do, tilting the device tilts the game, like on a phone; **Tilt with the Device** in the menu turns that off. On a ROG Ally, set the gyro to act as the left joystick in Armoury Crate, and tilting the Ally tilts the game. The controller and the sensor only count while PokeWinGochi is the active window.
 

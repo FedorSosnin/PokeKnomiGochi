@@ -40,6 +40,6 @@ wait
 $T-windres -I windows windows/app.rc -O coff -o $B/obj/app_res.o
 # -static: no DLLs to ship beside it; -mwindows: no console window
 $T-clang++ -static -mwindows -municode -o $B/PokeWinGochi.exe $OBJ $B/obj/app_res.o \
-  -lws2_32 -liphlpapi -lwinhttp -lwinmm -lcomctl32 -lshell32 -lole32 -loleaut32 -luuid -lshcore -lsensorsapi
+  -lws2_32 -liphlpapi -lwinhttp -lwinmm -lcomctl32 -lshell32 -lole32 -loleaut32 -luuid -lshcore -lsensorsapi -lbcrypt
 $T-strip $B/PokeWinGochi.exe
 echo "OK -> $B/PokeWinGochi.exe ($(du -h $B/PokeWinGochi.exe | cut -f1))"

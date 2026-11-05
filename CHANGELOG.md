@@ -12,6 +12,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 - **A map for battles:** the middle icon on the home screen is now a folded region map instead of a Poké Ball, and the screen it opens is called **Travel**: the zones are places to travel to and hunt.
 - **Party Boost:** with company, energy now drains a quarter slower (it was half).
+- **The Mac and Windows apps update themselves:** from PokeMacGochi 1.30 and PokeWinGochi 1.13 on, a new version installs from inside the app, like the Knomi's: it downloads, checks the update's signature, and reopens on the new version with your pet as it was. This version still has to be downloaded by hand once.
 - **Zones are a real hunt:** each zone's Pokémon are common, rare or legendary. Common ones turn up all the time; rare ones (and what they evolve into) about a third as often; and the legendary can appear on any Search, not just after the rest, but only about once in a hundred. Searches no longer steer you to what you're missing, except a little toward common ones, so filling a zone takes several times longer. [How it works](docs/HOW_IT_WORKS.md#zones) lists each zone's rare ones.
 
 ## [1.44] - 2026-11-05

@@ -3,11 +3,13 @@
 #import <AppKit/AppKit.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <QuartzCore/QuartzCore.h>
+#import <Security/Security.h>
 #include <fcntl.h>
 #include <sys/file.h>
 #include <unistd.h>
 #include "host.h"
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
+#include "../update_key.h"        // checks the updates' signature
 
 #define APP_NAME "PokeMacGochi"
 // About box
@@ -29,12 +31,51 @@ static const CGFloat kSizes[] = {190, 240, 300};  // side of the window at rest,
 
 // New versions: the newest "mac-v*" release on GitHub. Checked at launch and once a day; the
 // player is told once per version and can always check from the menu. The save lives outside
-// the app, so replacing it with the new DMG keeps the pet.
+// the app, so a new app keeps the pet.
+// Updating in place, as the Knomi does: the release also carries the app as a zip and its
+// signature (tools/sign_update.sh). The app downloads both itself, checks the signature against
+// UPDATE_PUBLIC_KEY, unpacks the new app next to itself, saves the game, swaps the two and opens the
+// new one. Downloaded by the app and not by a browser, it isn't quarantined: no Gatekeeper warning
+// after the first install. When it can't (an older release, an app it can't write, running from the
+// DMG), the menu offers the download as before.
 #define RELEASES_API "https://api.github.com/repos/FedorSosnin/PokeKnomiGochi/releases?per_page=30"
 #define UPDATE_EVERY_S (24 * 60 * 60)
+#define UPDATE_ZIP "PokeMacGochi.zip"
 static NSString *const kPrefToldVersion = @"updateToldVersion";
 static NSString *gNewVersion = nil;  // newer than this app, once a check found one
 static NSURL *gNewURL = nil;         // its DMG (or the release page)
+static NSURL *gNewZip = nil;         // the new app, zipped, and its signature: to update in place
+static NSURL *gNewSig = nil;
+static bool gUpdating = false;
+
+// the signature (ECDSA P-256 over SHA-256, DER) of an update, against the key the app carries
+static bool updateSignatureOK(NSData *data, NSData *sig) {
+  NSDictionary *attrs = @{(id)kSecAttrKeyType : (id)kSecAttrKeyTypeECSECPrimeRandom,
+                          (id)kSecAttrKeyClass : (id)kSecAttrKeyClassPublic, (id)kSecAttrKeySizeInBits : @256};
+  SecKeyRef key = SecKeyCreateWithData((__bridge CFDataRef)[NSData dataWithBytes:UPDATE_PUBLIC_KEY length:sizeof(UPDATE_PUBLIC_KEY)],
+                                       (__bridge CFDictionaryRef)attrs, NULL);
+  if (!key || !data.length || !sig.length) {
+    if (key) CFRelease(key);
+    return false;
+  }
+  bool ok = SecKeyVerifySignature(key, kSecKeyAlgorithmECDSASignatureMessageX962SHA256, (__bridge CFDataRef)data,
+                                  (__bridge CFDataRef)sig, NULL);
+  CFRelease(key);
+  return ok;
+}
+
+// can this copy replace itself? (it has the files for it, and it may write where it is: not the
+// DMG, not a copy macOS runs from a private place because it hasn't been moved yet)
+static bool canUpdateInPlace() {
+  NSString *app = NSBundle.mainBundle.bundlePath;
+  NSFileManager *fm = NSFileManager.defaultManager;
+  return gNewZip && gNewSig && ![app containsString:@"/AppTranslocation/"] && [fm isWritableFileAtPath:app] &&
+         [fm isWritableFileAtPath:app.stringByDeletingLastPathComponent];
+}
+
+static NSInteger httpStatus(NSURLResponse *r) {
+  return [r isKindOfClass:NSHTTPURLResponse.class] ? ((NSHTTPURLResponse *)r).statusCode : 0;
+}
 
 // ---- the buddy relay (relay/): Knomis and Macs meet on the Wi-Fi by themselves; the relay adds
 // the browsers, which can't. One WebSocket, retried with a growing pause when it drops. ----
@@ -140,6 +181,10 @@ static void startAudio(void) {
 // ---- window ----
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate>
 - (void)checkForUpdates:(id)sender;
+- (void)offerUpdate:(NSString *)version;
+- (void)installUpdate;
+- (void)swapInUpdate:(NSURL *)fresh;
+- (void)updateFailed:(NSString *)why;
 @end
 
 @interface RoundWindow : NSWindow
@@ -392,8 +437,10 @@ static NSCursor *fingerCursor(bool pressed) {
   NSMenuItem *mute = [menu addItemWithTitle:@"Mute Sound" action:@selector(toggleMute:) keyEquivalent:@""];
   mute.target = self;
   mute.state = hostSoundEnabled() ? NSControlStateValueOff : NSControlStateValueOn;
-  NSString *upd = gNewVersion ? [NSString stringWithFormat:@"Download Version %@…", gNewVersion] : @"Check for Updates…";
-  NSMenuItem *update = [menu addItemWithTitle:upd action:@selector(checkForUpdates:) keyEquivalent:@""];
+  NSString *upd = gUpdating     ? @"Updating…"
+                  : !gNewVersion ? @"Check for Updates…"
+                  : [NSString stringWithFormat:canUpdateInPlace() ? @"Update to Version %@…" : @"Download Version %@…", gNewVersion];
+  NSMenuItem *update = [menu addItemWithTitle:upd action:gUpdating ? nil : @selector(checkForUpdates:) keyEquivalent:@""];
   update.target = NSApp.delegate;
   [menu addItem:NSMenuItem.separatorItem];
   [menu addItemWithTitle:@"Drag the ring to move" action:nil keyEquivalent:@""].enabled = NO;
@@ -634,17 +681,21 @@ static NSRect initialFrame(bool ownSave) {
 // the automatic check only speaks up the first time it finds each new version.
 - (void)checkForUpdates:(id)sender {
   bool asked = sender != nil;
-  if (asked && gNewVersion) {  // already known: straight to the download
-    [NSWorkspace.sharedWorkspace openURL:gNewURL];
+  if (gUpdating) return;
+  if (asked && gNewVersion) {  // already known: update, or straight to the download
+    if (canUpdateInPlace()) [self offerUpdate:gNewVersion];
+    else [NSWorkspace.sharedWorkspace openURL:gNewURL];
     return;
   }
-  NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@RELEASES_API]];
+  // POKEMACGOCHI_UPDATE_API: another release list, for testing the update on a local server
+  NSString *api = NSProcessInfo.processInfo.environment[@"POKEMACGOCHI_UPDATE_API"] ?: @RELEASES_API;
+  NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:api]];
   [req setValue:@APP_NAME forHTTPHeaderField:@"User-Agent"];
   [req setValue:@"application/vnd.github+json" forHTTPHeaderField:@"Accept"];
   req.timeoutInterval = 15;
   [[NSURLSession.sharedSession dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
     NSString *found = nil;
-    NSURL *url = nil;
+    NSURL *url = nil, *zip = nil, *sig = nil;
     NSArray *list = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
     if ([list isKindOfClass:NSArray.class])
       for (NSDictionary *r in list) {
@@ -655,27 +706,137 @@ static NSRect initialFrame(bool ownSave) {
         if (found && [v compare:found options:NSNumericSearch] != NSOrderedDescending) continue;
         found = v;
         url = [NSURL URLWithString:r[@"html_url"] ?: @GITHUB_URL];
-        for (NSDictionary *a in r[@"assets"])
-          if ([a[@"name"] isEqual:@"PokeMacGochi.dmg"]) url = [NSURL URLWithString:a[@"browser_download_url"]];
+        zip = sig = nil;
+        for (NSDictionary *a in r[@"assets"]) {
+          if (![a isKindOfClass:NSDictionary.class] || ![a[@"browser_download_url"] isKindOfClass:NSString.class]) continue;
+          NSURL *u = [NSURL URLWithString:a[@"browser_download_url"]];
+          if ([a[@"name"] isEqual:@"PokeMacGochi.dmg"]) url = u;
+          if ([a[@"name"] isEqual:@UPDATE_ZIP]) zip = u;
+          if ([a[@"name"] isEqual:@UPDATE_ZIP ".sig"]) sig = u;
+        }
       }
-    dispatch_async(dispatch_get_main_queue(), ^{ [self updateCheckFound:found url:url asked:asked]; });
+    dispatch_async(dispatch_get_main_queue(), ^{ [self updateCheckFound:found url:url zip:zip sig:sig asked:asked]; });
   }] resume];
 }
 
 - (void)dailyUpdateCheck:(NSTimer *)t { [self checkForUpdates:nil]; }
 
-- (void)updateCheckFound:(NSString *)found url:(NSURL *)url asked:(bool)asked {
+// "Update now?", then the update in place
+- (void)offerUpdate:(NSString *)version {
+  NSString *mine = NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"] ?: @"0";
+  NSAlert *alert = [[NSAlert alloc] init];
+  alert.messageText = [NSString stringWithFormat:@APP_NAME " %@ is available", version];
+  alert.informativeText = [NSString stringWithFormat:@"You have version %@. Updating takes a few seconds: " @APP_NAME
+                                                     @" closes and opens again on the new version, with your pet just as it was.",
+                                                     mine];
+  [alert addButtonWithTitle:@"Update"];
+  [alert addButtonWithTitle:@"Later"];
+  if (!gConsole) [NSApp activateIgnoringOtherApps:YES];
+  if (gConsole || [alert runModal] == NSAlertFirstButtonReturn) [self installUpdate];  // a test copy doesn't wait for a click
+}
+
+// downloads the zip and its signature, checks it, unpacks it next to the app; then swaps and reopens
+- (void)installUpdate {
+  if (gUpdating || !canUpdateInPlace()) return;
+  gUpdating = true;
+  NSURL *zipURL = gNewZip, *sigURL = gNewSig;
+  NSString *version = gNewVersion;
+  NSURL *appURL = NSBundle.mainBundle.bundleURL;
+  fprintf(stderr, "update: downloading %s\n", version.UTF8String);
+  NSURLSession *s = NSURLSession.sharedSession;
+  [[s dataTaskWithURL:sigURL completionHandler:^(NSData *sig, NSURLResponse *r1, NSError *e1) {
+    if (httpStatus(r1) != 200 || !sig.length) {
+      dispatch_async(dispatch_get_main_queue(), ^{ [self updateFailed:@"The update couldn't be downloaded."]; });
+      return;
+    }
+    [[s dataTaskWithURL:zipURL completionHandler:^(NSData *zip, NSURLResponse *r2, NSError *e2) {
+      NSString *err = nil;
+      NSURL *fresh = nil;
+      if (httpStatus(r2) != 200 || !zip.length) err = @"The update couldn't be downloaded.";
+      else if (!updateSignatureOK(zip, sig)) err = @"The update didn't pass its safety check, so it wasn't installed.";
+      else {
+        // unpacked on the app's own disk, so the swap is a rename
+        NSFileManager *fm = NSFileManager.defaultManager;
+        NSURL *tmp = [fm URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:appURL create:YES error:nil];
+        NSURL *zipFile = [tmp URLByAppendingPathComponent:@UPDATE_ZIP];
+        if (!tmp || ![zip writeToURL:zipFile atomically:NO]) err = @"There was no room to unpack the update.";
+        else {
+          NSTask *unzip = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/ditto"
+                                                   arguments:@[ @"-x", @"-k", zipFile.path, tmp.path ]];
+          [unzip waitUntilExit];
+          fresh = [tmp URLByAppendingPathComponent:appURL.lastPathComponent];
+          NSDictionary *info = [NSDictionary dictionaryWithContentsOfURL:[fresh URLByAppendingPathComponent:@"Contents/Info.plist"]];
+          if (unzip.terminationStatus != 0 || ![info[@"CFBundleShortVersionString"] isEqual:version] ||
+              ![info[@"CFBundleIdentifier"] isEqual:NSBundle.mainBundle.bundleIdentifier])
+            err = @"The update wasn't the app it should be, so it wasn't installed.";
+        }
+      }
+      dispatch_async(dispatch_get_main_queue(), ^{
+        if (err) [self updateFailed:err];
+        else [self swapInUpdate:fresh];
+      });
+    }] resume];
+  }] resume];
+}
+
+- (void)swapInUpdate:(NSURL *)fresh {
+  NSURL *appURL = NSBundle.mainBundle.bundleURL;
+  hostFlushSave();  // the pet first
+  NSError *err = nil;
+  NSURL *now = nil;
+  if (![NSFileManager.defaultManager replaceItemAtURL:appURL withItemAtURL:fresh backupItemName:nil options:0
+                                     resultingItemURL:&now error:&err]) {
+    [self updateFailed:@"The new app couldn't be put in place of this one."];
+    return;
+  }
+  fprintf(stderr, "update: installed, reopening\n");
+  // reopen once this one has quit (the save is locked while it runs). A test copy (its own save, from
+  // POKEMACGOCHI_SAVE_DIR) starts its program directly so it keeps that save; the real app goes through open
+  NSString *path = (now ?: appURL).path;
+  NSString *wait = [NSString stringWithFormat:@"while kill -0 %d 2>/dev/null; do sleep 0.2; done; ", getpid()];
+  NSString *cmd = gOwnSave ? [wait stringByAppendingString:@"exec /usr/bin/open \"$0\""]
+                           : [wait stringByAppendingString:@"exec \"$0/Contents/MacOS/" APP_NAME "\" \"$@\""];
+  NSMutableArray *args = [NSMutableArray arrayWithObjects:@"-c", cmd, path, nil];
+  if (!gOwnSave)
+    for (char **a = gArgv + 1; *a; a++) [args addObject:@(*a)];
+  NSTask *t = [[NSTask alloc] init];
+  t.launchPath = @"/bin/sh";
+  t.arguments = args;
+  [t launch];
+  [NSApp terminate:nil];
+}
+
+- (void)updateFailed:(NSString *)why {
+  gUpdating = false;
+  fprintf(stderr, "update: failed: %s\n", why.UTF8String);
+  if (gConsole) return;
+  NSAlert *alert = [[NSAlert alloc] init];
+  alert.messageText = @"Couldn't update";
+  alert.informativeText = [why stringByAppendingString:@" You can download the new version instead."];
+  [alert addButtonWithTitle:@"Download"];
+  [alert addButtonWithTitle:@"Later"];
+  [NSApp activateIgnoringOtherApps:YES];
+  if ([alert runModal] == NSAlertFirstButtonReturn && gNewURL) [NSWorkspace.sharedWorkspace openURL:gNewURL];
+}
+
+- (void)updateCheckFound:(NSString *)found url:(NSURL *)url zip:(NSURL *)zip sig:(NSURL *)sig asked:(bool)asked {
   NSString *mine = NSBundle.mainBundle.infoDictionary[@"CFBundleShortVersionString"] ?: @"0";
   bool newer = found && url && [found compare:mine options:NSNumericSearch] == NSOrderedDescending;
   if (newer) {
     gNewVersion = found;
     gNewURL = url;
+    gNewZip = zip;
+    gNewSig = sig;
   }
   NSUserDefaults *d = NSUserDefaults.standardUserDefaults;
   if (!asked && (!newer || [[d stringForKey:kPrefToldVersion] isEqual:found])) return;
+  if (newer) [d setObject:found forKey:kPrefToldVersion];
+  if (newer && canUpdateInPlace()) {
+    [self offerUpdate:found];
+    return;
+  }
   NSAlert *alert = [[NSAlert alloc] init];
   if (newer) {
-    [d setObject:found forKey:kPrefToldVersion];
     alert.messageText = [NSString stringWithFormat:@APP_NAME " %@ is available", found];
     alert.informativeText = [NSString stringWithFormat:@"You have version %@. Your pet is saved separately from the app, so "
                                                        @"it stays when you replace the app with the new one: quit "

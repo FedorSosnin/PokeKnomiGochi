@@ -20,7 +20,7 @@ APP=build/mac/PokeMacGochi.app
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/fonts"
 clang++ -std=c++17 -fobjc-arc -O2 -Wall -Wextra -Wno-unused-parameter -Wunguarded-availability \
   -I host mac/main.mm build/host/libpokehost.a \
-  -framework AppKit -framework AudioToolbox -framework QuartzCore \
+  -framework AppKit -framework AudioToolbox -framework QuartzCore -framework Security \
   -o "$APP/Contents/MacOS/PokeMacGochi"
 cp mac/Info.plist "$APP/Contents/Info.plist"
 cp mac/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
