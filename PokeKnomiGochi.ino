@@ -98,7 +98,7 @@ struct {
   float x = 233, targetX = 233;
 } beh;
 uint32_t walkLast = 0;  // time of the last walk step (0 = none yet)
-#define PET_GROUND 304  // pet ground line
+#define PET_GROUND 288  // pet ground line: 8 px over the bottom panel (296), so feet are never cut off
 PmdMon galleryPmd;  // large sprite for the gallery detail view (PMD/TPK2, legal)
 PmdMon galleryShinyPmd;  // the entry's shiny, next to the regular one when both are caught
 
@@ -299,14 +299,32 @@ struct Btn {
   int16_t cx, cy;
   const char *const *icon;
 };
-Btn buttons[4] = {
-  { 140, 400, SPR_HOME_FOOD },    // eat
-  { 202, 414, SPR_HOME_BALL },    // play
-  { 264, 414, SPR_HOME_MOON },    // light
-  { 326, 400, SPR_HOME_BUBBLE },  // bath
+// on an arc of radius 260 around (233, 150), spaced by each icon's body (rows 6-15: the handheld is
+// narrower than the berries; the moon's sparkles and the bubble's drops left out), so the gaps look the
+// same, about 10 px. Moving them, keep both: the arc, and equal gaps between the bodies (not the centres).
+#define BTN_COUNT 5
+#define HOME_PANEL_Y 296  // the bottom panel: the bars, then the icons
+#define FEED_Y 272        // the food picker, just over the bars
+Btn buttons[BTN_COUNT] = {
+  { 116, 382, SPR_HOME_FOOD },    // eat
+  { 174, 403, SPR_HOME_GAMES },   // the mini games
+  { 233, 410, SPR_HOME_BALL },    // battle: the zones
+  { 298, 402, SPR_HOME_MOON },    // light
+  { 350, 382, SPR_HOME_BUBBLE },  // bath
 };
+#define BTN_LIGHT 3  // the one that still works while it sleeps
 #define BTN_HALF 27  // the 54x54 icon (HOME_ICON_N at 3x)
-#define BTN_HIT 36   // touch radius (a bit more generous)
+#define BTN_HIT 36   // touch radius (a bit more generous; neighbours overlap, so the closest wins)
+
+// the icon under a touch: the closest one within BTN_HIT (-1: none)
+int buttonAt(int16_t x, int16_t y) {
+  int best = -1, bestD = BTN_HIT * BTN_HIT + 1;
+  for (int i = 0; i < BTN_COUNT; i++) {
+    int dx = x - buttons[i].cx, dy = y - buttons[i].cy, d = dx * dx + dy * dy;
+    if (d < bestD) { best = i; bestD = d; }
+  }
+  return best;
+}
 
 // egg cracks ('k' pixels over the sprite)
 static const uint8_t CRACK1[][2] = { {15,8},{16,9},{15,10} };
@@ -974,8 +992,8 @@ void handleSerial() {
 bool inPetZone(int16_t x, int16_t y) {
   int n = partyOthers();
   if (n)  // with others around, yours stands in the middle
-    return abs(x - PARTY_MINE_X) < (n <= 2 ? 72 : 56) && y > PET_GROUND - (n <= 2 ? 150 : 115) && y < 310;
-  return x > 110 && x < 356 && y > 95 && y < 310;
+    return abs(x - PARTY_MINE_X) < (n <= 2 ? 72 : 56) && y > PET_GROUND - (n <= 2 ? 150 : 115) && y < HOME_PANEL_Y;
+  return x > 110 && x < 356 && y > 95 && y < HOME_PANEL_Y;
 }
 
 // press preview (press.h): the control under the finger, drawn by pressOverlay() on each flush
@@ -1358,7 +1376,7 @@ void onTap(int16_t x, int16_t y) {
   if (feedMenuUntil) {       // food picker
     int count = pet.canHaveCandy() ? 4 : 3;
     int x0 = CX - count * 33;
-    if (timeLeft(feedMenuUntil) && y >= 288 && y <= 352 && x >= x0 && x <= x0 + count * 66) {
+    if (timeLeft(feedMenuUntil) && y >= FEED_Y && y <= FEED_Y + 64 && x >= x0 && x <= x0 + count * 66) {
       int item = (x - x0) / 66;
       if (item >= count) item = count - 1;
       if (item == 3) pet.feedCandy();
@@ -1401,22 +1419,22 @@ void onTap(int16_t x, int16_t y) {
     if (pet.canRunawayNow()) { choiceKind = 4; choiceUntil = millis() + 12000; return; }
     if (pet.wantFarewellButton()) { choiceKind = 2; choiceUntil = millis() + 12000; return; }
   }
-  for (int i = 0; i < 4; i++) {
-    int dx = x - buttons[i].cx, dy = y - buttons[i].cy;
-    if (dx * dx + dy * dy <= BTN_HIT * BTN_HIT) {
-      Serial.printf("BTN %d\n", i);
-      sfxPlay(SFX_TAP);
-      if (i == 0) {
-        if (!pet.sleeping) feedMenuUntil = millis() + 6000;
-      } else if (i == 1) {
-        openGamesMenu();
-      } else if (i == 2) {
-        pet.toggleLight();
-      } else {
-        startBath();
-      }
-      return;
+  int i = buttonAt(x, y);
+  if (i >= 0) {
+    Serial.printf("BTN %d\n", i);
+    sfxPlay(SFX_TAP);
+    if (i == 0) {
+      if (!pet.sleeping) feedMenuUntil = millis() + 6000;
+    } else if (i == 1) {
+      openGamesMenu();
+    } else if (i == 2) {
+      openZones();
+    } else if (i == BTN_LIGHT) {
+      pet.toggleLight();
+    } else {
+      startBath();
     }
+    return;
   }
   // tap the pet = caress
   if (inPetZone(x, y)) {
@@ -1853,15 +1871,15 @@ bool render() {
       const char *rar = (pet.eggRarity() == R_LEGENDARY) ? T(S_EGG_LEGEND) : T(S_EGG_RARE);
       gfx->setTextColor(pet.eggRarity() == R_LEGENDARY ? UI_BAR_WARN : 0x4C98);
       setSize(2);
-      setCur(centerX(rar, 2), 316);
+      setCur(centerX(rar, 2), HOME_PANEL_Y + 4);
       printT(rar);
     }
     char reg[24];
     snprintf(reg, sizeof(reg), T(S_POKEDEX_FMT), pet.registeredCount());
-    gfx->fillRect(0, 312, 466, 154, gNight ? UI_BG_NIGHT : UI_BG_DAY);
+    gfx->fillRect(0, HOME_PANEL_Y, 466, 466 - HOME_PANEL_Y, gNight ? UI_BG_NIGHT : UI_BG_DAY);
     gfx->setTextColor(inkColor());
     setSize(2);
-    setCur(centerX(reg, 2), 348);
+    setCur(centerX(reg, 2), HOME_PANEL_Y + 36);
     printT(reg);
   } else {
     const DexEntry &d = DEX_TBL[pet.speciesId];
@@ -1874,7 +1892,7 @@ bool render() {
     drawBath();
     drawPoops();
     // bottom panel: clean base for bars and buttons over the landscape
-    gfx->fillRect(0, 312, 466, 154, gNight ? UI_BG_NIGHT : UI_BG_DAY);
+    gfx->fillRect(0, HOME_PANEL_Y, 466, 466 - HOME_PANEL_Y, gNight ? UI_BG_NIGHT : UI_BG_DAY);
     drawBars();
     drawButtons();
     drawCelebration();
@@ -1891,11 +1909,11 @@ bool render() {
       // once the day's candies are used up, the menu stays at the three berries
       int count = pet.canHaveCandy() ? 4 : 3;
       int x0 = CX - count * 33;
-      gfx->fillRoundRect(x0, 288, count * 66, 64, 14, UI_WHITE);
-      gfx->drawRoundRect(x0, 288, count * 66, 64, 14, inkColor());
+      gfx->fillRoundRect(x0, FEED_Y, count * 66, 64, 14, UI_WHITE);
+      gfx->drawRoundRect(x0, FEED_Y, count * 66, 64, 14, inkColor());
       static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
-      for (int i = 0; i < count; i++) drawMap(FOOD[i], HOME_ICON_N, x0 + 6 + 66 * i, 293, 3, false);
-      if (count == 4) drawCandyCount(x0 + 6 + 66 * 3, 293, pet.candiesLeft());
+      for (int i = 0; i < count; i++) drawMap(FOOD[i], HOME_ICON_N, x0 + 6 + 66 * i, FEED_Y + 5, 3, false);
+      if (count == 4) drawCandyCount(x0 + 6 + 66 * 3, FEED_Y + 5, pet.candiesLeft());
     }
   }
 
@@ -2087,12 +2105,8 @@ void stepGame() {
 #define GAMES_ROW_W 300
 #define GAMES_ROW_H 48
 #define GAMES_ROW_GAP 8
-#define GAMES_ROW_Y 112
-#ifdef BOARD_KNOMI_V2
-#define GAMES_COUNT 5
-#else
-#define GAMES_COUNT 5  // without a physical button, the battle lives here
-#endif
+#define GAMES_ROW_Y 132  // the four rows centred over the X; room under them for a fifth game later
+#define GAMES_COUNT 4    // battles have their own icon on the home screen
 
 void openGamesMenu() {
   if (pet.isEgg() || pet.sleeping || pet.ceremony) { sfxPlay(SFX_DENY); return; }
@@ -2101,11 +2115,7 @@ void openGamesMenu() {
 }
 
 const char *gameLabel(int row) {
-#ifdef BOARD_KNOMI_V2
-  static const StrId L[5] = { S_GAME_BATTLE, S_GAME_DUNGEON, S_GAME_RUN, S_GAME_WHO, S_GAME_TILT };
-#else
-  static const StrId L[5] = { S_GAME_TILT, S_GAME_WHO, S_GAME_RUN, S_GAME_DUNGEON, S_BTL_START };
-#endif
+  static const StrId L[GAMES_COUNT] = { S_GAME_TILT, S_GAME_WHO, S_GAME_RUN, S_GAME_DUNGEON };
   return T(L[row]);
 }
 
@@ -2114,19 +2124,10 @@ void gamesMenuTap(int16_t x, int16_t y) {
   int row = (y - GAMES_ROW_Y) / (GAMES_ROW_H + GAMES_ROW_GAP);
   if (y < GAMES_ROW_Y || row >= GAMES_COUNT || x < GAMES_ROW_X || x > GAMES_ROW_X + GAMES_ROW_W) return;  // outside = go back
   sfxPlay(SFX_TAP);
-#ifdef BOARD_KNOMI_V2
-  if (row == 0) openZones();
-  else if (row == 1) startDungeon();
-  else if (row == 2) startRun();
-  else if (row == 3) startQuiz();
-  else startGame();
-#else
   if (row == 0) startGame();
   else if (row == 1) startQuiz();
   else if (row == 2) startRun();
-  else if (row == 3) startDungeon();
-  else startBattle();
-#endif
+  else startDungeon();
 }
 
 void renderGamesMenu() {
@@ -2137,11 +2138,7 @@ void renderGamesMenu() {
   setSize(3);
   setCur(centerX(T(S_GAMES), 3), 74);
   printT(T(S_GAMES));
-#ifdef BOARD_KNOMI_V2
-  const uint16_t colors[5] = { UI_BAR_BAD, TYPE_ACCENT[TY_GHOST], TYPE_ACCENT[TY_FIRE], TYPE_ACCENT[TY_PSYCHIC], TYPE_ACCENT[TY_GRASS] };
-#else
-  const uint16_t colors[5] = { TYPE_ACCENT[TY_GRASS], TYPE_ACCENT[TY_PSYCHIC], TYPE_ACCENT[TY_FIRE], TYPE_ACCENT[TY_GHOST], UI_BAR_BAD };
-#endif
+  const uint16_t colors[GAMES_COUNT] = { TYPE_ACCENT[TY_GRASS], TYPE_ACCENT[TY_PSYCHIC], TYPE_ACCENT[TY_FIRE], TYPE_ACCENT[TY_GHOST] };
   setSize(2);
   for (int i = 0; i < GAMES_COUNT; i++) {
     int y = GAMES_ROW_Y + i * (GAMES_ROW_H + GAMES_ROW_GAP);
@@ -6636,8 +6633,7 @@ void zoneBack() {
     zoneScreen = ZS_PICK;
     zoneUntil = millis() + ZONE_IDLE_MS;
   } else {
-    zoneScreen = ZS_NONE;
-    openGamesMenu();
+    zoneScreen = ZS_NONE;  // back home, where its icon is
   }
 }
 
@@ -7418,15 +7414,15 @@ void overlayMouth(const Species &sp, int x, int y, int s, bool open) {
 
 void drawPoops() {
   for (int i = 0; i < pet.poops; i++) {
-    drawMap(SPR_POOP, 32, 36 + i * 46, 244, 2, false);
+    drawMap(SPR_POOP, 32, 36 + i * 46, HOME_PANEL_Y - 68, 2, false);  // just over the panel
   }
 }
 
 void drawBars() {
-  drawBar(78, 318, T(S_BAR_FOOD), pet.fullness);
-  drawBar(244, 318, T(S_BAR_JOY), pet.joy);
-  drawBar(78, 346, T(S_BAR_ENE), pet.energy);
-  drawBar(244, 346, T(S_BAR_HYG), pet.hygiene);
+  drawBar(78, HOME_PANEL_Y + 6, T(S_BAR_FOOD), pet.fullness);
+  drawBar(244, HOME_PANEL_Y + 6, T(S_BAR_JOY), pet.joy);
+  drawBar(78, HOME_PANEL_Y + 34, T(S_BAR_ENE), pet.energy);
+  drawBar(244, HOME_PANEL_Y + 34, T(S_BAR_HYG), pet.hygiene);
 }
 
 // Gap between the label and its bar in the needs row. It was fixed
@@ -7466,8 +7462,8 @@ void drawBar(int x, int y, const char *label, uint8_t val) {
 
 // the icons on their own, no box; while sleeping only LIGHT works, the rest are shadows
 void drawButtons() {
-  for (int i = 0; i < 4; i++) {
-    bool off = pet.sleeping && i != 2;
+  for (int i = 0; i < BTN_COUNT; i++) {
+    bool off = pet.sleeping && i != BTN_LIGHT;
     drawMap(buttons[i].icon, HOME_ICON_N, buttons[i].cx - BTN_HALF, buttons[i].cy - BTN_HALF, 3, off);
   }
 }
@@ -7758,10 +7754,10 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     static const char *const *const ICON[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
     int count = pet.canHaveCandy() ? 4 : 3;
     int x0 = CX - count * 33;
-    if (y < 288 || y > 352 || x < x0 || x > x0 + count * 66) return false;
+    if (y < FEED_Y || y > FEED_Y + 64 || x < x0 || x > x0 + count * 66) return false;
     int item = (x - x0) / 66;
     if (item >= count) item = count - 1;
-    return pressSet(t, x0 + item * 66, 288, 66, 64, nullptr, ICON[item]);
+    return pressSet(t, x0 + item * 66, FEED_Y, 66, 64, nullptr, ICON[item]);
   }
   if (pet.isEgg()) return false;
   if (partyPillAt(x, y)) {
@@ -7785,11 +7781,8 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     snprintf(buf, sizeof(buf), T(pet.canRunawayNow() ? S_RUNAWAY_BTN : S_FAREWELL_BTN), nm);
     return pressSet(t, FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H, buf);
   }
-  for (int i = 0; i < 4; i++) {
-    int dx = x - buttons[i].cx, dy = y - buttons[i].cy;
-    if (dx * dx + dy * dy <= BTN_HIT * BTN_HIT)
-      return pressSet(t, buttons[i].cx - BTN_HALF, buttons[i].cy - BTN_HALF, 2 * BTN_HALF, 2 * BTN_HALF, nullptr, buttons[i].icon);
-  }
+  int i = buttonAt(x, y);
+  if (i >= 0) return pressSet(t, buttons[i].cx - BTN_HALF, buttons[i].cy - BTN_HALF, 2 * BTN_HALF, 2 * BTN_HALF, nullptr, buttons[i].icon);
   return false;
 }
 

@@ -71,7 +71,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | Do this | What happens |
 |---|---|
 | **Tap the Pokémon** | Pet it |
-| **Tap the bottom icons** | Feed it (a candy refills its energy: 2 a day, 3 when the visitor brings one, and a red number shows how many are left), open games, turn the light off for bed, or give it a bath |
+| **Tap the bottom icons** | From left to right: feed it (a candy refills its energy: 2 a day, 3 when the visitor brings one, and a red number shows how many are left), play mini games, battle, turn the light off for bed, or give it a bath |
 | **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
 | **Swipe up** | See its card: profile, battle stats, training and progress |
@@ -133,11 +133,14 @@ Every wild Pokémon you beat can be caught, even one you already have: you get t
 
 **Stars:** every Pokémon in your Pokédex has 1 to 3 ★, its genes kept simple, and the regular and shiny forms each have their own. Once the ball holds, a screen of its own shows the catch and its stars. A new one goes into your Pokédex; if you already have it and the new one has more stars, it replaces yours. Stars show on each Pokémon's Pokédex page and in trades, and they matter when you choose your next Pokémon: picking a 3★ form hatches a 3★ Pokémon, with better stats.
 
+### Battles
+
+Tap the **Poké Ball** icon in the middle of the home screen to pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. **Random Battle** under the zones meets a wild Pokémon from anywhere, just like pressing the physical button. Battles train attack.
+
 ### Games
 
-Tap the Poké Ball icon to open the menu. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
+Tap the **handheld** icon, second from the left, to open the mini games. They train speed. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
-- **Battle:** pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. **Random Battle** under the zones meets a wild Pokémon from anywhere, just like pressing the physical button.
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?
 - **Who's That Pokémon?:** name the silhouette, five rounds per game.

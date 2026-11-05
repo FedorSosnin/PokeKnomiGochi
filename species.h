@@ -535,6 +535,27 @@ static const char* const SPR_HOME_BALL[18] = {  // 18x18
   "..................",
 };
 
+static const char* const SPR_HOME_GAMES[18] = {  // 18x18
+  "....kkkkkkkkkk....",
+  "...kwwwwlllllLk...",
+  "..kwllllllllllLk..",
+  "..kwlMMMMMMMMlLk..",
+  "..kwlMttggggMlLk..",
+  "..kwlMggggggMlLk..",
+  "..kwlMggggGGMlLk..",
+  "..kwlMMMMMMMMlLk..",
+  "..klllllllllllLk..",
+  "..kllllllllwrlLk..",
+  "..kllklllllrRlLk..",
+  "..klkkkllwrlllLk..",
+  "..kllklllrRlllLk..",
+  "..klllllllllllLk..",
+  "..kLlllLlLlllLk...",
+  "...kLLLLLLLLLk....",
+  "....kkkkkkkkk.....",
+  "..................",
+};
+
 static const char* const SPR_HOME_MOON[18] = {  // 18x18
   "............k.....",
   "......kk...kfk....",

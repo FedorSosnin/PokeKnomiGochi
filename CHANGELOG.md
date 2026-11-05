@@ -9,6 +9,7 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 ## [Unreleased]
 
 - **Pokédex stars:** every form in the Pokédex has 1–3 ★, its genes kept simple (regular and shiny apart). Every wild win can now be caught, even a Pokémon you have, and after the ball holds, a screen of its own shows the Pokémon and its stars until you tap its ✕: a new form joins, a better one replaces your weaker one ("New best!"), and one that isn't better goes back to the wild. Stars show on each Pokédex page (where the sprites are now bigger), in trades and when you choose your next Pokémon, and a 3★ form hatches a 3★ Pokémon. Your Pokédex is kept as it is: each form you already have gets its stars once, the one you're raising from its own genes.
+- **Five icons on the home screen:** berries, a new handheld for the mini games, the Poké Ball for battles, the moon and the bath, evenly spaced along the bottom. The Poké Ball goes straight to the zones on every device, and Back from the zones goes home. The Games menu is just the four mini games, in the same order everywhere: Tilt Catch, Who's That?, PokeRun, PokeDungeon. The bars and the food picker sit a little higher to make room.
 - **Medal banners show up again:** a medal or streak earned away from the home screen (in a battle, a mini game, the Pokédex) used to time out unseen. The banner now waits and slides down when you're back home.
 - **Mansion:** the little ghost at the right of its picture is gone.
 
