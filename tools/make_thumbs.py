@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generates /mons/thumbs.bin: 40x40 thumbnails of all 151 for the gallery, then the 151 shiny ones.
+"""Generates /mons/thumbs.bin: thumbnails of all 151 for the gallery (cropped to the Pokemon, at
+most 40x40), then the 151 shiny ones.
 
 They are derived from the front frame (Idle, frame 0) of the already packed PMD
 sprites (tools/sdcard/mons/pNNN.bin and psNNN.bin, TPK2 format) -> legal thumbnails
@@ -40,6 +41,18 @@ def read_pmd_idle_frame0(path):
     raise ValueError('no Idle action (id 0)')
 
 
+def crop(w, h, data):
+    """Only what the Pokemon fills: the frame's empty margins would otherwise count against the 40
+    px, and a tall frame came out shrunk (rows and columns dropped) though the Pokemon fits."""
+    cols = [x for x in range(w) if any(data[y * w + x] != 0xFF for y in range(h))]
+    rows = [y for y in range(h) if any(data[y * w + x] != 0xFF for x in range(w))]
+    x0, x1, y0, y1 = cols[0], cols[-1] + 1, rows[0], rows[-1] + 1
+    out = bytearray()
+    for y in range(y0, y1):
+        out += data[y * w + x0:y * w + x1]
+    return x1 - x0, y1 - y0, bytes(out)
+
+
 def shrink(w, h, pal, data):
     # scale to CELL x CELL with nearest neighbor, keeping the aspect ratio
     scale = min(CELL / w, CELL / h, 1.0)
@@ -69,6 +82,7 @@ def main():
         dex, shiny = (n - 1) % 151 + 1, n > 151
         path = os.path.join(DIR, f'p{"s" if shiny else ""}{dex:03d}.bin')
         w, h, pal, data = read_pmd_idle_frame0(path)
+        w, h, data = crop(w, h, data)
         nw, nh, npal, ndata = shrink(w, h, pal, data)
         if len(npal) > 255:
             raise ValueError(f'{n}: palette {len(npal)}')

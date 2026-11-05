@@ -10,7 +10,12 @@
 #include <soc/usb_serial_jtag_reg.h>
 #include <soc/soc.h>
 
-// GC9A01 with AW9346 backlight: 16 levels stepped down by pulses (BTT driver)
+// GC9A01 with AW9346 backlight: 16 levels stepped down by pulses (BTT driver). The chip only steps
+// down, wrapping from the dimmest back to the brightest, so counting from where it was supposed to be
+// went wrong whenever that was off (after a restart, the pin kept high, the chip kept its old level
+// while the count started from the brightest): asleep, it then stepped past the dimmest and came
+// back near full brightness. Every change now starts over from a known place: off (low over 2.5 ms),
+// on at the brightest, then down to the level wanted.
 class KnomiPanel : public Arduino_GC9A01 {
 public:
   using Arduino_GC9A01::Arduino_GC9A01;
@@ -18,24 +23,20 @@ public:
     int8_t to = v == 0 ? 0 : 1 + (v * 15) / 255;
     if (to == level) return;
     pinMode(LCD_BL, OUTPUT);
-    if (to == 0) {
-      digitalWrite(LCD_BL, LOW);
-      delay(3);  // >2.5 ms = AW9346 off
-      level = 0;
-      return;
-    }
-    if (level <= 0) {
-      digitalWrite(LCD_BL, HIGH);
-      delayMicroseconds(25);  // >20 us to turn on: starts at maximum
-      level = 16;
-    }
-    int8_t pulses = level >= to ? level - to : level + 16 - to;  // the counter wraps around
-    for (int8_t i = 0; i < pulses; i++) {
+    digitalWrite(LCD_BL, LOW);
+    delay(3);  // >2.5 ms = AW9346 off
+    level = 0;
+    if (to == 0) return;
+    noInterrupts();  // a pulse stretched by an interrupt could be counted wrong
+    digitalWrite(LCD_BL, HIGH);
+    delayMicroseconds(25);  // >20 us to turn on: starts at the brightest (16)
+    for (int8_t i = 16; i > to; i--) {
       digitalWrite(LCD_BL, LOW);
       delayMicroseconds(1);
       digitalWrite(LCD_BL, HIGH);
       delayMicroseconds(1);
     }
+    interrupts();
     level = to;
   }
 private:
@@ -59,14 +60,18 @@ public:
     return panel != nullptr;
   }
 
+  // Each panel pixel averages a 2x2 block that always starts on an even canvas pixel: the 233 pairs
+  // of columns (and rows) spread over the 240 panel pixels, 7 of them shown twice. With blocks that
+  // drifted by one pixel every 16, half the screen blurred every edge; aligned, what is drawn on even
+  // pixels (sprites, icons, text: SNAP2 in the sketch) lands whole on the panel and stays sharp.
   void flush(bool = false) override {
     pressOverlay();
     const RotBlit r = rotBlit(gPanelRot, PANEL_SIZE);
     for (int y = 0; y < PANEL_SIZE; y++) {
-      const uint16_t *a = _framebuffer + (y * (LCD_HEIGHT - 1) / PANEL_SIZE) * LCD_WIDTH;
+      const uint16_t *a = _framebuffer + (2 * (y * (LCD_HEIGHT / 2) / PANEL_SIZE)) * LCD_WIDTH;
       const uint16_t *b = a + LCD_WIDTH;
       for (int x = 0; x < PANEL_SIZE; x++) {
-        int sx = x * (LCD_WIDTH - 1) / PANEL_SIZE;
+        int sx = 2 * (x * (LCD_WIDTH / 2) / PANEL_SIZE);
         uint32_t s = expand(a[sx]) + expand(a[sx + 1]) + expand(b[sx]) + expand(b[sx + 1]);
         s = (s >> 2) & 0x07E0F81F;
         panel[r.base + x * r.dx + y * r.dy] = (uint16_t)(s | (s >> 16));

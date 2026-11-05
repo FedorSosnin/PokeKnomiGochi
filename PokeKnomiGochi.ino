@@ -114,7 +114,9 @@ int16_t galleryDetail = 0;  // dex in detail view, 0 = grid
 #define DEXG_COLS 3
 #define DEXG_PAGE 9
 #define DEX_PAGES ((151 + DEXG_PAGE - 1) / DEXG_PAGE)  // 17
-#define DEXG_SPRITE_S 4    // the largest scale in a square
+#define DEXG_SPRITE_S 3    // the largest scale in a square
+#define DEXG_STARS_H 12    // room under the sprite for a 3-star entry's stars (they tuck under its feet)
+#define DEXG_STAR_R 5
 #define DEXG_X 86          // the Pokedex: 3 squares of 98 under the count and the title
 #define DEXG_Y 84
 #define DEXG_CELL 98
@@ -175,7 +177,11 @@ bool quizOpen = false;
 #define CELEB_HOLD_MS 500     // home not drawn for this long: a medal banner waits for it
 uint32_t lastCelebDraw = 0;  // the last time the home screen, where the banner shows, was drawn
 uint8_t gPmdForceScale = 0;  // if not 0, fixed scale for the next sprite
-uint16_t gPmdBorder = 0;     // if not 0, the next sprite gets a border of this colour (a 3-star entry: gold)
+// The Knomi V2 shows the 466 canvas on a 240 panel, each panel pixel the average of a 2x2 block
+// that starts on an even pixel (ScaledCanvas::flush). Pixel art and text that start on an even
+// pixel land whole on the panel's pixels and stay sharp; one pixel off, every edge blurs.
+#define SNAP2(v) ((v) & ~1)
+#define DN_TILE 64  // PokeDungeon's tiles (the games menu draws a room too)
 QuizPhase quizPhase = QP_ASK;
 uint32_t quizT = 0;
 uint8_t quizRound = 0, quizScore = 0;
@@ -706,7 +712,13 @@ void idleWait(PowerCtx c) {
     esp_sleep_enable_timer_wakeup((uint64_t)ms * 1000);
     gpio_wakeup_enable((gpio_num_t)TP_INT, GPIO_INTR_LOW_LEVEL);
     esp_sleep_enable_gpio_wakeup();
+#ifdef BOARD_KNOMI_V2
+    gpio_hold_en((gpio_num_t)LCD_BL);  // the backlight's line stays as it is while asleep: low a moment, the chip would turn off and back on at full
+#endif
     esp_light_sleep_start();
+#ifdef BOARD_KNOMI_V2
+    gpio_hold_dis((gpio_num_t)LCD_BL);
+#endif
     // the touch interrupt goes back to edge-triggered (as attachInterrupt left it); a touch
     // that has already pulled the line low is registered by hand
     gpio_wakeup_disable((gpio_num_t)TP_INT);
@@ -1579,8 +1591,7 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
 
 // first game: choose a starter among Bulbasaur / Charmander / Squirtle
 void renderStarterSelect() {
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   const char *t = T(S_CHOOSE_STARTER);
   gfx->setTextColor(UI_INK);
   setSize(2);
@@ -1657,7 +1668,7 @@ void setSize(uint8_t n) {
 }
 
 void setCur(int x, int y) {
-  gfx->setCursor(x, y + gFontAscent * gTextSize);
+  gfx->setCursor(SNAP2(x), SNAP2(y) + gFontAscent * gTextSize);  // on even pixels: sharp on the Knomi
 }
 
 // Sets the active language's font. It is the ONLY place that touches it: the rest of the
@@ -2118,53 +2129,143 @@ void stepGame() {
 // ---------- punching bag (trains strength) ----------
 
 // ---------- games menu ----------
-#define GAMES_ROW_X 83
-#define GAMES_ROW_W 300
-#define GAMES_ROW_H 48
-#define GAMES_ROW_GAP 8
-#define GAMES_ROW_Y 132  // the four rows centred over the X; room under them for a fifth game later
+// As the zones: a round window onto each game, its own scene with your Pokemon in it, the name under.
 #define GAMES_COUNT 4    // battles have their own icon on the home screen
-
-void openGamesMenu() {
-  if (pet.isEgg() || pet.sleeping || pet.ceremony) { sfxPlay(SFX_DENY); return; }
-  gamesMenuOpen = true;
-  gamesMenuUntil = millis() + 20000;
-}
+#define GAME_ICON_R 50
+#define GAME_ART (2 * GAME_ICON_R)
+#define GAME_GLIMPSE_K 2  // each window shows a 200 x 200 piece of its game, at half size
+static const int16_t GAME_XY[GAMES_COUNT][2] = { { 155, 124 }, { 311, 124 }, { 155, 278 }, { 311, 278 } };
+uint16_t *gameArt = nullptr;  // the 4 windows, painted each time the menu opens (day or night, your Pokemon)
 
 const char *gameLabel(int row) {
   static const StrId L[GAMES_COUNT] = { S_GAME_TILT, S_GAME_WHO, S_GAME_RUN, S_GAME_DUNGEON };
   return T(L[row]);
 }
 
+// copies the 200 x 200 piece of the canvas around (fx, fy) into art, at half size (2 x 2 averaged)
+void gameGlimpseGrab(uint16_t *art, int fx, int fy) {
+  const uint16_t *fb = gfx->getFramebuffer();
+  int x0 = fx - GAME_ICON_R * GAME_GLIMPSE_K, y0 = fy - GAME_ICON_R * GAME_GLIMPSE_K;
+  for (int y = 0; y < GAME_ART; y++)
+    for (int x = 0; x < GAME_ART; x++) {
+      uint32_t sum = 0;
+      for (int k = 0; k < 4; k++) {
+        int sx = x0 + x * 2 + (k & 1), sy = y0 + y * 2 + (k >> 1);
+        sx = sx < 0 ? 0 : sx > 465 ? 465 : sx;
+        sy = sy < 0 ? 0 : sy > 465 ? 465 : sy;
+        uint16_t c = fb[sy * 466 + sx];
+        sum += (c | ((uint32_t)c << 16)) & 0x07E0F81F;
+      }
+      sum = (sum >> 2) & 0x07E0F81F;
+      art[y * GAME_ART + x] = (uint16_t)(sum | (sum >> 16));
+    }
+}
+
+// paints a moment of each game on the canvas (not shown) and keeps the piece for its window
+void gameGlimpsesPaint() {
+  if (!gameArt) gameArt = (uint16_t *)ps_malloc(GAMES_COUNT * GAME_ART * GAME_ART * sizeof(uint16_t));
+  if (!gameArt) return;
+  uint32_t now = millis();
+  int hh = sceneHour();
+  bool night = hh < 6 || hh >= 20;
+  static const char *const *const BERRY[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
+
+  // Tilt Catch: the woods, a berry falling to your Pokemon
+  drawCatchScene();
+  drawMap(BERRY[0], HOME_ICON_N, 196, 214, 3, false);
+  if (pmd.loaded) drawPmdAct(PMD_IDLE, 220, 394, now, true, false, 3);
+  gameGlimpseGrab(gameArt, 200, 300);
+
+  // Who's That?: a silhouette and a question mark
+  gfx->fillScreen(TYPE_ACCENT[TY_WATER]);
+  if (const uint8_t *t = thumbs.get(25)) {
+    int box[4];
+    drawThumbFit(t, 206, 250, 120, 120, 4, true, 0, box);
+  }
+  gfx->setTextColor(UI_WHITE);
+  setSize(6);
+  setCur(272, 168);
+  printT("?");
+  gameGlimpseGrab(gameArt + GAME_ART * GAME_ART, 233, 233);
+
+  // PokeRun: the forest trail, your Pokemon running at a rock
+  drawForest(240.0f, night);
+  RunObstacle rock = { 312.0f, RUN_ROCK, true };
+  drawRunObstacle(rock, night);
+  if (pmd.loaded) {
+    uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 90, 90);
+    gPmdForceScale = fit > 3 ? 3 : fit;
+    drawPmdAct(pmd.has(PMD_WALKR) ? PMD_WALKR : PMD_IDLE, 226, RUN_GROUND_Y + 2, now, true, false, 3);
+    gPmdForceScale = 0;
+  }
+  gameGlimpseGrab(gameArt + 2 * GAME_ART * GAME_ART, 262, RUN_GROUND_Y - 64);
+
+  // PokeDungeon: a room with the stairs down, a berry and a wild one
+  gfx->fillScreen(C565(0x24, 0x20, 0x2c));
+  static const uint8_t ROOM[5][5] = { { DN_WALL, DN_WALL, DN_WALL, DN_WALL, DN_WALL },
+                                      { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_WALL },
+                                      { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_STAIRS, DN_WALL },
+                                      { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR },
+                                      { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR } };
+  int ox = CX - DN_TILE / 2 - 2 * DN_TILE, oy = CY - DN_TILE / 2 - 2 * DN_TILE;
+  for (int ty = 0; ty < 5; ty++)
+    for (int tx = 0; tx < 5; tx++)
+      dnDrawTileKind(ROOM[ty][tx], ty < 4 && ROOM[ty + 1][tx] != DN_WALL, tx + 3, ty + 5, ox + tx * DN_TILE, oy + ty * DN_TILE);
+  drawMap(BERRY[1], HOME_ICON_N, CX - 76, CY + 40, 3, false);
+  if (const uint8_t *t = thumbs.get(41)) drawThumb(t, CX + 4, CY - 10, 2, false);  // a Zubat
+  if (pmd.loaded) {
+    uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 76, 76);
+    gPmdForceScale = fit > 3 ? 3 : fit;
+    drawPmdAct(PMD_IDLE, CX - 8, CY + DN_TILE / 2 - 4, now, true, false, 3);
+    gPmdForceScale = 0;
+  }
+  gameGlimpseGrab(gameArt + 3 * GAME_ART * GAME_ART, CX + 8, CY - 4);
+}
+
+void openGamesMenu() {
+  if (pet.isEgg() || pet.sleeping || pet.ceremony) { sfxPlay(SFX_DENY); return; }
+  gameGlimpsesPaint();
+  gamesMenuOpen = true;
+  gamesMenuUntil = millis() + 20000;
+}
+
+// the game under a tap: its window or its name under it, or -1
+int gameAt(int16_t x, int16_t y) {
+  for (int i = 0; i < GAMES_COUNT; i++) {
+    int dx = x - GAME_XY[i][0], dy = y - GAME_XY[i][1];
+    if (dx * dx + dy * dy < (GAME_ICON_R + 6) * (GAME_ICON_R + 6) || (abs(dx) < 70 && dy > 0 && dy < GAME_ICON_R + 30)) return i;
+  }
+  return -1;
+}
+
 void gamesMenuTap(int16_t x, int16_t y) {
   gamesMenuOpen = false;
-  int row = (y - GAMES_ROW_Y) / (GAMES_ROW_H + GAMES_ROW_GAP);
-  if (y < GAMES_ROW_Y || row >= GAMES_COUNT || x < GAMES_ROW_X || x > GAMES_ROW_X + GAMES_ROW_W) return;  // outside = go back
+  int g = gameAt(x, y);
+  if (g < 0) return;  // outside = go back
   sfxPlay(SFX_TAP);
-  if (row == 0) startGame();
-  else if (row == 1) startQuiz();
-  else if (row == 2) startRun();
+  if (g == 0) startGame();
+  else if (g == 1) startQuiz();
+  else if (g == 2) startRun();
   else startDungeon();
 }
 
 void renderGamesMenu() {
   if (!timeLeft(gamesMenuUntil) || pet.sleeping || pet.ceremony) { gamesMenuOpen = false; return; }
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
-  setCur(centerX(T(S_GAMES), 3), 74);
+  setCur(centerX(T(S_GAMES), 3), 26);
   printT(T(S_GAMES));
   const uint16_t colors[GAMES_COUNT] = { TYPE_ACCENT[TY_GRASS], TYPE_ACCENT[TY_PSYCHIC], TYPE_ACCENT[TY_FIRE], TYPE_ACCENT[TY_GHOST] };
   setSize(2);
   for (int i = 0; i < GAMES_COUNT; i++) {
-    int y = GAMES_ROW_Y + i * (GAMES_ROW_H + GAMES_ROW_GAP);
-    gfx->fillRoundRect(GAMES_ROW_X, y, GAMES_ROW_W, GAMES_ROW_H, 14, colors[i]);
-    gfx->setTextColor(UI_WHITE);
-    setCur(centerX(gameLabel(i), 2), y + 16);
+    int cx = GAME_XY[i][0], cy = GAME_XY[i][1];
+    drawRoundArt(gameArt ? gameArt + i * GAME_ART * GAME_ART : nullptr, cx, cy, GAME_ICON_R, colors[i]);
+    gfx->setTextColor(UI_INK);
+    setCur(cx - textW(gameLabel(i), 2) / 2, cy + GAME_ICON_R + 6);
     printT(gameLabel(i));
   }
-  drawCloseButton();  // any tap outside the rows closes it too
+  drawCloseButton();  // any tap outside the games closes it too
   gfx->flush();
 }
 
@@ -2232,8 +2333,7 @@ void renderQuiz() {
   if (quizPhase == QP_END && t > 5000) { closeQuiz(); return; }
   if (!quizOpen) return;
 
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, TYPE_ACCENT[TY_WATER]);
+  gfx->fillScreen(TYPE_ACCENT[TY_WATER]);  // to the edge: no black ring
   gfx->setTextColor(UI_WHITE);
   setSize(2);
   char b[32];
@@ -3060,8 +3160,7 @@ int centerWrapped(const char *p, int y, int maxChars) {
 #define RESULT_STAR_R 13
 #define RESULT_LINE_Y 292
 void renderCatchResult() {
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   char b[48];
   snprintf(b, sizeof(b), T(S_CAUGHT_FMT), dexName(bFoe.dex));
   catchBannerAt(b, C565(0x1e, 0x7d, 0x3c), RESULT_BANNER_Y, 2);
@@ -3333,9 +3432,10 @@ void renderBattle() {
       }
       break;
     case BP_END: {
-      if (bWon) {
+      if (bWon) {  // the foe fainted: said as when yours does, in green
         gfx->setTextColor(UI_BAR_OK);
-        battleCenterLine(T(S_BTL_WON), 352);
+        snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(bFoe.dex));
+        battleCenterLine(b, 352);
       } else {
         snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(bMe.dex));
         battleCenterLine(b, 352);
@@ -3564,7 +3664,6 @@ void renderGame() {
 }
 
 // ---------- dungeon dive ----------
-#define DN_TILE 64
 
 void startDungeon() {
   if (pet.isEgg() || pet.sleeping || pet.ceremony || !pmd.loaded) { sfxPlay(SFX_DENY); return; }
@@ -3618,12 +3717,17 @@ void dungeonTap(int16_t x, int16_t y) {
 }
 
 void dnDrawTile(int tx, int ty, int sx, int sy) {
+  dnDrawTileKind(dn.map[ty][tx], ty + 1 < DN_H && dn.map[ty + 1][tx] != DN_WALL, tx, ty, sx, sy);
+}
+
+// a tile of a kind (the games menu draws a room of its own); faceBelow: a wall with floor under it
+// shows its face
+void dnDrawTileKind(uint8_t t, bool faceBelow, int tx, int ty, int sx, int sy) {
   const uint16_t floorC = C565(0x62, 0x58, 0x4c), floorD = C565(0x56, 0x4d, 0x43);
   const uint16_t wallTop = C565(0x24, 0x20, 0x2c), wallFace = C565(0x3e, 0x37, 0x42);
-  uint8_t t = dn.map[ty][tx];
   if (t == DN_WALL) {
     gfx->fillRect(sx, sy, DN_TILE, DN_TILE, wallTop);
-    if (ty + 1 < DN_H && dn.map[ty + 1][tx] != DN_WALL) gfx->fillRect(sx, sy + DN_TILE - 16, DN_TILE, 16, wallFace);
+    if (faceBelow) gfx->fillRect(sx, sy + DN_TILE - 16, DN_TILE, 16, wallFace);
     return;
   }
   gfx->fillRect(sx, sy, DN_TILE, DN_TILE, floorC);
@@ -4180,8 +4284,7 @@ void drawUpdateProgress(uint8_t pct) {
   static int8_t shown = -1;
   if (pct == shown) return;
   shown = pct;
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   char b[32];
   snprintf(b, sizeof(b), T(S_UPD_BUSY_FMT), pct);
   gfx->setTextColor(UI_INK);
@@ -4204,8 +4307,7 @@ void startUpdate() {
 }
 
 void renderSettings() {
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   WifiSetupState ws = wifiSetupState();
   if (ws == WS_LIST) { renderWifiList(); gfx->flush(); return; }
@@ -4269,8 +4371,7 @@ void renderClock() {
     return;
   }
 #endif
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(T(S_SET_TIME), 3), 44);
@@ -4829,8 +4930,7 @@ void renderCardProgress() {
 }
 
 void renderCard() {
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   if (cardAch) renderAchievements(cardPage);
   else if (cardPage == 0) renderCardProfile();
   else if (cardPage == 1) renderCardStats();
@@ -4860,8 +4960,7 @@ void openKeyboard() {
 }
 
 void renderKeyboard() {
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(2);
   setCur(centerX(T(S_NAME), 2), 56);
@@ -4925,8 +5024,8 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
   uint8_t w = b[0], h = b[1], n = b[2];
   const uint8_t *pal = b + 3;
   const uint8_t *d = pal + n * 2;
-  int ox = x + (GAL_CELL - w * s) / 2;
-  int oy = y + (GAL_CELL - h * s) / 2;
+  int ox = SNAP2(x + (GAL_CELL - w * s) / 2);
+  int oy = SNAP2(y + (GAL_CELL - h * s) / 2);
   for (int r = 0; r < h; r++) {
     const uint8_t *row = d + r * w;
     forRuns(w, [&](int c) { return indexedKey(row[c], sil); },
@@ -5058,8 +5157,7 @@ void drawDexArt(PmdMon &a, uint8_t starsA, PmdMon *b, uint8_t starsB) {
 
 // a Pokedex entry, full screen (the Pokedex and the zones' grids); galleryPmd holds its sprite
 void renderDexDetail(int16_t dex) {
-    gfx->fillScreen(RGB565_BLACK);
-    gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+    gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
     const DexEntry &d = DEX_TBL[dex];
     bool reg = pet.isRegistered(dex);
     char num[8];
@@ -5106,7 +5204,7 @@ void drawShinyMark(int x, int y, int cell) { drawSparkle(x + cell - 12, y + 12, 
 
 // ---------- the Pokedex grids: the Pokedex and each zone's, 3 x 3 ----------
 // Big sprites, each fitted to its square. A shiny caught moves, with its sparkles, as on its own
-// page; an entry with a 3-star form (either one) has a gold border around it.
+// page; an entry with a 3-star form (either one) has three small gold stars under it.
 
 // the page's shinies load their sprite (only when it changes: loading takes a moment); the rest unload
 void dexGridSync(const int16_t *dex) {
@@ -5123,33 +5221,14 @@ void dexGridUnload() {
   dexGridSync(none);
 }
 
-// either form has 3 stars: a gold border
+// either form has 3 stars: three small gold stars under it in the grids
 bool dexHasGold(int16_t dex) {
   return (pet.hasForm(dex, false) && pet.starsOf(dex, false) >= 3) || (pet.hasForm(dex, true) && pet.starsOf(dex, true) >= 3);
 }
 
-// a border around what an indexed picture fills (0xFF: see-through), one of its pixels thick: as
-// thick as the black outline the sprites already have
-void drawPixelBorder(const uint8_t *d, int w, int h, int ox, int oy, int s, uint16_t col) {
-  auto solid = [&](int c, int r) { return c >= 0 && r >= 0 && c < w && r < h && d[r * w + c] != 0xFF; };
-  for (int r = -1; r <= h; r++) {
-    int run = -1;
-    for (int c = -1; c <= w + 1; c++) {
-      bool edge = c <= w && !solid(c, r) &&
-                  (solid(c - 1, r - 1) || solid(c, r - 1) || solid(c + 1, r - 1) || solid(c - 1, r) ||
-                   solid(c + 1, r) || solid(c - 1, r + 1) || solid(c, r + 1) || solid(c + 1, r + 1));
-      if (edge && run < 0) run = c;
-      if (!edge && run >= 0) {
-        gfx->fillRect(ox + run * s, oy + r * s, (c - run) * s, s, col);
-        run = -1;
-      }
-    }
-  }
-}
-
-// a thumbnail as big as it fits (up to maxS), what it fills centred on cx, cy, with a border if one is
-// given (0: none); box gets what it covers
-void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS, bool sil, uint16_t border, int *box) {
+// a thumbnail as big as it fits (up to maxS), what it fills centred on cx, cy, then lifted by up to
+// lift where there is room; box gets what it covers
+void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS, bool sil, int lift, int *box) {
   uint8_t w = b[0], h = b[1], n = b[2];
   const uint8_t *pal = b + 3;
   const uint8_t *d = pal + n * 2;
@@ -5167,8 +5246,7 @@ void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS
   int s = min(maxW / bw, maxH / bh);
   if (s > maxS) s = maxS;
   if (s < 1) s = 1;
-  int ox = cx - bw * s / 2 - l * s, oy = cy - bh * s / 2 - t * s;
-  if (border) drawPixelBorder(d, w, h, ox, oy, s, border);
+  int ox = SNAP2(cx - bw * s / 2 - l * s), oy = SNAP2(cy - bh * s / 2 - t * s - min(lift, (maxH - bh * s) / 2));
   for (int y = t; y <= bt; y++) {
     const uint8_t *row = d + y * w;
     forRuns(w, [&](int c) { return indexedKey(row[c], sil); },
@@ -5187,10 +5265,12 @@ void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS
 
 // one square: slot is its place on the page (its animated shiny); true if it moves
 bool drawDexCell(int16_t dex, int slot, int x, int y, int cell) {
+  // the sprite lifted to leave room under it for the stars (3-star entries); a tall one fills the
+  // square and the stars sit over its feet
   int cx = x + cell / 2, cy = y + cell / 2;
   bool reg = pet.isRegistered(dex);
-  uint16_t border = reg && dexHasGold(dex) ? MEDAL_GOLD : 0;
-  int maxW = cell - 14, maxH = cell - 14;
+  bool gold = reg && dexHasGold(dex);
+  int maxW = cell - 6, maxH = cell - 4;
   PmdMon &m = dexGridPmd[slot];
   if (dexGridPmdDex[slot] == dex && m.loaded) {  // a shiny: its idle, sparkles and all
     int top, bottom, left, right;
@@ -5198,13 +5278,13 @@ bool drawDexCell(int16_t dex, int slot, int x, int y, int cell) {
       const PmdAct &a = m.acts[PMD_IDLE];
       uint8_t s = pmdFitScaleAll(m, PMD_IDLE, maxW, maxH, DEXG_SPRITE_S);
       int base = a.base ? a.base : a.h;
-      int ground = cy + ((base - top) - (bottom + 1 - base)) * s / 2;
+      int lift = min(DEXG_STARS_H / 2, (maxH - (bottom + 1 - top) * s) / 2);
+      int ground = cy - lift + ((base - top) - (bottom + 1 - base)) * s / 2;
       int px = cx - ((left + right + 1) - a.w) * s / 2;
       gPmdForceScale = s;
-      gPmdBorder = border;
       drawPmdActM(m, PMD_IDLE, px, ground, millis() + slot * 337, true, false, s);
       gPmdForceScale = 0;
-      gPmdBorder = 0;
+      if (gold) drawStars(cx, y + cell - DEXG_STAR_R - 3, DEXG_STAR_R, 3);  // over its feet if they reach
       return true;
     }
   }
@@ -5212,8 +5292,9 @@ bool drawDexCell(int16_t dex, int slot, int x, int y, int cell) {
   const uint8_t *t = thumbs.getForm(dex, shiny);
   if (t) {
     int box[4];
-    drawThumbFit(t, cx, cy, maxW, maxH, DEXG_SPRITE_S, !reg, border, box);
+    drawThumbFit(t, cx, cy, maxW, maxH, DEXG_SPRITE_S, !reg, DEXG_STARS_H / 2, box);
     if (shiny) drawSparkles(box[0], box[1], box[2], box[3], millis() + slot * 337);  // no sprite to move: still the sparkles
+    if (gold) drawStars(cx, y + cell - DEXG_STAR_R - 3, DEXG_STAR_R, 3);  // over its feet if they reach
     return shiny;
   }
   char num[6];
@@ -5270,8 +5351,7 @@ void renderGallery() {
   }
   dexGridSync(dex);
 
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   char count[12];
   snprintf(count, sizeof(count), "%u/151", pet.registeredCount());
   drawDexGridHead(count, T(S_DEX_TITLE), 30);
@@ -5316,8 +5396,7 @@ void galleryTap(int16_t x, int16_t y) {
 void renderEggPick() {
   if (eggPickDetail) {  // animated: always redrawn
     const DexEntry &d = DEX_TBL[eggPickDetail];
-    gfx->fillScreen(RGB565_BLACK);
-    gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+    gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
     gfx->setTextColor(d.accent);
     const char *name = dexName(eggPickDetail);
     setSize(3);
@@ -5344,8 +5423,7 @@ void renderEggPick() {
   if (!eggPickDirty) return;  // the grid is static
   eggPickDirty = false;
 
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   drawOwnedGrid(T(S_CHOOSE_POKEMON), eggPickPage);
   gfx->flush();
 }
@@ -5950,8 +6028,7 @@ void drawPageDots(int pages, int cur) {  // as on the card
 // a buddy: page 0 its stats and Pokedex, page 1 Battle/Trade/Play
 void renderBuddyMenu() {
   if (!bPeers[bCur].on) { buddyMenuOpen = false; return; }
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   char b[44];
   if (buddyPage == 0) {
     const BuddyPeer &p = bPeers[bCur];
@@ -6050,8 +6127,7 @@ void renderParty() {
   int8_t who[BUDDY_MAX + 1];
   int n = partyFriends(who);
   if (!n) { partyOpen = false; return; }  // everyone left
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   if (partyVisitor && !visitorHere()) partyVisitor = false;  // it left meanwhile
   if (partyVisitor) {  // the visitor's stats: a wild one of its level, and how long it stays
     uint8_t lvl = btlCapLevel(pet.level());
@@ -6181,8 +6257,7 @@ static const uint8_t PLAY_KINDS[] = { BK_SHOWDOWN, BK_VOLLEY };
 
 void renderPlayMenu() {
   if (!bPeers[bCur].on) { playMenuOpen = false; return; }
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(T(S_PLAY_TOGETHER), 3), 84);
@@ -6400,8 +6475,7 @@ void sdTap(int16_t x, int16_t y) {
 
 void renderShowdown() {
   if (!sdOpen) return;
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, TYPE_ACCENT[TY_PSYCHIC]);
+  gfx->fillScreen(TYPE_ACCENT[TY_PSYCHIC]);  // to the edge: no black ring
   gfx->setTextColor(UI_WHITE);
   char b[48];
   // the score: you on the left, the buddy on the right
@@ -6715,8 +6789,7 @@ void renderVolley() {
 }
 
 void renderTrade() {
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   if (trPhase == TR_PICK) {
     // every form you have, a shiny one glowing; yours can't be traded. Green dot: the buddy
     // is missing that species
@@ -6966,18 +7039,21 @@ void zoneTap(int16_t x, int16_t y) {
   dexDetailLoad(dex);
 }
 
-void zoneDrawIcon(uint8_t z) {
-  int cx = ZONE_XY[z][0], cy = ZONE_XY[z][1];
-  if (zoneArt) {
-    const uint16_t *art = zoneArt + z * ZONE_ART * ZONE_ART;
-    for (int dy = -ZONE_ICON_R; dy < ZONE_ICON_R; dy++) {
-      int half = (int)sqrtf(ZONE_ICON_R * ZONE_ICON_R - (dy + 0.5f) * (dy + 0.5f));
-      gfx->draw16bitRGBBitmap(cx - half, cy + dy, (uint16_t *)art + (dy + ZONE_ICON_R) * ZONE_ART + ZONE_ICON_R - half, half * 2, 1);
+// a round window onto a picture (art: (2r) x (2r)), with an ink rim; without the picture, a plain disc
+void drawRoundArt(const uint16_t *art, int cx, int cy, int r, uint16_t fallback) {
+  if (art) {
+    for (int dy = -r; dy < r; dy++) {
+      int half = (int)sqrtf(r * r - (dy + 0.5f) * (dy + 0.5f));
+      gfx->draw16bitRGBBitmap(cx - half, cy + dy, (uint16_t *)art + (dy + r) * 2 * r + r - half, half * 2, 1);
     }
   } else {
-    gfx->fillCircle(cx, cy, ZONE_ICON_R, ZONE_COLOR[z]);
+    gfx->fillCircle(cx, cy, r, fallback);
   }
-  for (int r = 0; r < 3; r++) gfx->drawCircle(cx, cy, ZONE_ICON_R + r - 1, UI_INK);
+  for (int i = 0; i < 3; i++) gfx->drawCircle(cx, cy, r + i - 1, UI_INK);
+}
+
+void zoneDrawIcon(uint8_t z) {
+  drawRoundArt(zoneArt ? zoneArt + z * ZONE_ART * ZONE_ART : nullptr, ZONE_XY[z][0], ZONE_XY[z][1], ZONE_ICON_R, ZONE_COLOR[z]);
 }
 
 void renderZones() {
@@ -6987,8 +7063,7 @@ void renderZones() {
     return;
   }
   char b[32];
-  gfx->fillScreen(RGB565_BLACK);
-  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
   if (zoneScreen == ZS_PICK) {
@@ -7007,7 +7082,7 @@ void renderZones() {
       setCur(cx - textW(b, 2) / 2, y + 18);
       printT(b);
     }
-    gfx->fillRoundRect(ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H, 12, C565(0x1c, 0x96, 0x96));  // teal: apart from the zones
+    gfx->fillRoundRect(ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H, 12, C565(0xd8, 0x2a, 0x2a));  // Poke Ball red: apart from the zones
     gfx->setTextColor(UI_WHITE);
     setCur(centerX(T(S_RANDOM_BATTLE), 2), ZONE_RAND_Y + 13);
     printT(T(S_RANDOM_BATTLE));
@@ -7484,8 +7559,7 @@ void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool
   const uint8_t *fr = a.data + (uint32_t)fi * a.w * a.h;
   // anchor by the feet (a.base), not by the canvas height: that way actions
   // with different padding (Hurt, Eat...) all end up at the same ground height
-  int x0 = cx - a.w * s / 2, y0 = groundY - (a.base ? a.base : a.h) * s;
-  if (gPmdBorder && !sil) drawPixelBorder(fr, a.w, a.h, x0, y0, s, gPmdBorder);
+  int x0 = SNAP2(cx - a.w * s / 2), y0 = SNAP2(groundY - (a.base ? a.base : a.h) * s);  // sharp on the Knomi
   int left = a.w, right = -1, top = -1;  // what it fills, for the sparkles
   for (int r = 0; r < a.h; r++) {
     const uint8_t *row = fr + r * a.w;
@@ -7755,6 +7829,8 @@ bool closeHit(int16_t x, int16_t y) { return closeHitAt(x, y, CLOSE_Y); }
 
 // draws an n x n pixel map, scaled; silhouette=true paints it in ink
 void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette) {
+  x = SNAP2(x);  // sharp on the Knomi
+  y = SNAP2(y);
   for (int r = 0; r < n; r++) {
     const char *row = map[r];
     forRuns(n, [&](int c) { return charKey(row[c], silhouette); },
@@ -7842,9 +7918,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, 83 + inset, QUIZ_OPT_Y + i * (QUIZ_OPT_H + QUIZ_OPT_GAP), 300 - 2 * inset, QUIZ_OPT_H, dexName(quizOpts[i]));
   }
   if (gamesMenuOpen) {
-    int row = (y - GAMES_ROW_Y) / (GAMES_ROW_H + GAMES_ROW_GAP);
-    if (y < GAMES_ROW_Y || row >= GAMES_COUNT || x < GAMES_ROW_X || x > GAMES_ROW_X + GAMES_ROW_W) return false;
-    return pressSet(t, GAMES_ROW_X, GAMES_ROW_Y + row * (GAMES_ROW_H + GAMES_ROW_GAP), GAMES_ROW_W, GAMES_ROW_H, gameLabel(row));
+    int g = gameAt(x, y);
+    if (g < 0) return false;
+    return pressSet(t, GAME_XY[g][0] - GAME_ICON_R, GAME_XY[g][1] - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, gameLabel(g));
   }
   if (zoneScreen == ZS_PICK) {
     if (pressIn(x, y, ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H))

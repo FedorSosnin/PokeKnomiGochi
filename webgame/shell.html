@@ -366,6 +366,17 @@ function applySize() {
 sizeBtn.addEventListener('click', () => { sizeAt = (sizeAt + 1) % SIZES.length; applySize(); });
 applySize();
 
+// Shown bigger than its 466 pixels, the screen keeps its pixels square and sharp; shown smaller (a
+// small window, a screen without Retina), whole rows and columns would drop out and the pixel art
+// would break up: there it is scaled smoothly instead.
+function applySmoothing() {
+  const px = canvas.getBoundingClientRect().width * (window.devicePixelRatio || 1);
+  canvas.style.imageRendering = px >= 466 ? 'pixelated' : 'auto';
+}
+new ResizeObserver(applySmoothing).observe(canvas);
+window.addEventListener('resize', applySmoothing);
+applySmoothing();
+
 // ---- a tab left open: offers the new version once one is published ----
 const updBtn = document.getElementById('upd');
 updBtn.addEventListener('click', () => { if (running) Module._webSave(); sync(() => location.reload()); });

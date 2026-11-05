@@ -20,6 +20,7 @@ public:
   virtual void flush(bool force = false);
 
   uint16_t *framebuffer() { return fb_; }
+  uint16_t *getFramebuffer() { return fb_; }  // as the library names it
   int16_t width() const { return w_; }
   int16_t height() const { return h_; }
 

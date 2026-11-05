@@ -243,9 +243,18 @@ void hostFrameRGBA(uint8_t *out) {
 
 uint16_t *ScaledCanvas::panelBuffer() {
   if (!panel_) panel_ = (uint16_t *)malloc(PANEL_SIZE * PANEL_SIZE * sizeof(uint16_t));
+  // as knomi_hal.h's flush: each panel pixel the average of a 2x2 block starting on an even pixel
   for (int y = 0; y < PANEL_SIZE; y++)
-    for (int x = 0; x < PANEL_SIZE; x++)
-      panel_[y * PANEL_SIZE + x] = framebuffer()[(y * LCD_HEIGHT / PANEL_SIZE) * LCD_WIDTH + x * LCD_WIDTH / PANEL_SIZE];
+    for (int x = 0; x < PANEL_SIZE; x++) {
+      const uint16_t *a = framebuffer() + 2 * (y * (LCD_HEIGHT / 2) / PANEL_SIZE) * LCD_WIDTH + 2 * (x * (LCD_WIDTH / 2) / PANEL_SIZE);
+      uint32_t s = 0;
+      for (int k = 0; k < 4; k++) {
+        uint16_t c = a[(k >> 1) * LCD_WIDTH + (k & 1)];
+        s += (c | ((uint32_t)c << 16)) & 0x07E0F81F;
+      }
+      s = (s >> 2) & 0x07E0F81F;
+      panel_[y * PANEL_SIZE + x] = (uint16_t)(s | (s >> 16));
+    }
   return panel_;
 }
 
