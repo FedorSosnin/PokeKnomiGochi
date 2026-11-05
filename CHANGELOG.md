@@ -8,6 +8,15 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.44] - 2026-11-06
+
+- **Your bag:** the first icon on the home screen is now a green backpack with an orange pocket. It opens your berries and candy, and will hold other items later.
+- **Wild Encounter:** Random Battle is now Wild Encounter, the last circle on the Battle screen. Its window shows your Pokémon's home, and the wild Pokémon is met right there, in the same scene as the main screen, by day or night.
+- **Games menu:** brighter windows onto each game, ringed in its own colour, with more going on: berries falling, a Who's That? burst, a leap over a rock and a startled Zubat. The title reads Games, and the windows are centred between it and the ✕, as on the Battle screen.
+- **Page arrows:** round arrow buttons at the sides of the Pokédex and of each zone's list turn the page, as well as swiping. There's none before the first page or after the last.
+- **Screens stay open:** the Games menu, the Battle screen, a zone's list and a wild battle no longer close by themselves when left alone. A battle with a buddy still ends after a minute, since they're waiting.
+- **Moves chart:** [Moves](docs/MOVES.md) shows each move's power, so you can see when a Pokémon learns its strongest move before or after evolving.
+
 ## [1.43] - 2026-11-05
 
 - **Sharper on the Knomi:** the Knomi shows the game's 466-pixel picture on its 240-pixel screen. Each screen pixel now comes from a fixed pair of picture pixels (they used to drift by one every 16), and the Pokémon, icons and text are drawn on even pixels so they land whole: no more blurred bands. The Pokédex thumbnails are cropped to the Pokémon, so tall ones like Charmeleon are no longer shrunk by dropping rows, and the web version scales the screen smoothly when it's shown smaller than its own size.

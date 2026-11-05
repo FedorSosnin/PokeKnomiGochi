@@ -33,9 +33,9 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 
 ## How to play
 
-- **Tap your Pokémon** to pet it. The icons along the bottom, from left to right, feed it, open the mini games, start a battle, turn off the light at bedtime and give it a bath.
+- **Tap your Pokémon** to pet it. The icons along the bottom, from left to right, open your bag to feed it, open the mini games, start a battle, turn off the light at bedtime and give it a bath.
 - **Swipe up** for its card and stats (tap its name there to rename it), **from left to right** for the Pokédex, **from right to left** for your achievements, and **down** for the clock and settings. The round **✕** at the bottom closes any of them.
-- **Battle** with the Poké Ball icon: pick a zone and search, or tap **Random Battle** for a wild Pokémon from anywhere, and catch what you beat to fill your Pokédex. Every catch has 1 to 3 ★, and a better one replaces yours. Land the Poké Ball in the small green circle and the catch is sure; the faster the Pokémon, the faster it runs.
+- **Battle** with the Poké Ball icon: pick a zone and search, or tap **Wild Encounter** to meet a wild Pokémon at your Pokémon's home, and catch what you beat to fill your Pokédex. Every catch has 1 to 3 ★, and a better one replaces yours. Land the Poké Ball in the small green circle and the catch is sure; the faster the Pokémon, the faster it runs.
 - On a computer, the mouse is a finger: it presses when you click. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
 
 ## Training
@@ -51,7 +51,7 @@ Each one stops at 100. The **Training** page on your Pokémon's card shows how f
 
 ## Moves
 
-Your Pokémon fights with two moves: on the right the strongest of its own type, on the left the strongest of any other type. They are the attacks its species learns in Pokémon Red and Blue, up to its level, and it gains a level every hour, asleep or awake. Only levels teach moves, not training or wins. When a stronger one takes over a button, the next wild battle opens with **Learned …!** A Charmander starts with Scratch, learns Ember at level 9, Slash at 30 and Flamethrower at 38. The [moves chart](https://github.com/FedorSosnin/PokeKnomiGochi/blob/main/docs/MOVES.md) has every Pokémon's moves and the level it evolves at.
+Your Pokémon fights with two moves: on the right the strongest of its own type, on the left the strongest of any other type. They are the attacks its species learns in Pokémon Red and Blue, up to its level, and it gains a level every hour, asleep or awake. Only levels teach moves, not training or wins. When a stronger one takes over a button, the next wild battle opens with **Learned …!** A Charmander starts with Scratch, learns Ember at level 9, Slash at 30 and Flamethrower at 38. The [moves chart](https://github.com/FedorSosnin/PokeKnomiGochi/blob/main/docs/MOVES.md) has each move's power and every Pokémon's moves and the level it evolves at.
 
 ## Your save
 

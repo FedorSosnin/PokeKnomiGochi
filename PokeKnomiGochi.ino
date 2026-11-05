@@ -51,7 +51,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.43"
+#define FW_VERSION "1.44"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -2319,7 +2319,7 @@ void renderGamesMenu() {
   for (int i = 0; i < GAMES_COUNT; i++) {
     int cx = GAME_XY[i][0], cy = GAME_XY[i][1];
     drawRoundArt(gameArt ? gameArt + i * GAME_ART * GAME_ART : nullptr, cx, cy, GAME_ICON_R, colors[i]);
-    fillRing(cx, cy, GAME_ICON_R - 6, GAME_ICON_R - 2, colors[i]);  // each game's own colour around its window
+    fillRing(cx, cy, GAME_ICON_R - 4, GAME_ICON_R + 1, colors[i]);  // each game's own colour, right at the edge (over the ink rim)
     gfx->setTextColor(UI_INK);
     setCur(cx - textW(gameLabel(i), 2) / 2, cy + GAME_ICON_R + 6);
     printT(gameLabel(i));

@@ -66,17 +66,17 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 The screen turns to follow however you hold the Knomi. It starts ready for your right hand with the cable going off to the left, so the button is under your finger.
 
-See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does, and [Moves](docs/MOVES.md) for when every Pokémon learns each move.
+See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does, and [Moves](docs/MOVES.md) for when every Pokémon learns each move, and how strong each one is.
 
 | Do this | What happens |
 |---|---|
 | **Tap the Pokémon** | Pet it |
-| **Tap the bottom icons** | From left to right: feed it (a candy refills its energy: 2 a day, 3 when the visitor brings one, and a red number shows how many are left), play mini games, battle, turn the light off for bed, or give it a bath |
+| **Tap the bottom icons** | From left to right: open your bag to feed it (a candy refills its energy: 2 a day, 3 when the visitor brings one, and a red number shows how many are left), play mini games, battle, turn the light off for bed, or give it a bath |
 | **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
 | **Swipe up** | See its card: profile, battle stats, training and progress |
 | **Tap its name on the card** (✏️) | Rename it |
-| **Swipe from left to right** | Open the Pokédex. Tap a Pokémon for its page, and tap it there to give it a pat |
+| **Swipe from left to right** | Open the Pokédex. The arrows at its sides, or a swipe, turn the pages; tap a Pokémon for its page, and tap it there to give it a pat |
 | **Swipe from right to left** | See your achievements: every medal, 6 to a page. A new medal drops in from the top; tap it to see it there |
 | **Swipe down** | Set the clock, then swipe left for settings |
 | **Press the button** | Start a wild battle |
@@ -112,7 +112,7 @@ While it knows only one attack, that one gets a single wide button.
 
 It knows every attack its species learns by leveling up in Pokémon Red and Blue, up to its current level, and it gains a level every hour of age, asleep or awake. Only levels teach moves: training and winning don't. When a stronger move takes over a button, the next wild battle opens with **Learned Flamethrower!** A new move that is weaker than the one on its button doesn't replace it.
 
-Charmander, for example, starts with Scratch, learns Ember at level 9, Slash at 30 (in place of Scratch) and Flamethrower at 38 (in place of Ember). After evolving, it follows the new form's list, so a move can come a few levels earlier or later: Charmeleon learns Slash at 33 and Flamethrower at 42. Ditto has no moves of its own: it copies the wild Pokémon's. **[Moves](docs/MOVES.md)** lists every Pokémon's moves and the level it learns each one.
+Charmander, for example, starts with Scratch, learns Ember at level 9, Slash at 30 (in place of Scratch) and Flamethrower at 38 (in place of Ember). After evolving, it follows the new form's list, so a move can come a few levels earlier or later: Charmeleon learns Slash at 33 and Flamethrower at 42. Ditto has no moves of its own: it copies the wild Pokémon's. **[Moves](docs/MOVES.md)** lists every Pokémon's moves, the level it learns each one and each move's power, so you can see whether it pays to wait before evolving.
 
 ### Training
 
@@ -135,7 +135,7 @@ Every wild Pokémon you beat can be caught, even one you already have: you get t
 
 ### Battles
 
-Tap the **Poké Ball** icon in the middle of the home screen to pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. **Random Battle**, the last circle (a pie of all five zones), meets a wild Pokémon from anywhere, just like pressing the physical button. Battles train attack.
+Tap the **Poké Ball** icon in the middle of the home screen to pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Fill a zone and its legendary starts to appear. **Wild Encounter**, the last circle, meets a wild Pokémon from anywhere at your Pokémon's home, in the scene of the main screen, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
 
 ### Games
 

@@ -66,7 +66,7 @@ Two moves, one per button: on the right the strongest of its own type, on the le
 | 30 | Slash | Ember |
 | 38 | Slash | Flamethrower |
 
-Ditto copies the wild Pokémon's moves. **[Every Pokémon's moves and levels](MOVES.md)** has the whole list for all 151.
+Ditto copies the wild Pokémon's moves. **[Every Pokémon's moves and levels](MOVES.md)** has the whole list for all 151, with each move's power.
 
 ### Results
 
@@ -114,7 +114,7 @@ The **daily visitor** brings a candy (a third one that day) and stays 60 awake m
 
 There are two ways to start a battle:
 
-- 🔘 **The physical button, or Random Battle (the last circle, after the zones):** a random wild Pokémon from anywhere. The Mac, Windows and web versions have no button, so Random Battle is the way there (or Space on a keyboard).
+- 🔘 **The physical button, or Wild Encounter (the last circle, after the zones):** a random wild Pokémon from anywhere, met at your Pokémon's home. The Mac, Windows and web versions have no button, so Wild Encounter is the way there (or Space on a keyboard).
 - ⚪ **The Poké Ball icon on the home screen:** pick a zone and hunt there. Missing Pokémon show as silhouettes, and each Search favors them.
 
 | Zone | Pokémon | Who lives there | Legendary ⭐ |
