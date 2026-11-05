@@ -82,7 +82,7 @@ Every form in the Pokédex (regular and shiny count apart) has 1–3 ★: its ge
 | ★★ | 35% | 97–103 |
 | ★★★ | 15% | 104–110 |
 
-- **Catching:** the Gotcha screen shows the catch's stars and stays until you tap its ✕. A new form joins with them. If you have that form and the catch has more stars, it replaces yours at once ("New best!"); otherwise yours stays and the catch goes free.
+- **Catching:** once the ball holds, a screen of its own shows the Pokémon and its stars, and stays until you tap its ✕. A new form joins with them ("New in your Pokédex!"). If you have that form and the catch has more stars, it replaces your weaker one at once ("New best!"); otherwise yours stays and the catch goes back to the wild.
 - **Raising:** hatching or evolving registers the form with your Pokémon's own stars, and never lowers a form you have.
 - **Choosing your next Pokémon:** its genes are rolled inside the band of the form you pick, so a 3★ form hatches a 3★ Pokémon. A random egg rolls 90–110.
 - **Trading:** the stars go with the Pokémon. If you already have the form you get, you keep the higher. From a buddy on an older version, the stars are rolled.

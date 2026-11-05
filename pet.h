@@ -285,6 +285,11 @@ public:
   bool showMilestone() const { return timeLeft(milestoneUntil) > 0; }
   uint32_t celebrateLeft() const { return timeLeft(showMedal() ? medalUntil : milestoneUntil); }
   void endCelebration() { medalUntil = milestoneUntil = 0; }  // tapped: it has been seen
+  // not on screen (a battle, a game, the Pokedex, the screen off...): it waits, whole, for the home screen
+  void holdCelebration() {
+    if (showMedal()) medalUntil = millis() + CELEBRATE_MS;
+    if (showMilestone()) milestoneUntil = millis() + CELEBRATE_MS;
+  }
   int careBonus() const;  // egg improvement from streak + bond
 
   // deferred periodic save: tick() flags it pending and the loop flushes it

@@ -121,8 +121,6 @@ inline void zoneArtDraw(uint16_t *px, uint8_t z) {
     g.rect(0, 78, 100, 2, 0x363a50);
     g.rect(10, 54, 3, 26, m); g.rect(7, 60, 7, 2, m); g.rect(11, 56, 7, 2, m); g.rect(6, 57, 2, 4, m);
     g.rect(82, 66, 2, 13, m); g.rect(92, 72, 2, 7, m); g.rect(78, 70, 20, 2, m);
-    g.rect(84, 48, 7, 8, 0xcfd9ff); g.rect(84, 56, 2, 2, 0xcfd9ff); g.rect(89, 56, 2, 2, 0xcfd9ff);
-    g.rect(85, 51, 1, 2, m); g.rect(88, 51, 1, 2, m);
   } else {
     g.rect(0, 0, 100, 100, 0xa8dcf0);
     g.oval(20, 16, 8, 8, 0xffe79f);

@@ -8,7 +8,9 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
-- **Pokédex stars:** every form in the Pokédex has 1–3 ★, its genes kept simple (regular and shiny apart). Every wild win can now be caught, even a Pokémon you have, and the Gotcha screen shows the catch's stars and stays until you tap its ✕: a new form joins, a better one replaces yours ("New best!"), and a weaker one goes free. Stars show on each Pokédex page, in trades and when you choose your next Pokémon, and a 3★ form hatches a 3★ Pokémon. Your Pokédex is kept as it is: each form you already have gets its stars once, the one you're raising from its own genes.
+- **Pokédex stars:** every form in the Pokédex has 1–3 ★, its genes kept simple (regular and shiny apart). Every wild win can now be caught, even a Pokémon you have, and after the ball holds, a screen of its own shows the Pokémon and its stars until you tap its ✕: a new form joins, a better one replaces your weaker one ("New best!"), and one that isn't better goes back to the wild. Stars show on each Pokédex page (where the sprites are now bigger), in trades and when you choose your next Pokémon, and a 3★ form hatches a 3★ Pokémon. Your Pokédex is kept as it is: each form you already have gets its stars once, the one you're raising from its own genes.
+- **Medal banners show up again:** a medal or streak earned away from the home screen (in a battle, a mini game, the Pokédex) used to time out unseen. The banner now waits and slides down when you're back home.
+- **Mansion:** the little ghost at the right of its picture is gone.
 
 ## [1.40] - 2026-11-04
 

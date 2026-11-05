@@ -157,6 +157,8 @@ uint32_t gamesMenuUntil = 0;
 // who's that pokemon
 enum QuizPhase : uint8_t { QP_ASK, QP_REVEAL, QP_END };
 bool quizOpen = false;
+#define CELEB_HOLD_MS 500     // home not drawn for this long: a medal banner waits for it
+uint32_t lastCelebDraw = 0;  // the last time the home screen, where the banner shows, was drawn
 uint8_t gPmdForceScale = 0;  // if not 0, fixed scale for the next sprite
 QuizPhase quizPhase = QP_ASK;
 uint32_t quizT = 0;
@@ -260,7 +262,7 @@ bool gameNewHi = false;
 
 // battle against a wild foe (trains strength and fills the pokedex)
 enum BattlePhase : uint8_t { BP_TIRED, BP_INTRO, BP_LEARNED, BP_CHOOSE, BP_WAIT, BP_ATTACK, BP_HIT, BP_EFFECT, BP_RAN, BP_END,
-                            BP_AIM, BP_THROW, BP_MISS, BP_SHAKE, BP_BROKE, BP_CAUGHT, BP_FLED };
+                            BP_AIM, BP_THROW, BP_MISS, BP_SHAKE, BP_BROKE, BP_CAUGHT, BP_RESULT, BP_FLED };
 bool battleOpen = false;
 BattlePhase bPhase = BP_INTRO;
 uint32_t bPhaseT = 0;
@@ -591,6 +593,8 @@ void loop() {
   if (interval > 150) interval = 150;  // no battery to protect, the pet stays alive at idle
 #endif
   bool drewFrame = false;
+  // a medal or streak earned away from home (in a battle, a game...) slides down once you're back
+  if (now - lastCelebDraw > CELEB_HOLD_MS) pet.holdCelebration();
   if (interval && now - lastRender >= interval) {
     lastRender = now;
     uint32_t drawT = millis();
@@ -2509,7 +2513,11 @@ void battleMoveRect(uint8_t i, int &x0, int &x1) {
 }
 
 void battleTap(int16_t x, int16_t y) {
-  if (bPhase == BP_CAUGHT) {
+  if (bPhase == BP_CAUGHT) {  // a tap skips to the result
+    if (millis() - bPhaseT > 600) battleSetPhase(BP_RESULT);
+    return;
+  }
+  if (bPhase == BP_RESULT) {
     if (closeHit(x, y)) {
       sfxPlay(SFX_TAP);
       closeBattle();
@@ -2589,6 +2597,7 @@ void battleAfterEnd() {
 
 #define MEDAL_GOLD C565(0xf2, 0xb8, 0x2a)  // medals and stars
 uint8_t bBreakAt = 0, bShakesHeard = 0;  // the throw that hit: when it breaks out (0 = holds), tones played
+#define CATCH_CAUGHT_MS 1800  // the ball holds and sparkles, then the result screen says what it was
 uint8_t bCatchStars = 0, bCatchYours = 0;  // the catch's stars, and the ones of the form you had (0: none)
 CatchResult bCatchResult = CR_NEW;
 float bCatchX = CX;                      // where the ball landed: the foe stops swaying in it
@@ -2720,7 +2729,8 @@ void battleStep() {
       }
       break;
     }
-    case BP_CAUGHT: break;  // stays until its X is tapped, so the stars can't be missed
+    case BP_CAUGHT: if (t > CATCH_CAUGHT_MS) battleSetPhase(BP_RESULT); break;  // then what it is worth
+    case BP_RESULT: break;  // stays until its X is tapped, so the stars can't be missed
     case BP_FLED: if (t > 3500) closeBattle(); break;
   }
 }
@@ -2920,8 +2930,6 @@ void renderCatch() {
   } else if (bPhase == BP_CAUGHT) {
     drawCatchShine((int)bFoeX, ballGround + 27, now - bPhaseT);
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, ballGround, 3, false);
-    int sx = (int)bFoeX < 100 ? 100 : (int)bFoeX > 366 ? 366 : (int)bFoeX;  // its stars, big, over the ball
-    drawStars(sx, ballGround - 44, 16, bCatchStars);
   }
 
   gfx->fillRect(0, BTL_BAND_Y, 466, 466 - BTL_BAND_Y, UI_BG_DAY);
@@ -2959,20 +2967,71 @@ void renderCatch() {
       snprintf(b, sizeof(b), T(S_GOT_AWAY_FMT), dexName(bFoe.dex));
       catchBanner(b, C565(0x55, 0x55, 0x60));
       break;
-    case BP_CAUGHT:  // the banner, how it compares with the one you had, and the X to close
-      snprintf(b, sizeof(b), T(S_CAUGHT_FMT), dexName(bFoe.dex));
-      catchBannerAt(b, C565(0x1e, 0x7d, 0x3c), 340, 2);
-      if (bCatchResult == CR_NEW) battleCenterLine(T(S_BTL_NEWDEX), 382);
-      else lineWithStars(T(bCatchResult == CR_BETTER ? S_STARS_BETTER : bCatchYours > bCatchStars ? S_STARS_YOURS_BETTER : S_STARS_SAME),
-                         bCatchYours, 382, bCatchResult == CR_BETTER ? UI_BAR_WARN : UI_INK);
-      drawCloseButton();
-      break;
     case BP_FLED:
       snprintf(b, sizeof(b), T(S_FLED_FMT), dexName(bFoe.dex));
       catchBanner(b, C565(0x55, 0x55, 0x60));
       break;
     default: break;
   }
+  gfx->flush();
+}
+
+// a few words centred and wrapped over up to two lines; returns the y under them
+int centerWrapped(const char *p, int y, int maxChars) {
+  char line[48];
+  for (int i = 0; *p && i < 2; i++, y += 24) {
+    int skip, n = wrapNext(p, maxChars, skip);
+    snprintf(line, sizeof(line), "%.*s", n, p);
+    setCur(centerX(line, 2), y);
+    printT(line);
+    p += skip;
+  }
+  return y;
+}
+
+// after the catch, on its own screen: the Pokemon, its stars, and what that means for the one you had
+// (new: added; better: it takes the weaker one's place; the same or worse: it goes back to the wild)
+#define RESULT_BANNER_Y 70
+#define RESULT_ART_TOP 116
+#define RESULT_ART_BOTTOM 236
+#define RESULT_STARS_Y 260
+#define RESULT_STAR_R 13
+#define RESULT_LINE_Y 292
+void renderCatchResult() {
+  gfx->fillScreen(RGB565_BLACK);
+  gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
+  char b[48];
+  snprintf(b, sizeof(b), T(S_CAUGHT_FMT), dexName(bFoe.dex));
+  catchBannerAt(b, C565(0x1e, 0x7d, 0x3c), RESULT_BANNER_Y, 2);
+
+  int top, bottom, left, right;
+  if (pmdBoxAll(wildPmd, PMD_IDLE, top, bottom, left, right)) {  // as big as it fits, centred in its box
+    int boxH = RESULT_ART_BOTTOM - RESULT_ART_TOP;
+    uint8_t s = pmdFitScaleAll(wildPmd, PMD_IDLE, 220, boxH, 5);
+    const PmdAct &a = wildPmd.acts[PMD_IDLE];
+    int base = a.base ? a.base : a.h;
+    int down = (bottom + 1 - base) * s;  // standing just over its stars
+    gPmdForceScale = s;
+    drawPmdActM(wildPmd, PMD_IDLE, CX, RESULT_ART_BOTTOM - (down > 0 ? down : 0), millis(), true, false, 8);
+    gPmdForceScale = 0;
+  }
+  drawStars(CX, RESULT_STARS_Y, RESULT_STAR_R, bCatchStars);
+
+  setSize(2);
+  if (bCatchResult == CR_NEW) {
+    gfx->setTextColor(C565(0x1e, 0x7d, 0x3c));
+    centerWrapped(T(S_BTL_NEWDEX), RESULT_LINE_Y, 30);
+  } else if (bCatchResult == CR_BETTER) {
+    lineWithStars(T(S_STARS_BETTER), bCatchYours, RESULT_LINE_Y, UI_INK);
+    gfx->setTextColor(C565(0x1e, 0x7d, 0x3c));
+    centerWrapped(T(S_STARS_REPLACES), RESULT_LINE_Y + 28, 30);
+  } else {
+    lineWithStars(T(bCatchYours > bCatchStars ? S_STARS_YOURS_BETTER : S_STARS_SAME), bCatchYours, RESULT_LINE_Y, UI_INK);
+    gfx->setTextColor(C565(0x55, 0x55, 0x60));
+    centerWrapped(T(S_STARS_TO_WILD), RESULT_LINE_Y + 28, 30);
+  }
+  gfx->setTextColor(UI_INK);
+  drawCloseButton();
   gfx->flush();
 }
 
@@ -3121,6 +3180,10 @@ void renderBattle() {
   battleStep();
   if (!battleOpen) return;
 
+  if (bPhase == BP_RESULT) {
+    renderCatchResult();
+    return;
+  }
   if (bPhase >= BP_AIM) {
     renderCatch();
     return;
@@ -4303,6 +4366,7 @@ void fillStar(int cx, int cy, int r, uint16_t c) {
 }
 
 void drawCelebration() {
+  lastCelebDraw = millis();
   const char *l1 = nullptr, *l2 = nullptr;
   // 32 and not 20: "%u にちれんぞく！" already exceeds 20 with a single digit, and snprintf
   // cut in the middle of a 3-byte character.
@@ -4859,6 +4923,40 @@ void galleryUnload() {
   galleryShinyPmd.unload();
 }
 
+// an entry's sprite, or both forms side by side, with each one's stars under it: as big as they fit,
+// the group centred between the name and the type label
+#define DEX_ART_TOP 84
+#define DEX_ART_BOTTOM 246
+#define DEX_STAR_R 9
+#define DEX_ART_GAP 10
+void drawDexArt(PmdMon &a, uint8_t starsA, PmdMon *b, uint8_t starsB) {
+  PmdMon *m[2] = { &a, b };
+  int n = b ? 2 : 1;
+  int starH = 2 * (DEX_STAR_R + 2), boxW = b ? 156 : 260;
+  int boxH = DEX_ART_BOTTOM - DEX_ART_TOP - starH - DEX_ART_GAP;
+  uint8_t s = b ? 4 : 5;
+  for (int i = 0; i < n; i++) s = min(s, pmdFitScaleAll(*m[i], PMD_IDLE, boxW, boxH, s));
+  int up = 0, down = 0;  // the most any of them reaches above and below its feet
+  for (int i = 0; i < n; i++) {
+    int top, bottom, left, right;
+    if (!pmdBoxAll(*m[i], PMD_IDLE, top, bottom, left, right)) continue;
+    const PmdAct &act = m[i]->acts[PMD_IDLE];
+    int base = act.base ? act.base : act.h;
+    up = max(up, (base - top) * s);
+    down = max(down, (bottom + 1 - base) * s);
+  }
+  int groupH = up + down + DEX_ART_GAP + starH;
+  int ground = DEX_ART_TOP + (DEX_ART_BOTTOM - DEX_ART_TOP - groupH) / 2 + up;
+  int starY = ground + down + DEX_ART_GAP + starH / 2;
+  gPmdForceScale = s;
+  for (int i = 0; i < n; i++) {
+    int x = b ? (i ? CX + 84 : CX - 84) : CX;
+    drawPmdActM(*m[i], PMD_IDLE, x, ground, millis(), true, false, 8);
+    drawStars(x, starY, DEX_STAR_R, i ? starsB : starsA);
+  }
+  gPmdForceScale = 0;
+}
+
 // a Pokedex entry, full screen (the Pokedex and the zones' grids); galleryPmd holds its sprite
 void renderDexDetail(int16_t dex) {
     gfx->fillScreen(RGB565_BLACK);
@@ -4876,17 +4974,15 @@ void renderDexDetail(int16_t dex) {
     setCur(centerX(head, gts), gts == 3 ? 56 : 60);
     printT(head);
     if (reg && galleryPmd.loaded && galleryShinyPmd.loaded) {  // both forms, side by side
-      uint8_t s = min(pmdFitScale(galleryPmd, PMD_IDLE, 150, 150), pmdFitScale(galleryShinyPmd, PMD_IDLE, 150, 150));
-      if (s > 3) s = 3;
-      drawPmdActM(galleryPmd, PMD_IDLE, CX - 84, 226, millis(), true, false, s);
-      drawPmdActM(galleryShinyPmd, PMD_IDLE, CX + 84, 226, millis(), true, false, s);
-      drawStars(CX - 84, 237, 8, pet.starsOf(dex, false));  // each form its own stars
-      drawStars(CX + 84, 237, 8, pet.starsOf(dex, true));
+      drawDexArt(galleryPmd, pet.starsOf(dex, false), &galleryShinyPmd, pet.starsOf(dex, true));  // each form its own stars
       drawDexInfo(dex);
     } else if (reg) {
-      if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 226, millis(), true, false, 4);
-      else if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, CX - GAL_CELL, 96, 3, false);
-      drawStars(CX, 237, 8, pet.starsOf(dex, !pet.hasForm(dex, false)));
+      uint8_t stars = pet.starsOf(dex, !pet.hasForm(dex, false));
+      if (galleryPmd.loaded) drawDexArt(galleryPmd, stars, nullptr, 0);
+      else {
+        if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, CX - GAL_CELL, 96, 3, false);
+        drawStars(CX, 237, DEX_STAR_R, stars);
+      }
       drawDexInfo(dex);
     } else if (galleryPmd.loaded) {
       drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, 0, true, true, 6);  // static silhouette ("?" style)
@@ -4985,10 +5081,13 @@ void renderEggPick() {
     setSize(3);
     setCur(centerX(name, 3), 56);
     printT(name);
-    if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 226, millis(), true, false, 4);
-    else if (const uint8_t *t = thumbs.getForm(eggPickDetail, eggPickShiny)) drawThumb(t, CX - GAL_CELL, 96, 3, false);
-    if (eggPickShiny) drawShinyMark(CX - 84, 102, 168);
-    drawStars(CX, 237, 8, pet.starsOf(eggPickDetail, eggPickShiny));  // it hatches with these
+    uint8_t stars = pet.starsOf(eggPickDetail, eggPickShiny);  // it hatches with these
+    if (galleryPmd.loaded) drawDexArt(galleryPmd, stars, nullptr, 0);
+    else {
+      if (const uint8_t *t = thumbs.getForm(eggPickDetail, eggPickShiny)) drawThumb(t, CX - GAL_CELL, 96, 3, false);
+      if (eggPickShiny) drawShinyMark(CX - 84, 102, 168);
+      drawStars(CX, 237, DEX_STAR_R, stars);
+    }
     drawDexInfo(eggPickDetail, false);
     gfx->fillRoundRect(CX - 110, PICK_BTN_Y, 220, PICK_BTN_H, 14, C565(0x1e, 0x7d, 0x3c));
     gfx->setTextColor(UI_WHITE);
@@ -7063,9 +7162,11 @@ uint8_t pmdFrameAt(const PmdAct &a, uint32_t t, bool loop) {
 // draws an action anchored by its base (center-x, ground) and returns its scale
 // integer scale so the visible part of the sprite (without the canvas's transparent padding) fits
 // in maxW x maxH: the canvas height includes a lot of empty space and falls well short
-uint8_t pmdFitScale(const PmdMon &m, uint8_t actId, int maxW, int maxH) {
+// the rows and columns an action's first frame fills (false: nothing)
+bool pmdBox(const PmdMon &m, uint8_t actId, int &top, int &bottom, int &left, int &right) {
   const PmdAct &a = m.acts[actId];
-  int top = a.h, bottom = -1, left = a.w, right = -1;
+  top = a.h, bottom = -1, left = a.w, right = -1;
+  if (!a.data) return false;
   for (int r = 0; r < a.h; r++)
     for (int c = 0; c < a.w; c++)
       if (a.data[r * a.w + c] != 0xFF) {
@@ -7074,7 +7175,40 @@ uint8_t pmdFitScale(const PmdMon &m, uint8_t actId, int maxW, int maxH) {
         if (c < left) left = c;
         if (c > right) right = c;
       }
-  if (bottom < 0) return 2;
+  return bottom >= 0;
+}
+
+// the same over every frame of the action: what it ever fills as it moves (false: nothing)
+bool pmdBoxAll(const PmdMon &m, uint8_t actId, int &top, int &bottom, int &left, int &right) {
+  const PmdAct &a = m.acts[actId];
+  top = a.h, bottom = -1, left = a.w, right = -1;
+  if (!a.data) return false;
+  for (uint32_t f = 0; f < a.frames; f++) {
+    const uint8_t *fr = a.data + f * a.w * a.h;
+    for (int r = 0; r < a.h; r++)
+      for (int c = 0; c < a.w; c++)
+        if (fr[r * a.w + c] != 0xFF) {
+          if (r < top) top = r;
+          if (r > bottom) bottom = r;
+          if (c < left) left = c;
+          if (c > right) right = c;
+        }
+  }
+  return bottom >= 0;
+}
+
+// the largest whole scale at which the action, in every frame, fits in maxW x maxH (at most maxS)
+uint8_t pmdFitScaleAll(const PmdMon &m, uint8_t actId, int maxW, int maxH, uint8_t maxS) {
+  int top, bottom, left, right;
+  if (!pmdBoxAll(m, actId, top, bottom, left, right)) return 2;
+  int sw = maxW / (right - left + 1), sh = maxH / (bottom - top + 1);
+  int fit = sw < sh ? sw : sh;
+  return fit < 2 ? 2 : (fit > maxS ? maxS : fit);
+}
+
+uint8_t pmdFitScale(const PmdMon &m, uint8_t actId, int maxW, int maxH) {
+  int top, bottom, left, right;
+  if (!pmdBox(m, actId, top, bottom, left, right)) return 2;
   int sw = maxW / (right - left + 1), sh = maxH / (bottom - top + 1);
   int fit = sw < sh ? sw : sh;
   return fit < 2 ? 2 : (fit > 8 ? 8 : fit);
@@ -7446,7 +7580,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   static char buf[52];
   // --- game screens (handleTouch's first branch) ---
   if (battleOpen) {
-    if (bPhase == BP_CAUGHT && closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+    if (bPhase == BP_RESULT && closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     if (bPhase != BP_CHOOSE) return false;
     if (y >= 392 && x >= 160 && x <= 306) return !bRunFailed && pressSet(t, 160, 394, 146, 38, T(S_BTL_RUN));
     if (y < 344 || y > 386) return false;
