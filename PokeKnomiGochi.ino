@@ -6918,21 +6918,22 @@ void tradeTap(int16_t x, int16_t y) {
 #define ZONE_CLOSE_Y 430  // a little lower than elsewhere, to make room for the page
 #define ZONE_IDLE_MS 30000UL
 
-static const int16_t ZONE_XY[ZONE_COUNT][2] = { { 155, 104 }, { 311, 104 }, { 93, 246 }, { 233, 246 }, { 373, 246 } };
-// under the zones: a wild battle with no zone, like the Knomi's button (the apps and the web have none)
-#define ZONE_RAND_X 123
-#define ZONE_RAND_Y 348
-#define ZONE_RAND_W 220
-#define ZONE_RAND_H 40
+// two rows of three: the five zones, then Random Battle (a wild Pokemon from anywhere, like the
+// Knomi's button; the apps and the web have none), its window a pie of the five scenes
+#define ZONE_PICKS (ZONE_COUNT + 1)
+#define ZONE_RANDOM ZONE_COUNT  // the last pick
+static const int16_t ZONE_XY[ZONE_PICKS][2] = { { 103, 118 }, { 233, 118 }, { 363, 118 }, { 103, 266 }, { 233, 266 }, { 363, 266 } };
 static const StrId ZONE_NAME[ZONE_COUNT] = { S_ZONE_FOREST, S_ZONE_BEACH, S_ZONE_CAVE, S_ZONE_MANSION, S_ZONE_FIELD };
 static const uint16_t ZONE_COLOR[ZONE_COUNT] = { C565(0x3a, 0x8a, 0x4f), C565(0x2f, 0x7f, 0xb5), C565(0x6b, 0x5a, 0x8a), C565(0x7a, 0x3f, 0x8f), C565(0xc9, 0x8a, 0x1e) };
 
 void openZones() {
   if (pet.isEgg() || pet.sleeping || pet.ceremony) { sfxPlay(SFX_DENY); return; }
   if (!zoneArt) {
-    zoneArt = (uint16_t *)ps_malloc(ZONE_COUNT * ZONE_ART * ZONE_ART * sizeof(uint16_t));
-    if (zoneArt)
+    zoneArt = (uint16_t *)ps_malloc(ZONE_PICKS * ZONE_ART * ZONE_ART * sizeof(uint16_t));
+    if (zoneArt) {
       for (uint8_t z = 0; z < ZONE_COUNT; z++) zoneArtDraw(zoneArt + z * ZONE_ART * ZONE_ART, z);
+      zonePieDraw(zoneArt + ZONE_RANDOM * ZONE_ART * ZONE_ART, zoneArt);
+    }
   }
   zoneScreen = ZS_PICK;
   zoneUntil = millis() + ZONE_IDLE_MS;
@@ -7008,22 +7009,17 @@ void zoneTap(int16_t x, int16_t y) {
     return;
   }
   if (zoneScreen == ZS_PICK) {
-    if (y >= ZONE_RAND_Y && y < ZONE_RAND_Y + ZONE_RAND_H && x >= ZONE_RAND_X && x < ZONE_RAND_X + ZONE_RAND_W) {
-      sfxPlay(SFX_TAP);
+    int z = zonePickAt(x, y);
+    if (z < 0) return;
+    sfxPlay(SFX_TAP);
+    if (z == ZONE_RANDOM) {
       zoneScreen = ZS_NONE;
       startBattle();  // its end comes back home, as from the button
       return;
     }
-    for (uint8_t z = 0; z < ZONE_COUNT; z++) {
-      int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
-      if (dx * dx + dy * dy < (ZONE_ICON_R + 6) * (ZONE_ICON_R + 6) || (abs(dx) < 66 && dy > 0 && dy < ZONE_ICON_R + 44)) {
-        sfxPlay(SFX_TAP);
-        zoneCur = z;
-        zonePage = 0;
-        zoneScreen = ZS_ZONE;
-        return;
-      }
-    }
+    zoneCur = z;
+    zonePage = 0;
+    zoneScreen = ZS_ZONE;
     return;
   }
   if (y >= ZONE_BTN_Y && y < ZONE_BTN_Y + ZONE_BTN_H && x >= ZONE_BTN_X && x < ZONE_BTN_X + ZONE_BTN_W) {
@@ -7053,7 +7049,34 @@ void drawRoundArt(const uint16_t *art, int cx, int cy, int r, uint16_t fallback)
 }
 
 void zoneDrawIcon(uint8_t z) {
-  drawRoundArt(zoneArt ? zoneArt + z * ZONE_ART * ZONE_ART : nullptr, ZONE_XY[z][0], ZONE_XY[z][1], ZONE_ICON_R, ZONE_COLOR[z]);
+  uint16_t plain = z == ZONE_RANDOM ? C565(0xd8, 0x2a, 0x2a) : ZONE_COLOR[z];
+  drawRoundArt(zoneArt ? zoneArt + z * ZONE_ART * ZONE_ART : nullptr, ZONE_XY[z][0], ZONE_XY[z][1], ZONE_ICON_R, plain);
+}
+
+// Random Battle's window: a pie of the five zones, each slice its own scene (the same part of it),
+// the first one from the top going clockwise, with thin ink cuts between them
+void zonePieDraw(uint16_t *pie, const uint16_t *zones) {
+  const float slice = 6.28318f / ZONE_COUNT, c = ZONE_ART / 2.0f;
+  for (int y = 0; y < ZONE_ART; y++)
+    for (int x = 0; x < ZONE_ART; x++) {
+      float dx = x + 0.5f - c, dy = y + 0.5f - c;
+      float a = atan2f(dx, -dy);  // 0 at the top, clockwise
+      if (a < 0) a += 6.28318f;
+      int z = (int)(a / slice);
+      if (z >= ZONE_COUNT) z = ZONE_COUNT - 1;
+      float off = a - z * slice;  // how far past the cut before it, and short of the next
+      float edge = fminf(off, slice - off) * sqrtf(dx * dx + dy * dy);  // in pixels, along the arc
+      pie[y * ZONE_ART + x] = edge < 1.1f ? UI_INK : zones[z * ZONE_ART * ZONE_ART + y * ZONE_ART + x];
+    }
+}
+
+// the pick under a tap (its window or its name): a zone, ZONE_RANDOM, or -1
+int zonePickAt(int16_t x, int16_t y) {
+  for (int z = 0; z < ZONE_PICKS; z++) {
+    int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
+    if (dx * dx + dy * dy < (ZONE_ICON_R + 6) * (ZONE_ICON_R + 6) || (abs(dx) < 62 && dy > 0 && dy < ZONE_ICON_R + 40)) return z;
+  }
+  return -1;
 }
 
 void renderZones() {
@@ -7070,9 +7093,23 @@ void renderZones() {
     setCur(centerX(T(S_GAME_BATTLE), 3), 26);
     printT(T(S_GAME_BATTLE));
     setSize(2);
-    for (uint8_t z = 0; z < ZONE_COUNT; z++) {
+    for (uint8_t z = 0; z < ZONE_PICKS; z++) {
       zoneDrawIcon(z);
       int cx = ZONE_XY[z][0], y = ZONE_XY[z][1] + ZONE_ICON_R + 6;
+      if (z == ZONE_RANDOM) {  // its name on up to two lines, where the zones have their count
+        gfx->setTextColor(UI_INK);
+        const char *p = T(S_RANDOM_BATTLE);
+        char line[24];
+        for (int i = 0; *p && i < 2; i++, y += 18) {
+          int skip, n = gCjkFont ? (int)strlen(p) : wrapNext(p, 12, skip);  // CJK: one line (bytes are not letters)
+          if (gCjkFont) skip = n;
+          snprintf(line, sizeof(line), "%.*s", n, p);
+          setCur(cx - textW(line, 2) / 2, y);
+          printT(line);
+          p += skip;
+        }
+        continue;
+      }
       int got = pet.zoneCaught(z), all = zoneSize(z);
       gfx->setTextColor(UI_INK);
       setCur(cx - textW(T(ZONE_NAME[z]), 2) / 2, y);
@@ -7082,10 +7119,6 @@ void renderZones() {
       setCur(cx - textW(b, 2) / 2, y + 18);
       printT(b);
     }
-    gfx->fillRoundRect(ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H, 12, C565(0xd8, 0x2a, 0x2a));  // Poke Ball red: apart from the zones
-    gfx->setTextColor(UI_WHITE);
-    setCur(centerX(T(S_RANDOM_BATTLE), 2), ZONE_RAND_Y + 13);
-    printT(T(S_RANDOM_BATTLE));
     drawCloseButton();
     gfx->flush();
     return;
@@ -7923,14 +7956,10 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, GAME_XY[g][0] - GAME_ICON_R, GAME_XY[g][1] - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, gameLabel(g));
   }
   if (zoneScreen == ZS_PICK) {
-    if (pressIn(x, y, ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H))
-      return pressSet(t, ZONE_RAND_X, ZONE_RAND_Y, ZONE_RAND_W, ZONE_RAND_H, T(S_RANDOM_BATTLE));
-    for (uint8_t z = 0; z < ZONE_COUNT; z++) {
-      int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
-      if (dx * dx + dy * dy < (ZONE_ICON_R + 6) * (ZONE_ICON_R + 6) || (abs(dx) < 66 && dy > 0 && dy < ZONE_ICON_R + 44))
-        return pressSet(t, ZONE_XY[z][0] - ZONE_ICON_R, ZONE_XY[z][1] - ZONE_ICON_R, 2 * ZONE_ICON_R, 2 * ZONE_ICON_R, T(ZONE_NAME[z]));
-    }
-    return false;
+    int z = zonePickAt(x, y);
+    if (z < 0) return false;
+    return pressSet(t, ZONE_XY[z][0] - ZONE_ICON_R, ZONE_XY[z][1] - ZONE_ICON_R, 2 * ZONE_ICON_R, 2 * ZONE_ICON_R,
+                    z == ZONE_RANDOM ? T(S_RANDOM_BATTLE) : T(ZONE_NAME[z]));
   }
   if (zoneScreen) {
     if (zoneDetail) return false;  // an entry: tap anywhere to go back
