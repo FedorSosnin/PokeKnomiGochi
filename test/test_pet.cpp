@@ -575,9 +575,9 @@ TEST(train, winning_does_not_register_until_caught) {
   makePet(p, 4);
   p.battleResult(true);
   CHECK(!p.isRegistered(25));
-  CHECK(p.catchWild(25));
+  CHECK(p.catchWild(25) == CR_NEW);
   CHECK(p.isRegistered(25));
-  CHECK_MSG(!p.catchWild(25), "it is only new the first time");
+  CHECK_MSG(p.catchWild(25) != CR_NEW, "it is only new the first time");
 }
 
 TEST(train, shiny_pet_does_not_catch_rivals_as_shiny) {
@@ -1153,6 +1153,127 @@ TEST(medals, raising_3_to_level_100_earns_a_medal) {
   CHECK(again.hasMedal(MED_LV100_3));
 }
 
+// ---------------------------------------------------------------- stars
+TEST(stars, a_catch_rolls_1_to_3_with_the_odds) {
+  int n[4] = { 0 };
+  for (int i = 0; i < 10000; i++) {
+    uint8_t s = Pet::rollStars();
+    CHECK(s >= 1 && s <= 3);
+    n[s]++;
+  }
+  CHECK_RANGE(n[1], 4500, 5500);  // 50%
+  CHECK_RANGE(n[2], 3000, 4000);  // 35%
+  CHECK_RANGE(n[3], 1100, 1900);  // 15%
+}
+
+TEST(stars, genes_bands) {
+  CHECK_EQ(Pet::starsFromGenes(90, 90, 90), (uint8_t)1);
+  CHECK_EQ(Pet::starsFromGenes(96, 96, 97), (uint8_t)1);   // 96.3 rounds to 96
+  CHECK_EQ(Pet::starsFromGenes(97, 97, 97), (uint8_t)2);
+  CHECK_EQ(Pet::starsFromGenes(103, 103, 104), (uint8_t)2);
+  CHECK_EQ(Pet::starsFromGenes(104, 104, 104), (uint8_t)3);
+  CHECK_EQ(Pet::starsFromGenes(110, 110, 110), (uint8_t)3);
+}
+
+TEST(stars, a_new_form_comes_in_with_its_stars) {
+  Pet p;
+  makePet(p, 4);
+  CHECK(p.catchWild(25, false, 2) == CR_NEW);
+  CHECK_EQ(p.starsOf(25, false), (uint8_t)2);
+  CHECK_EQ(p.starsOf(25, true), (uint8_t)0);  // the shiny one isn't there
+}
+
+TEST(stars, a_better_catch_replaces_yours_and_a_worse_one_goes_free) {
+  Pet p;
+  makePet(p, 4);
+  p.catchWild(25, false, 1);
+  CHECK(p.catchWild(25, false, 3) == CR_BETTER);
+  CHECK_EQ(p.starsOf(25, false), (uint8_t)3);
+  CHECK(p.catchWild(25, false, 3) == CR_KEPT);  // the same
+  CHECK(p.catchWild(25, false, 2) == CR_KEPT);  // worse
+  CHECK_EQ(p.starsOf(25, false), (uint8_t)3);
+}
+
+TEST(stars, shiny_and_regular_are_compared_apart) {
+  Pet p;
+  makePet(p, 4);
+  p.catchWild(25, false, 3);
+  CHECK(p.catchWild(25, true, 1) == CR_NEW);  // no shiny one yet: new, whatever the regular has
+  CHECK_EQ(p.starsOf(25, true), (uint8_t)1);
+  CHECK(p.catchWild(25, true, 2) == CR_BETTER);
+  CHECK_EQ(p.starsOf(25, false), (uint8_t)3);
+}
+
+TEST(stars, an_egg_hatches_in_the_band_of_the_form_picked) {
+  for (uint8_t want = 1; want <= 3; want += 2) {
+    for (int trial = 0; trial < 20; trial++) {
+      Pet p;
+      makePet(p, 4);
+      p.catchWild(25, false, want);
+      p.catchWild(25, false, want);  // (the same stars: stays)
+      p.startFarewell();
+      p.newEgg();
+      CHECK(p.chooseEgg(25, false));
+      p.eggTap(); p.eggTap(); p.eggTap();
+      CHECK_EQ(p.speciesId, (int16_t)25);
+      int lo = want == 1 ? 90 : 104, hi = want == 1 ? 96 : 110;
+      CHECK(p.geneAtk >= lo && p.geneAtk <= hi && p.geneDef >= lo && p.geneDef <= hi && p.geneSpe >= lo && p.geneSpe <= hi);
+      CHECK_EQ(p.petStars(), want);
+      CHECK_EQ(p.starsOf(25, false), want);
+    }
+  }
+}
+
+TEST(stars, raising_never_lowers_a_forms_stars) {
+  Pet p;
+  makePet(p, 4);
+  p.geneAtk = p.geneDef = p.geneSpe = 90;  // a 1-star Charmander
+  p.catchWild(5, false, 3);                // a 3-star Charmeleon caught already
+  p.ageMinutes = 20 * 60;
+  setStats(p, 80, 80, 80, 80);
+  CHECK(p.canEvolveNow());
+  p.evolve();
+  CHECK_EQ(p.speciesId, (int16_t)5);
+  CHECK_EQ(p.starsOf(5, false), (uint8_t)3);  // kept, not lowered to the pet's 1
+}
+
+TEST(stars, a_trade_clears_the_given_form_and_keeps_the_higher_received) {
+  Pet p;
+  makePet(p, 4);
+  p.catchWild(25, false, 2);
+  p.catchWild(7, false, 3);
+  CHECK(!p.tradeAway(25, 7, false, false, 1));  // gives Pikachu, gets a 1-star Squirtle it has with 3
+  CHECK_EQ(p.starsOf(25, false), (uint8_t)0);
+  CHECK_EQ(p.starsOf(7, false), (uint8_t)3);
+  CHECK(p.tradeAway(7, 133, false, false, 0));  // an older buddy sends 0: rolled
+  uint8_t s = p.starsOf(133, false);
+  CHECK(s >= 1 && s <= 3);
+}
+
+TEST(stars, an_old_save_gets_every_form_rated_once) {
+  Pet a;
+  makePet(a, 4);
+  a.catchWild(25, false, 2);
+  a.catchWild(7, true, 3);
+  a.rename("OLD");  // saves everything
+  a.flushSave();
+  Preferences pr;  // a save from before the stars
+  pr.begin("tamapoke", false);
+  pr.remove("dexstr");
+  pr.end();
+  Pet b;
+  b.begin();
+  CHECK_EQ(b.starsOf(4, false), b.petStars());  // the one being raised: by its genes
+  uint8_t s25 = b.starsOf(25, false), s7 = b.starsOf(7, true);
+  CHECK(s25 >= 1 && s25 <= 3 && s7 >= 1 && s7 <= 3);
+  CHECK_EQ(b.starsOf(1, false), (uint8_t)0);  // not in the Pokedex: none
+  b.flushSave();
+  Pet c;
+  c.begin();
+  CHECK_EQ(c.starsOf(25, false), s25);  // not rolled again
+  CHECK_EQ(c.starsOf(7, true), s7);
+}
+
 // ---------------------------------------------------------------- ceremonies
 TEST(ceremony, farewell_only_in_final_form_and_after_3_days) {
   Pet p;
@@ -1520,12 +1641,12 @@ TEST(trade, the_one_you_raise_stays) {
 TEST(shiny, the_pokedex_keeps_both_forms) {
   Pet p;
   makePet(p, 1);
-  CHECK(p.catchWild(25, true));  // a shiny Pikachu first
+  CHECK(p.catchWild(25, true) == CR_NEW);  // a shiny Pikachu first
   CHECK(p.isRegistered(25));
   CHECK(p.hasForm(25, true) && !p.hasForm(25, false));
-  CHECK(p.catchWild(25));  // then a regular one: new too
+  CHECK(p.catchWild(25) == CR_NEW);  // then a regular one: new too
   CHECK(p.hasForm(25, true) && p.hasForm(25, false));
-  CHECK(!p.catchWild(25) && !p.catchWild(25, true));  // each only once
+  CHECK(p.catchWild(25) != CR_NEW && p.catchWild(25, true) != CR_NEW);  // each only once
   CHECK(p.hasMedal(MED_SHINY));
   CHECK_EQ(p.formCount(), (uint16_t)3);  // Bulbasaur, Pikachu, shiny Pikachu
   bool sh;

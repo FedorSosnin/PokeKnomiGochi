@@ -32,6 +32,7 @@ void Pet::newEgg() {
     if (shinyBase < 8) shinyBase = 8;
   }
   eggShiny = (random(shinyBase) == 0);
+  eggStars = 0;  // picking a form sets its band; a drawn egg rolls 90-110
   eggTaps = 0;
   fullness = 80;
   joy = 80;
@@ -276,6 +277,7 @@ bool Pet::chooseEgg(int16_t dex, bool shinyForm) {
   if (!eggPick || !eggChoice(dex, shinyForm)) return false;
   eggTarget = dex;
   if (shinyForm) eggShiny = true;  // otherwise the roll from newEgg() stays: a surprise
+  eggStars = starsOf(dex, shinyForm);  // a 3-star form hatches a 3-star Pokemon
   eggPick = false;
   save();
   return true;
@@ -313,9 +315,37 @@ static void setDexBit(uint8_t *bits, int16_t dex, bool on) {
   else bits[(dex - 1) >> 3] &= ~m;
 }
 
-// one form into the Pokedex; true if this form is new
-bool Pet::addForm(int16_t dex, bool shinyForm) {
-  if (dex < 1 || dex > 151 || hasForm(dex, shinyForm)) return false;
+uint8_t Pet::starsOf(int16_t dex, bool shinyForm) const {
+  if (dex < 1 || dex > 151) return 0;
+  int i = (dex - 1) * 2 + (shinyForm ? 1 : 0);
+  return (dexStars[i >> 2] >> ((i & 3) * 2)) & 3;
+}
+
+void Pet::setStars(int16_t dex, bool shinyForm, uint8_t stars) {
+  if (dex < 1 || dex > 151) return;
+  int i = (dex - 1) * 2 + (shinyForm ? 1 : 0), sh = (i & 3) * 2;
+  dexStars[i >> 2] = (uint8_t)((dexStars[i >> 2] & ~(3 << sh)) | ((stars & 3) << sh));
+}
+
+uint8_t Pet::starsFromGenes(int atk, int def, int spe) {
+  int avg = (atk + def + spe + 1) / 3;  // rounded
+  return avg <= GENE_BAND_1 ? 1 : avg <= GENE_BAND_2 ? 2 : 3;
+}
+
+uint8_t Pet::rollStars() {
+  int r = random(100);
+  return r < STAR_PCT_3 ? 3 : r < STAR_PCT_3 + STAR_PCT_2 ? 2 : 1;
+}
+
+// one form into the Pokedex; true if this form is new. One you already have keeps the higher stars.
+bool Pet::addForm(int16_t dex, bool shinyForm, uint8_t stars) {
+  if (dex < 1 || dex > 151) return false;
+  if (stars < 1 || stars > 3) stars = rollStars();
+  if (hasForm(dex, shinyForm)) {
+    if (stars > starsOf(dex, shinyForm)) setStars(dex, shinyForm, stars);
+    return false;
+  }
+  setStars(dex, shinyForm, stars);
   bool had = isRegistered(dex);
   setDexBit(dexReg, dex, true);
   if (shinyForm) {
@@ -330,6 +360,7 @@ bool Pet::addForm(int16_t dex, bool shinyForm) {
 // one form out of the Pokedex: the species stays while the other form is there
 void Pet::removeForm(int16_t dex, bool shinyForm) {
   if (!hasForm(dex, shinyForm)) return;
+  setStars(dex, shinyForm, 0);
   bool other = hasForm(dex, !shinyForm);
   if (shinyForm) setDexBit(dexShinyReg, dex, false);
   setDexBit(dexShinyOnly, dex, other && !shinyForm);
@@ -352,7 +383,7 @@ int16_t Pet::formAt(int idx, bool &shinyForm) const {
   return 0;
 }
 
-void Pet::registerSpecies(int16_t dex) { addForm(dex, shiny); }
+void Pet::registerSpecies(int16_t dex) { addForm(dex, shiny, petStars()); }  // the one you raised: its own stars
 
 // streak and bond improve the egg draw (0..~14)
 int Pet::careBonus() const {
@@ -519,10 +550,14 @@ void Pet::release() {
 void Pet::hatch() {
   speciesId = eggTarget;
   shiny = eggShiny;
-  // individual's genes: 90-110% per stat (every raising is unique)
-  geneAtk = 90 + random(21);
-  geneDef = 90 + random(21);
-  geneSpe = 90 + random(21);
+  // individual's genes: 90-110% per stat (every raising is unique), or inside the band of the form it
+  // was picked from, so its stars are that form's
+  int lo = eggStars == 1 ? 90 : eggStars == 2 ? GENE_BAND_1 + 1 : eggStars == 3 ? GENE_BAND_2 + 1 : 90;
+  int hi = eggStars == 1 ? GENE_BAND_1 : eggStars == 2 ? GENE_BAND_2 : 110;
+  geneAtk = lo + random(hi - lo + 1);
+  geneDef = lo + random(hi - lo + 1);
+  geneSpe = lo + random(hi - lo + 1);
+  eggStars = 0;
   trAtk = trDef = trSpe = 0;
   goodTicks = lowTicks = 0;
   farewellQuiet = false;
@@ -696,18 +731,22 @@ uint8_t Pet::battleResult(bool won) {
   return gain;
 }
 
-bool Pet::catchWild(int16_t dex, bool shinyForm) {
-  if (!addForm(dex, shinyForm)) return false;
+CatchResult Pet::catchWild(int16_t dex, bool shinyForm, uint8_t stars) {
+  if (dex < 1 || dex > 151) return CR_KEPT;
+  if (stars < 1 || stars > 3) stars = rollStars();
+  CatchResult r = !hasForm(dex, shinyForm) ? CR_NEW : stars > starsOf(dex, shinyForm) ? CR_BETTER : CR_KEPT;
+  if (r == CR_KEPT) return r;  // it goes free: nothing changes
+  addForm(dex, shinyForm, stars);
   checkMedals();  // a zone may be complete now
   save();
-  return true;
+  return r;
 }
 
-bool Pet::tradeAway(int16_t give, int16_t get, bool giveShiny, bool getShiny) {
+bool Pet::tradeAway(int16_t give, int16_t get, bool giveShiny, bool getShiny, uint8_t getStars) {
   if (!canTrade(give, giveShiny) || get < 1 || get > 151) return false;
   if (give == get && giveShiny == getShiny) return false;  // the same both ways: nothing changes hands
   removeForm(give, giveShiny);
-  bool isNew = addForm(get, getShiny);
+  bool isNew = addForm(get, getShiny, getStars);
   checkMedals();
   save();
   return isNew;
@@ -920,6 +959,8 @@ void Pet::save() {
   prefs.putBool("fquiet", farewellQuiet);
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putBytes("dexreg", dexReg, sizeof(dexReg));
+  prefs.putBytes("dexstr", dexStars, sizeof(dexStars));
+  prefs.putUChar("estar", eggStars);
   prefs.putUShort("strk", streak);
   prefs.putUShort("bstrk", bestStreak);
   prefs.putUInt("cday", lastCareDay);
@@ -990,6 +1031,9 @@ void Pet::load() {
   lastEnd = prefs.getUChar("lend", CER_NONE);
   farewellQuiet = prefs.getBool("fquiet", false);
   prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
+  bool hadStars = prefs.isKey("dexstr");
+  if (hadStars) prefs.getBytes("dexstr", dexStars, sizeof(dexStars));
+  eggStars = prefs.getUChar("estar", 0);
   streak = prefs.getUShort("strk", 0);
   bestStreak = prefs.getUShort("bstrk", 0);
   lastCareDay = prefs.getUInt("cday", 0);
@@ -1016,4 +1060,12 @@ void Pet::load() {
   prefs.getString("nick", nick, sizeof(nick));
   // seed: the current pet counts as raised (old saves)
   if (speciesId >= 1) registerSpecies(speciesId);
+  // from before the stars: every form you have is rated once, the current Pokemon's by its genes (just
+  // above). Only added: nothing else changes, and later loads keep these
+  if (!hadStars) {
+    for (int16_t d = 1; d <= 151; d++)
+      for (int f = 0; f < 2; f++)
+        if (hasForm(d, f) && !starsOf(d, f)) setStars(d, f, rollStars());
+    pendingSave = true;
+  }
 }

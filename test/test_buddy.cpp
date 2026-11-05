@@ -236,6 +236,19 @@ TEST(buddy, what_a_buddy_can_trade) {
   CHECK_EQ(buddyTradeable(b), 1);
 }
 
+TEST(buddy, a_trade_offer_carries_its_stars_in_level) {
+  BuddyMsg m, out;
+  buddyInit(m, BM_OFFER, 5, 6, 7);
+  m.dex = 25;
+  m.level = 3;
+  CHECK(parseCopy(m, out));
+  CHECK_EQ(out.level, (uint8_t)3);
+  m.level = 0;  // an older version's offer: no stars, still fine
+  CHECK(parseCopy(m, out));
+  CHECK_EQ(out.level, (uint8_t)0);
+  CHECK_EQ((int)sizeof(BuddyMsg), 65);
+}
+
 TEST(buddy, volley_messages_are_checked) {
   BuddyMsg out, m;
   buddyInit(m, BM_VBALL, 5, 6, 7);

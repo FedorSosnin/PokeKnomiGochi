@@ -236,6 +236,7 @@ bool tradeOpen = false;
 TradePhase trPhase = TR_PICK;
 int16_t trMine = 0, trTheirs = 0;
 bool trMineShiny = false, trTheirsShiny = false;  // which form of each is traded
+uint8_t trTheirsStars = 0;  // their form's stars, sent in the offer's level (0: an older version, rolled on arrival)
 int trPage = 0;
 bool trTheirConfirm = false;
 uint32_t trT = 0;
@@ -823,6 +824,10 @@ void handleSerial() {
   } else if (line == "VBBOT" && pet.noSave) {  // Poke Ball Volley plays by itself (testing)
     vbBot = !vbBot;
     Serial.println("DONE");
+  } else if (line.startsWith("STARS ") && pet.noSave) {  // "STARS dex [S] n": a form's stars, 1-3 (testing)
+    int sp = line.lastIndexOf(' ');
+    pet.dbgSetStars(line.substring(6).toInt(), line.indexOf(" S ") > 0, line.substring(sp + 1).toInt());
+    Serial.println("ok");
   } else if (line.startsWith("CATCH ") && pet.noSave) {  // "CATCH dex [S]": into the Pokedex (testing)
     pet.catchWild(line.substring(6).toInt(), line.indexOf(" S") > 0);
     Serial.println("DONE");
@@ -2504,6 +2509,13 @@ void battleMoveRect(uint8_t i, int &x0, int &x1) {
 }
 
 void battleTap(int16_t x, int16_t y) {
+  if (bPhase == BP_CAUGHT) {
+    if (closeHit(x, y)) {
+      sfxPlay(SFX_TAP);
+      closeBattle();
+    }
+    return;
+  }
   if (bPhase == BP_END) {
     if (millis() - bPhaseT > 800) battleAfterEnd();  // time to read the result
     return;
@@ -2565,9 +2577,9 @@ void battleFinish(bool won) {
   battleSetPhase(BP_END);
 }
 
-// after the result: if it is a new species, a capture can be attempted
+// after the result: every wild win can be caught, a form you have too (it may have more stars)
 void battleAfterEnd() {
-  if (!bPvp && bWon && !pet.hasForm(bFoe.dex, bFoeShiny)) {
+  if (!bPvp && bWon) {
     bBalls = CATCH_BALLS;
     battleSetPhase(BP_AIM);
   } else {
@@ -2575,7 +2587,10 @@ void battleAfterEnd() {
   }
 }
 
+#define MEDAL_GOLD C565(0xf2, 0xb8, 0x2a)  // medals and stars
 uint8_t bBreakAt = 0, bShakesHeard = 0;  // the throw that hit: when it breaks out (0 = holds), tones played
+uint8_t bCatchStars = 0, bCatchYours = 0;  // the catch's stars, and the ones of the form you had (0: none)
+CatchResult bCatchResult = CR_NEW;
 float bCatchX = CX;                      // where the ball landed: the foe stops swaying in it
 
 // the foe sways side to side so you have to aim
@@ -2696,14 +2711,16 @@ void battleStep() {
         sfxPlay(SFX_DENY);
         battleSetPhase(BP_BROKE);
       } else if (!bBreakAt && t > CATCH_SHAKES * CATCH_SHAKE_MS + 250) {
-        bool isNew = pet.catchWild(bFoe.dex, bFoeShiny);
-        Serial.printf("catch: #%d%s new=%d\n", bFoe.dex, bFoeShiny ? " shiny" : "", isNew);
-        sfxPlay(SFX_MEDAL);
+        bCatchStars = Pet::rollStars();
+        bCatchYours = pet.starsOf(bFoe.dex, bFoeShiny);
+        bCatchResult = pet.catchWild(bFoe.dex, bFoeShiny, bCatchStars);
+        Serial.printf("catch: #%d%s %u stars, result %d\n", bFoe.dex, bFoeShiny ? " shiny" : "", bCatchStars, bCatchResult);
+        sfxPlay(bCatchResult == CR_KEPT ? SFX_LEVEL : SFX_MEDAL);
         battleSetPhase(BP_CAUGHT);
       }
       break;
     }
-    case BP_CAUGHT: if (t > 5000) closeBattle(); break;
+    case BP_CAUGHT: break;  // stays until its X is tapped, so the stars can't be missed
     case BP_FLED: if (t > 3500) closeBattle(); break;
   }
 }
@@ -2751,15 +2768,42 @@ void battleCenterLine(const char *s, int y) {
 }
 
 // the result of a throw: large text on color, so nobody is left in doubt
-void catchBanner(const char *s, uint16_t bg) {
-  uint8_t size = textW(s, 3) <= 306 ? 3 : 2;
+void catchBanner(const char *s, uint16_t bg) { catchBannerAt(s, bg, 352, 3); }
+void catchBannerAt(const char *s, uint16_t bg, int y, uint8_t maxSize) {
+  uint8_t size = maxSize >= 3 && textW(s, 3) <= 306 ? 3 : 2;
   int w = textW(s, size) + 24, h = size == 3 ? 44 : 36;
-  gfx->fillRoundRect(CX - w / 2, 352, w, h, 12, bg);
+  gfx->fillRoundRect(CX - w / 2, y, w, h, 12, bg);
   gfx->setTextColor(UI_WHITE);
   setSize(size);
-  setCur(centerX(s, size), 352 + (h - 8 * size) / 2);
+  setCur(centerX(s, size), y + (h - 8 * size) / 2);
   printT(s);
   setSize(2);
+  gfx->setTextColor(UI_INK);
+}
+
+// a form's stars in a row centred on cx: gold for each one it has, dim for the rest (n 0: nothing)
+void drawStars(int cx, int cy, int r, uint8_t n) {
+  if (!n) return;
+  int gap = r * 5 / 2;
+  for (int i = 0; i < 3; i++) {
+    int x = cx + (i - 1) * gap;
+    fillStar(x, cy, r + 2, UI_INK);  // the outline, like the sprites'
+    fillStar(x, cy, r, i < n ? MEDAL_GOLD : UI_TRACK);
+  }
+}
+
+// a line of text followed by small stars, the pair centred
+void lineWithStars(const char *s, uint8_t n, int y, uint16_t color) {
+  int w = textW(s, 2) + 8 + n * 18;
+  int x = CX - w / 2;
+  gfx->setTextColor(color);
+  setCur(x, y);
+  printT(s);
+  for (int i = 0; i < n; i++) {
+    int sx = x + textW(s, 2) + 16 + i * 18;
+    fillStar(sx, y + 7, 9, UI_INK);
+    fillStar(sx, y + 7, 7, MEDAL_GOLD);
+  }
   gfx->setTextColor(UI_INK);
 }
 
@@ -2876,6 +2920,8 @@ void renderCatch() {
   } else if (bPhase == BP_CAUGHT) {
     drawCatchShine((int)bFoeX, ballGround + 27, now - bPhaseT);
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, ballGround, 3, false);
+    int sx = (int)bFoeX < 100 ? 100 : (int)bFoeX > 366 ? 366 : (int)bFoeX;  // its stars, big, over the ball
+    drawStars(sx, ballGround - 44, 16, bCatchStars);
   }
 
   gfx->fillRect(0, BTL_BAND_Y, 466, 466 - BTL_BAND_Y, UI_BG_DAY);
@@ -2913,10 +2959,13 @@ void renderCatch() {
       snprintf(b, sizeof(b), T(S_GOT_AWAY_FMT), dexName(bFoe.dex));
       catchBanner(b, C565(0x55, 0x55, 0x60));
       break;
-    case BP_CAUGHT:
+    case BP_CAUGHT:  // the banner, how it compares with the one you had, and the X to close
       snprintf(b, sizeof(b), T(S_CAUGHT_FMT), dexName(bFoe.dex));
-      catchBanner(b, C565(0x1e, 0x7d, 0x3c));
-      battleCenterLine(T(S_BTL_NEWDEX), 408);
+      catchBannerAt(b, C565(0x1e, 0x7d, 0x3c), 340, 2);
+      if (bCatchResult == CR_NEW) battleCenterLine(T(S_BTL_NEWDEX), 382);
+      else lineWithStars(T(bCatchResult == CR_BETTER ? S_STARS_BETTER : bCatchYours > bCatchStars ? S_STARS_YOURS_BETTER : S_STARS_SAME),
+                         bCatchYours, 382, bCatchResult == CR_BETTER ? UI_BAR_WARN : UI_INK);
+      drawCloseButton();
       break;
     case BP_FLED:
       snprintf(b, sizeof(b), T(S_FLED_FMT), dexName(bFoe.dex));
@@ -4225,7 +4274,6 @@ void drawStreakBadge() {
 #define CELEB_BOX_H 96
 #define CELEB_IN_MS 600
 #define CELEB_OUT_MS 350
-#define MEDAL_GOLD C565(0xf2, 0xb8, 0x2a)
 #define MEDAL_DARK C565(0xc0, 0x84, 0x10)
 
 // how far above its place the banner is now (0 = in place), from how long it has left
@@ -4769,26 +4817,26 @@ void drawDexInfo(int16_t dex, bool withFact = true) {
   setSize(2);
   const char *ty = TYPE_NAME[d.type];
   int w = textW(ty, 2) + 24;
-  gfx->fillRoundRect(CX - w / 2, 246, w, 24, 8, d.accent);
+  gfx->fillRoundRect(CX - w / 2, 250, w, 24, 8, d.accent);
   gfx->setTextColor(UI_WHITE);
-  setCur(centerX(ty, 2), 251);
+  setCur(centerX(ty, 2), 255);
   printT(ty);
 
   char line[40];
   gfx->setTextColor(UI_INK);
   if (d.evolvesTo) {  // the next form is not revealed until found
     snprintf(line, sizeof(line), "Lv.%u > %s", d.evolveLevel, pet.isRegistered(d.evolvesTo) ? dexName(d.evolvesTo) : "???");
-    setCur(centerX(line, 2), 278);
+    setCur(centerX(line, 2), 282);
     printT(line);
   } else {
-    setCur(centerX(T(S_FINAL_FORM), 2), 278);
+    setCur(centerX(T(S_FINAL_FORM), 2), 282);
     printT(T(S_FINAL_FORM));
   }
 
   if (!withFact) return;
   gfx->setTextColor(UI_INK);
   const char *p = DEX_FACT[dex];
-  for (int y = 304; *p && y <= 376; y += 24) {
+  for (int y = 308; *p && y <= 380; y += 24) {
     int skip, n = wrapNext(p, 29, skip);
     snprintf(line, sizeof(line), "%.*s", n, p);
     setCur(centerX(line, 2), y);
@@ -4830,12 +4878,15 @@ void renderDexDetail(int16_t dex) {
     if (reg && galleryPmd.loaded && galleryShinyPmd.loaded) {  // both forms, side by side
       uint8_t s = min(pmdFitScale(galleryPmd, PMD_IDLE, 150, 150), pmdFitScale(galleryShinyPmd, PMD_IDLE, 150, 150));
       if (s > 3) s = 3;
-      drawPmdActM(galleryPmd, PMD_IDLE, CX - 84, 240, millis(), true, false, s);
-      drawPmdActM(galleryShinyPmd, PMD_IDLE, CX + 84, 240, millis(), true, false, s);
+      drawPmdActM(galleryPmd, PMD_IDLE, CX - 84, 226, millis(), true, false, s);
+      drawPmdActM(galleryShinyPmd, PMD_IDLE, CX + 84, 226, millis(), true, false, s);
+      drawStars(CX - 84, 237, 8, pet.starsOf(dex, false));  // each form its own stars
+      drawStars(CX + 84, 237, 8, pet.starsOf(dex, true));
       drawDexInfo(dex);
     } else if (reg) {
-      if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 240, millis(), true, false, 4);
-      else if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
+      if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 226, millis(), true, false, 4);
+      else if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, CX - GAL_CELL, 96, 3, false);
+      drawStars(CX, 237, 8, pet.starsOf(dex, !pet.hasForm(dex, false)));
       drawDexInfo(dex);
     } else if (galleryPmd.loaded) {
       drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, 0, true, true, 6);  // static silhouette ("?" style)
@@ -4934,9 +4985,10 @@ void renderEggPick() {
     setSize(3);
     setCur(centerX(name, 3), 56);
     printT(name);
-    if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 240, millis(), true, false, 4);
-    else if (const uint8_t *t = thumbs.getForm(eggPickDetail, eggPickShiny)) drawThumb(t, CX - GAL_CELL, 110, 3, false);
-    if (eggPickShiny) drawShinyMark(CX - 84, 116, 168);
+    if (galleryPmd.loaded) drawPmdActM(galleryPmd, PMD_IDLE, CX, 226, millis(), true, false, 4);
+    else if (const uint8_t *t = thumbs.getForm(eggPickDetail, eggPickShiny)) drawThumb(t, CX - GAL_CELL, 96, 3, false);
+    if (eggPickShiny) drawShinyMark(CX - 84, 102, 168);
+    drawStars(CX, 237, 8, pet.starsOf(eggPickDetail, eggPickShiny));  // it hatches with these
     drawDexInfo(eggPickDetail, false);
     gfx->fillRoundRect(CX - 110, PICK_BTN_Y, 220, PICK_BTN_H, 14, C565(0x1e, 0x7d, 0x3c));
     gfx->setTextColor(UI_WHITE);
@@ -5081,6 +5133,7 @@ void buddySendTrade(BuddyType type, int16_t dex, bool ack) {
   BuddyMsg m = buddyMsg(type);
   m.dex = dex;
   m.shiny = dex == trMine && trMineShiny;  // the form offered (older versions send 0: regular)
+  m.level = dex == trMine ? pet.starsOf(trMine, trMineShiny) : 0;  // and its stars (older versions send 0)
   m.ack = ack;
   buddyNetSend(m);
 }
@@ -5130,6 +5183,7 @@ void buddyStartSession() {
   trPhase = TR_PICK;
   trMine = trTheirs = 0;
   trMineShiny = trTheirsShiny = false;
+  trTheirsStars = 0;
   trPage = 0;
   trTheirConfirm = false;
   trT = millis();
@@ -5316,6 +5370,7 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
       if (!tradeOpen || !buddyRegHas(bPeers[bCur].reg, m.dex)) break;
       trTheirs = m.dex;
       trTheirsShiny = m.shiny != 0;
+      trTheirsStars = m.level >= 1 && m.level <= 3 ? m.level : 0;
       if (!m.ack && trMine) buddySendTrade(BM_OFFER, trMine, true);
       if (trPhase == TR_WAIT) trPhase = TR_REVIEW;
       break;
@@ -5329,7 +5384,7 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
 }
 
 void tradeFinish() {
-  bool isNew = pet.tradeAway(trMine, trTheirs, trMineShiny, trTheirsShiny);  // yours leaves, theirs comes in
+  bool isNew = pet.tradeAway(trMine, trTheirs, trMineShiny, trTheirsShiny, trTheirsStars);  // yours leaves, theirs comes in
   Serial.printf("buddy: trade, gives #%d%s receives #%d%s new=%d\n", trMine, trMineShiny ? " shiny" : "", trTheirs,
                 trTheirsShiny ? " shiny" : "", isNew);
   sfxPlay(SFX_MEDAL);
@@ -6367,11 +6422,13 @@ void renderTrade() {
   if (trMineShiny) drawShinyMark(136 - 62, 120, 124);
   setCur(136 - textW(dexName(trMine), 2) / 2, 216);
   printT(dexName(trMine));
+  drawStars(136, 248, 7, pet.starsOf(trMine, trMineShiny));
   if (trTheirs) {
     if (const uint8_t *t = thumbs.getForm(trTheirs, trTheirsShiny)) drawThumb(t, 330 - GAL_CELL / 2, 124, 3, false);
     if (trTheirsShiny) drawShinyMark(330 - 62, 120, 124);
     setCur(330 - textW(dexName(trTheirs), 2) / 2, 216);
     printT(dexName(trTheirs));
+    drawStars(330, 248, 7, trTheirsStars);
   } else {
     setSize(5);
     setCur(330 - textW("?", 5) / 2, 146);
@@ -7389,6 +7446,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   static char buf[52];
   // --- game screens (handleTouch's first branch) ---
   if (battleOpen) {
+    if (bPhase == BP_CAUGHT && closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     if (bPhase != BP_CHOOSE) return false;
     if (y >= 392 && x >= 160 && x <= 306) return !bRunFailed && pressSet(t, 160, 394, 146, 38, T(S_BTL_RUN));
     if (y < 344 || y > 386) return false;

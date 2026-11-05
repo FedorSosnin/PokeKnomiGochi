@@ -70,7 +70,23 @@ Ditto copies the wild Pokémon's moves. **[Every Pokémon's moves and levels](MO
 
 ### Results
 
-A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat a Pokémon you haven't caught and you get 3 Poké Balls to catch it while it runs back and forth trying to get away. Where the ball lands, against the rings that run with it, decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
+A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat any wild Pokémon, even one you have, and you get 3 Poké Balls to catch it while it runs back and forth trying to get away. Where the ball lands, against the rings that run with it, decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
+
+### Stars
+
+Every form in the Pokédex (regular and shiny count apart) has 1–3 ★: its genes, kept simple. Genes are each stat's 90–110%.
+
+| ★ | A catch rolls it | A raised Pokémon's genes (their average) |
+|---|---|---|
+| ★ | 50% | 90–96 |
+| ★★ | 35% | 97–103 |
+| ★★★ | 15% | 104–110 |
+
+- **Catching:** the Gotcha screen shows the catch's stars and stays until you tap its ✕. A new form joins with them. If you have that form and the catch has more stars, it replaces yours at once ("New best!"); otherwise yours stays and the catch goes free.
+- **Raising:** hatching or evolving registers the form with your Pokémon's own stars, and never lowers a form you have.
+- **Choosing your next Pokémon:** its genes are rolled inside the band of the form you pick, so a 3★ form hatches a 3★ Pokémon. A random egg rolls 90–110.
+- **Trading:** the stars go with the Pokémon. If you already have the form you get, you keep the higher. From a buddy on an older version, the stars are rolled.
+- **Where:** each Pokémon's Pokédex page, under its sprite (each form its own row), the trade screen and the next-Pokémon choice.
 
 ## Training
 

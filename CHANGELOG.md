@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **Pokédex stars:** every form in the Pokédex has 1–3 ★, its genes kept simple (regular and shiny apart). Every wild win can now be caught, even a Pokémon you have, and the Gotcha screen shows the catch's stars and stays until you tap its ✕: a new form joins, a better one replaces yours ("New best!"), and a weaker one goes free. Stars show on each Pokédex page, in trades and when you choose your next Pokémon, and a 3★ form hatches a 3★ Pokémon. Your Pokédex is kept as it is: each form you already have gets its stars once, the one you're raising from its own genes.
+
 ## [1.40] - 2026-11-04
 
 - **Random Battle:** a teal button under the zones in Games > Battle meets a wild Pokémon from anywhere, like the Knomi's physical button. The Mac, Windows and web versions have no button, so this is their way to a random battle (Space on a keyboard still works too).

@@ -48,6 +48,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "No pudiste huir!",
     "NIVEL 100 %d/%d",
     "Combate al azar",
+    "Mejor! El tuyo era", "El tuyo es mejor:", "Igual que el tuyo:",
   },
   // ---------------- EN ----------------
   {
@@ -90,6 +91,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Couldn't get away!",
     "LEVEL 100 %d/%d",
     "Random Battle",
+    "New best! Yours was", "Yours is better:", "The same as yours:",
   },
   // ---------------- FR ----------------
   {
@@ -132,6 +134,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Fuite ratee!",
     "NIVEAU 100 %d/%d",
     "Combat au hasard",
+    "Meilleur! Le tien:", "Le tien est mieux:", "Pareil au tien:",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -179,6 +182,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Flucht misslang!",
     "LEVEL 100 %d/%d",
     "Zufallskampf",
+    "Besser! Deiner war", "Deiner ist besser:", "Gleich wie deiner:",
   },
   // ---------------- IT ----------------
   {
@@ -221,6 +225,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Fuga fallita!",
     "LV. 100 %d/%d",
     "Lotta casuale",
+    "Meglio! Il tuo era", "Il tuo e meglio:", "Uguale al tuo:",
   },
   // ---------------- PT ----------------
   {
@@ -263,6 +268,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Fuga falhou!",
     "NIVEL 100 %d/%d",
     "Combate aleatorio",
+    "Melhor! O teu era", "O teu e melhor:", "Igual ao teu:",
   },
   // ---------------- JA ----------------
   {
@@ -328,6 +334,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "にげられない!",
     "レベル100 %d/%d",
     "ランダムバトル",
+    "きろくこうしん! まえは", "まえのほうが いい:", "まえと おなじ:",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -375,6 +382,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "도망칠 수 없다!",
     "레벨 100 %d/%d",
     "랜덤 배틀",
+    "최고 기록! 이전:", "이전 것이 더 좋아요:", "이전과 같아요:",
   },
 };
 

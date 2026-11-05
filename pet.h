@@ -75,6 +75,13 @@ enum : uint32_t {
 #define MED_FIRST_LV100 22  // MED_LV100_3's bit: the level 100 medals too
 #define MED_COUNT 25
 #define LEVEL_MAX 100  // past it a Pokemon would be too strong to battle: it stays at 100
+// Every form in the Pokedex has 1-3 stars: its genes, kept simple. A raised one's are the band of its
+// genes' average (90-96, 97-103, 104-110); a catch rolls them: 1 star 50%, 2 stars 35%, 3 stars 15%
+#define STAR_PCT_2 35
+#define STAR_PCT_3 15
+#define GENE_BAND_1 96   // the top gene of 1 star
+#define GENE_BAND_2 103  // ...and of 2
+enum CatchResult : uint8_t { CR_KEPT, CR_NEW, CR_BETTER };  // yours stays (as good or better), a new form, a better one
 #define PARTY_SIZE 5  // MED_PARTY: yours and 4 buddies at once
 
 class Pet {
@@ -104,6 +111,7 @@ public:
   uint8_t dexReg[19] = { 0 };       // pokedex of raised ones (151-bit bitmap)
   uint8_t dexShinyReg[19] = { 0 };  // the shiny form is in the Pokedex (raised or caught)
   uint8_t dexShinyOnly[19] = { 0 }; // ...and only the shiny one: the regular form isn't
+  uint8_t dexStars[76] = { 0 };     // 2 bits per form, (dex - 1) * 2 + shiny: 1-3 stars, 0 = none
   // daily care streak (the player's: persists across raisings)
   uint16_t streak = 0, bestStreak = 0;
   uint32_t lastCareDay = 0;
@@ -158,7 +166,14 @@ public:
   void friendlyBattle(bool won);  // against a buddy: cheers up, but doesn't tire or train
   // battle: trains ATK and tires. Returns the ATK gain.
   uint8_t battleResult(bool won);
-  bool catchWild(int16_t dex, bool shiny = false);  // catch: registers that form; true if new
+  // a catch with these stars (0: rolled). A new form comes in with them; one you have takes them if
+  // they're more, and otherwise stays as it is
+  CatchResult catchWild(int16_t dex, bool shiny = false, uint8_t stars = 0);
+  uint8_t starsOf(int16_t dex, bool shiny) const;
+  uint8_t petStars() const { return starsFromGenes(geneAtk, geneDef, geneSpe); }
+  static uint8_t starsFromGenes(int atk, int def, int spe);
+  static uint8_t rollStars();
+  void dbgSetStars(int16_t dex, bool shiny, uint8_t stars) { if (hasForm(dex, shiny) && stars >= 1 && stars <= 3) setStars(dex, shiny, stars); }  // test
   // The Pokedex keeps the regular and the shiny form of each species apart: both can be had,
   // and each is traded on its own. A form is (dex, shiny).
   bool hasForm(int16_t dex, bool shiny) const {
@@ -172,7 +187,8 @@ public:
     return hasForm(dex, shiny) && !(dex == speciesId && shiny == this->shiny);
   }
   uint16_t tradeableCount() const { return formCount() - (hasForm(speciesId, shiny) ? 1 : 0); }
-  bool tradeAway(int16_t give, int16_t get, bool giveShiny = false, bool getShiny = false);
+  // getStars: the received form's, from the buddy (outside 1-3, as older versions send: rolled)
+  bool tradeAway(int16_t give, int16_t get, bool giveShiny = false, bool getShiny = false, uint8_t getStars = 0);
   void quizResult(uint8_t correct);      // who's that pokemon
   void showdownResult(uint8_t mine, uint8_t theirs);  // Who's That? Showdown with a buddy
   bool visitorDueNow() const;            // a visit is due today
@@ -288,6 +304,7 @@ private:
   uint32_t evolveUntil = 0;
   int16_t eggTarget = 1;       // hidden dex that will come out of the egg
   bool eggShiny = false;       // surprise rolled when the egg is created
+  uint8_t eggStars = 0;        // picked from a form with these stars: its genes are rolled in that band (0: 90-110)
   uint8_t eggTaps = 0;
   uint8_t mistakeCooldown = 0;
   uint8_t ticksSinceSave = 0;
@@ -312,8 +329,9 @@ private:
   void tick();
   void hatch();
   void registerSpecies(int16_t dex);
-  bool addForm(int16_t dex, bool shinyForm);
+  bool addForm(int16_t dex, bool shinyForm, uint8_t stars);  // a form you already have keeps the higher
   void removeForm(int16_t dex, bool shinyForm);
+  void setStars(int16_t dex, bool shinyForm, uint8_t stars);
   void save();
   void load();
   static uint8_t clamp100(int v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
