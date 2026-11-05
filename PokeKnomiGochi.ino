@@ -2169,9 +2169,35 @@ void grabArt(uint16_t *art, int n, int x0, int y0, int k) {
     }
 }
 
-// the 200 x 200 piece of the canvas around (fx, fy), at half size
+// the 200 x 200 piece of the canvas around (fx, fy), at half size, its colours made richer: a
+// window should look like fun, not like a photo of the screen
 void gameGlimpseGrab(uint16_t *art, int fx, int fy) {
   grabArt(art, GAME_ART, fx - GAME_ICON_R * GAME_GLIMPSE_K, fy - GAME_ICON_R * GAME_GLIMPSE_K, GAME_GLIMPSE_K);
+  for (int i = 0; i < GAME_ART * GAME_ART; i++) {
+    uint16_t c = art[i];
+    int r = (c >> 11) * 255 / 31, g = ((c >> 5) & 0x3F) * 255 / 63, b = (c & 0x1F) * 255 / 31;
+    int lum = (r * 3 + g * 6 + b) / 10;
+    int ch[3] = { r, g, b };
+    for (int k = 0; k < 3; k++) {
+      int v = lum + (ch[k] - lum) * 3 / 2;  // half again as colourful
+      v = 128 + (v - 128) * 11 / 10;        // and a touch more contrast
+      ch[k] = v < 0 ? 0 : v > 255 ? 255 : v;
+    }
+    art[i] = C565(ch[0], ch[1], ch[2]);
+  }
+}
+
+// a ring from radius r0 to r1 (inclusive), filled row by row so it has no gaps
+void fillRing(int cx, int cy, int r0, int r1, uint16_t col) {
+  for (int dy = -r1; dy <= r1; dy++) {
+    int out = (int)sqrtf((float)(r1 * r1 - dy * dy));
+    int in = abs(dy) < r0 ? (int)sqrtf((float)(r0 * r0 - dy * dy)) : -1;
+    if (in < 0) gfx->fillRect(cx - out, cy + dy, 2 * out + 1, 1, col);
+    else {
+      gfx->fillRect(cx - out, cy + dy, out - in, 1, col);
+      gfx->fillRect(cx + in + 1, cy + dy, out - in, 1, col);
+    }
+  }
 }
 
 // paints a moment of each game on the canvas (not shown) and keeps the piece for its window
@@ -2183,32 +2209,49 @@ void gameGlimpsesPaint() {
   bool night = hh < 6 || hh >= 20;
   static const char *const *const BERRY[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
 
-  // Tilt Catch: the woods, a berry falling to your Pokemon
+  // Tilt Catch: the woods, three berries falling to your Pokemon, sparkling
   drawCatchScene();
-  drawMap(BERRY[0], HOME_ICON_N, 196, 214, 3, false);
-  if (pmd.loaded) drawPmdAct(PMD_IDLE, 220, 394, now, true, false, 3);
+  drawMap(BERRY[0], HOME_ICON_N, 180, 214, 3, false);
+  drawMap(BERRY[2], HOME_ICON_N, 132, 252, 2, false);
+  drawMap(BERRY[1], HOME_ICON_N, 237, 252, 2, false);
+  drawSparkle(176, 238, 8);
+  drawSparkle(276, 246, 6);
+  drawSparkle(138, 302, 6);
+  if (pmd.loaded) drawPmdAct(PMD_IDLE, 210, 394, now, true, false, 3);
   gameGlimpseGrab(gameArt, 200, 300);
 
-  // Who's That?: a silhouette and a question mark
-  gfx->fillScreen(TYPE_ACCENT[TY_WATER]);
+  // Who's That?: a burst of rays, a silhouette and a big yellow question mark
+  gfx->fillScreen(C565(0x2a, 0x6c, 0xd0));
+  for (int i = 0; i < 16; i += 2) {  // every other ray lighter, out from behind the silhouette
+    float a0 = i * 6.28318f / 16, a1 = (i + 1) * 6.28318f / 16;
+    gfx->fillTriangle(206, 244, 206 + (int)(400 * cosf(a0)), 244 + (int)(400 * sinf(a0)),
+                      206 + (int)(400 * cosf(a1)), 244 + (int)(400 * sinf(a1)), C565(0x6c, 0xb8, 0xf4));
+  }
+  gfx->fillCircle(210, 246, 48, C565(0xb4, 0xe0, 0xff));
   if (const uint8_t *t = thumbs.get(25)) {
     int box[4];
-    drawThumbFit(t, 206, 250, 120, 120, 4, true, 0, box);
+    drawThumbFit(t, 210, 248, 80, 80, 3, true, 0, box);
   }
-  gfx->setTextColor(UI_WHITE);
-  setSize(6);
-  setCur(272, 168);
+  setSize(5);
+  gfx->setTextColor(UI_INK);
+  setCur(266, 182);  // its shadow, then the mark
+  printT("?");
+  gfx->setTextColor(C565(0xff, 0xd8, 0x30));
+  setCur(262, 178);
   printT("?");
   gameGlimpseGrab(gameArt + GAME_ART * GAME_ART, 233, 233);
 
-  // PokeRun: the forest trail, your Pokemon running at a rock
+  // PokeRun: the forest trail, your Pokemon leaping a rock, speed lines behind it
   drawForest(240.0f, night);
-  RunObstacle rock = { 312.0f, RUN_ROCK, true };
+  RunObstacle rock = { 298.0f, RUN_ROCK, true };
   drawRunObstacle(rock, night);
+  for (int i = 0; i < 3; i++) gfx->fillRect(184 - i * 6, RUN_GROUND_Y - 96 + i * 22, 30 + i * 6, 5, UI_WHITE);
+  gfx->fillCircle(218, RUN_GROUND_Y - 6, 9, C565(0xe8, 0xdc, 0xc0));  // the dust it kicked up
+  gfx->fillCircle(204, RUN_GROUND_Y - 3, 6, C565(0xe8, 0xdc, 0xc0));
   if (pmd.loaded) {
     uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 90, 90);
     gPmdForceScale = fit > 3 ? 3 : fit;
-    drawPmdAct(pmd.has(PMD_WALKR) ? PMD_WALKR : PMD_IDLE, 226, RUN_GROUND_Y + 2, now, true, false, 3);
+    drawPmdAct(pmd.has(PMD_WALKR) ? PMD_WALKR : PMD_IDLE, 252, RUN_GROUND_Y - 40, now, true, false, 3);
     gPmdForceScale = 0;
   }
   gameGlimpseGrab(gameArt + 2 * GAME_ART * GAME_ART, 262, RUN_GROUND_Y - 64);
@@ -2226,6 +2269,9 @@ void gameGlimpsesPaint() {
       dnDrawTileKind(ROOM[ty][tx], ty < 4 && ROOM[ty + 1][tx] != DN_WALL, tx + 3, ty + 5, ox + tx * DN_TILE, oy + ty * DN_TILE);
   drawMap(BERRY[1], HOME_ICON_N, CX - 76, CY + 40, 3, false);
   if (const uint8_t *t = thumbs.get(41)) drawThumb(t, CX + 4, CY - 10, 2, false);  // a Zubat
+  gfx->fillCircle(CX + 66, CY - 6, 13, UI_BAR_BAD);  // and it has seen you
+  gfx->fillRect(CX + 63, CY - 15, 6, 12, UI_WHITE);
+  gfx->fillRect(CX + 63, CY + 0, 6, 5, UI_WHITE);
   if (pmd.loaded) {
     uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 76, 76);
     gPmdForceScale = fit > 3 ? 3 : fit;
@@ -2273,6 +2319,7 @@ void renderGamesMenu() {
   for (int i = 0; i < GAMES_COUNT; i++) {
     int cx = GAME_XY[i][0], cy = GAME_XY[i][1];
     drawRoundArt(gameArt ? gameArt + i * GAME_ART * GAME_ART : nullptr, cx, cy, GAME_ICON_R, colors[i]);
+    fillRing(cx, cy, GAME_ICON_R - 6, GAME_ICON_R - 2, colors[i]);  // each game's own colour around its window
     gfx->setTextColor(UI_INK);
     setCur(cx - textW(gameLabel(i), 2) / 2, cy + GAME_ICON_R + 6);
     printT(gameLabel(i));
