@@ -14,8 +14,8 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 |:--:|:--:|:--:|
 | ![Gengar at home](docs/images/home.png) | ![Charizard's fire attack on a wild Pikachu](docs/images/battle.png) | ![Aiming a Poké Ball inside the catch rings](docs/images/catch.png) |
 | **Raise your Pokémon** | **Battle wild Pokémon** | **Aim for the green circle** |
-| ![A catch bursting with light](docs/images/caught.png) | ![The Pokédex](docs/images/pokedex.png) | ![A Pokédex entry](docs/images/pokedex-entry.png) |
-| **Catch what you beat** | **Fill the Pokédex** | **Read about what you've caught** |
+| ![A new catch on its own screen, with its stars](docs/images/caught.png) | ![The Pokédex](docs/images/pokedex.png) | ![A Pokédex entry](docs/images/pokedex-entry.png) |
+| **Catch what you beat, 1 to 3 ★** | **Fill the Pokédex** | **Read about what you've caught** |
 | ![Games menu](docs/images/games.png) | ![PokeRun](docs/images/pokerun.png) | ![Who's That Pokémon?](docs/images/quiz.png) |
 | **Play mini games** | **PokeRun** | **Who's That Pokémon?** |
 | ![Five zones to hunt in](docs/images/zones.png) | ![What's missing in a zone](docs/images/zone.png) | ![A battle in the Forest](docs/images/zone-battle.png) |
