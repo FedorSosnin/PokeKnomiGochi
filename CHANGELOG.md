@@ -8,6 +8,14 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+## [1.42] - 2026-11-05
+
+- **Every Pokémon runs its own way:** after a battle, the wild Pokémon's run in front of the Poké Ball follows its speed. A Slowpoke ambles there and back in about 6 seconds, a Pikachu in 4½, an Electrode darts across in under 3. Each one also speeds up and slows down a little, never the same twice, and the quick ones sometimes turn back halfway.
+- **A bigger Pokédex:** the Pokédex and each zone's list are now 3 × 3 grids with the Pokémon about twice as big. The number caught sits small over the centred title, and "Page 1 of 17" replaces the dots.
+- **Shinies move:** a shiny you have moves in the grid with its sparkles, as on its own page.
+- **Gold for 3 ★:** a Pokémon with a 3 ★ form, regular or shiny, has a gold outline around it in the grids.
+- **Pokédex pages:** the number sits small over the name, which is bigger and bolder. Tap the Pokémon to give it a pat: it hops and a heart pops up, just for fun.
+
 ## [1.41] - 2026-11-05
 
 - **Pokédex stars:** every form in the Pokédex has 1–3 ★, its genes kept simple (regular and shiny apart). Every wild win can now be caught, even a Pokémon you have, and after the ball holds, a screen of its own shows the Pokémon and its stars until you tap its ✕: a new form joins, a better one replaces your weaker one ("New best!"), and one that isn't better goes back to the wild. Stars show on each Pokédex page (where the sprites are now bigger), in trades and when you choose your next Pokémon, and a 3★ form hatches a 3★ Pokémon. Your Pokédex is kept as it is: each form you already have gets its stars once, the one you're raising from its own genes.

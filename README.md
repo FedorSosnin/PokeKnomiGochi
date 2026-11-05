@@ -76,7 +76,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
 | **Swipe up** | See its card: profile, battle stats, training and progress |
 | **Tap its name on the card** (✏️) | Rename it |
-| **Swipe from left to right** | Open the Pokédex |
+| **Swipe from left to right** | Open the Pokédex. Tap a Pokémon for its page, and tap it there to give it a pat |
 | **Swipe from right to left** | See your achievements: every medal, 6 to a page. A new medal drops in from the top; tap it to see it there |
 | **Swipe down** | Set the clock, then swipe left for settings |
 | **Press the button** | Start a wild battle |
@@ -127,11 +127,11 @@ Each kind of training stops at 100. The card's **Training** page (swipe up, then
 
 <img src="docs/images/training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each">
 
-About 1 wild Pokémon in 100 is **shiny**: official shiny colors with gold sparkles around it. The Pokédex keeps shiny and regular forms apart, shows both side by side once you have both, and each can be traded on its own. Catching everything in a zone earns that zone's medal.
+About 1 wild Pokémon in 100 is **shiny**: official shiny colors with gold sparkles around it. The Pokédex keeps shiny and regular forms apart, shows both side by side once you have both, and each can be traded on its own. In the Pokédex grid, a shiny you have moves with its sparkles. Catching everything in a zone earns that zone's medal.
 
-Every wild Pokémon you beat can be caught, even one you already have: you get three Poké Balls, and it runs back and forth across the field trying to get away. Tap to throw, then lean the Knomi left and right to steer. Rings show around the Pokémon as it runs: land the ball in the small green circle and it always holds, in the next ring three times in four, and in the outer ring only one time in four. The ball spins all the way there, then tips over to one side on each count to 3, as if the Pokémon is trying to get out, then the Pokémon joins your Pokédex or breaks out and runs away.
+Every wild Pokémon you beat can be caught, even one you already have: you get three Poké Balls, and it runs back and forth across the field trying to get away, at its own speed: a Slowpoke ambles, an Electrode darts, and the quick ones sometimes turn back halfway. Tap to throw, then lean the Knomi left and right to steer. Rings show around the Pokémon as it runs: land the ball in the small green circle and it always holds, in the next ring three times in four, and in the outer ring only one time in four. The ball spins all the way there, then tips over to one side on each count to 3, as if the Pokémon is trying to get out, then the Pokémon joins your Pokédex or breaks out and runs away.
 
-**Stars:** every Pokémon in your Pokédex has 1 to 3 ★, its genes kept simple, and the regular and shiny forms each have their own. Once the ball holds, a screen of its own shows the catch and its stars. A new one goes into your Pokédex; if you already have it and the new one has more stars, it replaces yours. Stars show on each Pokémon's Pokédex page and in trades, and they matter when you choose your next Pokémon: picking a 3★ form hatches a 3★ Pokémon, with better stats.
+**Stars:** every Pokémon in your Pokédex has 1 to 3 ★, its genes kept simple, and the regular and shiny forms each have their own. Once the ball holds, a screen of its own shows the catch and its stars. A new one goes into your Pokédex; if you already have it and the new one has more stars, it replaces yours. Stars show on each Pokémon's Pokédex page and in trades, a 3★ form gets a gold outline in the Pokédex grid, and they matter when you choose your next Pokémon: picking a 3★ form hatches a 3★ Pokémon, with better stats.
 
 ### Battles
 

@@ -70,7 +70,7 @@ Ditto copies the wild Pokémon's moves. **[Every Pokémon's moves and levels](MO
 
 ### Results
 
-A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat any wild Pokémon, even one you have, and you get 3 Poké Balls to catch it while it runs back and forth trying to get away. Where the ball lands, against the rings that run with it, decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
+A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat any wild Pokémon, even one you have, and you get 3 Poké Balls to catch it while it runs back and forth trying to get away. It runs at its own speed (its base speed: a Slowpoke takes about 6 s there and back, an Electrode under 3), speeds up and slows down on the way, and the quick ones sometimes turn back early. Where the ball lands, against the rings that run with it, decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
 
 ### Stars
 
@@ -86,7 +86,7 @@ Every form in the Pokédex (regular and shiny count apart) has 1–3 ★: its ge
 - **Raising:** hatching or evolving registers the form with your Pokémon's own stars, and never lowers a form you have.
 - **Choosing your next Pokémon:** its genes are rolled inside the band of the form you pick, so a 3★ form hatches a 3★ Pokémon. A random egg rolls 90–110.
 - **Trading:** the stars go with the Pokémon. If you already have the form you get, you keep the higher. From a buddy on an older version, the stars are rolled.
-- **Where:** each Pokémon's Pokédex page, under its sprite (each form its own row), the trade screen and the next-Pokémon choice.
+- **Where:** each Pokémon's Pokédex page, under its sprite (each form its own row), the trade screen and the next-Pokémon choice. In the Pokédex and zone grids, a Pokémon with a 3★ form (regular or shiny) has a gold outline.
 
 ## Training
 
