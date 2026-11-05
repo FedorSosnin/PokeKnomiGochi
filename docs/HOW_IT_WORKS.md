@@ -103,7 +103,7 @@ While at least one buddy or the daily visitor is on your screen:
 
 | Boost | |
 |---|---|
-| ⚡ **Energy drain** | Half: it drops every other minute instead of every minute (overweight too) |
+| ⚡ **Energy drain** | A quarter less: it drops three minutes in four instead of every minute (overweight too) |
 | 💪 **ATK, DEF, SPD** | +2 each in wild battles and PokeDungeon (not in battles between buddies) |
 
 It's the same with one friend or five, so extra devices don't stack it. Tap the green **PARTY BOOST** button for the list of who's here. Tap a friend for its stats (level, HP, ATK, DEF, SPD, and a buddy's Pokédex count), then swipe to a buddy's Battle, Trade and Play menu. The ✕ goes back to the list.
@@ -115,7 +115,7 @@ The **daily visitor** brings a candy (a third one that day) and stays 60 awake m
 There are two ways to start a battle:
 
 - 🔘 **The physical button, or Wild Encounter (the last circle, after the zones):** a random wild Pokémon from anywhere, met at your Pokémon's home. The Mac, Windows and web versions have no button, so Wild Encounter is the way there (or Space on a keyboard).
-- ⚪ **The Poké Ball icon on the home screen:** pick a zone and hunt there. Missing Pokémon show as silhouettes. Each Search leans a little toward the common ones you're missing, never toward the rare ones or the legendary.
+- 🗺️ **The map icon on the home screen:** pick a zone and hunt there. Missing Pokémon show as silhouettes. Each Search leans a little toward the common ones you're missing, never toward the rare ones or the legendary.
 
 | Zone | Pokémon | Who lives there | Rare 💎 | Legendary ⭐ |
 |---|---|---|---|---|

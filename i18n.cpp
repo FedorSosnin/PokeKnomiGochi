@@ -51,6 +51,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Mejor! El tuyo era", "El tuyo es mejor:", "Igual que el tuyo:",
     "Ocupa el lugar del tuyo, m\240s d\202bil.", "Vuelve a la naturaleza.",
     "POKEDEX", "P\240gina %d de %d",
+    "Viajar",
   },
   // ---------------- EN ----------------
   {
@@ -96,6 +97,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "New best! Yours was", "Yours is better:", "The same as yours:",
     "It replaces your weaker one.", "It goes back to the wild.",
     "POKEDEX", "Page %d of %d",
+    "Travel",
   },
   // ---------------- FR ----------------
   {
@@ -141,6 +143,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Meilleur! Le tien:", "Le tien est mieux:", "Pareil au tien:",
     "Il remplace ton plus faible.", "Il retourne \205 la nature.",
     "POKEDEX", "Page %d sur %d",
+    "Voyager",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -191,6 +194,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Besser! Deiner war", "Deiner ist besser:", "Gleich wie deiner:",
     "Er ersetzt deinen schw\204cheren.", "Er kehrt in die Wildnis zur\201ck.",
     "POKEDEX", "Seite %d von %d",
+    "Reisen",
   },
   // ---------------- IT ----------------
   {
@@ -236,6 +240,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Meglio! Il tuo era", "Il tuo e meglio:", "Uguale al tuo:",
     "Prende il posto del tuo, pi\227 debole.", "Torna in natura.",
     "POKEDEX", "Pagina %d di %d",
+    "Viaggia",
   },
   // ---------------- PT ----------------
   {
@@ -281,6 +286,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Melhor! O teu era", "O teu e melhor:", "Igual ao teu:",
     "Fica no lugar do teu, mais fraco.", "Volta para a natureza.",
     "POKEDEX", "P\240gina %d de %d",
+    "Viajar",
   },
   // ---------------- JA ----------------
   {
@@ -349,6 +355,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "きろくこうしん! まえは", "まえのほうが いい:", "まえと おなじ:",
     "よわい まえの と いれかわるよ", "やせいに かえっていったよ",
     "ずかん", "ページ %d/%d",
+    "たび",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -399,6 +406,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "최고 기록! 이전:", "이전 것이 더 좋아요:", "이전과 같아요:",
     "약한 이전 것과 바뀌어요", "야생으로 돌아갔어요",
     "도감", "%d/%d 페이지",
+    "여행",
   },
 };
 

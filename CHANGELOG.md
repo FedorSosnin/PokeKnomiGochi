@@ -8,6 +8,8 @@ Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 
 ## [Unreleased]
 
+- **A map for battles:** the middle icon on the home screen is now a folded region map instead of a Poké Ball, and the screen it opens is called **Travel**: the zones are places to travel to and hunt.
+- **Party Boost:** with company, energy now drains a quarter slower (it was half).
 - **Zones are a real hunt:** each zone's Pokémon are common, rare or legendary. Common ones turn up all the time; rare ones (and what they evolve into) about a third as often; and the legendary can appear on any Search, not just after the rest, but only about once in a hundred. Searches no longer steer you to what you're missing, except a little toward common ones, so filling a zone takes several times longer. [How it works](docs/HOW_IT_WORKS.md#zones) lists each zone's rare ones.
 
 ## [1.44] - 2026-11-06

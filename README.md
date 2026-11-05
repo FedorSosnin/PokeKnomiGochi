@@ -135,7 +135,7 @@ Every wild Pokémon you beat can be caught, even one you already have: you get t
 
 ### Battles
 
-Tap the **Poké Ball** icon in the middle of the home screen to pick a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. **Wild Encounter**, the last circle, meets a wild Pokémon from anywhere at your Pokémon's home, in the scene of the main screen, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
+Tap the **map** icon in the middle of the home screen to open **Travel** and go to a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. **Wild Encounter**, the last circle, meets a wild Pokémon from anywhere at your Pokémon's home, in the scene of the main screen, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
 
 ### Games
 
@@ -160,12 +160,12 @@ If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over 
 
 Your Pokémon does better with company. While at least one buddy or the daily visitor is around:
 
-- **Energy drains half as fast.**
+- **Energy drains a quarter slower.**
 - **+2 ATK, DEF and SPD** in wild battles and PokeDungeon.
 
 It's the same boost however many friends are around. Tap **PARTY BOOST** to see who's here and what you get. Tap a friend there to see its stats: level, HP, ATK, DEF and SPD, and a buddy's Pokédex count. Swipe from there to a buddy's Battle, Trade and Play menu, and the ✕ goes back to Party Boost. Tapping a buddy's Pokémon on the main screen still opens its menu first, with its stats a swipe away. While the boost is on, the Battle Stats page shows each stat with its **+2**. Battles between buddies don't use it, since both sides would have it.
 
-| ![The Party Boost screen: Pikachu and Charizard as buddies, Eevee visiting for 60 more minutes, energy drain -50% and ATK DEF SPD +2](docs/images/party.png) | ![Pikachu's stats: level, HP, ATK, DEF, SPD and its Pokédex, with a dot for the Battle, Trade and Play page](docs/images/friend-stats.png) | ![The visitor's stats, its minutes left and the candy it brought](docs/images/visitor-stats.png) |
+| ![The Party Boost screen: Pikachu and Charizard as buddies, Eevee visiting for 60 more minutes, energy drain -25% and ATK DEF SPD +2](docs/images/party.png) | ![Pikachu's stats: level, HP, ATK, DEF, SPD and its Pokédex, with a dot for the Battle, Trade and Play page](docs/images/friend-stats.png) | ![The visitor's stats, its minutes left and the candy it brought](docs/images/visitor-stats.png) |
 |:---:|:---:|:---:|
 | **Who's here, and the boost** | **A buddy's stats, then swipe to play** | **The visitor, and its candy** |
 

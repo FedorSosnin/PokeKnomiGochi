@@ -556,6 +556,27 @@ static const char* const SPR_HOME_BAG[18] = {  // 18x18
   "..................",
 };
 
+static const char* const SPR_HOME_MAP[18] = {  // 18x18
+  "..................",
+  ".kkkkk......kkkkk.",
+  "kyyyyykkkkkkyyyyyk",
+  "kyggggYYYYYYbbbbyk",
+  "kygrrgGGGdBBbbbbyk",
+  "kygwwyGGGGGdrbbbyk",
+  "kyggygYYYYYRwGbbyk",
+  "kybgygGGGGGsgGbbyk",
+  "kybgygGGGSGGwgGbyk",
+  "kyggygGGSSSGggGbyk",
+  "kyggyrGSSSSSGwbbyk",
+  "kybggwRGGGGGbbrryk",
+  "kybbggsGGGGdbbwwyk",
+  "kybbbGGGGGdBbbgGyk",
+  "kybbbbdddBBBbbbbyk",
+  "kyyyyyBBBBBByyyyyk",
+  ".kkkkkYYYYYYkkkkk.",
+  "......kkkkkk......",
+};
+
 static const char* const SPR_HOME_GAMES[18] = {  // 18x18
   "....kkkkkkkkkk....",
   "...kwwwwlllllLk...",

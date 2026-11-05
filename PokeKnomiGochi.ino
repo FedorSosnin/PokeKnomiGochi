@@ -225,7 +225,7 @@ bool partyVisitor = false;  // ...showing the visitor's stats
 uint8_t buddyPage = 1;      // the buddy view: 0 its stats, 1 Battle/Trade/Play
 bool buddyFromParty = false;  // opened from Party Boost: closing goes back there
 // With a buddy or the visitor around, ATK, DEF and SPD in wild battles: the same however many are
-// around, so extra browsers or devices don't stack it (energy also drains half as fast: pet.cpp)
+// around, so extra browsers or devices don't stack it (energy also drains a quarter slower: pet.cpp)
 #define PARTY_STAT_BONUS 2
 bool playMenuOpen = false;  // "Play together": the games to play with the buddy of the menu
 // Who's That? Showdown: the quiz against a buddy, best of SD_ROUNDS (buddy.h)
@@ -332,7 +332,7 @@ struct Btn {
 Btn buttons[BTN_COUNT] = {
   { 116, 382, SPR_HOME_BAG },     // the bag: berries and candy (more items later)
   { 174, 403, SPR_HOME_GAMES },   // the mini games
-  { 233, 410, SPR_HOME_BALL },    // battle: the zones
+  { 233, 410, SPR_HOME_MAP },     // battle: a map of the zones, places to travel to
   { 298, 402, SPR_HOME_MOON },    // light
   { 350, 382, SPR_HOME_BUBBLE },  // bath
 };
@@ -6273,8 +6273,10 @@ void renderParty() {
   setCur(86, by);
   printT(T(S_BOOST_ENERGY));
   gfx->setTextColor(green);
-  setCur(380 - textW("-50%", 2), by);
-  printT("-50%");
+  char save[8];
+  snprintf(save, sizeof(save), "-%d%%", PARTY_ENERGY_SAVE_PCT);
+  setCur(380 - textW(save, 2), by);
+  printT(save);
   char st[24];
   snprintf(st, sizeof(st), "%s %s %s", T(S_STAT_ATK), T(S_STAT_DEF), T(S_STAT_SPE));
   gfx->setTextColor(UI_INK);
@@ -7174,8 +7176,8 @@ void renderZones() {
   gfx->setTextColor(UI_INK);
   setSize(3);
   if (zoneScreen == ZS_PICK) {
-    setCur(centerX(T(S_GAME_BATTLE), 3), 26);
-    printT(T(S_GAME_BATTLE));
+    setCur(centerX(T(S_TRAVEL), 3), 26);  // the map icon's screen: where to travel to
+    printT(T(S_TRAVEL));
     setSize(2);
     for (uint8_t z = 0; z < ZONE_PICKS; z++) {
       zoneDrawIcon(z);

@@ -18,6 +18,8 @@
 #define BTL_MIN_ENERGY 15    // below this it won't fight
 #define EAT_ANIM_MS 2500UL
 #define HEART_MS 1500UL
+#define PARTY_ENERGY_SKIP_MIN 4   // Party Boost: energy skips one minute in this many (25% less drain)
+#define PARTY_ENERGY_SAVE_PCT (100 / PARTY_ENERGY_SKIP_MIN)
 #define PET_JOY_TAPS 3                 // pets per hour that raise happiness
 #define PET_JOY_WINDOW_MS 3600000UL
 #define CANDY_PER_DAY 2
@@ -137,7 +139,7 @@ public:
   uint32_t visitorDay = 0;  // last day with a visit
   int16_t visitDex = 0;     // today's visitor, while it has minutes left
   uint8_t visitMin = 0;     // its minutes left: it steps out while yours sleeps and comes back
-  bool partyBoost = false;  // a buddy or the visitor around (set by the sketch): energy drains half as fast
+  bool partyBoost = false;  // a buddy or the visitor around (set by the sketch): energy drains a quarter slower
   uint8_t movesSeen = 1;   // moves already announced (to announce the new one only once)
 
   void begin();                 // loads state from NVS (or creates the first egg)

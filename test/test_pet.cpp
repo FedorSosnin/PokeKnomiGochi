@@ -230,21 +230,24 @@ TEST(tick, bars_never_drop_below_zero) {
   CHECK_EQ(p.hygiene, (uint8_t)0);
 }
 
-TEST(tick, party_boost_halves_the_energy_drain) {
+TEST(tick, party_boost_cuts_the_energy_drain_by_a_quarter) {
   Pet p;
   makePet(p, 4);
   setStats(p, 100, 100, 100, 100);
   p.poops = 0;
   p.partyBoost = true;  // a buddy or the visitor around
   mockForceRandom(99);
-  advance(p, 10);
+  advance(p, 40);
   mockClearForcedRandom();
-  CHECK_EQ(p.energy, (uint8_t)95);    // half of 10
-  CHECK_EQ(p.fullness, (uint8_t)80);  // the rest drops as usual
-  p.weight = 60;                      // overweight: still twice the usual, halved
+  CHECK_EQ(p.energy, (uint8_t)70);    // 30 of 40 minutes: a quarter less
+  CHECK_EQ(p.fullness, (uint8_t)20);  // the rest drops as usual
+  p.weight = 60;                      // overweight: still twice the usual, a quarter less
   p.energy = 100;
-  advance(p, 10);
-  CHECK_EQ(p.energy, (uint8_t)90);
+  setStats(p, 100, 100, p.energy, 100);
+  mockForceRandom(99);
+  advance(p, 20);
+  mockClearForcedRandom();
+  CHECK_EQ(p.energy, (uint8_t)70);    // 2 x 15 of 20
 }
 
 TEST(tick, sleeping_restores_energy_with_floors) {

@@ -167,8 +167,8 @@ void Pet::tick() {
   if (ageMinutes % MINUTES_PER_LEVEL == 0 && ageMinutes / MINUTES_PER_LEVEL < LEVEL_MAX) sfxPlay(SFX_LEVEL);  // leveled up (awake)
 
   fullness = clamp100(fullness - 2);
-  // with company (Party Boost) energy only drops every other minute
-  bool tires = !partyBoost || ageMinutes % 2;
+  // with company (Party Boost) energy drops a quarter slower: three minutes in four
+  bool tires = !partyBoost || ageMinutes % PARTY_ENERGY_SKIP_MIN != 0;
   if (tires) energy = clamp100(energy - 1);
   if (fullness > 40 && poops < 3 && random(100) < 15) poops++;
 

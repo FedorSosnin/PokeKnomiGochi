@@ -35,7 +35,7 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 
 - **Tap your Pokémon** to pet it. The icons along the bottom, from left to right, open your bag to feed it, open the mini games, start a battle, turn off the light at bedtime and give it a bath.
 - **Swipe up** for its card and stats (tap its name there to rename it), **from left to right** for the Pokédex, **from right to left** for your achievements, and **down** for the clock and settings. The round **✕** at the bottom closes any of them.
-- **Battle** with the Poké Ball icon: pick a zone and search, or tap **Wild Encounter** to meet a wild Pokémon at your Pokémon's home, and catch what you beat to fill your Pokédex. Every catch has 1 to 3 ★, and a better one replaces yours. Land the Poké Ball in the small green circle and the catch is sure; the faster the Pokémon, the faster it runs.
+- **Battle** with the map icon: travel to a zone and search, or tap **Wild Encounter** to meet a wild Pokémon at your Pokémon's home, and catch what you beat to fill your Pokédex. Every catch has 1 to 3 ★, and a better one replaces yours. Land the Poké Ball in the small green circle and the catch is sure; the faster the Pokémon, the faster it runs.
 - On a computer, the mouse is a finger: it presses when you click. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
 
 ## Training
@@ -59,7 +59,7 @@ Your Pokémon is saved in this browser automatically. Clearing the browser's dat
 
 ## Buddies
 
-Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle, trade Pokédex entries, or **play** a game together: in **Who's That? Showdown** you both see the same silhouette and race to name it first, and in **Poké Ball Volley** your screens are the two halves of one court. Trades are a real swap: the Pokémon you give leaves your Pokédex. Shinies (about 1 wild Pokémon in 100) sparkle, have their own place in the Pokédex and can be traded too. While anyone's around, your Pokémon gets a **Party Boost**: energy drains half as fast, and it has +2 ATK, DEF and SPD in wild battles. Tap the green **PARTY BOOST** button to see who's here, and tap a friend for its stats. A wild Pokémon also visits once a day for an hour, brings a candy and counts for the boost too. 
+Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle, trade Pokédex entries, or **play** a game together: in **Who's That? Showdown** you both see the same silhouette and race to name it first, and in **Poké Ball Volley** your screens are the two halves of one court. Trades are a real swap: the Pokémon you give leaves your Pokédex. Shinies (about 1 wild Pokémon in 100) sparkle, have their own place in the Pokédex and can be traded too. While anyone's around, your Pokémon gets a **Party Boost**: energy drains a quarter slower, and it has +2 ATK, DEF and SPD in wild battles. Tap the green **PARTY BOOST** button to see who's here, and tap a friend for its stats. A wild Pokémon also visits once a day for an hour, brings a candy and counts for the boost too. 
 
 | ![Party Boost: who's here and the boost](images/party.png) | ![A buddy's stats](images/friend-stats.png) |
 |:---:|:---:|
