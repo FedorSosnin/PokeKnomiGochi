@@ -68,6 +68,7 @@ static const ExpectedFmt EXPECTED[] = {
   { S_VB_THEY_SCORE_FMT, "%s" },
   { S_ZONE_MEDALS_FMT, "%d,%d" },
   { S_LV100_FMT,       "%d,%d" },
+  { S_PAGE_OF_FMT,     "%d,%d" },
   { S_SHINY_WILD_FMT,  "%s" },
   { S_VISIT_MIN_FMT,   "%u" },
   { S_VISIT_CANDY_FMT, "%s" },

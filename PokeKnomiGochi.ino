@@ -105,12 +105,27 @@ PmdMon galleryShinyPmd;  // the entry's shiny, next to the regular one when both
 // pokedex gallery
 bool galleryOpen = false;
 bool galleryDirty = false;
-int galleryPage = 0;        // 10 pages of 16
+int galleryPage = 0;        // 17 pages of 9
 int eggPickPage = 0;        // egg choice: grid with only what is registered
 int16_t eggPickDetail = 0;
 bool eggPickShiny = false;  // the chosen form is the shiny one
 bool eggPickDirty = true;
 int16_t galleryDetail = 0;  // dex in detail view, 0 = grid
+#define DEXG_COLS 3
+#define DEXG_PAGE 9
+#define DEX_PAGES ((151 + DEXG_PAGE - 1) / DEXG_PAGE)  // 17
+#define DEXG_SPRITE_S 4    // the largest scale in a square
+#define DEXG_X 86          // the Pokedex: 3 squares of 98 under the count and the title
+#define DEXG_Y 84
+#define DEXG_CELL 98
+#define DEXG_PAGE_Y 386    // "Page 1 of 17"
+PmdMon dexGridPmd[DEXG_PAGE];       // the page's shinies, animated
+int16_t dexGridPmdDex[DEXG_PAGE];   // which one each holds (0: none)
+bool galleryAnim = false;           // the Pokedex page has a shiny: redrawn every frame
+int8_t dexPatSlot = -1;            // an entry's sprite that was patted (0 or 1: which form), -1 none
+uint32_t dexPatT = 0;
+int16_t dexArtBox[2][4];            // where its sprites were drawn, to tap them
+uint8_t dexArtCount = 0;
 
 bool screenOff = false;       // short press of the PWR button
 bool cardOpen = false;        // pet card (vertical swipe)
@@ -1273,7 +1288,7 @@ void onSwipe(int dir) {
     galleryUnload();
     return;
   }
-  if (np > 9) np = 9;
+  if (np > DEX_PAGES - 1) np = DEX_PAGES - 1;
   if (np != galleryPage) {
     galleryPage = np;
     galleryDirty = true;
@@ -1758,6 +1773,7 @@ uint32_t lastScreenKey = 0;
 
 // Draws a frame and returns true if it flushed it to the panel.
 bool render() {
+  if (!galleryOpen && zoneScreen != ZS_ZONE) dexGridUnload();  // off the grids: their shinies go
   if (staticScreen()) {
     uint32_t k = screenKey();
     if (screenKeyValid && k == lastScreenKey) return false;
@@ -2586,6 +2602,7 @@ void battleFinish(bool won) {
 void battleAfterEnd() {
   if (!bPvp && bWon) {
     bBalls = CATCH_BALLS;
+    catchRunStart();
     battleSetPhase(BP_AIM);
   } else {
     closeBattle();
@@ -2601,12 +2618,59 @@ float bCatchX = CX;                      // where the ball landed: the foe stops
 
 // the foe sways side to side so you have to aim
 // After the battle the wild Pokemon runs back and forth on the field, trying to get away
-#define CATCH_RUN_MS 4500.0f  // one run there and back
+#define CATCH_RUN_MS 4500.0f  // one run there and back, for a Pokemon of base speed 70
 #define CATCH_GROUND_Y 268    // its feet: on the field, not along the horizon
 #define CATCH_SPIN_DEG_MS 0.6f  // the thrown ball spins: 0.6 degrees a millisecond, nearly two turns a second
 #define CATCH_TIP_DEG 30        // how far the ball tips over on each count
-float battleFoeSway(uint32_t now) { return CX + 110.0f * sinf(now * 6.28318f / CATCH_RUN_MS); }
-int battleFoeDir(uint32_t now) { return cosf(now * 6.28318f / CATCH_RUN_MS) >= 0 ? 1 : -1; }  // 1: running right
+// Its own pace: the faster the species (its base speed), the quicker the run, from about 6 s there
+// and back for a Slowpoke to 2.6 s for an Electrode. On the way it speeds up and slows down a little,
+// never the same twice, and the quick ones (base speed over 50) now and then turn back early.
+float bRunPhase = 0;          // where it is in its run (radians: 0 the middle, going right)
+float bRunMs = CATCH_RUN_MS;  // this one's run there and back at its usual pace
+float bRunPace = 1;           // how fast it goes right now, against its usual pace
+int8_t bRunDir = 1;           // 1 forward through the run, -1 turned back
+uint16_t bRunTurn = 0;        // chance of turning back, per 100000 a millisecond
+uint32_t bRunLast = 0, bRunTurnT = 0;
+float bRunSeed = 0;
+
+void catchRunStart() {
+  int spe = DEX_TBL[bFoe.dex].bSpe;
+  bRunMs = 6500.0f - 28.0f * spe;  // base speeds run 5 to 150
+  if (bRunMs < 2400) bRunMs = 2400;
+  if (bRunMs > 6800) bRunMs = 6800;
+  bRunTurn = spe > 50 ? (spe - 50) * 3 : 0;  // up to about one turn in 4 s for the quickest
+  bRunPhase = 0;
+  bRunDir = 1;
+  bRunPace = 1;
+  bRunLast = bRunTurnT = 0;
+  bRunSeed = random(1000) / 100.0f;
+}
+
+// moves it on to now (once a frame, however often it is asked)
+void catchRunStep(uint32_t now) {
+  if (now == bRunLast) return;
+  float dt = bRunLast ? (float)(now - bRunLast) : 0;
+  if (dt > 100) dt = 100;  // after a pause (in the ball) it carries on from where it was
+  bRunLast = now;
+  bRunPace = 1.0f + 0.4f * sinf(now * 0.0013f + bRunSeed) * sinf(now * 0.0031f + bRunSeed * 0.7f);
+  bRunPhase += bRunDir * dt * 6.28318f / bRunMs * bRunPace;
+  if (bRunTurn && now - bRunTurnT > 900 && (uint32_t)random(100000) < bRunTurn * dt) {
+    bRunDir = -bRunDir;
+    bRunTurnT = now;
+  }
+}
+float battleFoeSway(uint32_t now) {
+  catchRunStep(now);
+  return CX + 110.0f * sinf(bRunPhase);
+}
+int battleFoeDir(uint32_t now) {  // 1: running right
+  catchRunStep(now);
+  return bRunDir * cosf(bRunPhase) >= 0 ? 1 : -1;
+}
+float battleFoeSpeed(uint32_t now) {  // 0 turning at an end, 1 at its usual top speed
+  catchRunStep(now);
+  return fabsf(cosf(bRunPhase)) * bRunPace;
+}
 
 void battleThrowStep(uint32_t now) {
   static uint32_t last = 0;
@@ -2892,7 +2956,7 @@ void renderCatch() {
     if (!wildPmd.has(act)) act = PMD_IDLE;
     int fx = (int)foeX;
     gfx->fillRoundRect(fx - 26, CATCH_GROUND_Y - 4, 52, 9, 4, lerp565(soil, RGB565_BLACK, 5, 16));
-    float speed = fabsf(cosf(now * 6.28318f / CATCH_RUN_MS));  // slows to turn at each end
+    float speed = battleFoeSpeed(now);  // slows to turn at each end
     if (speed > 0.35f) {
       uint16_t dust = lerp565(soil, UI_WHITE, 9, 16);
       for (int i = 0; i < 3; i++) {
@@ -2900,7 +2964,7 @@ void renderCatch() {
         gfx->fillCircle(fx - dir * (22 + (int)age / 12), CATCH_GROUND_Y - 3 - (int)age / 60, 2 + age / 120, dust);
       }
     }
-    drawPmdActM(wildPmd, act, fx, CATCH_GROUND_Y, now - bPhaseT, true, false, 3);
+    drawPmdActM(wildPmd, act, fx, CATCH_GROUND_Y, (uint32_t)((now - bPhaseT) * CATCH_RUN_MS / bRunMs), true, false, 3);  // quicker steps for the quick ones
     if (bPhase == BP_AIM || bPhase == BP_THROW) drawCatchRings(fx);
   }
   int ballGround = CATCH_GROUND_Y - 51;  // a ball at 3x resting on the ground
@@ -4909,6 +4973,8 @@ void drawDexInfo(int16_t dex, bool withFact = true) {
 // a Pokedex entry's sprites: the regular one, and the shiny beside it when both are caught (a
 // shiny alone takes galleryPmd's place)
 void dexDetailLoad(int16_t dex) {
+  dexPatSlot = -1;
+  dexArtCount = 0;
   bool regular = pet.hasForm(dex, false), shiny = pet.hasForm(dex, true);
   galleryPmd.load(dex, shiny && !regular);
   if (regular && shiny) galleryShinyPmd.load(dex, true);
@@ -4922,10 +4988,26 @@ void galleryUnload() {
 
 // an entry's sprite, or both forms side by side, with each one's stars under it: as big as they fit,
 // the group centred between the name and the type label
-#define DEX_ART_TOP 84
+#define DEX_ART_TOP 96
 #define DEX_ART_BOTTOM 246
 #define DEX_STAR_R 9
 #define DEX_ART_GAP 10
+#define DEX_PAT_MS 1500  // a pat: two little hops and a heart that floats up (as long as the one at home)
+
+// tapping an entry's sprite pats it: only to see, nothing changes
+bool dexArtPet(int16_t x, int16_t y) {
+  for (int i = 0; i < dexArtCount; i++) {
+    const int16_t *b = dexArtBox[i];
+    if (x >= b[0] - 14 && x <= b[2] + 14 && y >= b[1] - 14 && y <= b[3] + 14) {
+      dexPatSlot = i;
+      dexPatT = millis();
+      sfxPlay(SFX_HEART);
+      return true;
+    }
+  }
+  return false;
+}
+
 void drawDexArt(PmdMon &a, uint8_t starsA, PmdMon *b, uint8_t starsB) {
   PmdMon *m[2] = { &a, b };
   int n = b ? 2 : 1;
@@ -4945,13 +5027,32 @@ void drawDexArt(PmdMon &a, uint8_t starsA, PmdMon *b, uint8_t starsB) {
   int groupH = up + down + DEX_ART_GAP + starH;
   int ground = DEX_ART_TOP + (DEX_ART_BOTTOM - DEX_ART_TOP - groupH) / 2 + up;
   int starY = ground + down + DEX_ART_GAP + starH / 2;
-  gPmdForceScale = s;
+  uint32_t now = millis();
+  uint32_t pat = now - dexPatT;
+  dexArtCount = n;
   for (int i = 0; i < n; i++) {
     int x = b ? (i ? CX + 84 : CX - 84) : CX;
-    drawPmdActM(*m[i], PMD_IDLE, x, ground, millis(), true, false, 8);
+    int hop = 0;
+    bool patted = dexPatSlot == i && pat < DEX_PAT_MS;
+    if (patted && pat < 700) hop = (int)(16 * fabsf(sinf(pat * 3.14159f / 350)));  // two hops
+    int top = ground - up, half = 30;
+    int t, bt, l, r;
+    if (pmdBoxAll(*m[i], PMD_IDLE, t, bt, l, r)) half = (r - l + 1) * s / 2;
+    int16_t *box = dexArtBox[i];
+    box[0] = x - half;
+    box[1] = top;
+    box[2] = x + half;
+    box[3] = ground + down;
+    gPmdForceScale = s;
+    drawPmdActM(*m[i], PMD_IDLE, x, ground - hop, now, true, false, 8);
+    gPmdForceScale = 0;
     drawStars(x, starY, DEX_STAR_R, i ? starsB : starsA);
+    if (patted) {  // the heart pops in beside its head and floats up, under the name
+      int hs = pat < 120 ? 1 : 2, size = 32 * hs;
+      int hx = min(x + half - size / 4, CX + 180 - size), hy = max(top + 30 - size / 2 - (int)(pat * 30 / DEX_PAT_MS), DEX_ART_TOP - 4);
+      drawMap(SPR_HEART, 32, hx, hy, hs, false);
+    }
   }
-  gPmdForceScale = 0;
 }
 
 // a Pokedex entry, full screen (the Pokedex and the zones' grids); galleryPmd holds its sprite
@@ -4960,16 +5061,25 @@ void renderDexDetail(int16_t dex) {
     gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
     const DexEntry &d = DEX_TBL[dex];
     bool reg = pet.isRegistered(dex);
-    char head[32];
-    snprintf(head, sizeof(head), "N.%03d %s", dex, reg ? dexName(dex) : "???");
+    char num[8];
+    snprintf(num, sizeof(num), "N.%03d", dex);  // the number, small, over the name
+    gfx->setTextColor(UI_INK);
+    setSize(2);
+    setCur(centerX(num, 2), 36);
+    printT(num);
+    // the name, big and bold: a size smaller when it is too long (measured, not counted in bytes)
+    const char *name = reg ? dexName(dex) : "???";
     gfx->setTextColor(reg ? d.accent : UI_INK);
-    // auto-shrink long names (they don't fit at t3), measuring instead of counting
-    // bytes; 13 characters at size 3 are the 234 px from before.
-    setSize(3);
-    int gts = (textW(head, 3) <= 234) ? 3 : 2;
+    setSize(4);  // CJK measures at the size set
+    int gts = textW(name, 4) <= 260 ? 4 : 3;
     setSize(gts);
-    setCur(centerX(head, gts), gts == 3 ? 56 : 60);
-    printT(head);
+    int nx = centerX(name, gts), ny = gts == 4 ? 56 : 60;
+    setCur(nx, ny);
+    printT(name);
+    if (!gCjkFont) {  // drawn twice, a pixel apart: bolder (printT already does it for CJK)
+      setCur(nx + 1, ny);
+      printT(name);
+    }
     if (reg && galleryPmd.loaded && galleryShinyPmd.loaded) {  // both forms, side by side
       drawDexArt(galleryPmd, pet.starsOf(dex, false), &galleryShinyPmd, pet.starsOf(dex, true));  // each form its own stars
       drawDexInfo(dex);
@@ -4993,70 +5103,186 @@ void renderDexDetail(int16_t dex) {
 // a square of the Pokedex with the shiny form caught: a gold sparkle in its corner
 void drawShinyMark(int x, int y, int cell) { drawSparkle(x + cell - 12, y + 12, 7); }
 
+// ---------- the Pokedex grids: the Pokedex and each zone's, 3 x 3 ----------
+// Big sprites, each fitted to its square. A shiny caught moves, with its sparkles, as on its own
+// page; an entry with a 3-star form (either one) has a gold glow behind it.
+
+// the page's shinies load their sprite (only when it changes: loading takes a moment); the rest unload
+void dexGridSync(const int16_t *dex) {
+  for (int i = 0; i < DEXG_PAGE; i++) {
+    int16_t want = dex[i] && pet.isShinyRegistered(dex[i]) ? dex[i] : 0;
+    if (dexGridPmdDex[i] == want) continue;
+    dexGridPmd[i].unload();
+    dexGridPmdDex[i] = want;
+    if (want) dexGridPmd[i].load(want, true);
+  }
+}
+void dexGridUnload() {
+  const int16_t none[DEXG_PAGE] = { 0 };
+  dexGridSync(none);
+}
+
+// either form has 3 stars
+bool dexHasGold(int16_t dex) {
+  return (pet.hasForm(dex, false) && pet.starsOf(dex, false) >= 3) || (pet.hasForm(dex, true) && pet.starsOf(dex, true) >= 3);
+}
+
+// a soft gold glow: rings from the background to gold, strongest in the middle
+void drawGoldGlow(int cx, int cy, int r) {
+  for (int i = r; i > 0; i -= 2) gfx->fillCircle(cx, cy, i, lerp565(UI_BG_DAY, MEDAL_GOLD, (r - i) * 12 / r + 2, 16));
+}
+
+// a thumbnail as big as it fits (up to maxS), what it fills centred on cx, cy; box gets what it covers
+void drawThumbFit(const uint8_t *b, int cx, int cy, int maxW, int maxH, int maxS, bool sil, int *box) {
+  uint8_t w = b[0], h = b[1], n = b[2];
+  const uint8_t *pal = b + 3;
+  const uint8_t *d = pal + n * 2;
+  int l = w, r = -1, t = h, bt = -1;
+  for (int y = 0; y < h; y++)
+    for (int x = 0; x < w; x++)
+      if (d[y * w + x] != 0xFF) {
+        if (x < l) l = x;
+        if (x > r) r = x;
+        if (y < t) t = y;
+        if (y > bt) bt = y;
+      }
+  if (r < 0) return;
+  int bw = r - l + 1, bh = bt - t + 1;
+  int s = min(maxW / bw, maxH / bh);
+  if (s > maxS) s = maxS;
+  if (s < 1) s = 1;
+  int ox = cx - bw * s / 2 - l * s, oy = cy - bh * s / 2 - t * s;
+  for (int y = t; y <= bt; y++) {
+    const uint8_t *row = d + y * w;
+    forRuns(w, [&](int c) { return indexedKey(row[c], sil); },
+            [&](int c0, int len, int k) {
+              uint16_t col = sil ? INK_K : (uint16_t)(pal[k * 2] | (pal[k * 2 + 1] << 8));
+              gfx->fillRect(ox + c0 * s, oy + y * s, len * s, s, col);
+            });
+  }
+  if (box) {
+    box[0] = ox + l * s;
+    box[1] = oy + t * s;
+    box[2] = ox + (r + 1) * s;
+    box[3] = oy + (bt + 1) * s;
+  }
+}
+
+// one square: slot is its place on the page (its animated shiny); true if it moves
+bool drawDexCell(int16_t dex, int slot, int x, int y, int cell) {
+  int cx = x + cell / 2, cy = y + cell / 2;
+  bool reg = pet.isRegistered(dex);
+  if (reg && dexHasGold(dex)) drawGoldGlow(cx, cy, cell / 2 - 1);
+  int maxW = cell - 14, maxH = cell - 14;
+  PmdMon &m = dexGridPmd[slot];
+  if (dexGridPmdDex[slot] == dex && m.loaded) {  // a shiny: its idle, sparkles and all
+    int top, bottom, left, right;
+    if (pmdBoxAll(m, PMD_IDLE, top, bottom, left, right)) {
+      const PmdAct &a = m.acts[PMD_IDLE];
+      uint8_t s = pmdFitScaleAll(m, PMD_IDLE, maxW, maxH, DEXG_SPRITE_S);
+      int base = a.base ? a.base : a.h;
+      int ground = cy + ((base - top) - (bottom + 1 - base)) * s / 2;
+      int px = cx - ((left + right + 1) - a.w) * s / 2;
+      gPmdForceScale = s;
+      drawPmdActM(m, PMD_IDLE, px, ground, millis() + slot * 337, true, false, s);
+      gPmdForceScale = 0;
+      return true;
+    }
+  }
+  bool shiny = pet.isShinyRegistered(dex);
+  const uint8_t *t = thumbs.getForm(dex, shiny);
+  if (t) {
+    int box[4];
+    drawThumbFit(t, cx, cy, maxW, maxH, DEXG_SPRITE_S, !reg, box);
+    if (shiny) drawSparkles(box[0], box[1], box[2], box[3], millis() + slot * 337);  // no sprite to move: still the sparkles
+    return shiny;
+  }
+  char num[6];
+  snprintf(num, sizeof(num), "%d", dex);
+  gfx->setTextColor(UI_TRACK);
+  setSize(2);
+  setCur(cx - textW(num, 2) / 2, cy - 8);
+  printT(num);
+  return false;
+}
+
+// a grid's header: the count, small, over the title
+void drawDexGridHead(const char *count, const char *title, int countY) {
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(count, 2), countY);
+  printT(count);
+  setSize(3);
+  setCur(centerX(title, 3), countY + 20);
+  printT(title);
+}
+
+// "Page 1 of 17", small, under a grid
+void drawDexGridPage(int page, int pages, int y) {
+  char b[32];
+  snprintf(b, sizeof(b), T(S_PAGE_OF_FMT), page + 1, pages);
+  gfx->setTextColor(C565(0x6b, 0x6a, 0x60));
+  setSize(2);  // before measuring (CJK)
+  setCur(centerX(b, 2), y);
+  printT(b);
+}
+
+// the square under a tap (its place on the page), or -1
+int dexGridAt(int16_t x, int16_t y, int x0, int y0, int cell) {
+  if (x < x0 || y < y0) return -1;  // filter before dividing
+  int c = (x - x0) / cell, r = (y - y0) / cell;
+  if (c >= DEXG_COLS || r >= DEXG_PAGE / DEXG_COLS) return -1;
+  return r * DEXG_COLS + c;
+}
+
 void renderGallery() {
   if (galleryDetail) {  // detail view: always redrawn (animated)
     renderDexDetail(galleryDetail);
     return;
   }
 
-  if (!galleryDirty) return;  // the grid is static
+  if (!galleryDirty && !galleryAnim) return;  // the grid is static, unless a shiny moves on it
   galleryDirty = false;
+
+  int16_t dex[DEXG_PAGE];
+  for (int i = 0; i < DEXG_PAGE; i++) {
+    int d = galleryPage * DEXG_PAGE + i + 1;
+    dex[i] = d <= 151 ? d : 0;
+  }
+  dexGridSync(dex);
 
   gfx->fillScreen(RGB565_BLACK);
   gfx->fillCircle(CX, CY, 231, UI_BG_DAY);
-  char head[24];
-  snprintf(head, sizeof(head), T(S_POKEDEX_FMT), pet.registeredCount());
-  gfx->setTextColor(UI_INK);
-  setSize(3);
-  setCur(centerX(head, 3), 36);
-  printT(head);
+  char count[12];
+  snprintf(count, sizeof(count), "%u/151", pet.registeredCount());
+  drawDexGridHead(count, T(S_DEX_TITLE), 30);
 
-  for (int r = 0; r < 4; r++) {
-    for (int c = 0; c < 4; c++) {
-      int16_t dex = galleryPage * 16 + r * 4 + c + 1;
-      if (dex > 151) break;
-      int x = GAL_X + c * GAL_CELL, y = GAL_Y + r * GAL_CELL;
-      const uint8_t *t = thumbs.get(dex);
-      if (t) {
-        drawThumb(thumbs.getForm(dex, !pet.hasForm(dex, false) && pet.hasForm(dex, true)), x, y, 2, !pet.isRegistered(dex));
-        if (pet.isShinyRegistered(dex)) drawShinyMark(x, y, GAL_CELL);
-      } else {
-        char num[6];
-        snprintf(num, sizeof(num), "%d", dex);
-        gfx->setTextColor(UI_TRACK);
-        setSize(2);
-        setCur(x + 24, y + 32);
-        printT(num);
-      }
-    }
-  }
-  // page dots
-  for (int i = 0; i < 10; i++) {
-    if (i == galleryPage) gfx->fillCircle(170 + i * 14, GAL_DOTS_Y, 4, UI_INK);
-    else gfx->drawCircle(170 + i * 14, GAL_DOTS_Y, 3, UI_INK);
-  }
+  galleryAnim = false;
+  for (int i = 0; i < DEXG_PAGE && dex[i]; i++)
+    if (drawDexCell(dex[i], i, DEXG_X + (i % DEXG_COLS) * DEXG_CELL, DEXG_Y + (i / DEXG_COLS) * DEXG_CELL, DEXG_CELL)) galleryAnim = true;
+  drawDexGridPage(galleryPage, DEX_PAGES, DEXG_PAGE_Y);
   drawCloseButtonAt(GAL_CLOSE_Y);
   gfx->flush();
 }
 
 void galleryTap(int16_t x, int16_t y) {
-  if (galleryDetail) {  // back to the grid
-    galleryDetail = 0;
+  if (galleryDetail) {
+    if (dexArtPet(x, y)) return;  // its sprite: a pat, as at home
+    galleryDetail = 0;            // anywhere else: back to the grid
     galleryUnload();
     galleryDirty = true;
     return;
   }
-  if (y < 66 || closeHitAt(x, y, GAL_CLOSE_Y)) {  // the close button (or the header) = exit
+  if (y < DEXG_Y - 6 || closeHitAt(x, y, GAL_CLOSE_Y)) {  // the close button (or the header) = exit
     sfxPlay(SFX_TAP);
     galleryOpen = false;
     galleryUnload();
+    dexGridUnload();
     return;
   }
-  // same reason as in the keyboard: filter before dividing
-  if (x < GAL_X || y < GAL_Y) return;
-  int c = (x - GAL_X) / GAL_CELL, r = (y - GAL_Y) / GAL_CELL;
-  if (c > 3 || r > 3) return;
-  int16_t dex = galleryPage * 16 + r * 4 + c + 1;
+  int i = dexGridAt(x, y, DEXG_X, DEXG_Y, DEXG_CELL);
+  if (i < 0) return;
+  int16_t dex = galleryPage * DEXG_PAGE + i + 1;
   if (dex > 151) return;
   galleryDetail = dex;
   dexDetailLoad(dex);
@@ -6587,14 +6813,17 @@ void tradeTap(int16_t x, int16_t y) {
 
 // ---------- Battle: the zones ----------
 #define ZONE_ICON_R 50
-#define ZONE_GRID_X 73
+// a zone: the count and its name, its Pokedex as a 3 x 3 grid (as the Pokedex), Search, the page and X
+#define ZONE_GRID_X 107
 #define ZONE_GRID_Y 76
-#define ZONE_CELL 80
-#define ZONE_PAGE 12
+#define ZONE_CELL 84
+#define ZONE_PAGE DEXG_PAGE
 #define ZONE_BTN_X 123
-#define ZONE_BTN_Y 322
+#define ZONE_BTN_Y 334
 #define ZONE_BTN_W 220
-#define ZONE_BTN_H 56
+#define ZONE_BTN_H 44
+#define ZONE_PAGE_Y 384
+#define ZONE_CLOSE_Y 430  // a little lower than elsewhere, to make room for the page
 #define ZONE_IDLE_MS 30000UL
 
 static const int16_t ZONE_XY[ZONE_COUNT][2] = { { 155, 104 }, { 311, 104 }, { 93, 246 }, { 233, 246 }, { 373, 246 } };
@@ -6677,11 +6906,12 @@ void zoneBattleEnded() {
 
 void zoneTap(int16_t x, int16_t y) {
   zoneUntil = millis() + ZONE_IDLE_MS;
-  if (zoneDetail) {  // tap anywhere: back to the zone
-    zoneDetailClose();
+  if (zoneDetail) {
+    if (dexArtPet(x, y)) return;  // its sprite: a pat
+    zoneDetailClose();            // anywhere else: back to the zone
     return;
   }
-  if (closeHit(x, y)) {  // the picker closes; a zone goes back to the picker
+  if (zoneScreen == ZS_ZONE ? closeHitAt(x, y, ZONE_CLOSE_Y) : closeHit(x, y)) {  // the picker closes; a zone goes back to the picker
     zoneBack();
     return;
   }
@@ -6708,10 +6938,9 @@ void zoneTap(int16_t x, int16_t y) {
     zoneSearch();
     return;
   }
-  if (x < ZONE_GRID_X || y < ZONE_GRID_Y) return;
-  int c = (x - ZONE_GRID_X) / ZONE_CELL, r = (y - ZONE_GRID_Y) / ZONE_CELL;
-  if (c > 3 || r > 2) return;
-  int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + r * 4 + c);
+  int i = dexGridAt(x, y, ZONE_GRID_X, ZONE_GRID_Y, ZONE_CELL);
+  if (i < 0) return;
+  int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + i);
   if (!dex) return;
   sfxPlay(SFX_TAP);
   zoneDetail = dex;
@@ -6768,37 +6997,28 @@ void renderZones() {
     return;
   }
 
-  setCur(centerX(T(ZONE_NAME[zoneCur]), 3), 22);
-  printT(T(ZONE_NAME[zoneCur]));
-  setSize(2);
-  const char *line = b;
-  snprintf(b, sizeof(b), T(S_ZONE_CAUGHT_FMT), pet.zoneCaught(zoneCur), zoneSize(zoneCur));
-  setCur(centerX(line, 2), 54);
-  printT(line);
-  for (int i = 0; i < ZONE_PAGE; i++) {
-    int16_t dex = zoneMember(zoneCur, zonePage * ZONE_PAGE + i);
-    if (!dex) break;
-    int x = ZONE_GRID_X + (i % 4) * ZONE_CELL, y = ZONE_GRID_Y + (i / 4) * ZONE_CELL;
-    if (const uint8_t *t = thumbs.getForm(dex, !pet.hasForm(dex, false) && pet.hasForm(dex, true)))
-      drawThumb(t, x, y, 2, !pet.isRegistered(dex));
-    if (pet.isShinyRegistered(dex)) drawShinyMark(x, y, ZONE_CELL);
-    if (dex == ZONE_LEGEND[zoneCur]) {  // star: the legendary waits here
+  int16_t dex[DEXG_PAGE];
+  for (int i = 0; i < DEXG_PAGE; i++) dex[i] = zoneMember(zoneCur, zonePage * ZONE_PAGE + i);
+  dexGridSync(dex);
+  snprintf(b, sizeof(b), "%d/%d", pet.zoneCaught(zoneCur), zoneSize(zoneCur));
+  drawDexGridHead(b, T(ZONE_NAME[zoneCur]), 26);
+  for (int i = 0; i < DEXG_PAGE && dex[i]; i++) {
+    int x = ZONE_GRID_X + (i % DEXG_COLS) * ZONE_CELL, y = ZONE_GRID_Y + (i / DEXG_COLS) * ZONE_CELL;
+    drawDexCell(dex[i], i, x, y, ZONE_CELL);
+    if (dex[i] == ZONE_LEGEND[zoneCur]) {  // star: the legendary waits here
       gfx->setTextColor(UI_BAR_WARN);
-      setCur(x + 62, y + 4);
+      setSize(2);
+      setCur(x + ZONE_CELL - 16, y + 2);
       printT("*");
     }
   }
   gfx->fillRoundRect(ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, 14, ZONE_COLOR[zoneCur]);
   gfx->setTextColor(UI_WHITE);
-  setCur(centerX(T(S_ZONE_SEARCH), 2), ZONE_BTN_Y + 21);
+  setSize(2);
+  setCur(centerX(T(S_ZONE_SEARCH), 2), ZONE_BTN_Y + 14);
   printT(T(S_ZONE_SEARCH));
-  int pages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
-  for (int i = 0; i < pages; i++) {
-    int dotX = CX + (i * 2 - (pages - 1)) * 7;
-    if (i == zonePage) gfx->fillCircle(dotX, 390, 4, UI_INK);
-    else gfx->drawCircle(dotX, 390, 3, UI_INK);
-  }
-  drawCloseButton();  // how to leave, as on the zone picker
+  drawDexGridPage(zonePage, (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE, ZONE_PAGE_Y);
+  drawCloseButtonAt(ZONE_CLOSE_Y);  // how to leave, as on the zone picker
   gfx->flush();
 }
 
