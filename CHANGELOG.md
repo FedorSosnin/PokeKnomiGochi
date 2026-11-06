@@ -6,6 +6,10 @@ bottom of the clock/settings screen (swipe down) and `web/manifest.json`.
 Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [1.50] - 2026-11-06
+
+- **Auto-update:** a new version can now go in by itself, with nobody having to tap anything. It's on unless you turn it off: on the Knomi with the **Auto-update** switch on the settings page (swipe down, then left), on Mac and Windows with **Update Automatically** in the menu, and on the web with the **Auto-update** button under the game. It only updates while nobody is using it: the home screen showing, nothing being played with a buddy, and no touch for a minute. The Knomi also waits for daytime with your Pokémon awake, so the restart doesn't light up a dark room. Your Pokémon is kept, as with any update. With it off, they ask first, as before.
+
 ## [1.49] - 2026-11-06
 
 - **How to play, with a buddy too:** Poké Ball Volley, Who's That? Showdown and PikaSurf open under the same card as the other games. Each of you presses **Ready, GO!** (or swipes the card away), and the game starts when you both have; until then it says it's waiting. A buddy on an older version starts as before.

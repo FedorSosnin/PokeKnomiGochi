@@ -47,6 +47,11 @@ static NSURL *gNewURL = nil;         // its DMG (or the release page)
 static NSURL *gNewZip = nil;         // the new app, zipped, and its signature: to update in place
 static NSURL *gNewSig = nil;
 static bool gUpdating = false;
+// Update Automatically (the game's setting: on unless turned off): the version found waits here until
+// nobody is using the game (hostQuietForUpdate), then goes in without asking. A failed one says nothing
+// and is tried again with the next day's check.
+static bool gAutoPending = false;
+static bool gAutoInstall = false;  // the update running now went in by itself
 
 // the signature (ECDSA P-256 over SHA-256, DER) of an update, against the key the app carries
 static bool updateSignatureOK(NSData *data, NSData *sig) {
@@ -465,6 +470,9 @@ static NSCursor *fingerCursor(bool pressed) {
                   : [NSString stringWithFormat:canUpdateInPlace() ? @"Update to Version %@…" : @"Download Version %@…", gNewVersion];
   NSMenuItem *update = [menu addItemWithTitle:upd action:gUpdating ? nil : @selector(checkForUpdates:) keyEquivalent:@""];
   update.target = NSApp.delegate;
+  NSMenuItem *autoUpd = [menu addItemWithTitle:@"Update Automatically" action:@selector(toggleAutoUpdate:) keyEquivalent:@""];
+  autoUpd.target = self;
+  autoUpd.state = hostAutoUpdate() ? NSControlStateValueOn : NSControlStateValueOff;
   [menu addItem:NSMenuItem.separatorItem];
   [menu addItemWithTitle:@"Drag the ring to move" action:nil keyEquivalent:@""].enabled = NO;
   [menu addItemWithTitle:@"\u2190 \u2192 tilt  \u00b7  Space: wild battle" action:nil keyEquivalent:@""].enabled = NO;
@@ -480,6 +488,10 @@ static NSCursor *fingerCursor(bool pressed) {
 }
 
 - (void)toggleMute:(id)sender { hostSetSoundEnabled(!hostSoundEnabled()); }
+- (void)toggleAutoUpdate:(id)sender {
+  hostSetAutoUpdate(!hostAutoUpdate());
+  gAutoPending = hostAutoUpdate() && gNewVersion && canUpdateInPlace();  // one already found goes in too
+}
 
 static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *url) {
   NSMutableAttributedString *s = [[NSMutableAttributedString alloc] initWithString:label];
@@ -692,7 +704,8 @@ static NSRect initialFrame(bool ownSave) {
   // turn up as buddies on everyone's devices at home
   const char *relayEnv = getenv("POKEMACGOCHI_RELAY");
   if (relayEnv ? atoi(relayEnv) != 0 : gOwnSave) relayConnect();
-  if (gOwnSave && !gConsole) {  // test copies never nag
+  // test copies never nag, unless given a release list of their own to test updating with
+  if ((gOwnSave && !gConsole) || NSProcessInfo.processInfo.environment[@"POKEMACGOCHI_UPDATE_API"]) {
     [self performSelector:@selector(checkForUpdates:) withObject:nil afterDelay:10];
     NSTimer *daily = [NSTimer timerWithTimeInterval:UPDATE_EVERY_S target:self selector:@selector(dailyUpdateCheck:) userInfo:nil repeats:YES];
     daily.tolerance = 600;
@@ -832,7 +845,10 @@ static NSRect initialFrame(bool ownSave) {
 - (void)updateFailed:(NSString *)why {
   gUpdating = false;
   fprintf(stderr, "update: failed: %s\n", why.UTF8String);
-  if (gConsole) return;
+  if (gConsole || gAutoInstall) {  // by itself: no alert for nobody; tomorrow's check tries again
+    gAutoInstall = false;
+    return;
+  }
   NSAlert *alert = [[NSAlert alloc] init];
   alert.messageText = @"Couldn't update";
   alert.informativeText = [why stringByAppendingString:@" You can download the new version instead."];
@@ -850,6 +866,11 @@ static NSRect initialFrame(bool ownSave) {
     gNewURL = url;
     gNewZip = zip;
     gNewSig = sig;
+  }
+  if (!asked && newer && canUpdateInPlace() && hostAutoUpdate()) {  // goes in by itself, once nobody's using it
+    if (!gAutoPending) fprintf(stderr, "update: %s found, updating once it's quiet\n", found.UTF8String);
+    gAutoPending = true;
+    return;
   }
   NSUserDefaults *d = NSUserDefaults.standardUserDefaults;
   if (!asked && (!newer || [[d stringForKey:kPrefToldVersion] isEqual:found])) return;
@@ -880,6 +901,12 @@ static NSRect initialFrame(bool ownSave) {
   hostTick();
   if (hostNetTimeWanted()) fetchNetTime();
   if (hostFrameDirty()) [_view showFrame];
+  if (gAutoPending && !gUpdating && hostAutoUpdate() && hostQuietForUpdate()) {
+    gAutoPending = false;
+    gAutoInstall = true;
+    fprintf(stderr, "update: quiet, updating to %s by itself\n", gNewVersion.UTF8String);
+    [self installUpdate];
+  }
   if (hostRestartRequested()) {
     hostFlushSave();
     execv(NSBundle.mainBundle.executablePath.fileSystemRepresentation, gArgv);

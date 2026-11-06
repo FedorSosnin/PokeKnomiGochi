@@ -82,7 +82,7 @@ enum {
 };
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
 enum {
-  ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT, ID_VIBE, ID_TILT,
+  ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT, ID_VIBE, ID_TILT, ID_AUTO_UPDATE,
 };
 
 static HWND gWnd;
@@ -94,6 +94,12 @@ static std::string gNewVersion;  // newer than this app, once a check found one
 static std::wstring gNewURL;     // its .exe (or the release page)
 static std::wstring gNewExe, gNewSig;  // the new .exe and its signature: to update in place
 static bool gUpdating = false;
+// Update Automatically (the game's setting: on unless turned off): the version found waits here until
+// nobody is using the game (hostQuietForUpdate), then goes in without asking. A failed one says nothing
+// and is tried again with the next day's check.
+static bool gAutoPending = false;
+static bool gAutoInstall = false;  // the update running now went in by itself
+static bool canUpdateInPlace() { return !gNewExe.empty() && !gNewSig.empty(); }
 
 // ---- text ----
 static std::wstring wide(const std::string &s) {
@@ -750,6 +756,7 @@ static void showMenu(POINT at) {
                     : gNewVersion.empty() ? L"Check for Updates…"
                     : (!gNewExe.empty() && !gNewSig.empty() ? L"Update to Version " : L"Download Version ") + wide(gNewVersion) + L"…";
   AppendMenuW(m, MF_STRING | (gUpdating ? MF_GRAYED : 0), ID_UPDATE, upd.c_str());
+  AppendMenuW(m, MF_STRING | (hostAutoUpdate() ? MF_CHECKED : 0), ID_AUTO_UPDATE, L"Update Automatically");
   AppendMenuW(m, MF_SEPARATOR, 0, NULL);
   AppendMenuW(m, MF_STRING | MF_GRAYED, 0, L"Drag the ring to move");
   AppendMenuW(m, MF_STRING | MF_GRAYED, 0, L"← → tilt  ·  Space: wild battle");
@@ -895,6 +902,11 @@ static void updateCheckFound(const UpdateResult &r, bool asked) {
     gNewExe = r.exe;
     gNewSig = r.sig;
   }
+  if (!asked && newer && canUpdateInPlace() && hostAutoUpdate()) {  // goes in by itself, once nobody's using it
+    if (!gAutoPending) fprintf(stderr, "update: %s found, updating once it's quiet\n", r.version.c_str());
+    gAutoPending = true;
+    return;
+  }
   Preferences p;
   p.begin(PREFS_NS);
   char told[32] = "";
@@ -959,7 +971,10 @@ static void installUpdate() {
 static void updateFailed(const std::wstring &why) {
   gUpdating = false;
   fprintf(stderr, "update: failed: %s\n", utf8(why).c_str());
-  if (gConsole) return;
+  if (gConsole || gAutoInstall) {  // by itself: no message for nobody; tomorrow's check tries again
+    gAutoInstall = false;
+    return;
+  }
   std::wstring text = why + L"\n\nDownload the new version instead?";
   if (MessageBoxW(gWnd, text.c_str(), L"Couldn't update", MB_ICONWARNING | MB_YESNO | MB_TOPMOST) == IDYES)
     ShellExecuteW(NULL, L"open", gNewURL.c_str(), NULL, NULL, SW_SHOWNORMAL);
@@ -1180,6 +1195,12 @@ static void tick() {
   gRing = gRing < target ? fmin(target, gRing + step) : fmax(target, gRing - step);
   if ((dirty || anim) && IsWindowVisible(gWnd)) redraw();
   if (hostRestartRequested()) restart();
+  if (gAutoPending && !gUpdating && hostAutoUpdate() && hostQuietForUpdate()) {
+    gAutoPending = false;
+    gAutoInstall = true;
+    fprintf(stderr, "update: quiet, updating to %s by itself\n", gNewVersion.c_str());
+    installUpdate();
+  }
 }
 
 static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
@@ -1299,6 +1320,10 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
           break;
         }
         case ID_UPDATE: checkForUpdates(true); break;
+        case ID_AUTO_UPDATE:
+          hostSetAutoUpdate(!hostAutoUpdate());
+          gAutoPending = hostAutoUpdate() && !gNewVersion.empty() && canUpdateInPlace();  // one already found goes in too
+          break;
         case ID_QUIT: quit(); break;
       }
       return 0;
@@ -1456,7 +1481,8 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     std::thread(relayThread).detach();
     SetTimer(gWnd, TIMER_PING, 45000, NULL);
   }
-  if (gOwnSave && !gConsole) {  // test copies never nag
+  // test copies never nag, unless given a release list of their own to test updating with
+  if ((gOwnSave && !gConsole) || getenv("POKEMACGOCHI_UPDATE_API")) {
     SetTimer(gWnd, TIMER_UPDATE, UPDATE_EVERY_MS, NULL);
     checkForUpdates(false);
   }

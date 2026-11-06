@@ -61,6 +61,9 @@ EMSCRIPTEN_KEEPALIVE void webSave(void) {
 }
 EMSCRIPTEN_KEEPALIVE int webSoundOn(void) { return hostSoundEnabled(); }
 EMSCRIPTEN_KEEPALIVE void webSetSound(int on) { hostSetSoundEnabled(on != 0); }
+EMSCRIPTEN_KEEPALIVE int webAutoUpdate(void) { return hostAutoUpdate(); }
+EMSCRIPTEN_KEEPALIVE void webSetAutoUpdate(int on) { hostSetAutoUpdate(on != 0); }
+EMSCRIPTEN_KEEPALIVE int webQuietForUpdate(void) { return hostQuietForUpdate(); }
 EMSCRIPTEN_KEEPALIVE void webAudio(int16_t *out, int frames) { hostAudioRender(out, frames); }
 EMSCRIPTEN_KEEPALIVE int webAudioRate(void) { return HOST_AUDIO_RATE; }
 EMSCRIPTEN_KEEPALIVE void webTiltSensor(float x) { hostTiltSensor(x); }

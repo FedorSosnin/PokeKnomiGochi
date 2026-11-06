@@ -101,6 +101,7 @@ enum StrId : uint8_t {
   S_READY_GO,  // a game's how-to-play card: its button
   S_DUEL_LOSE, S_DUEL_WAIT_FMT, S_DUEL_CRASHED_FMT,  // PikaSurf with a buddy: out first; waiting; they're out
   S_HOW_VB, S_HOW_VB_KEYS, S_HOW_SD, S_HOW_DUEL, S_HOW_DUEL_KEYS,  // Play together's cards, like the games' ones
+  S_AUTO_UPDATE,  // settings: the switch that lets a new version go in by itself
   STR_COUNT
 };
 

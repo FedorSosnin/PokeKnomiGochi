@@ -53,10 +53,20 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.49"
+#define FW_VERSION "1.50"
 
-#define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
+// the settings page: Wi-Fi, then updates (check / install, and the auto-update switch under it)
+#define SET_WIFI_BTN_Y 178  // change the Wi-Fi
+#define UPD_BTN_Y 232       // check for an update, or install the one found
+#define SET_BTN_H 44
+#define AUTO_ROW_Y 288      // auto-update: its label and switch, all one tap
+#define AUTO_ROW_H 36
 bool otaChecking = false;  // it says "Searching..." while the check runs
+// Auto-update (on unless turned off): a new version found by the daily check goes in by itself while
+// nobody is using the device. The Knomi's switch is on its settings page; the Mac and Windows apps have a
+// menu item, and the web page a button (host.h). Kept in its own little namespace, not with the pet
+// (autoUpdateLoad / autoUpdateSet, by checkUpdate()).
+bool autoUpdate = true;
 
 #ifdef BOARD_KNOMI_V2
 Arduino_DataBus *bus = new Arduino_ESP32SPI(LCD_DC, LCD_CS, LCD_SCLK, LCD_MOSI, GFX_NOT_DEFINED);
@@ -460,6 +470,9 @@ void setup() {
 #endif
   Serial.printf("PokeKnomiGochi fw v%s\n", FW_VERSION);
   loadLang();  // saved language (ES by default)
+#ifdef BOARD_KNOMI_V2
+  autoUpdateLoad();  // (Wi-Fi updates are the Knomi's)
+#endif
   Wire.begin(IIC_SDA, IIC_SCL);
   // CST9217 (touch), AXP2101 (PMU) y PCF85063 (RTC) share this I2C bus.
   // Safety net for PMU/RTC (SensorLib does NOT honor this timeout on the
@@ -660,6 +673,18 @@ void loop() {
     lastOtaCheck = now ? now : 1;
     otaCheck(FW_VERSION);
   }
+  // auto-update: the version found (by that check, or by hand) goes in while nobody's using the Knomi:
+  // the screen dimmed, the home screen showing, nothing being decided or played with a buddy. Only by
+  // day, with the pet awake: the restart lights the screen, and not in a dark bedroom. One try an hour:
+  // a failed one (no Wi-Fi) doesn't hold it in a loop. The pet's save is never touched by it.
+  static uint32_t autoTriedT = 0;
+  if (autoUpdate && otaState() == OTA_AVAILABLE && (screenOff || dimStage >= 1) && onMainScreen() && !pet.ceremony &&
+      !choiceKind && bsState == BS_IDLE && !pet.sleeping && sceneHour() >= 7 && sceneHour() < 20 &&
+      (!autoTriedT || now - autoTriedT > 3600000UL)) {
+    autoTriedT = now ? now : 1;
+    Serial.printf("ota: auto-update to %s\n", otaNewVersion());
+    startUpdate(true);
+  }
 #endif
 
   // records the real time every 30 s (persisted on each game save)
@@ -854,7 +879,7 @@ void handleSerial() {
     Serial.printf("ota: state=%u new=%s\n", otaState(), otaNewVersion());
     Serial.println("DONE");
   } else if (line == "OTAGO") {
-    startUpdate();
+    startUpdate(false);
     Serial.println("DONE");
   } else if (line == "WIFIINFO") {
     Serial.printf("wifi: network '%s' state=%u setup=%u\n", clockWifiSsid(), clockWifiStatus(), wifiSetupState());
@@ -1605,6 +1630,18 @@ bool homeModalTap(int16_t x, int16_t y) {
   return true;
 }
 
+#ifdef BOARD_HOST
+// The Mac and Windows apps and the web page ask these: the auto-update setting (kept with the game, like
+// the Knomi's), and whether an update may go in now: the home screen showing, nothing being decided or
+// played with a buddy, and nobody touching it for a minute. Then the app restarts on the new version.
+extern "C" bool hostAutoUpdate() { return autoUpdate; }
+extern "C" void hostSetAutoUpdate(bool on) { autoUpdateSet(on); }
+extern "C" bool hostQuietForUpdate() {
+  return onMainScreen() && !choiceKind && !confirmUntil && !pet.ceremony && bsState == BS_IDLE &&
+         millis() - lastInteract > 60000UL;
+}
+#endif
+
 // ---------- render ----------
 
 bool gNight = false;  // real night (by time) or sleeping: set by render()
@@ -1899,7 +1936,7 @@ static uint32_t screenKey() {
     for (const char *p = wifiSetupPass(); *p; p++) h = mixKey(h, (uint8_t)*p);
 #ifdef BOARD_KNOMI_V2
     h = mixKey(h, clockWifiStatus());
-    h = mixKey(h, otaState() * 2 + otaChecking);
+    h = mixKey(h, otaState() * 2 + otaChecking + autoUpdate * 64);
     h = mixKey(h, clockWifiSsid()[0]);
 #endif
     h = mixKey(h, audioEnabled());
@@ -5141,14 +5178,18 @@ int wifiKeyAt(int16_t x, int16_t y) {
 void settingsTap(int16_t x, int16_t y) {
   switch (wifiSetupState()) {
     case WS_OFF:
-      if (x >= 96 && x <= 370 && y >= 236 && y <= 284) {
+      if (x >= 96 && x <= 370 && y >= SET_WIFI_BTN_Y && y <= SET_WIFI_BTN_Y + SET_BTN_H) {
         sfxPlay(SFX_TAP);
         wifiListPage = 0;
         wifiSetupStart();
-      } else if (x >= 96 && x <= 370 && y >= UPD_BTN_Y && y <= UPD_BTN_Y + 48) {
+      } else if (x >= 96 && x <= 370 && y >= UPD_BTN_Y && y <= UPD_BTN_Y + SET_BTN_H) {
         sfxPlay(SFX_TAP);
-        if (otaState() == OTA_AVAILABLE) startUpdate();
+        if (otaState() == OTA_AVAILABLE) startUpdate(false);
         else checkUpdate();
+      } else if (x >= 96 && x <= 370 && y >= AUTO_ROW_Y && y <= AUTO_ROW_Y + AUTO_ROW_H) {
+        sfxPlay(SFX_TAP);
+        autoUpdateSet(!autoUpdate);
+        screenKeyValid = false;
       }
       break;
     case WS_LIST: {
@@ -5285,6 +5326,20 @@ void renderWifiKeyboard() {
 }
 
 // ---------- Wi-Fi updates (ota_update.h) ----------
+// the auto-update switch, read at start and saved when it's changed (by the settings page or an app)
+void autoUpdateLoad() {
+  Preferences p;
+  p.begin("opts", true);
+  autoUpdate = p.getBool("aupd", true);
+  p.end();
+}
+void autoUpdateSet(bool on) {
+  autoUpdate = on;
+  Preferences p;
+  p.begin("opts", false);
+  p.putBool("aupd", on);
+  p.end();
+}
 void checkUpdate() {
   otaChecking = true;
   renderSettings();  // the check blocks: show it's working first
@@ -5310,12 +5365,13 @@ void drawUpdateProgress(uint8_t pct) {
   gfx->flush();
 }
 
-void startUpdate() {
+// byItself: auto-update, with nobody there: the screen stays as dim as it was, and a failure makes no sound
+void startUpdate(bool byItself) {
   if (otaState() != OTA_AVAILABLE) return;
   pet.flushSave();  // the save is never touched by an update, but nothing is left pending either
-  wakeUI();
+  if (!byItself) wakeUI();
   if (!otaInstall(drawUpdateProgress)) {  // on success it restarts and doesn't come back
-    sfxPlay(SFX_DENY);
+    if (!byItself) sfxPlay(SFX_DENY);
     screenKeyValid = false;
   }
 }
@@ -5342,19 +5398,19 @@ void renderSettings() {
   setCur(centerX(T(S_SETTINGS), 3), 56);
   printT(T(S_SETTINGS));
   setSize(2);
-  setCur(centerX("Wi-Fi", 2), 126);
+  setCur(centerX("Wi-Fi", 2), 100);
   printT("Wi-Fi");
   const char *ssid = clockWifiSsid();
-  setCur(centerX(ssid[0] ? ssid : "---", 2), 156);
+  setCur(centerX(ssid[0] ? ssid : "---", 2), 124);
   printT(ssid[0] ? ssid : "---");
   uint8_t st = clockWifiStatus();
   gfx->setTextColor(st == 1 ? UI_BAR_OK : st == 2 ? UI_BAR_BAD : UI_TRACK);
   const char *stText = st == 1 ? T(S_WIFI_SYNCED) : st == 2 ? T(S_WIFI_NOCONN) : T(S_WIFI_TRYING);
-  setCur(centerX(stText, 2), 186);
+  setCur(centerX(stText, 2), 148);
   printT(stText);
-  gfx->fillRoundRect(96, 236, 274, 48, 12, TYPE_ACCENT[TY_WATER]);
+  gfx->fillRoundRect(96, SET_WIFI_BTN_Y, 274, SET_BTN_H, 12, TYPE_ACCENT[TY_WATER]);
   gfx->setTextColor(UI_WHITE);
-  setCur(centerX(T(S_WIFI_CHANGE), 2), 252);
+  setCur(centerX(T(S_WIFI_CHANGE), 2), SET_WIFI_BTN_Y + 14);
   printT(T(S_WIFI_CHANGE));
 
   // Wi-Fi updates: check, or install the new version once one is found
@@ -5363,14 +5419,21 @@ void renderSettings() {
   if (otaChecking) strlcpy(ub, T(S_WIFI_SEARCH), sizeof(ub));
   else if (os == OTA_AVAILABLE) snprintf(ub, sizeof(ub), T(S_UPD_TO_FMT), otaNewVersion());
   else strlcpy(ub, T(S_UPD_CHECK), sizeof(ub));
-  gfx->fillRoundRect(96, UPD_BTN_Y, 274, 48, 12, os == OTA_AVAILABLE ? UI_BAR_OK : TYPE_ACCENT[TY_WATER]);
+  gfx->fillRoundRect(96, UPD_BTN_Y, 274, SET_BTN_H, 12, os == OTA_AVAILABLE ? UI_BAR_OK : TYPE_ACCENT[TY_WATER]);
   gfx->setTextColor(UI_WHITE);
-  setCur(centerX(ub, 2), UPD_BTN_Y + 16);
+  setCur(centerX(ub, 2), UPD_BTN_Y + 14);
   printT(ub);
+  // auto-update: its name and a switch, green and to the right when on
+  int lw = textW(T(S_AUTO_UPDATE), 2), x0 = CX - (lw + 14 + 60) / 2, sy = AUTO_ROW_Y + (AUTO_ROW_H - 30) / 2;
+  gfx->setTextColor(UI_INK);
+  setCur(x0, AUTO_ROW_Y + (AUTO_ROW_H - 16) / 2);
+  printT(T(S_AUTO_UPDATE));
+  gfx->fillRoundRect(x0 + lw + 14, sy, 60, 30, 15, autoUpdate ? UI_BAR_OK : UI_TRACK);
+  gfx->fillCircle(x0 + lw + 14 + (autoUpdate ? 45 : 15), sy + 15, 11, UI_WHITE);
   if (!otaChecking && (os == OTA_LATEST || os == OTA_FAILED)) {
     const char *m = os == OTA_LATEST ? T(S_UPD_LATEST) : T(S_UPD_FAILED);
     gfx->setTextColor(os == OTA_LATEST ? UI_BAR_OK : UI_BAR_BAD);
-    setCur(centerX(m, 2), UPD_BTN_Y + 60);
+    setCur(centerX(m, 2), AUTO_ROW_Y + AUTO_ROW_H + 12);
     printT(m);
   }
   drawCloseButton();
@@ -9323,12 +9386,13 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
 #ifdef BOARD_KNOMI_V2
     if (clockPage == 1) {
       WifiSetupState ws = wifiSetupState();
-      if (ws == WS_OFF && pressIn(x, y, 96, 236, 274, 48)) return pressSet(t, 96, 236, 274, 48, T(S_WIFI_CHANGE));
-      if (ws == WS_OFF && pressIn(x, y, 96, UPD_BTN_Y, 274, 48)) {
+      if (ws == WS_OFF && pressIn(x, y, 96, SET_WIFI_BTN_Y, 274, SET_BTN_H)) return pressSet(t, 96, SET_WIFI_BTN_Y, 274, SET_BTN_H, T(S_WIFI_CHANGE));
+      if (ws == WS_OFF && pressIn(x, y, 96, UPD_BTN_Y, 274, SET_BTN_H)) {
         if (otaState() == OTA_AVAILABLE) snprintf(buf, sizeof(buf), T(S_UPD_TO_FMT), otaNewVersion());
         else strlcpy(buf, T(S_UPD_CHECK), sizeof(buf));
-        return pressSet(t, 96, UPD_BTN_Y, 274, 48, buf);
+        return pressSet(t, 96, UPD_BTN_Y, 274, SET_BTN_H, buf);
       }
+      if (ws == WS_OFF && pressIn(x, y, 96, AUTO_ROW_Y, 274, AUTO_ROW_H)) return pressSet(t, 96, AUTO_ROW_Y, 274, AUTO_ROW_H, T(S_AUTO_UPDATE));
       if (ws != WS_LIST) return false;  // the password keyboard has its own preview
       int n = wifiSetupNetCount();
       if (y >= WIFI_ROW_Y && y < WIFI_ROW_Y + WIFI_ROWS * WIFI_ROW_H) {

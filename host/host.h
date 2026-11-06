@@ -70,6 +70,14 @@ void hostRelayReceived(const uint8_t *data, int len);  // a binary message from 
 bool hostNetTimeWanted(void);
 void hostNetTime(uint32_t utc);
 
+// Auto-update (on unless turned off; kept with the game's save, like the Knomi's switch): with it on, a
+// new version the app finds goes in by itself, without asking, once hostQuietForUpdate() says nobody is
+// using the game (the home screen showing, nothing being decided or played with a buddy, no touch or key
+// for a minute). With it off, the app asks as before. Checking by hand always asks.
+bool hostAutoUpdate(void);
+void hostSetAutoUpdate(bool on);
+bool hostQuietForUpdate(void);
+
 // Audio: 16-bit mono PCM at HOST_AUDIO_RATE. Always fills frames samples (silence if nothing is playing).
 #define HOST_AUDIO_RATE 16000
 void hostAudioRender(int16_t *out, int frames);

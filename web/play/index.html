@@ -62,6 +62,7 @@
   <button id="tilt" type="button" hidden>Enable tilt</button>
   <button id="size" type="button">Size: Small</button>
   <button id="sound" type="button">Sound on</button>
+  <button id="auto" type="button">Auto-update: On</button>
   <button id="vibe" type="button" hidden>Vibration: On</button>
   <button id="export" type="button">Export save</button>
   <label>Import save<input id="import" type="file" accept=".prefs,.txt" hidden></label>
@@ -77,7 +78,7 @@ const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = '0699b11975';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = 'ea2128c01d';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -136,6 +137,7 @@ function startGame() {
     setInterval(showLive, 60000);
     setInterval(() => { if (running) sync(); }, 5000);  // the game writes its files on its own; this keeps IndexedDB current
     updateSoundButton();
+    updateAutoButton();
   });
 }
 
@@ -377,15 +379,29 @@ new ResizeObserver(applySmoothing).observe(canvas);
 window.addEventListener('resize', applySmoothing);
 applySmoothing();
 
-// ---- a tab left open: offers the new version once one is published ----
+// ---- a tab left open: offers the new version once one is published. With Auto-update on (the game's
+// setting, kept with the save like the Knomi's switch) it reloads onto it by itself, once nobody is
+// playing: the home screen showing, nothing being decided or played with a buddy, no tap for a minute ----
 const updBtn = document.getElementById('upd');
-updBtn.addEventListener('click', () => { if (running) Module._webSave(); sync(() => location.reload()); });
+let newBuild = false;
+function reloadToNew() { if (running) Module._webSave(); sync(() => location.reload()); }
+updBtn.addEventListener('click', reloadToNew);
 setInterval(async () => {
   try {
     const v = await (await fetch('version.json', { cache: 'no-store' })).json();
-    if (v.build && v.build !== BUILD) updBtn.style.display = 'block';
+    if (v.build && v.build !== BUILD) newBuild = true, updBtn.style.display = 'block';
   } catch (e) {}
 }, 60 * 60 * 1000);
+setInterval(() => {
+  if (newBuild && running && Module._webAutoUpdate() && Module._webQuietForUpdate()) newBuild = false, reloadToNew();
+}, 10000);
+const autoBtn = document.getElementById('auto');
+function updateAutoButton() { autoBtn.textContent = 'Auto-update: ' + (Module._webAutoUpdate() ? 'On' : 'Off'); }
+autoBtn.addEventListener('click', () => {
+  if (!running) return;
+  Module._webSetAutoUpdate(Module._webAutoUpdate() ? 0 : 1);
+  updateAutoButton();
+});
 
 // ---- export / import the save file ----
 document.getElementById('export').addEventListener('click', () => {
@@ -415,6 +431,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=0699b11975"></script>
+<script src="pokewebgochi.js?v=ea2128c01d"></script>
 </body>
 </html>

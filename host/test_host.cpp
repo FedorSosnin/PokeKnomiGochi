@@ -462,6 +462,7 @@ static void runTicks(int ms) {
 extern bool gamesMenuOpen, gameOpen, runOpen;
 extern uint32_t runOverT;
 extern int8_t introCard;
+extern uint32_t lastInteract;
 
 static void testGame() {
   std::string res = tempDir(), save = tempDir(), cwd = getcwd(nullptr, 0);
@@ -576,6 +577,22 @@ static void testGame() {
   CHECK(runOpen && runOverT);  // the result, waiting for a tap
   tapAt(233, 200);
   CHECK(!runOpen && gamesMenuOpen);
+
+  // auto-update: on unless turned off, and kept apart from the pet's save; an update found waits for the
+  // home screen and a minute with nobody touching it
+  CHECK(hostAutoUpdate());
+  CHECK(!hostQuietForUpdate());  // the games menu is open
+  gamesMenuOpen = false;
+  tapAt(60, 233);                // a tap at the side of home
+  CHECK(!hostQuietForUpdate());  // just touched
+  lastInteract = millis() - 61000;
+  CHECK(hostQuietForUpdate());
+  hostSetAutoUpdate(false);
+  CHECK(!hostAutoUpdate());
+  hostFlushSave();
+  std::vector<uint8_t> opts = readFile(saveSub + "/opts.prefs");
+  CHECK(std::string(opts.begin(), opts.end()).find("aupd 00") != std::string::npos);
+  hostSetAutoUpdate(true);
 
   hostSerialPush("WIPE");
   runTicks(50);
