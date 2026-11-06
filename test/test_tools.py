@@ -208,6 +208,10 @@ class TestGeneratedFiles(unittest.TestCase):
                 self.assertEqual(a.read(), b.read(),
                                  'dex.h does not match what tools/gen_dex.py generates '
                                  '(regenerate it instead of editing it by hand)')
+            with open(os.path.join(tmp, 'docs', 'EVOLUTION.md'), encoding='utf-8') as a, \
+                    open(os.path.join(ROOT, 'docs', 'EVOLUTION.md'), encoding='utf-8') as b:
+                self.assertEqual(a.read(), b.read(),
+                                 'docs/EVOLUTION.md does not match what tools/gen_dex.py generates')
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
@@ -239,6 +243,111 @@ class TestSketchSanity(unittest.TestCase):
         self.assertEqual(self.ino.count('{'), self.ino.count('}'),
                          'unbalanced braces in PokeKnomiGochi.ino')
 
+
+
+class TestHowToPlayCards(unittest.TestCase):
+    """Each game's how-to-play card fits: wrapped as drawWrapped() does it in the sketch (at the
+    spaces, a number kept with the next word, lines up to CARD_TEXT_W wide), no language needs more
+    than six lines between the game's name and the Ready, GO! button, and the button's words fit it. The classic font is 12 px a
+    character at size 2; the CJK one (unifont, at 1x there) 8 px for ASCII and 16 for the rest."""
+
+    IDS = ('S_HOW_BERRY', 'S_HOW_BERRY_KEYS', 'S_HOW_WHO', 'S_HOW_RUN', 'S_HOW_DN', 'S_HOW_DN_KEYS',
+           'S_HOW_SURF', 'S_HOW_SURF_KEYS')
+    MAX_LINES = 6
+
+    @classmethod
+    def setUpClass(cls):
+        import test_i18n_formats as fmt
+
+        def read(name):
+            with open(os.path.join(ROOT, name), encoding='utf-8') as fh:
+                return fh.read()
+
+        cls.LANGS = fmt.LANGS
+        body = re.search(r'enum\s+StrId[^{]*\{(.*?)\}', read('i18n.h'), re.S).group(1)
+        ids = re.findall(r'\b(S_[A-Z0-9_]+)\b', body)
+        rows = fmt.extract_table(read('i18n.cpp'), 'STRINGS', len(cls.LANGS))
+        cls.LIT = {sid: [row[k] for row in rows] for k, sid in enumerate(ids)}
+        ino = read('PokeKnomiGochi.ino')
+        cls.MAX_W = int(re.search(r'#define\s+CARD_TEXT_W\s+(\d+)', ino).group(1))
+        cls.BTN_W = int(re.search(r'#define\s+CARD_BTN_W\s+(\d+)', ino).group(1))
+
+    @staticmethod
+    def chars(literal):
+        """The characters of a C literal: an octal escape is one CP437 character."""
+        body, out, i = literal[1:-1], [], 0
+        while i < len(body):
+            if body[i] == '\\':
+                m = re.match(r'[0-7]{1,3}', body[i + 1:])
+                out.append('?' if m else body[i + 1])
+                i += 1 + (len(m.group(0)) if m else 1)
+            else:
+                out.append(body[i])
+                i += 1
+        return ''.join(out)
+
+    def width(self, text, cjk):
+        if not cjk:
+            return 12 * len(text)
+        return sum(8 if ord(c) < 0x80 else 16 for c in text)
+
+    def lines(self, text, cjk):
+        words = text.split()
+        glued = []  # a number keeps to the word after it
+        while words:
+            w = words.pop(0)
+            if w.isdigit() and words:
+                w += ' ' + words.pop(0)
+            glued.append(w)
+        n, line = 0, ''
+        for w in glued:
+            test = (line + ' ' + w) if line else w
+            if line and self.width(test, cjk) > self.MAX_W:
+                n, line = n + 1, w
+            else:
+                line = test
+        return n + (1 if line else 0)
+
+    def test_the_button_words_fit(self):
+        for li, lang in enumerate(self.LANGS):
+            text = self.chars(self.LIT['S_READY_GO'][li])
+            cjk = lang in ('JA', 'KO')
+            w = self.width(text, cjk) * 2 if cjk else len(text) * 18  # CJK at 2x, the classic font at size 3
+            self.assertLessEqual(w, self.BTN_W - 16, f'{lang}: {text}')
+
+    def test_every_card_fits(self):
+        for sid in self.IDS:
+            self.assertIn(sid, self.LIT)
+            for li, lang in enumerate(self.LANGS):
+                text = self.chars(self.LIT[sid][li])
+                n = self.lines(text, lang in ('JA', 'KO'))
+                self.assertLessEqual(n, self.MAX_LINES, f'{sid} {lang}: {n} lines: {text}')
+
+    def test_every_medal_card_fits(self):
+        # a medal's card: how to earn it in up to six lines of 336 px under its name and status
+        import test_i18n_formats as fmt
+        with open(os.path.join(ROOT, 'i18n.cpp'), encoding='utf-8') as fh:
+            rows = fmt.extract_table(fh.read(), 'MED_HOW', len(self.LANGS))
+        saved = self.MAX_W
+        try:
+            self.MAX_W = 336
+            self.assertEqual(len(rows), len(self.LANGS))
+            for li, row in enumerate(rows):  # a row per language, a medal per column
+                lang = self.LANGS[li]
+                self.assertEqual(len(row), 25)
+                for m, lit in enumerate(row):
+                    text = self.chars(lit)
+                    n = self.lines(text, lang in ('JA', 'KO'))
+                    self.assertLessEqual(n, 6, f'medal {m} {lang}: {n} lines: {text}')
+        finally:
+            self.MAX_W = saved
+
+    def test_no_card_names_a_device(self):
+        # the Knomi's cards and the computers' differ in the controls they list, never by naming one
+        for sid in self.IDS:
+            for li, lang in enumerate(self.LANGS):
+                for word in ('knomi', 'mac', 'windows', 'web'):
+                    self.assertNotRegex(self.LIT[sid][li].lower(), r'\b' + word + r'\b', f'{sid} {lang}')
 
 
 class TestTextBuffers(unittest.TestCase):

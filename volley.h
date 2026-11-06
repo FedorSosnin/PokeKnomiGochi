@@ -13,7 +13,7 @@
 #define VB_TOP 70           // the net: past it the ball is on the buddy's side
 #define VB_PADDLE_Y 330     // where the ball meets the paddle
 #define VB_SPIN_DEG_MS 0.15f // the ball in flight turns slowly: under half a turn a second
-#define VB_GROUND_Y 392     // where the Pokemon stands: on the field, below the horizon, as in Tilt Catch
+#define VB_GROUND_Y 392     // where the Pokemon stands: on the field, below the horizon, as in Berry Drop
 #define VB_PADDLE_HALF 46   // half the paddle's width (the Pokemon)
 #define VB_BALL_R 32        // the ball's radius on screen: touching the paddle with its edge counts
 #define VB_SPEED0 160.0f    // px/s at the first serve

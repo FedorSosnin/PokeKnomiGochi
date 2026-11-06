@@ -40,6 +40,7 @@
 #include "kblayout.h"
 #include "minigames.h"
 #include "pokerun.h"
+#include "surf.h"
 #include "dungeon.h"
 #include "zones.h"
 #include "zones_art.h"
@@ -52,7 +53,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.46"
+#define FW_VERSION "1.47"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -141,6 +142,7 @@ int cardNameBottom = 84;      // where the card's name (and the species under a 
 uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 training, 3 progress; the achievements: their pages
 #define CARD_PAGES 4
 bool cardAch = false;         // the same screen showing the achievements (swipe right to left from home)
+int8_t achDetail = -1;        // a medal tapped there: its card, with how to earn it (-1: the medals)
 #define ACH_PAGES 6           // the pet's medals (2 pages), the trainer's (2), the zones' (1), level 100 (1): 6 at most a page
 #define cardPageCount() (cardAch ? ACH_PAGES : CARD_PAGES)  // a macro: a function here would come before the sketch's prototypes
 uint8_t clockPage = 0;        // 0 time, 1 settings (Knomi only)
@@ -179,15 +181,25 @@ bool bathPending = false;
 // y: where a bubble starts and a sparkle shows at the end; v: a drop's fall speed (hundredths of a px
 // per ms) or a bubble's size; ph: how far into its fall a drop starts, or a bubble's sway
 struct { int16_t x, y; uint8_t v, ph; } bathDrops[14];
-int16_t bathDuckX = 0;      // the rubber duck on the ground: its left edge, set when the bath starts...
-bool bathDuckLeft = true;   // ...beside the pet, on the side with room, looking at it
+bool bathDuckLeft = true;   // the rubber duck on the ground, right beside the pet on the side toward the
+                            // middle of the screen, looking at it (true: on its right, looking left)
 #define BATH_DUCK_S 3       // the duck: its 14x14 map at 3x (42 px, still small beside the pet)...
-#define BATH_DUCK_GAP 64    // ...this far from the pet's centre
+#define BATH_DUCK_GAP 44    // ...its near edge this far from the pet's centre
 uint32_t feedMenuUntil = 0;   // food picker open until this millis
 
-// "taps" minigame: keep the pokeball in the air
+// Berry Drop (gameOpen): catch the falling berries
 bool gameOpen = false;
 bool gamesMenuOpen = false;
+// a game's how-to-play card: a white disc that drops over the game as it opens, the game waiting dimmed
+// under it; its button, or a swipe, sends it off and the game starts (introCard: that game, -1 none)
+int8_t introCard = -1;
+uint32_t introT = 0, introAwayT = 0;
+int8_t introAwayDx = 0, introAwayDy = -1;
+#ifdef BOARD_HOST
+bool playKeysUi = true;   // the cards add the arrow keys (a computer, the web)...
+#else
+bool playKeysUi = false;  // ...or keep to tilting and touch (the Knomi)
+#endif
 enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE };
 ZoneScreen zoneScreen = ZS_NONE;
 uint8_t zoneCur = 0, zonePage = 0;
@@ -228,6 +240,12 @@ KnomiAccel accel;
 uint32_t gameOverUntil = 0;
 // pokerun
 bool runOpen = false, runJump = false, runNewHi = false, runBot = false;
+// PikaSurf (surf.h): yours on a board, rocks coming up the rushing water, Pikachu alongside
+bool surfOpen = false, surfNewHi = false, surfBot = false;
+SurfState surf;
+PmdMon surfPika;  // Pikachu on his board
+uint32_t surfLast = 0, surfOverT = 0;
+uint8_t surfScale = 3;
 bool dungeonOpen = false, dnBot = false, dnNewHi = false, dnHeld = false;
 DnState dn;
 
@@ -692,8 +710,8 @@ PowerCtx powerCtx(uint32_t now) {
   // a battle waits for you (it no longer ends by itself): left alone long enough to dim, it is
   // drawn at the slower rates like any other screen
   bool battleIdle = battleOpen && c.idleMs > POWER_DIM1_MS;
-  c.gameOpen = gameOpen || (battleOpen && !battleIdle) || quizOpen || runOpen || dungeonOpen || sdOpen || vbOpen;
-  c.arcadeOpen = runOpen || dungeonOpen || vbOpen;
+  c.gameOpen = gameOpen || (battleOpen && !battleIdle) || quizOpen || runOpen || surfOpen || dungeonOpen || sdOpen || vbOpen;
+  c.arcadeOpen = runOpen || surfOpen || dungeonOpen || vbOpen;
   c.usb = usbPresent();
   c.charging = batCharging();
   c.batPct = batPercent();
@@ -1151,10 +1169,10 @@ void handleTouch() {
 
   // games: the touch is resolved on finger lift, so that swiping up exits
   // without pressing anything on the way. Only the PokeRun jump fires on touch-down: there every ms counts.
-  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen || dungeonOpen || zoneScreen || sdOpen || vbOpen) {
+  if (battleOpen || quizOpen || gamesMenuOpen || gameOpen || runOpen || surfOpen || dungeonOpen || zoneScreen || sdOpen || vbOpen) {
     if (pressed) { tXl = x; tYl = y; }  // tXl: aim with the finger where there is no accelerometer
     // in the dungeon, keeping the finger down keeps walking
-    if (dungeonOpen && pressed && wasPressed && !swallowGesture && !dnOverT && millis() - tStart > 350 &&
+    if (dungeonOpen && !introUp() && pressed && wasPressed && !swallowGesture && !dnOverT && millis() - tStart > 350 &&
         millis() - dnHoldT > 230 && abs(tXl - tX0) < 40 && abs(tYl - tY0) < 40) {
       dnHoldT = millis();
       dnHeld = true;
@@ -1167,11 +1185,11 @@ void handleTouch() {
       tStart = millis();
       dnHeld = false;
       // only wakes if nothing was visible: dimmed, the game in progress continues (in
-      // Tilt Catch the screen isn't touched, so it dims while playing)
+      // Berry Drop tilting needs no touch, so it dims while playing)
       swallowGesture = dimStage >= DIM_OFF || screenOff;
       screenOff = false;
       wakeUI();
-      if (runOpen && !swallowGesture) runJump = true;
+      if (runOpen && !introUp() && !swallowGesture) runJump = true;
     }
     if (pressed) {
       pressUpdate(x, y);
@@ -1179,7 +1197,9 @@ void handleTouch() {
       wakeUI();
       bool picked = pressRelease();
       if (!swallowGesture) {
-        if (picked) {
+        if (introUp()) {  // a game's card is up: its button or a swipe sends it off, nothing else
+          introTouch(tX0, tY0, tXl, tYl, picked);
+        } else if (picked) {
           gameTap(tXl, tYl);  // the control under the finger when it lifted
         } else if (swipeUpQuit(tX0, tY0, tXl, tYl, millis() - tStart)) {
           if (zoneScreen) zoneBack();
@@ -1257,7 +1277,8 @@ void onSwipeV(int dir) {
     return;
   }
   if (cardOpen) {
-    if (dir < 0 && !cardAch) cardOpen = false;  // up closes the card
+    if (achDetail >= 0) achDetail = -1;  // a medal's card: back to the medals
+    else if (dir < 0 && !cardAch) cardOpen = false;  // up closes the card
     return;
   }
   if (dir > 0) {                    // swipe down: set the time
@@ -1309,6 +1330,10 @@ void onSwipe(int dir) {
 #endif
   if (gameOpen || kbOpen || clockOpen) return;
   if (cardOpen) {  // inside the card or the achievements: switch pages
+    if (achDetail >= 0) {  // a medal's card: back to the medals
+      achDetail = -1;
+      return;
+    }
     int p = (int)cardPage + (dir > 0 ? -1 : 1);  // left advances
     if (p < 0 && cardAch) {  // back past the first: home, as the Pokedex does
       cardOpen = cardAch = false;
@@ -1321,6 +1346,7 @@ void onSwipe(int dir) {
     if (!pet.ceremony && !confirmUntil && !pet.isEgg()) {
       cardOpen = cardAch = true;
       cardPage = 0;
+      achDetail = -1;
     }
     return;
   }
@@ -1399,6 +1425,13 @@ void onTap(int16_t x, int16_t y) {
   }
   if (pet.ceremony) return;  // no buttons during the farewell
   if (cardOpen) {
+    if (cardAch && achDetail >= 0) {  // a medal's card: the X goes back to the medals
+      if (closeHit(x, y)) {
+        sfxPlay(SFX_TAP);
+        achDetail = -1;
+      }
+      return;
+    }
     if (!cardAch && cardPage == 0 && y < cardNameBottom + 12) openKeyboard();  // tap the name (or its pencil) = rename
 #ifndef BOARD_KNOMI_V2  // on the Knomi, battle opens with the physical button
     else if (!cardAch && cardPage == 1 && y >= 300 && y <= 340 && x >= 96 && x <= 370) {
@@ -1406,6 +1439,10 @@ void onTap(int16_t x, int16_t y) {
       startBattle();
     }
 #endif
+    else if (cardAch && achMedalAt(x, y) >= 0) {  // a medal: its card
+      sfxPlay(SFX_TAP);
+      achDetail = achMedalAt(x, y);
+    }
     else if (closeHit(x, y)) {
       sfxPlay(SFX_TAP);
       cardOpen = cardAch = false;
@@ -1783,7 +1820,7 @@ void printT(const char *s) {
 // while their "key" doesn't change they are neither repainted nor flushed over QSPI.
 static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
-  if (pet.awaitingEggPick() || buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || dungeonOpen) return false;  // the gallery manages its own repainting
+  if (pet.awaitingEggPick() || buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || surfOpen || dungeonOpen) return false;  // the gallery manages its own repainting
   if (kbOpen || clockOpen) return true;
   return cardOpen && (cardAch || cardPage != 0);  // the card's page 0 has the animated portrait
 }
@@ -1791,6 +1828,7 @@ static uint32_t mixKey(uint32_t h, uint32_t v) { return (h ^ v) * 16777619u; }
 static uint32_t screenKey() {
   uint32_t h = 2166136261u;
   h = mixKey(h, pet.awaitingStarter() ? 1 : kbOpen ? 2 : clockOpen ? 3 : 4 + cardPage + (cardAch ? 16 : 0));
+  h = mixKey(h, cardAch ? achDetail + 1 : 0);
   h = mixKey(h, sdEpoch);
   h = mixKey(h, partyBoostOn());  // the stats page shows the boost
   if (kbOpen) {
@@ -1886,6 +1924,10 @@ bool render() {
   }
   if (runOpen) {
     renderRun();
+    return true;
+  }
+  if (surfOpen) {
+    renderSurf();
     return true;
   }
   if (battleOpen) {
@@ -2076,11 +2118,13 @@ void respawnBall() {
 // the game ends, so closing is enough)
 void quitGame() {
   sfxPlay(SFX_TAP);
+  introCard = -1;
   if (sdOpen) sdQuit();
   if (vbOpen) vbQuit();
   if (battleOpen) closeBattle();
   if (quizOpen) closeQuiz();
   if (runOpen) closeRun();
+  if (surfOpen) closeSurf();
   if (dungeonOpen) closeDungeon();
   gameOpen = gamesMenuOpen = false;
 }
@@ -2093,7 +2137,7 @@ void autoRotateTick(uint32_t now) {
   static RotFilter filter;
   if (now - last < 100) return;
   last = now;
-  if (screenOff || wasPressed || gameOpen || vbOpen || (battleOpen && bPhase >= BP_AIM)) {
+  if (screenOff || wasPressed || gameOpen || surfOpen || vbOpen || (battleOpen && bPhase >= BP_AIM)) {
     filter.reset();
     return;
   }
@@ -2124,9 +2168,12 @@ void tiltZero() {
 }
 
 // -1..1. About 30 degrees reaches the limit. Without an accelerometer, aim with the finger.
+// In Berry Drop and PikaSurf a finger (or the mouse) held on the screen leads the Pokemon to it, whatever the tilt.
 float playerTilt() {
   if (tiltForced) return tiltOverride;
   float t;
+  if ((gameOpen || surfOpen) && wasPressed) t = (tXl - (gameOpen ? gamePetX : surf.x)) / 60.0f;  // full speed until 60 px away, then easing in
+  else
 #ifdef BOARD_KNOMI_V2
   if (accel.ready()) t = (tiltRaw() - tiltBase) / 0.5f;
   else
@@ -2176,17 +2223,32 @@ void stepGame() {
 
 // ---------- games menu ----------
 // As the zones: a round window onto each game, its own scene with your Pokemon in it, the name under.
-#define GAMES_COUNT 4    // battles have their own icon on the home screen
+#define GAMES_COUNT 5    // battles have their own icon on the home screen
 #define GAME_ICON_R 50
 #define GAME_ART (2 * GAME_ICON_R)
 #define GAME_GLIMPSE_K 2  // each window shows a 200 x 200 piece of its game, at half size
-// centred between the title (ends at 50) and the X (starts at 398): windows and names 276 tall
-static const int16_t GAME_XY[GAMES_COUNT][2] = { { 155, 136 }, { 311, 136 }, { 155, 290 }, { 311, 290 } };
+// a grid like Travel's: two on top, centred, and three under them; tiles, and names on up to two lines
+static const int16_t GAME_XY[GAMES_COUNT][2] = { { 170, 128 }, { 108, 286 }, { 296, 128 }, { 358, 286 }, { 233, 286 } };
 uint16_t *gameArt = nullptr;  // the 4 windows, painted each time the menu opens (day or night, your Pokemon)
 
 const char *gameLabel(int row) {
-  static const StrId L[GAMES_COUNT] = { S_GAME_TILT, S_GAME_WHO, S_GAME_RUN, S_GAME_DUNGEON };
+  static const StrId L[GAMES_COUNT] = { S_GAME_TILT, S_GAME_WHO, S_GAME_RUN, S_GAME_DUNGEON, S_GAME_SURF };
   return T(L[row]);
+}
+
+// each game's colour: its window's ring on the menu and on its how-to-play card
+uint16_t gameColor(int row) {
+  if (row == 1) return C565(0xf0, 0x84, 0x1c);  // Who's That?: orange, like its rays (and apart from PokeRun's red)
+  static const uint8_t TY[GAMES_COUNT] = { TY_GRASS, TY_PSYCHIC, TY_FIRE, TY_GHOST, TY_WATER };
+  return TYPE_ACCENT[TY[row]];
+}
+
+// how to play it, plainly: the ways to move and the point. Two versions where the controls differ: the
+// Knomi's (tilting, touch) and the one for computers and the web (the arrow keys too); neither names a device
+const char *gameHowTo(int row) {
+  static const StrId H[GAMES_COUNT] = { S_HOW_BERRY, S_HOW_WHO, S_HOW_RUN, S_HOW_DN, S_HOW_SURF };
+  static const StrId K[GAMES_COUNT] = { S_HOW_BERRY_KEYS, S_HOW_WHO, S_HOW_RUN, S_HOW_DN_KEYS, S_HOW_SURF_KEYS };
+  return T(playKeysUi ? K[row] : H[row]);
 }
 
 // copies an n x n picture out of the canvas, each pixel the average of the k x k block from (x0, y0)
@@ -2250,7 +2312,7 @@ void gameGlimpsesPaint() {
   bool night = hh < 6 || hh >= 20;
   static const char *const *const BERRY[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
 
-  // Tilt Catch: the woods, three berries falling to your Pokemon, sparkling
+  // Berry Drop: the woods, three berries falling to your Pokemon, sparkling
   drawCatchScene();
   drawMap(BERRY[0], HOME_ICON_N, 180, 214, 3, false);
   drawMap(BERRY[2], HOME_ICON_N, 132, 252, 2, false);
@@ -2261,14 +2323,14 @@ void gameGlimpsesPaint() {
   if (pmd.loaded) drawPmdAct(PMD_IDLE, 210, 394, now, true, false, 3);
   gameGlimpseGrab(gameArt, 200, 300);
 
-  // Who's That?: a burst of rays, a silhouette and a big yellow question mark
-  gfx->fillScreen(C565(0x2a, 0x6c, 0xd0));
+  // Who's That?: a burst of red and orange rays, a silhouette and a big yellow question mark
+  gfx->fillScreen(C565(0xd8, 0x3c, 0x1c));
   for (int i = 0; i < 16; i += 2) {  // every other ray lighter, out from behind the silhouette
     float a0 = i * 6.28318f / 16, a1 = (i + 1) * 6.28318f / 16;
     gfx->fillTriangle(206, 244, 206 + (int)(400 * cosf(a0)), 244 + (int)(400 * sinf(a0)),
-                      206 + (int)(400 * cosf(a1)), 244 + (int)(400 * sinf(a1)), C565(0x6c, 0xb8, 0xf4));
+                      206 + (int)(400 * cosf(a1)), 244 + (int)(400 * sinf(a1)), C565(0xf8, 0x8c, 0x2c));
   }
-  gfx->fillCircle(210, 246, 48, C565(0xb4, 0xe0, 0xff));
+  gfx->fillCircle(210, 246, 48, C565(0xff, 0xd6, 0x9c));  // a warm glow behind it
   if (const uint8_t *t = thumbs.get(25)) {
     int box[4];
     drawThumbFit(t, 210, 248, 80, 80, 3, true, 0, box);
@@ -2320,21 +2382,206 @@ void gameGlimpsesPaint() {
     gPmdForceScale = 0;
   }
   gameGlimpseGrab(gameArt + 3 * GAME_ART * GAME_ART, CX + 8, CY - 4);
+
+  // PikaSurf: the rushing water, yours on its board with Pikachu alongside, a rock coming up
+  drawSurfWater(300.0f, night);
+  drawSurfRock(262, 316, night);
+  drawSurfWake(272, 190, now, night);
+  drawMap(SPR_SURF_BOARD_P, 24, 236, 190, 3, false);
+  if (const uint8_t *t = thumbs.get(25)) drawThumb(t, 272 - 32, 166, 2, false);
+  if (pmd.loaded) {
+    uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 76, 76);
+    drawSurfRider(pmd, SPR_SURF_BOARD, 4, 194, 214, PMD_IDLE, fit > 3 ? 3 : fit, now, night);
+  }
+  gameGlimpseGrab(gameArt + 4 * GAME_ART * GAME_ART, 233, 250);
+}
+
+// a game that has ended goes back to the games menu, where it was chosen; home instead when the main
+// screen has something to say first (an evolution to decide, a farewell)
+void gameEndToMenu() {
+  if (pet.isEgg() || pet.sleeping || pet.ceremony || choiceKind) return;
+  openGamesMenu();
 }
 
 void openGamesMenu() {
   if (pet.isEgg() || pet.sleeping || pet.ceremony) { sfxPlay(SFX_DENY); return; }
   gameGlimpsesPaint();
   gamesMenuOpen = true;
+  introCard = -1;
 }
 
 // the game under a tap: its window or its name under it, or -1
 int gameAt(int16_t x, int16_t y) {
   for (int i = 0; i < GAMES_COUNT; i++) {
     int dx = x - GAME_XY[i][0], dy = y - GAME_XY[i][1];
-    if (dx * dx + dy * dy < (GAME_ICON_R + 6) * (GAME_ICON_R + 6) || (abs(dx) < 70 && dy > 0 && dy < GAME_ICON_R + 30)) return i;
+    if ((abs(dx) < GAME_ICON_R + 8 && abs(dy) < GAME_ICON_R + 8) || (abs(dx) < 60 && dy > 0 && dy < GAME_ICON_R + 48)) return i;
   }
   return -1;
+}
+
+// ---- a game's how-to-play card (introCard): a white disc a little smaller than the screen, so the game
+// shows round it, dimmed. It drops in from the top; Ready, GO! sends it up and away, a swipe sends it off
+// that way, and the game's clock starts once it has gone.
+#define CARD_R 188
+#define CARD_DROP_MS 420
+#define CARD_AWAY_MS 260
+#define CARD_TITLE_DY -112  // the game's name, from the card's centre
+#define CARD_TEXT_W 324     // the widest line: 27 letters of the classic font at size 2
+#define CARD_LINE_H 24
+#define CARD_BTN_W 240
+#define CARD_BTN_H 52
+#define CARD_BTN_DY 76      // the button's top, below the card's centre
+
+// Breaks s into lines no wider than maxW at the spaces, each centred on the screen, lineH apart from
+// y. With draw false it only counts them. A word wider than maxW gets a line of its own.
+int drawWrappedAt(const char *s, uint8_t size, int maxW, int cx, int y, int lineH, bool draw) {
+  setSize(size);
+  char line[160], test[160];
+  int n = 0;
+  line[0] = 0;
+  while (*s) {
+    while (*s == ' ') s++;
+    const char *e = s;
+    while (*e && *e != ' ') e++;
+    if (e == s) break;
+    bool num = true;  // "3 misses": a number keeps to the word after it
+    for (const char *q = s; q < e; q++) num = num && *q >= '0' && *q <= '9';
+    if (num && *e == ' ') {
+      while (*e == ' ') e++;
+      while (*e && *e != ' ') e++;
+    }
+    snprintf(test, sizeof(test), "%s%s%.*s", line, line[0] ? " " : "", (int)(e - s), s);
+    if (line[0] && textW(test, size) > maxW) {  // the word starts the next line
+      if (draw) { setCur(cx - textW(line, size) / 2, y + n * lineH); printT(line); }
+      n++;
+      snprintf(line, sizeof(line), "%.*s", (int)(e - s), s);
+    } else {
+      memcpy(line, test, sizeof(line));
+    }
+    s = e;
+  }
+  if (line[0]) {
+    if (draw) { setCur(cx - textW(line, size) / 2, y + n * lineH); printT(line); }
+    n++;
+  }
+  return n;
+}
+int drawWrapped(const char *s, uint8_t size, int maxW, int y, int lineH, bool draw) {
+  return drawWrappedAt(s, size, maxW, CX, y, lineH, draw);
+}
+
+// a card is up over a game that is open (a card left over from a closed game counts for nothing)
+bool introUp() { return introCard >= 0 && (gameOpen || quizOpen || runOpen || surfOpen || dungeonOpen); }
+
+void introOpen(int g) {
+  introCard = g;
+  introT = millis();
+  introAwayT = 0;
+}
+
+// where the card's centre is: dropping in (a little overshoot, so it lands), settled, or flying off
+void introCardPos(uint32_t now, int &cx, int &cy) {
+  cx = CX;
+  cy = CY;
+  if (introAwayT) {
+    float a = (now - introAwayT) / (float)CARD_AWAY_MS;
+    float d = (a > 1 ? 1 : a * a) * 520;  // speeding up as it goes
+    cx += (int)(introAwayDx * d);
+    cy += (int)(introAwayDy * d);
+  } else {
+    float p = (now - introT) / (float)CARD_DROP_MS;
+    if (p < 1) {
+      float q = p - 1, e = 1 + 2.70158f * q * q * q + 1.70158f * q * q;  // ease out, backing off a touch
+      cy = (int)(-CARD_R + (CY + CARD_R) * e);
+    }
+  }
+}
+
+bool introBtnHit(int16_t x, int16_t y) {  // a little roomier than the button
+  return x >= CX - CARD_BTN_W / 2 - 12 && x < CX + CARD_BTN_W / 2 + 12 && y >= CY + CARD_BTN_DY - 12 &&
+         y < CY + CARD_BTN_DY + CARD_BTN_H + 14;
+}
+
+// sends it off: up for the button, along a swipe
+void introDismiss(int dx, int dy) {
+  if (introCard < 0 || introAwayT) return;
+  sfxPlay(SFX_TAP);
+  introAwayT = millis() | 1;
+  introAwayDx = dx;
+  introAwayDy = dy;
+}
+
+// the game's own clock starts once the card has gone
+void introBegin(int g) {
+  uint32_t now = millis();
+  if (g == 0) {
+    lastGameStep = gameStartT = ballSpawnT = now;
+    tiltZero();
+  } else if (g == 1) {
+    quizT = now;
+  } else if (g == 2) {
+    runLast = now;
+  } else if (g == 4) {
+    surfLast = now;
+    tiltZero();
+  }
+}
+
+// true while the card is up: the game waits under it
+bool introPaused() {
+  if (introCard < 0) return false;
+  if (introAwayT && millis() - introAwayT >= CARD_AWAY_MS) {
+    int g = introCard;
+    introCard = -1;
+    introBegin(g);
+    return false;
+  }
+  return true;
+}
+
+// a tap or a swipe while the card is up (handleTouch's games branch): the button, or a swipe, sends it off
+void introTouch(int16_t x0, int16_t y0, int16_t x1, int16_t y1, bool picked) {
+  int dx = x1 - x0, dy = y1 - y0;
+  if (abs(dx) >= 40 || abs(dy) >= 40) {
+    if (abs(dx) > abs(dy)) introDismiss(dx > 0 ? 1 : -1, 0);
+    else introDismiss(0, dy > 0 ? 1 : -1);
+  } else if (picked || introBtnHit(x0, y0)) {
+    introDismiss(0, -1);
+  }
+}
+
+// drawn over the game, last before its flush: the game at half brightness, then the card
+void drawIntroCard() {
+  if (introCard < 0) return;
+  int g = introCard;
+  uint32_t now = millis();
+  int cx, cy;
+  introCardPos(now, cx, cy);
+  if (!introAwayT || now - introAwayT < CARD_AWAY_MS / 2) {
+    uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+    for (int i = 0; i < 466 * 466; i++) fb[i] = (fb[i] >> 1) & 0x7BEF;
+  }
+  gfx->fillCircle(cx + 4, cy + 8, CARD_R, C565(0x10, 0x10, 0x18));  // its shadow
+  gfx->fillCircle(cx, cy, CARD_R, UI_WHITE);
+  fillRing(cx, cy, CARD_R - 12, CARD_R - 7, gameColor(g));  // a thin ring in the game's colour
+  gfx->setTextColor(gameColor(g));
+  int ts = textW(gameLabel(g), 3) <= 270 ? 3 : 2;  // a long name a size down, inside the card's ring
+  setSize(ts);
+  setCur(cx - textW(gameLabel(g), ts) / 2, cy + CARD_TITLE_DY + (ts == 3 ? 0 : 4));
+  printT(gameLabel(g));
+  const char *how = gameHowTo(g);
+  int n = drawWrappedAt(how, 2, CARD_TEXT_W, cx, 0, CARD_LINE_H, false);
+  int w = CARD_TEXT_W;  // as narrow as it goes in as many lines: even lines, no word left alone
+  while (w > 120 && drawWrappedAt(how, 2, w - 12, cx, 0, CARD_LINE_H, false) == n) w -= 12;
+  int top = cy + CARD_TITLE_DY + 30, room = CARD_BTN_DY - 12 - (CARD_TITLE_DY + 30);
+  gfx->setTextColor(UI_INK);
+  drawWrappedAt(how, 2, w, cx, top + (room - (n * CARD_LINE_H - 8)) / 2, CARD_LINE_H, true);
+  gfx->fillRoundRect(cx - CARD_BTN_W / 2, cy + CARD_BTN_DY, CARD_BTN_W, CARD_BTN_H, 16, UI_BAR_OK);
+  gfx->setTextColor(UI_WHITE);
+  int bs = gCjkFont ? 4 : 3;  // the CJK font at twice its size, so the words fill the button too
+  setSize(bs);
+  setCur(cx - textW(T(S_READY_GO), bs) / 2, cy + CARD_BTN_DY + (gCjkFont ? 10 : 15));
+  printT(T(S_READY_GO));
 }
 
 void gamesMenuTap(int16_t x, int16_t y) {
@@ -2345,7 +2592,76 @@ void gamesMenuTap(int16_t x, int16_t y) {
   if (g == 0) startGame();
   else if (g == 1) startQuiz();
   else if (g == 2) startRun();
-  else startDungeon();
+  else if (g == 3) startDungeon();
+  else startSurf();
+  if (gameOpen || quizOpen || runOpen || dungeonOpen || surfOpen) introOpen(g);  // it opens under its card
+}
+
+// A name under a tile, centred on cx, on two lines when it's wider than maxW: broken at the space
+// nearest the middle, or in a name of two joined words before the second's capital ("Poke" "Dungeon").
+// A single word too long for either stays whole. Returns the lines.
+#define TILE_LABEL_W 120  // 10 letters: the three columns' names never meet
+#define TILE_LINE_H 18
+int drawTileLabel(const char *l, int cx, int y) {
+  setSize(2);
+  gfx->setTextColor(UI_INK);
+  if (textW(l, 2) <= TILE_LABEL_W) {
+    setCur(cx - textW(l, 2) / 2, y);
+    printT(l);
+    return 1;
+  }
+  int n = (int)strlen(l), best = -1, skip = 0;
+  for (int i = 1; i < n; i++) {
+    bool space = l[i] == ' ', cap = !gCjkFont && l[i] >= 'A' && l[i] <= 'Z' && l[i - 1] >= 'a' && l[i - 1] <= 'z';
+    if ((space || cap) && (best < 0 || abs(2 * i - n) < abs(2 * best - n))) {
+      best = i;
+      skip = space ? 1 : 0;
+    }
+  }
+  if (best < 0) {
+    setCur(cx - textW(l, 2) / 2, y);
+    printT(l);
+    return 1;
+  }
+  char a[40], b[40];
+  snprintf(a, sizeof(a), "%.*s", best, l);
+  snprintf(b, sizeof(b), "%s", l + best + skip);
+  setCur(cx - textW(a, 2) / 2, y);
+  printT(a);
+  setCur(cx - textW(b, 2) / 2, y + TILE_LINE_H);
+  printT(b);
+  return 2;
+}
+
+// the art in a rounded square r from its centre, its corners rad round
+void drawTileArt(const uint16_t *art, int cx, int cy, int r, int rad, uint16_t fallback) {
+  if (!art) {
+    gfx->fillRoundRect(cx - r, cy - r, 2 * r, 2 * r, rad, fallback);
+    return;
+  }
+  for (int ty = 0; ty < 2 * r; ty++) {
+    float d = ty < rad ? rad - ty - 0.5f : ty >= 2 * r - rad ? ty - (2 * r - rad) + 0.5f : -1;
+    int inset = d < 0 ? 0 : rad - (int)sqrtf(rad * rad - d * d);
+    gfx->draw16bitRGBBitmap(cx - r + inset, cy - r + ty, (uint16_t *)art + ty * 2 * r + inset, 2 * r - 2 * inset, 1);
+  }
+}
+
+// a window onto a game or a zone, as an app tile: the art in a rounded square, framed in white and its
+// own colour, with a soft shadow. TILE_FRAME: how far the frame reaches past the art
+#define TILE_FRAME 6
+#define TILE_RAD 20
+void drawTile(const uint16_t *art, int cx, int cy, int r, uint16_t col) {
+  int f = r + TILE_FRAME;
+  gfx->fillRoundRect(cx - f + 3, cy - f + 5, 2 * f, 2 * f, TILE_RAD + 6, C565(0xdc, 0xd2, 0xc2));
+  gfx->fillRoundRect(cx - f, cy - f, 2 * f, 2 * f, TILE_RAD + 6, col);
+  gfx->fillRoundRect(cx - f + 3, cy - f + 3, 2 * f - 6, 2 * f - 6, TILE_RAD + 3, UI_WHITE);
+  drawTileArt(art, cx, cy, r, TILE_RAD, col);
+}
+
+void drawGameIcon(int i) {
+  int cx = GAME_XY[i][0], cy = GAME_XY[i][1];
+  drawTile(gameArt ? gameArt + i * GAME_ART * GAME_ART : nullptr, cx, cy, GAME_ICON_R, gameColor(i));
+  drawTileLabel(gameLabel(i), cx, cy + GAME_ICON_R + TILE_FRAME + 6);  // where Travel has its names
 }
 
 void renderGamesMenu() {
@@ -2355,24 +2671,24 @@ void renderGamesMenu() {
   setSize(3);
   setCur(centerX(T(S_GAMES), 3), 26);
   printT(T(S_GAMES));
-  const uint16_t colors[GAMES_COUNT] = { TYPE_ACCENT[TY_GRASS], TYPE_ACCENT[TY_PSYCHIC], TYPE_ACCENT[TY_FIRE], TYPE_ACCENT[TY_GHOST] };
   setSize(2);
-  for (int i = 0; i < GAMES_COUNT; i++) {
-    int cx = GAME_XY[i][0], cy = GAME_XY[i][1];
-    drawRoundArt(gameArt ? gameArt + i * GAME_ART * GAME_ART : nullptr, cx, cy, GAME_ICON_R, colors[i]);
-    fillRing(cx, cy, GAME_ICON_R - 4, GAME_ICON_R + 1, colors[i]);  // each game's own colour, right at the edge (over the ink rim)
-    gfx->setTextColor(UI_INK);
-    setCur(cx - textW(gameLabel(i), 2) / 2, cy + GAME_ICON_R + 6);
-    printT(gameLabel(i));
-  }
+  for (int i = 0; i < GAMES_COUNT; i++) drawGameIcon(i);
   drawCloseButton();  // any tap outside the games closes it too
   gfx->flush();
 }
 
 // ---------- who's that pokemon ----------
+int16_t quizAsked[QUIZ_ROUNDS];  // this game's answers so far: none comes up twice
+
 void quizNextRound() {
-  int16_t prev = quizAnswer;
-  do { quizAnswer = 1 + random(151); } while (quizAnswer == prev);
+  int16_t prev = quizAnswer;  // nor the last one of the game before
+  bool again;
+  do {
+    quizAnswer = 1 + random(151);
+    again = quizAnswer == prev;
+    for (int i = 0; i < quizRound && i < QUIZ_ROUNDS; i++) again = again || quizAsked[i] == quizAnswer;
+  } while (again);
+  if (quizRound < QUIZ_ROUNDS) quizAsked[quizRound] = quizAnswer;
   quizChoices(quizAnswer, 1 + random(151), 1 + random(151), random(3), quizOpts);
   quizPmd.load(quizAnswer, false);
   quizTapped = 0;
@@ -2392,6 +2708,7 @@ void startQuiz() {
 
 void closeQuiz() {
   quizOpen = false;
+  introCard = -1;
   quizPmd.unload();
 }
 
@@ -2401,7 +2718,10 @@ void closeQuiz() {
 
 void quizTap(int16_t x, int16_t y) {
   if (quizPhase == QP_END) {
-    if (millis() - quizT > 800) closeQuiz();
+    if (millis() - quizT > 800) {
+      closeQuiz();
+      gameEndToMenu();
+    }
     return;
   }
   if (quizPhase != QP_ASK) return;
@@ -2418,6 +2738,7 @@ void quizTap(int16_t x, int16_t y) {
 
 void renderQuiz() {
   if (pet.ceremony) { closeQuiz(); return; }
+  introPaused();  // only to start the clock once its card has gone: nothing runs while asking
   uint32_t t = millis() - quizT;
   if (quizPhase == QP_REVEAL && t > 2000) {
     if (++quizRound >= QUIZ_ROUNDS) {
@@ -2430,7 +2751,7 @@ void renderQuiz() {
     }
     t = 0;
   }
-  if (quizPhase == QP_END && t > 5000) { closeQuiz(); return; }
+  if (quizPhase == QP_END && t > 5000) { closeQuiz(); gameEndToMenu(); return; }
   if (!quizOpen) return;
 
   gfx->fillScreen(TYPE_ACCENT[TY_WATER]);  // to the edge: no black ring
@@ -2471,6 +2792,7 @@ void renderQuiz() {
     setCur(centerX(dexName(quizOpts[i]), 2), y + 15);
     printT(dexName(quizOpts[i]));
   }
+  drawIntroCard();  // its how-to-play card, while it is up
   gfx->flush();
 }
 
@@ -2504,7 +2826,7 @@ void endVisit() {
 
 // checks the time and advances the visit, even with another screen open on top
 bool onMainScreen() {
-  return !gameOpen && !runOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !zoneScreen && !galleryOpen && !cardOpen &&
+  return !gameOpen && !runOpen && !surfOpen && !dungeonOpen && !battleOpen && !quizOpen && !gamesMenuOpen && !zoneScreen && !galleryOpen && !cardOpen &&
                       !kbOpen && !clockOpen && !choiceKind && !confirmUntil && !buddyMenuOpen && !partyOpen && !tradeOpen &&
                       !playMenuOpen && !sdOpen && !vbOpen;
 }
@@ -2598,7 +2920,7 @@ void knomiButtonTap() {
   screenOff = false;
   wakeUI();
   if (wasAsleep) return;  // in the dark it only wakes, like the touchscreen
-  if (buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || gameOpen || runOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
+  if (buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || gameOpen || runOpen || surfOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
   startBattle();
 }
 
@@ -2610,6 +2932,7 @@ void knomiAskReset() {
   if (sdOpen) sdQuit();
   if (vbOpen) vbQuit();
   if (runOpen) closeRun();
+  if (surfOpen) closeSurf();
   if (dungeonOpen) closeDungeon();
   gamesMenuOpen = playMenuOpen = false;
   zoneDetailClose();
@@ -3528,13 +3851,10 @@ void renderBattle() {
         snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(bMe.dex));
         battleCenterLine(b, 352);
       }
-      if (!bPvp && bGain) {  // no training between friends, nor from a loss
+      if (!bPvp && bGain) {  // no training between friends, nor from a loss; nothing when it's maxed
         gfx->setTextColor(UI_BAR_BAD);
         snprintf(b, sizeof(b), T(S_STR_GAIN_FMT), bGain);
         battleCenterLine(b, 380);
-      } else if (!bPvp && bWon && pet.trAtk >= 100) {  // a win, but nothing more to train: say so
-        gfx->setTextColor(UI_BAR_BAD);
-        battleCenterLine(T(S_TRAIN_MAXED), 380);
       }
       break;
     }
@@ -3586,7 +3906,7 @@ uint16_t battleSoil() {
   return soil;
 }
 
-// Tilt Catch's woods: two tall trees frame the screen, their leafy tops meet over the corners with
+// Berry Drop's woods: two tall trees frame the screen, their leafy tops meet over the corners with
 // berries growing in them and vines hanging down, and a treeline behind. The middle of the sky stays
 // open for the score, and the falling berry has plain sky behind it most of the way.
 void drawCatchScene() {
@@ -3671,6 +3991,7 @@ void renderGame() {
     drawCatchScene();
     if (!timeLeft(gameOverUntil)) {
       gameOpen = false;
+      gameEndToMenu();
       return;
     }
     char buf[22];
@@ -3700,7 +4021,7 @@ void renderGame() {
   }
 
   drawCatchScene();
-  stepGame();
+  if (!introPaused()) stepGame();  // under its card the game waits
 
   // score, record and lives
   char buf[8];
@@ -3759,6 +4080,7 @@ void renderGame() {
     printT(T(S_TILT_HINT));
   }
 
+  drawIntroCard();  // its how-to-play card, while it is up
   gfx->flush();
 }
 
@@ -3778,7 +4100,7 @@ void startDungeon() {
   dnScale = fit > 3 ? 3 : fit;
 }
 
-void closeDungeon() { dungeonOpen = false; dnBot = false; }
+void closeDungeon() { dungeonOpen = false; dnBot = false; introCard = -1; }
 
 void dungeonAfterStep() {
   uint32_t now = millis();
@@ -3806,7 +4128,10 @@ void dungeonAfterStep() {
 // walk toward where it is touched, relative to the screen center
 void dungeonTap(int16_t x, int16_t y) {
   if (dnOverT) {
-    if (millis() - dnOverT > 800) closeDungeon();
+    if (millis() - dnOverT > 800) {
+      closeDungeon();
+      gameEndToMenu();
+    }
     return;
   }
   int dx = x - CX, dy = y - CY;
@@ -3842,9 +4167,10 @@ void dnDrawTileKind(uint8_t t, bool faceBelow, int tx, int ty, int sx, int sy) {
 void renderDungeon() {
   if (pet.ceremony || !pmd.loaded) { closeDungeon(); return; }
   uint32_t now = millis();
-  if (dnOverT && now - dnOverT > 6000) { closeDungeon(); return; }
+  if (dnOverT && now - dnOverT > 6000) { closeDungeon(); gameEndToMenu(); return; }
 
-  if (dnBot && !dn.dead && now - dnStepT > 200) {
+  bool paused = introPaused();  // under its card nobody moves
+  if (dnBot && !paused && !dn.dead && now - dnStepT > 200) {
     int8_t dx, dy;
     if (dnBotDir(dn, dx, dy) && dnStep(dn, dx, dy)) dungeonAfterStep();
   }
@@ -3854,7 +4180,7 @@ void renderDungeon() {
     static uint32_t keyT = 0;
     int8_t kx, ky;
     bool key = hostArrowDir(&kx, &ky);
-    if (key && !dn.dead && !dnOverT && (!keyWas || now - keyT > 230)) {
+    if (key && !paused && !dn.dead && !dnOverT && (!keyWas || now - keyT > 230)) {
       keyT = now;
       wakeUI();
       if (dnStep(dn, kx, ky)) dungeonAfterStep();
@@ -3963,6 +4289,7 @@ void renderDungeon() {
     setCur(centerX(msg, 2), 272);
     printT(msg);
   }
+  drawIntroCard();  // its how-to-play card, while it is up
   gfx->flush();
 }
 
@@ -3980,10 +4307,13 @@ void startRun() {
   runScale = fit > 3 ? 3 : fit;
 }
 
-void closeRun() { runOpen = false; runBot = false; }
+void closeRun() { runOpen = false; runBot = false; introCard = -1; }
 
 void runTap() {
-  if (runOverT && millis() - runOverT > 800) closeRun();  // time to read the result
+  if (runOverT && millis() - runOverT > 800) {  // time to read the result
+    closeRun();
+    gameEndToMenu();
+  }
 }
 
 // forest with two layers of pines that move slower than the ground
@@ -4044,9 +4374,11 @@ void drawRunObstacle(const RunObstacle &o, bool night) {  // the art is the same
 void renderRun() {
   if (pet.ceremony || !pmd.loaded) { closeRun(); return; }
   uint32_t now = millis();
-  if (runOverT && now - runOverT > 4000) { closeRun(); return; }
+  if (runOverT && now - runOverT > 4000) { closeRun(); gameEndToMenu(); return; }
 
-  if (!run.dead) {
+  if (introPaused()) {
+    runLast = now;  // under its card the run waits
+  } else if (!run.dead) {
     bool jump = runJump || (runBot && runBotWantsJump(run));
     runJump = false;
     runStep(run, (now - runLast) / 1000.0f, jump);
@@ -4111,6 +4443,154 @@ void renderRun() {
       printT(T(S_TAP_JUMP));
     }
   }
+  drawIntroCard();  // its how-to-play card, while it is up
+  gfx->flush();
+}
+
+// ---------- PikaSurf ----------
+// Yours surfs down the screen near the top, the water rushing up past it; rocks come up in three lanes
+// and Pikachu rides alongside until he pulls ahead (surf.h). Steered like Berry Drop: tilting, the arrow
+// keys, or a finger held where it should go. One rock and it's over, as in PokeRun.
+void startSurf() {
+  if (pet.isEgg() || pet.sleeping || pet.ceremony || !pmd.loaded) { sfxPlay(SFX_DENY); return; }
+  surfStart(surf, esp_random());
+  surfPika.load(25, false);  // without his sprite he still surfs, unseen
+  surfOpen = true;
+  surfNewHi = false;
+  surfOverT = 0;
+  surfLast = millis();
+  tiltZero();
+  uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 80, 80);  // a big one must not hide what is coming
+  surfScale = fit > 3 ? 3 : fit;
+}
+
+void closeSurf() {
+  surfOpen = false;
+  introCard = -1;
+  surfBot = false;
+  surfPika.unload();
+}
+
+void surfTap() {
+  if (surfOverT && millis() - surfOverT > 800) {  // time to read the result
+    closeSurf();
+    gameEndToMenu();
+  }
+}
+
+// the water, rushing up: deep blue, broad swells, and streaks of foam at the water's speed
+void drawSurfWater(float dist, bool night) {
+  uint16_t deep = night ? C565(0x12, 0x2c, 0x5c) : C565(0x2a, 0x86, 0xd2);
+  uint16_t swell = night ? C565(0x18, 0x38, 0x6c) : C565(0x38, 0x96, 0xdc);
+  uint16_t streak = night ? C565(0x5a, 0x86, 0xb8) : C565(0xa8, 0xe0, 0xf8);
+  gfx->fillScreen(deep);
+  int off = (int)dist;
+  for (int k = 0; k < 6; k++) {  // the swells, deeper down: half as fast
+    int y = ((k * 92 - off / 2) % 552 + 552) % 552 - 46;
+    gfx->fillRect(0, SNAP2(y), 466, 28, swell);
+  }
+  for (int k = 0; k < 22; k++) {
+    int y = ((k * 53 - off) % 566 + 566) % 566 - 50;
+    int x = 30 + (k * 151) % 400, w = 14 + (k * 7) % 22;
+    gfx->fillRect(SNAP2(x), SNAP2(y), w, 4, streak);
+    if (k % 3 == 0) gfx->fillRect(SNAP2(x + w + 8), SNAP2(y + 2), 6, 4, streak);
+  }
+}
+
+// the foam a board leaves behind it, up the screen: a V opening from its tail
+void drawSurfWake(int x, int tailY, uint32_t now, bool night) {
+  uint16_t foam = night ? C565(0xc8, 0xdc, 0xf0) : UI_WHITE;
+  for (int i = 0; i < 6; i++) {
+    int dy = 6 + i * 11, dx = 4 + i * 6, w = i < 3 ? 6 : 4;
+    int wob = ((now / 80 + i) & 1) * 2;
+    gfx->fillRect(SNAP2(x - dx - w - wob), SNAP2(tailY - dy), w, 4, foam);
+    gfx->fillRect(SNAP2(x + dx + wob), SNAP2(tailY - dy), w, 4, foam);
+  }
+}
+
+// a rock: foam piling up under it where the water hits, and parting along its sides
+void drawSurfRock(int x, int y, bool night) {
+  uint16_t foam = night ? C565(0xc8, 0xdc, 0xf0) : UI_WHITE;
+  gfx->fillCircle(x, y + 8, 27, foam);
+  for (int i = 0; i < 3; i++) {  // spray thrown up and out on either side
+    gfx->fillRect(SNAP2(x - 30 - i * 6), SNAP2(y - 4 - i * 10), 4, 4, foam);
+    gfx->fillRect(SNAP2(x + 26 + i * 6), SNAP2(y - 4 - i * 10), 4, 4, foam);
+  }
+  drawMap(SPR_SURF_ROCK, 14, x - 28, y - 30, 4, false);
+}
+
+// a rider on its board, the board's middle at (x, y); feet on the board, looking down the screen
+void drawSurfRider(PmdMon &m, const char *const *board, int bs, int x, int y, uint8_t act, uint8_t scale, uint32_t now, bool night) {
+  drawSurfWake(x, y - 12 * bs, now, night);
+  drawMap(board, 24, x - 12 * bs, y - 12 * bs, bs, false);
+  if (!m.loaded) return;
+  if (!m.has(act)) act = PMD_IDLE;
+  gPmdForceScale = scale;
+  drawPmdActM(m, act, x, y + 2 * bs, now, true, false, scale);  // feet just past the middle: the nose shows ahead
+  gPmdForceScale = 0;
+}
+
+// text with a dark shadow: it reads on the water, day or night
+void surfText(const char *s, uint8_t size, int y, uint16_t color) {
+  setSize(size);
+  gfx->setTextColor(C565(0x0c, 0x24, 0x48));
+  setCur(centerX(s, size) + 2, y + 2);
+  printT(s);
+  gfx->setTextColor(color);
+  setCur(centerX(s, size), y);
+  printT(s);
+}
+
+void renderSurf() {
+  if (pet.ceremony || !pmd.loaded) { closeSurf(); return; }
+  uint32_t now = millis();
+  if (surfOverT && now - surfOverT > 4000) { closeSurf(); gameEndToMenu(); return; }
+
+  if (introPaused()) {
+    surfLast = now;  // under its card the water waits
+  } else if (!surf.dead) {
+    float tilt = surfBot ? surfBotTilt(surf) : playerTilt();
+    surfStep(surf, (now - surfLast) / 1000.0f, tilt);
+    surfLast = now;
+    if (surf.dead) {
+      uint16_t secs = (uint16_t)surf.t;
+      surfNewHi = secs > pet.surfHi;
+      pet.surfResult(secs);  // the reward and record only when it really ends
+      sfxPlay(surfNewHi ? SFX_MEDAL : SFX_DENY);
+      surfOverT = millis();
+      Serial.printf("pikasurf: %u s\n", secs);
+    }
+  }
+
+  int hh = sceneHour();
+  bool night = hh < 6 || hh >= 20;
+  drawSurfWater(surf.dist, night);
+  for (auto &r : surf.rows)
+    if (r.on)
+      for (int i = 0; i < 3; i++)
+        if (r.lanes >> i & 1) drawSurfRock(surfRockX(r, i), (int)r.y, night);
+  if (surf.pikaY < SURF_PIKA_GONE_Y)
+    drawSurfRider(surfPika, SPR_SURF_BOARD_P, 3, (int)surf.pikaX, (int)surf.pikaY, PMD_IDLE, 2, now, night);
+  drawSurfRider(pmd, SPR_SURF_BOARD, 4, (int)surf.x, SURF_PET_Y, surf.dead ? PMD_HURT : PMD_IDLE, surfScale, now, night);
+
+  char b[24];
+  snprintf(b, sizeof(b), "%us", (unsigned)surf.t);
+  if (surfOverT) {  // the result over the water, under yours
+    surfText(b, 5, 214, UI_WHITE);
+    if (surfNewHi) {
+      surfText(T(S_NEW_RECORD), 2, 264, UI_BAR_WARN);
+    } else {
+      snprintf(b, sizeof(b), T(S_RECORD_FMT), pet.surfHi);
+      surfText(b, 2, 264, UI_WHITE);
+    }
+    surfText(surf.t >= 30 ? T(S_GREAT_JOY) : T(S_PLUS_JOY), 2, 290, UI_WHITE);
+  } else {
+    surfText(b, 4, 22, UI_WHITE);
+    snprintf(b, sizeof(b), T(S_REC_FMT), pet.surfHi);
+    surfText(b, 2, 58, UI_WHITE);
+    if (surf.t < 3) surfText(T(S_TILT_HINT), 2, 250, UI_WHITE);
+  }
+  drawIntroCard();  // its how-to-play card, while it is up
   gfx->flush();
 }
 
@@ -4213,15 +4693,25 @@ void applyClock() {
   clockOpen = false;
 }
 
-// the big h:mm and AM/PM of the time screens (shown in 12-hour format; inside it is still 24)
-void drawBigTime(int h24, int m) {
-  bool cjk = gCjkFont;  // digits in the classic font in every language: the CJK one has no big sizes
+// The classic font for a moment, in every language: the CJK one has no big sizes, so big digits
+// would come out small. Returns whether to put the language's font back (classicFontEnd).
+bool classicFontBegin() {
+  bool cjk = gCjkFont;
   if (cjk) {
     gfx->setFont();
     gfx->setUTF8Print(false);
     gFontAscent = 0;
     gCjkFont = false;
   }
+  return cjk;
+}
+void classicFontEnd(bool cjk) {
+  if (cjk) applyLangFont();
+}
+
+// the big h:mm and AM/PM of the time screens (shown in 12-hour format; inside it is still 24)
+void drawBigTime(int h24, int m) {
+  bool cjk = classicFontBegin();
   char t[8];
   snprintf(t, sizeof(t), "%d:%02d", clock12Hour(h24), m);
   // centred as one group, whatever the digits: "4:27 PM" and "12:05 AM" alike. The widths leave out the
@@ -4235,7 +4725,7 @@ void drawBigTime(int h24, int m) {
   setSize(3);
   setCur(x0 + tw + gap, 136);
   printT(h24 < 12 ? "AM" : "PM");
-  if (cjk) applyLangFont();
+  classicFontEnd(cjk);
 }
 
 #ifdef BOARD_KNOMI_V2
@@ -4861,6 +5351,7 @@ bool celebrationTap(int16_t x, int16_t y) {
       if (pet.newMedal & (1UL << i)) {
         cardOpen = cardAch = true;
         cardPage = achPageOf(i);
+        achDetail = -1;
         break;
       }
   }
@@ -5079,6 +5570,67 @@ static void drawCheck(int x, int y, uint16_t c) {  // a check mark, 3 px thick
   }
 }
 
+// where box k of a page of n medals sits: two columns, an odd one out in the middle, centred under the title
+static void achBoxPos(int k, int n, int &x, int &y) {
+  int rows = (n + 1) / 2, top = (92 + 360 - (rows * ACH_BOX_H + (rows - 1) * ACH_GAP)) / 2;
+  bool alone = k == n - 1 && n % 2;
+  x = alone ? CX - ACH_BOX_W / 2 : CX - ACH_BOX_W - ACH_GAP / 2 + (k % 2) * (ACH_BOX_W + ACH_GAP);
+  y = top + (k / 2) * (ACH_BOX_H + ACH_GAP);
+}
+
+// the medal under a tap on the open achievements page (and its box), or -1
+int achMedalAtBox(int16_t x, int16_t y, int &bx, int &by) {
+  int first, count, from, n;
+  StrId title;
+  achPage(cardPage, first, count, title, from, n);
+  for (int k = 0; k < n; k++) {
+    achBoxPos(k, n, bx, by);
+    if (x >= bx - 4 && x < bx + ACH_BOX_W + 4 && y >= by - 4 && y < by + ACH_BOX_H + 4) return from + k;
+  }
+  return -1;
+}
+int achMedalAt(int16_t x, int16_t y) {
+  int bx, by;
+  return achMedalAtBox(x, y, bx, by);
+}
+
+// a medal's card: the medal on its ribbon (gold with a star once earned, grey before), its name, whether
+// it's earned, and how to earn it. The X goes back to the medals.
+void renderMedalDetail(int i) {
+  bool got = pet.hasMedal(1UL << i);
+  const uint16_t greyL = C565(0xc8, 0xc4, 0xcc), greyD = C565(0x9a, 0x96, 0xa4);
+  int my = 108, top = 30;
+  uint16_t ribL = got ? C565(0xd8, 0x3a, 0x3a) : greyL, ribR = got ? C565(0x3a, 0x6c, 0xd8) : greyD;
+  gfx->fillTriangle(CX - 34, top, CX - 14, top, CX + 2, my - 14, ribL);
+  gfx->fillTriangle(CX - 34, top, CX + 2, my - 14, CX - 16, my - 14, ribL);
+  gfx->fillTriangle(CX + 34, top, CX + 14, top, CX - 2, my - 14, ribR);
+  gfx->fillTriangle(CX + 34, top, CX - 2, my - 14, CX + 16, my - 14, ribR);
+  gfx->fillCircle(CX, my, 34, UI_INK);
+  gfx->fillCircle(CX, my, 32, got ? MEDAL_GOLD : greyL);
+  gfx->drawCircle(CX, my, 24, got ? MEDAL_DARK : greyD);
+  fillStar(CX, my + 1, 19, got ? MEDAL_DARK : greyD);
+  fillStar(CX, my, 17, got ? C565(0xff, 0xf0, 0xb0) : C565(0xe6, 0xe4, 0xea));
+  // its name (one line, two if long), whether it's earned, and how: one block, centred between the medal and the X
+  const char *how = medalHow(i);
+  int n = drawWrapped(medalDesc(i), 3, 380, 0, 30, false);
+  int lines = drawWrapped(how, 2, 336, 0, 24, false), w = 336;
+  while (w > 120 && drawWrapped(how, 2, w - 12, 0, 24, false) == lines) w -= 12;  // even lines
+  const int below = my + 48, above = CLOSE_Y - CLOSE_R - 12;
+  int block = n * 30 - 9 + 10 + 16 + 24 + lines * 24 - 8;
+  int y = below + (above - below - block) / 2;
+  if (y < below) y = below;
+  gfx->setTextColor(UI_INK);
+  drawWrapped(medalDesc(i), 3, 380, y, 30, true);
+  y += n * 30 - 9 + 10;
+  gfx->setTextColor(got ? UI_BAR_OK : UI_MUTED);
+  setSize(2);
+  const char *st = got ? T(S_MEDAL_GOT) : T(S_MEDAL_TODO);
+  setCur(centerX(st, 2), y);
+  printT(st);
+  gfx->setTextColor(UI_INK);
+  drawWrapped(how, 2, w, y + 16 + 24, 24, true);
+}
+
 void renderAchievements(uint8_t p) {
   int first, count, from, n;
   StrId title;
@@ -5092,13 +5644,10 @@ void renderAchievements(uint8_t p) {
   setCur(centerX(head, 3), 48);
   printT(head);
 
-  int rows = (n + 1) / 2, top = (92 + 360 - (rows * ACH_BOX_H + (rows - 1) * ACH_GAP)) / 2;
   setSize(2);
   for (int k = 0; k < n; k++) {
-    int i = from + k, row = k / 2;
-    bool alone = k == n - 1 && n % 2;  // an odd one out sits in the middle
-    int x = alone ? CX - ACH_BOX_W / 2 : CX - ACH_BOX_W - ACH_GAP / 2 + (k % 2) * (ACH_BOX_W + ACH_GAP);
-    int y = top + row * (ACH_BOX_H + ACH_GAP);
+    int i = from + k, x, y;
+    achBoxPos(k, n, x, y);
     bool g = pet.hasMedal(1UL << i);
     gfx->fillRoundRect(x, y, ACH_BOX_W, ACH_BOX_H, 10, g ? UI_BAR_OK : UI_TRACK);
     if (g) drawCheck(x + 12, y + ACH_BOX_H / 2 - 9, UI_WHITE);
@@ -5197,6 +5746,12 @@ void renderCardProgress() {
 
 void renderCard() {
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
+  if (cardAch && achDetail >= 0) {  // a medal's card: no page dots, just the X back
+    renderMedalDetail(achDetail);
+    drawCloseButton();
+    gfx->flush();
+    return;
+  }
   if (cardAch) renderAchievements(cardPage);
   else if (cardPage == 0) renderCardProfile();
   else if (cardPage == 1) renderCardStats();
@@ -7225,8 +7780,9 @@ void tradeTap(int16_t x, int16_t y) {
 // scene, as on the main screen, and the battle is set there
 #define ZONE_PICKS (ZONE_COUNT + 1)
 #define ZONE_RANDOM ZONE_COUNT  // the last pick
-// centred between the title (ends at 50) and the X (starts at 398): windows, names and counts 288 tall
-static const int16_t ZONE_XY[ZONE_PICKS][2] = { { 103, 130 }, { 233, 130 }, { 363, 130 }, { 103, 278 }, { 233, 278 }, { 363, 278 } };
+// between the title (ends at 50) and the X (starts at 398): tiles, names and counts; the outer columns
+// in a little, so the tiles' corners stay on the round screen
+static const int16_t ZONE_XY[ZONE_PICKS][2] = { { 108, 128 }, { 233, 128 }, { 358, 128 }, { 108, 286 }, { 233, 286 }, { 358, 286 } };
 static const StrId ZONE_NAME[ZONE_COUNT] = { S_ZONE_FOREST, S_ZONE_BEACH, S_ZONE_CAVE, S_ZONE_MANSION, S_ZONE_FIELD };
 static const uint16_t ZONE_COLOR[ZONE_COUNT] = { C565(0x3a, 0x8a, 0x4f), C565(0x2f, 0x7f, 0xb5), C565(0x6b, 0x5a, 0x8a), C565(0x7a, 0x3f, 0x8f), C565(0xc9, 0x8a, 0x1e) };
 
@@ -7354,7 +7910,7 @@ void drawRoundArt(const uint16_t *art, int cx, int cy, int r, uint16_t fallback)
 
 void zoneDrawIcon(uint8_t z) {
   uint16_t plain = z == ZONE_RANDOM ? C565(0xd8, 0x2a, 0x2a) : ZONE_COLOR[z];
-  drawRoundArt(zoneArt ? zoneArt + z * ZONE_ART * ZONE_ART : nullptr, ZONE_XY[z][0], ZONE_XY[z][1], ZONE_ICON_R, plain);
+  drawTile(zoneArt ? zoneArt + z * ZONE_ART * ZONE_ART : nullptr, ZONE_XY[z][0], ZONE_XY[z][1], ZONE_ICON_R, plain);
 }
 
 // Wild Encounter's window: home's scene (drawn on the canvas, not shown), a 400 x 400 view of it
@@ -7368,7 +7924,7 @@ void zoneHomeDraw(uint16_t *art) {
 int zonePickAt(int16_t x, int16_t y) {
   for (int z = 0; z < ZONE_PICKS; z++) {
     int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
-    if (dx * dx + dy * dy < (ZONE_ICON_R + 6) * (ZONE_ICON_R + 6) || (abs(dx) < 62 && dy > 0 && dy < ZONE_ICON_R + 40)) return z;
+    if ((abs(dx) < ZONE_ICON_R + 8 && abs(dy) < ZONE_ICON_R + 8) || (abs(dx) < 62 && dy > 0 && dy < ZONE_ICON_R + 44)) return z;
   }
   return -1;
 }
@@ -7389,7 +7945,7 @@ void renderZones() {
     setSize(2);
     for (uint8_t z = 0; z < ZONE_PICKS; z++) {
       zoneDrawIcon(z);
-      int cx = ZONE_XY[z][0], y = ZONE_XY[z][1] + ZONE_ICON_R + 6;
+      int cx = ZONE_XY[z][0], y = ZONE_XY[z][1] + ZONE_ICON_R + TILE_FRAME + 6;
       if (z == ZONE_RANDOM) {  // its name on up to two lines, where the zones have their count
         gfx->setTextColor(UI_INK);
         const char *p = T(S_RANDOM_BATTLE);
@@ -7734,8 +8290,7 @@ void startBath() {
     d.ph = random(256);
   }
   int cx = (int)beh.x;
-  bathDuckLeft = cx < 300;  // to the pet's right, looking left; near the right edge, to its left instead
-  bathDuckX = bathDuckLeft ? cx + BATH_DUCK_GAP : cx - BATH_DUCK_GAP - 14 * BATH_DUCK_S;
+  bathDuckLeft = cx <= CX;  // left of the middle (or on it): the duck to its right, toward the middle
 }
 
 #define BATH_RAIN_TOP 120               // the drops start under the name and status lines...
@@ -7761,7 +8316,8 @@ void drawBath() {
   }
   uint32_t left = bathUntil - now;
   // the rubber duck, sitting on the ground the whole bath, rocking a little
-  drawMap(bathDuckLeft ? SPR_BATH_DUCK : SPR_BATH_DUCK_R, 14, bathDuckX,
+  int duckX = bathDuckLeft ? (int)beh.x + BATH_DUCK_GAP : (int)beh.x - BATH_DUCK_GAP - 14 * BATH_DUCK_S;  // it follows the pet
+  drawMap(bathDuckLeft ? SPR_BATH_DUCK : SPR_BATH_DUCK_R, 14, duckX,
           PET_GROUND - 13 * BATH_DUCK_S - ((now / 300) % 2) * 2, BATH_DUCK_S, false);
   if (left > 800) {
     // drops fall over the pet and splash where they land, each fall a little to one side;
@@ -8229,6 +8785,7 @@ void gameTap(int16_t x, int16_t y) {
   else if (gamesMenuOpen) gamesMenuTap(x, y);
   else if (zoneScreen) zoneTap(x, y);
   else if (runOpen) runTap();
+  else if (surfOpen) surfTap();
   else if (dungeonOpen && !dnHeld) dungeonTap(x, y);
 }
 
@@ -8245,6 +8802,11 @@ static bool pressSet(PressTarget &t, int x, int y, int w, int h, const char *lab
 // "tap anywhere to close" screens keep working as they did, without a preview.
 bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   static char buf[52];
+  if (introUp()) {  // a game's card: its button
+    if (!introAwayT && introBtnHit(x, y))
+      return pressSet(t, CX - CARD_BTN_W / 2, CY + CARD_BTN_DY, CARD_BTN_W, CARD_BTN_H, T(S_READY_GO));
+    return false;
+  }
   // --- game screens (handleTouch's first branch) ---
   if (battleOpen) {
     if (bPhase == BP_RESULT && closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
@@ -8291,7 +8853,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       return pressSet(t, CX + d * pageArrowDx(PAGE_ARROW_Y) - CLOSE_R, PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
     return false;  // Pokedex grids (here and below) swipe between pages: a slow swipe must not pick a square
   }
-  if (gameOpen || runOpen || dungeonOpen || vbOpen) return false;  // aiming, jumping, walking, volleying: no buttons
+  if (gameOpen || runOpen || surfOpen || dungeonOpen || vbOpen) return false;  // aiming, jumping, surfing, walking, volleying: no buttons
 
   // --- everything else (same order as onTap) ---
   if (pet.awaitingStarter()) {
@@ -8415,6 +8977,14 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   }
   if (pet.ceremony) return false;
   if (cardOpen) {
+    if (cardAch && achDetail >= 0) {  // a medal's card: its X
+      if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+      return false;
+    }
+    if (cardAch) {  // a medal
+      int bx, by, i = achMedalAtBox(x, y, bx, by);
+      if (i >= 0) return pressSet(t, bx, by, ACH_BOX_W, ACH_BOX_H, medalDesc(i));
+    }
 #ifndef BOARD_KNOMI_V2
     if (!cardAch && cardPage == 1 && pressIn(x, y, 96, 300, 274, 40)) return pressSet(t, 96, 300, 274, 40, T(S_BTL_START));
 #endif

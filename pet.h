@@ -136,6 +136,7 @@ public:
   uint16_t lastMilestone = 0;  // streak milestone already celebrated
   uint16_t gameHi = 0;     // minigame record (the player's)
   uint16_t runHi = 0;      // PokeRun record, in seconds
+  uint16_t surfHi = 0;     // PikaSurf record, in seconds
   uint8_t petJoyTaps = 0;  // pets that have counted this hour (not saved)
   uint32_t petJoyStart = 0;
   uint8_t candyToday = 0;  // treats given on day candyDay
@@ -162,6 +163,7 @@ public:
   }
   void playResult(uint8_t score);  // minigame reward (trains SPE)
   void runResult(uint16_t secs);   // PokeRun: same, every 4 s counts as one point
+  void surfResult(uint16_t secs);  // PikaSurf: the same as PokeRun
   void dungeonResult(uint8_t floor);
   int candiesLeft() const {  // today's candies still to have (the visitor's included)
     int limit = CANDY_PER_DAY + (today() != 0 && candyGiftDay == today() ? 1 : 0);

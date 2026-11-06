@@ -741,6 +741,13 @@ void Pet::runResult(uint16_t secs) {
   save();
 }
 
+void Pet::surfResult(uint16_t secs) {
+  if (ceremony != CER_NONE || isEgg()) return;
+  if (secs > surfHi) surfHi = secs;
+  exerciseReward(secs / 4 > 255 ? 255 : secs / 4);
+  save();
+}
+
 void Pet::friendlyBattle(bool won) {
   if (ceremony != CER_NONE || isEgg()) return;
   joy = clamp100(joy + (won ? 15 : 8));
@@ -1041,6 +1048,7 @@ void Pet::save() {
   prefs.putUShort("mstone", lastMilestone);
   prefs.putUShort("ghi", gameHi);
   prefs.putUShort("rhi", runHi);
+  prefs.putUShort("sfhi", surfHi);
   prefs.putUChar("dhi", dungeonHi);
   prefs.putUChar("cdyn", candyToday);
   prefs.putUInt("cdyd", candyDay);
@@ -1113,6 +1121,7 @@ void Pet::load() {
   lastMilestone = prefs.getUShort("mstone", 0);
   gameHi = prefs.getUShort("ghi", 0);
   runHi = prefs.getUShort("rhi", 0);
+  surfHi = prefs.getUShort("sfhi", 0);
   dungeonHi = prefs.getUChar("dhi", 0);
   candyToday = prefs.getUChar("cdyn", 0);
   candyDay = prefs.getUInt("cdyd", 0);

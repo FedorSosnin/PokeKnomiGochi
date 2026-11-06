@@ -151,6 +151,8 @@ def main():
         source, 'MED_LBL', med_count, lambda i: f'medal {i}')
     errors += check_table(
         source, 'MED_DSC', med_count, lambda i: f'medal {i}')
+    errors += check_table(
+        source, 'MED_HOW', med_count, lambda i: f'medal {i}')
 
     if errors:
         print(f'{len(errors)} i18n consistency error(s):')
@@ -159,7 +161,7 @@ def main():
         return 1
 
     print(
-        f'OK: STRINGS ({str_count} ids) and the 3 medal tables '
+        f'OK: STRINGS ({str_count} ids) and the 4 medal tables '
         f'({med_count} medals) are consistent across all '
         f'{len(LANGS)} languages.')
     return 0

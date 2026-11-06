@@ -24,7 +24,7 @@ PokeMacGochi: a Pokemon virtual pet for your Mac desktop
 
 Playing
 - Click, hold and swipe on the screen like a touch screen.
-- Left and right arrows tilt (Tilt Catch, throwing Poke Balls).
+- Left and right arrows tilt (Berry Drop, throwing Poke Balls).
 - Space is the button: a wild battle.
 - Drag the Pokeball ring to move the window. Right-click it, or use the Pokeball
   in the menu bar, for About, Size, Mute Sound and Quit.

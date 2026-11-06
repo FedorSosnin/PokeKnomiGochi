@@ -77,7 +77,7 @@ const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = 'f5a3c4cf55';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = '5759ea5fa1';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -159,9 +159,9 @@ function frame() {
 // a hidden tab gets no animation frames: the game keeps its time from the clock and
 // catches up when it comes back, like a Knomi with the screen off
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && !skipSave) { Module._webSave(); sync(); }
+  if (document.hidden && running && !skipSave) { Module._webSave(); sync(); }  // not while it still loads
 });
-addEventListener('pagehide', () => { if (!skipSave) { Module._webSave(); sync(); } });
+addEventListener('pagehide', () => { if (running && !skipSave) { Module._webSave(); sync(); } });
 
 // ---- touch and mouse: a finger on the 466 x 466 canvas ----
 function point(e) {
@@ -415,6 +415,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=f5a3c4cf55"></script>
+<script src="pokewebgochi.js?v=5759ea5fa1"></script>
 </body>
 </html>

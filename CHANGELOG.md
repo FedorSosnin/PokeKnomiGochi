@@ -6,6 +6,19 @@ bottom of the clock/settings screen (swipe down) and `web/manifest.json`.
 Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [1.47] - 2026-11-06
+
+- **PikaSurf, a new mini game:** your Pokémon surfs down the screen on a board while the water rushes up, and rocks come at you in three lanes. Tilt, drag your Pokémon or use the arrow keys to dodge them. Pikachu surfs alongside on his own board and never hits one, until he's just faster than you and pulls ahead out of sight. It speeds up like PokeRun, and one rock ends the run. It trains speed and keeps a record, like the other games.
+- **How to play:** when a mini game opens, a white card drops in over it, the game waiting dimmed behind, with the ways to move and what the game is about. Press the green **Ready, GO!** or swipe the card away, and the game starts. On the Knomi the cards list tilting and touch; on Mac, Windows and the web they add the arrow keys.
+- **App tiles:** the games and the Travel zones are now rounded tiles, framed in white and each one's own colour, with a soft shadow. The games sit on a grid like Travel's, two on top and three below, and a long name takes two lines (Poke / Dungeon).
+- **Back to the games:** when a game ends, you're back on the Games menu to pick the next one, not on the main screen.
+- **After a win,** once attack training is maxed the battle just ends: no more "maxed" line.
+- **The rubber duck** in the bath sits right beside your Pokémon, on the side toward the middle of the screen, and moves with it.
+- **Medals explain themselves:** tap any medal to see how to earn it, whether you have it yet, and a ✕ to go back.
+- **Who's That? has 10 silhouettes** instead of 5, and the same Pokémon never comes up twice in a game. A perfect game gives up to +33 joy.
+- **Berry Drop:** Tilt Catch is now called Berry Drop. Besides tilting and the arrow keys, a finger (or the mouse) held on the screen now leads your Pokémon to it.
+- **Evolution stats:** a new page, [Evolution stats](docs/EVOLUTION.md), lists every evolution line with each form's HP, ATK, DEF and SPD and what evolving adds, for all 151 Pokémon. The README's How to play section links to it.
+
 ## [1.46] - 2026-11-06
 
 - **Time zones on the Knomi:** swipe down and tap the city under **Time zone**. Each city shows its own time, so pick the one that matches your clock; summer time changes by itself. Knomis start on New York, as before.

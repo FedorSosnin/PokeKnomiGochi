@@ -3,6 +3,7 @@
 #include "shim/Arduino.h"
 #include "../minigames.h"
 #include "../pokerun.h"
+#include "../surf.h"
 #include "../pet.h"
 #include "../dex.h"
 
@@ -109,7 +110,7 @@ TEST(pokerun, record_is_saved_and_old_saves_unchanged) {
   p.gameHi = 130;
   p.runResult(48);
   CHECK_EQ(p.runHi, (uint16_t)48);
-  CHECK_MSG(p.gameHi == 130, "does not touch the Tilt Catch record");
+  CHECK_MSG(p.gameHi == 130, "does not touch the Berry Drop record");
   p.runResult(20);
   CHECK_EQ(p.runHi, (uint16_t)48);
 }
@@ -147,4 +148,101 @@ TEST(catch_, the_rings_reward_a_good_aim) {
   CHECK_EQ(catchChance(233 - CATCH_RADIUS + 1, 233), CATCH_CHANCE_OUT);
   CHECK_EQ(catchChance(233 + CATCH_RADIUS, 233), 0);
   CHECK(catchChance(233 + CATCH_RADIUS, 233) == 0 && !catchHit(233 + CATCH_RADIUS, 233));  // the same edge
+}
+
+// ---------- PikaSurf ----------
+
+TEST(surf, the_water_speeds_up_and_the_rows_close_in_as_in_pokerun) {
+  CHECK(surfSpeed(0) == SURF_SPEED_START);
+  CHECK(surfSpeed(10) > surfSpeed(0));
+  CHECK(surfSpeed(1000) == SURF_SPEED_MAX);
+  CHECK(surfMinGap(0) == SURF_GAP_START);
+  CHECK(surfMinGap(SURF_GAP_TIGHTEN / 2) < SURF_GAP_START);
+  CHECK(surfMinGap(1000) == SURF_GAP_MIN);
+}
+
+// plays a whole run with the bot, checking every step; returns how long it lasted
+static float surfPlay(uint32_t seed, float maxT, bool bot, int &rows, int &doubles, bool &pikaTouched,
+                      bool &threeBlocked, float &pikaGoneAt) {
+  SurfState s;
+  surfStart(s, seed);
+  SurfRow seen[SURF_ROWS] = {};
+  rows = doubles = 0;
+  pikaTouched = threeBlocked = false;
+  pikaGoneAt = -1;
+  while (!s.dead && s.t < maxT) {
+    surfStep(s, 1 / 30.0f, bot ? surfBotTilt(s) : 0);
+    for (int i = 0; i < SURF_ROWS; i++) {
+      const SurfRow &r = s.rows[i];
+      if (r.on && (!seen[i].on || r.y > seen[i].y)) {  // a new row in this slot
+        rows++;
+        if (r.lanes == 7) threeBlocked = true;
+        if (r.lanes != 1 && r.lanes != 2 && r.lanes != 4) doubles++;
+      }
+      seen[i] = r;
+      if (r.on && s.pikaY < SURF_PIKA_GONE_Y && r.y - SURF_ROCK_HALF_H < SURF_SEEN_Y &&  // one you could see
+          fabsf(r.y - s.pikaY) < SURF_ROCK_HALF_H + SURF_PIKA_HALF_H && surfRowHitsAt(r, s.pikaX, SURF_PIKA_HALF_W))
+        pikaTouched = true;
+    }
+    if (pikaGoneAt < 0 && s.pikaY >= SURF_PIKA_GONE_Y) pikaGoneAt = s.t;
+  }
+  return s.t;
+}
+
+TEST(surf, a_quick_player_can_always_get_through_and_pikachu_never_hits) {
+  for (uint32_t seed = 1; seed <= 25; seed++) {
+    int rows, doubles;
+    bool touched, three;
+    float gone;
+    float t = surfPlay(seed * 7919, 240, true, rows, doubles, touched, three, gone);
+    CHECK_MSG(t >= 240, "the bot crashed: a row it could not reach in time");
+    CHECK_MSG(!touched, "Pikachu touched a rock");
+    CHECK_MSG(!three, "a row blocked all three lanes");
+    CHECK(rows > 150);
+    CHECK_MSG(doubles > rows / 4, "two-rock rows come in");
+    CHECK_MSG(gone > 30 && gone < 50, "Pikachu pulls ahead and is gone in under a minute");
+  }
+}
+
+TEST(surf, standing_still_does_not_last) {
+  for (uint32_t seed = 1; seed <= 25; seed++) {
+    int rows, doubles;
+    bool touched, three;
+    float gone;
+    float t = surfPlay(seed * 104729, 120, false, rows, doubles, touched, three, gone);
+    CHECK_MSG(t < 60, "a rock comes down the middle sooner or later");
+  }
+}
+
+TEST(surf, the_first_rows_are_single_rocks) {
+  SurfState s;
+  surfStart(s, 12345);
+  while (s.t < SURF_DOUBLE_FROM) {
+    surfStep(s, 1 / 30.0f, surfBotTilt(s));
+    for (auto &r : s.rows)
+      if (r.on) CHECK(r.lanes == 1 || r.lanes == 2 || r.lanes == 4);
+  }
+}
+
+TEST(surf, a_stall_does_not_crash_through_a_rock) {
+  SurfState s;
+  surfStart(s, 99);
+  s.rows[0] = { SURF_PET_Y + 60.0f, 2, { 0, 0, 0 }, true };  // a rock coming up the middle, under yours
+  surfStep(s, 5.0f, 0);  // five seconds' stall: counted as 0.12 s
+  CHECK(s.t < 0.2f);
+  CHECK(s.rows[0].y > SURF_PET_Y);
+}
+
+TEST(surf, the_record_and_its_reward) {
+  Pet p;
+  p.begin();
+  p.chooseStarter(1);
+  p.eggTap(); p.eggTap(); p.eggTap();
+  p.surfHi = 0;
+  uint16_t run = p.runHi;
+  p.surfResult(52);
+  CHECK_EQ(p.surfHi, (uint16_t)52);
+  p.surfResult(30);
+  CHECK_EQ(p.surfHi, (uint16_t)52);
+  CHECK_MSG(p.runHi == run, "does not touch the PokeRun record");
 }

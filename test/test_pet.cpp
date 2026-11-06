@@ -671,6 +671,11 @@ TEST(quiz, getting_it_right_cheers_up_more) {
   p.joy = 40;
   p.quizResult(5);
   CHECK_EQ(p.joy, (uint8_t)58);
+  CHECK_MSG(!p.showHeart(), "half right: no heart");
+  p.joy = 40;
+  p.quizResult(10);  // all ten silhouettes
+  CHECK_EQ(p.joy, (uint8_t)73);
+  CHECK_MSG(p.showHeart(), "all right: a heart");
 }
 
 TEST(train, rival_respects_evolution_levels_and_legendaries) {
@@ -1635,6 +1640,7 @@ TEST(save, state_survives_a_reboot) {
   a.weight = 33;
   a.gameHi = 21;
   a.runHi = 48;
+  a.surfHi = 52;
   a.rename("SPARKY");  // rename persists the whole state
 
   Pet b;
@@ -1648,6 +1654,7 @@ TEST(save, state_survives_a_reboot) {
   CHECK_EQ(b.weight, (uint8_t)33);
   CHECK_EQ(b.gameHi, (uint16_t)21);
   CHECK_EQ(b.runHi, (uint16_t)48);
+  CHECK_EQ(b.surfHi, (uint16_t)52);
   CHECK_STREQ(b.nick, "SPARKY");
   CHECK(b.isRegistered(25));
   CHECK(!b.awaitingStarter());

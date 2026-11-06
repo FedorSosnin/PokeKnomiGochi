@@ -86,13 +86,19 @@ enum StrId : uint8_t {
   S_SD_THEY_GOT_FMT, S_SD_NOBODY, S_SD_WIN, S_SD_LOSE_FMT, S_SD_DRAW, S_GOT_AWAY_FMT,
   S_VOLLEY, S_VB_SERVE, S_VB_POINT, S_VB_THEY_SCORE_FMT, S_VB_HINT,
   S_ZONE_MEDALS_FMT, S_SHINY_WILD_FMT,
-  S_TRAIN_MAXED, S_TRAINING, S_TRAIN_HOW_ATK, S_TRAIN_HOW_DEF, S_TRAIN_HOW_SPE, S_TRAIN_HOW_WGT,
+  S_TRAINING, S_TRAIN_HOW_ATK, S_TRAIN_HOW_DEF, S_TRAIN_HOW_SPE, S_TRAIN_HOW_WGT,
   S_PARTY_BOOST, S_BOOST_ENERGY, S_VISIT_MIN_FMT, S_STAT_HP, S_VISIT_CANDY_FMT, S_FAREWELL_HINT1, S_FAREWELL_HINT2, S_BTL_NO_ESCAPE,
   S_LV100_FMT, S_RANDOM_BATTLE,
   S_STARS_BETTER, S_STARS_YOURS_BETTER, S_STARS_SAME, S_STARS_REPLACES, S_STARS_TO_WILD,
   S_DEX_TITLE, S_PAGE_OF_FMT,  // "POKEDEX", "Page %d of %d"
   S_TRAVEL,  // the zones' screen: "Travel"
   S_CLOCK, S_SET_BY_WIFI, S_SET_AUTO, S_TIME_ZONE,  // the time page when the network sets it; the zone picker
+  // each game's how-to-play card, wrapped at the spaces: the ways to play it and the point. _KEYS: on a
+  // computer or the web (the arrow keys too); the others the Knomi's. Neither names a device
+  S_HOW_BERRY, S_HOW_BERRY_KEYS, S_HOW_WHO, S_HOW_RUN, S_HOW_DN, S_HOW_DN_KEYS, S_HOW_SURF, S_HOW_SURF_KEYS,
+  S_GAME_SURF,  // "PikaSurf"
+  S_MEDAL_GOT, S_MEDAL_TODO,  // a medal's card: earned, or not yet
+  S_READY_GO,  // a game's how-to-play card: its button
   STR_COUNT
 };
 
@@ -100,6 +106,7 @@ const char *T(StrId id);       // text in the active language
 const char *medalName(int i);  // medal banner (MED_COUNT)
 const char *medalLabel(int i); // short medal label
 const char *medalDesc(int i);  // long medal description
+const char *medalHow(int i);   // how to earn it, for its card
 
 void loadLang();             // reads the language from NVS (call in setup)
 void setLang(Lang l);        // changes and persists the language

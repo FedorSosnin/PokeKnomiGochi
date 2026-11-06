@@ -18,10 +18,12 @@ This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) b
 | **Catch what you beat, 1 to 3 ★** | **Fill the Pokédex** | **Read about what you've caught** |
 | ![Games menu](docs/images/games.png) | ![PokeRun](docs/images/pokerun.png) | ![Who's That Pokémon?](docs/images/quiz.png) |
 | **Play mini games** | **PokeRun** | **Who's That Pokémon?** |
+| ![PikaSurf: Gengar and Pikachu on their boards, a rock coming up](docs/images/pikasurf.png) | ![How to play, on a card over the game](docs/images/howto.png) | ![A medal's card: how to earn it](docs/images/medal.png) |
+| **PikaSurf: dodge the rocks** | **How to play, before each game** | **Tap a medal to see how to earn it** |
 | ![Five zones to hunt in](docs/images/zones.png) | ![What's missing in a zone](docs/images/zone.png) | ![A battle in the Forest](docs/images/zone-battle.png) |
 | **Choose where to hunt** | **See what's missing** | **Battle in that zone** |
-| ![The answer revealed](docs/images/quiz-reveal.png) | ![Tilt Catch](docs/images/tilt-catch.png) | ![A daily visitor](docs/images/visitor.png) |
-| **Guess the silhouette** | **Tilt Catch** | **A visitor drops by each day** |
+| ![The answer revealed](docs/images/quiz-reveal.png) | ![Berry Drop](docs/images/tilt-catch.png) | ![A daily visitor](docs/images/visitor.png) |
+| **Guess the silhouette** | **Berry Drop** | **A visitor drops by each day** |
 | ![Pikachu and Charizard visiting Gengar](docs/images/buddy.png) | ![Battle or trade with a buddy](docs/images/buddy-menu.png) | ![The button under your finger, shown large](docs/images/press.png) |
 | **Buddies come to visit** | **Battle or trade with them** | **Press and slide to choose** |
 | ![Play together](docs/images/play.png) | ![Who's That? Showdown](docs/images/showdown.png) | ![Poké Ball Volley](docs/images/volley.png) |
@@ -66,7 +68,7 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 The screen turns to follow however you hold the Knomi. It starts ready for your right hand with the cable going off to the left, so the button is under your finger.
 
-See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does, and [Moves](docs/MOVES.md) for when every Pokémon learns each move, and how strong each one is.
+See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does, and [Moves](docs/MOVES.md) for when every Pokémon learns each move, and how strong each one is. [Evolution stats](docs/EVOLUTION.md) lists every evolution and the HP, ATK, DEF and SPD it adds.
 
 | Do this | What happens |
 |---|---|
@@ -82,6 +84,18 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | **Press the button** | Start a wild battle |
 | **Hold the button for 1–3 seconds** | Turn the screen on or off |
 | **Hold the button for 10 seconds** | Asks whether to erase the game and start over |
+
+### Evolution Stats
+
+Evolving makes your Pokémon stronger. Its stats come from its species' base HP, ATK, DEF and SPD, which are bigger for each evolved form, and it keeps its level and all its training, so it gets the bigger numbers the moment it evolves. Charmander's line, for example:
+
+| | Evolves at | HP | ATK | DEF | SPD |
+|---|---|---:|---:|---:|---:|
+| Charmander | 16 | 39 | 52 | 43 | 65 |
+| Charmeleon | 36 | 58 (+19) | 64 (+12) | 58 (+15) | 80 (+15) |
+| Charizard | | 78 (+20) | 84 (+20) | 78 (+20) | 100 (+20) |
+
+**[Every Pokémon's evolutions and stats](docs/EVOLUTION.md)** has all 151, line by line, with what each evolution adds.
 
 ### Raising your next Pokémon
 
@@ -120,7 +134,7 @@ Your Pokémon's ATK, DEF and SPD grow as it levels up, and training adds more on
 
 - **Winning a battle** adds attack training.
 - **Every 6 hours of good care** (every need at 40 or more) adds defense training. Sleep counts, and a need can dip under 40 for up to 15 minutes before the 6 hours start over.
-- **Mini games** (Tilt Catch, PokeRun, PokeDungeon) add speed training.
+- **Mini games** (Berry Drop, PokeRun, PikaSurf, PokeDungeon) add speed training.
 - **Weight** isn't training: food adds it (candy the most), and games, battles and time burn it off. Over 50, your Pokémon tires twice as fast.
 
 Each kind of training stops at 100. The card's **Training** page (swipe up, then left twice) shows how far along each one is, with **MAX** when it's full, and your Pokémon's weight. Once attack training is maxed, a win says so instead of adding more. A new Pokémon starts training from zero.
@@ -139,12 +153,13 @@ Tap the **map** icon in the middle of the home screen to open **Travel** and go 
 
 ### Games
 
-Tap the **handheld** icon, second from the left, to open the mini games: each has a round window onto the game, with your Pokémon in it. They train speed. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
+Tap the **handheld** icon, second from the left, to open the mini games: each has a round window onto the game, with your Pokémon in it. When one opens, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?
-- **Who's That Pokémon?:** name the silhouette, five rounds per game.
-- **Tilt Catch:** in the woods under two tall berry trees, lean left and right to catch falling berries. They fall faster with every catch, with no top speed, so every game ends.
+- **PikaSurf:** your Pokémon surfs down the rushing water on a board; tilt, drag it or use the arrow keys to dodge the rocks coming up in three lanes. Pikachu surfs alongside and never hits one, until he pulls ahead out of sight. It keeps speeding up, and one rock ends the run.
+- **Who's That Pokémon?:** name the silhouette, ten rounds per game, never the same Pokémon twice.
+- **Berry Drop:** in the woods under two tall berry trees, tilt left and right, or drag your Pokémon with a finger, to catch falling berries. They fall faster with every catch, with no top speed, so every game ends.
 
 ### Buddies
 
@@ -290,7 +305,7 @@ The same game as a small round window on your Mac desktop, in a Poké Ball ring.
 
    Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/PokeMacGochi.app`
 
-**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Tilt Catch and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle. Drag the red and white ring to move the window: it grows when the mouse is over it, so it's easy to grab, and the screen inside is only for touching, with the mouse as a finger. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound, Check for Updates and Quit.
+**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Berry Drop and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle. Drag the red and white ring to move the window: it grows when the mouse is over it, so it's easy to grab, and the screen inside is only for touching, with the mouse as a finger. Right-click it, or click the Poké Ball in the menu bar, for About, Size, Mute Sound, Check for Updates and Quit.
 
 Your pet, sound setting and window size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 
@@ -314,7 +329,7 @@ Your pet, sound setting and window size and place are saved in `%APPDATA%\PokeWi
 
 **Updates:** it checks for a new version when it opens and once a day, and tells you once when one is out. From 1.13 on it updates itself, like the Knomi: click **Yes** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and starts again on it a few seconds later. Your pet stays. On older versions, quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one.
 
-**Tilt and controllers:** a controller's left stick tilts smoothly (for Tilt Catch and aiming Poké Balls), and the stick or D-pad walks in PokeDungeon: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. If Windows has a motion sensor, as many tablets do, tilting the device tilts the game, like on a phone; **Tilt with the Device** in the menu turns that off. On a ROG Ally, set the gyro to act as the left joystick in Armoury Crate, and tilting the Ally tilts the game. The controller and the sensor only count while PokeWinGochi is the active window.
+**Tilt and controllers:** a controller's left stick tilts smoothly (for Berry Drop and aiming Poké Balls), and the stick or D-pad walks in PokeDungeon: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. If Windows has a motion sensor, as many tablets do, tilting the device tilts the game, like on a phone; **Tilt with the Device** in the menu turns that off. On a ROG Ally, set the gyro to act as the left joystick in Armoury Crate, and tilting the Ally tilts the game. The controller and the sensor only count while PokeWinGochi is the active window.
 
 **Vibration:** on a handheld PC with a built-in controller, like the ROG Ally, or with an Xbox controller connected, it buzzes softly with taps, meals, medals and catches. **Vibration** in the menu turns it off; it only shows when a controller is connected.
 

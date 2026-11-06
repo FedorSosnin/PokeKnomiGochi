@@ -17,6 +17,8 @@
 #include "host_hal.h"
 #include "host_internal.h"
 #include "rtcbat.h"
+#include "i18n.h"
+#include "pet.h"
 #include <Preferences.h>
 
 static int gFails = 0, gChecks = 0;
@@ -138,6 +140,45 @@ static void testU8g2() {
   c.setCursor(100, 100);
   c.print("\xEC\x8B\x9C");  // hangul "si"
   CHECK(countColor(c, 0xFFFF) > 10);
+
+  // every Japanese and Korean text draws all its characters: both fonts are subsets of unifont
+  // (korean2 most of all), and a missing one is skipped without a trace
+  c.setCursor(100, 100);
+  c.print("\xE0\xB8\x81");  // a Thai letter, in neither font: drawn as nothing
+  CHECK(c.getCursorX() == 100);
+  int missing = 0;
+  for (Lang l : { LANG_JA, LANG_KO }) {
+    c.setFont(l == LANG_JA ? ja.data() : ko.data());
+    gLang = l;
+    std::vector<const char *> texts;
+    for (int id = 0; id < STR_COUNT; id++) texts.push_back(T((StrId)id));
+    for (int m = 0; m < MED_COUNT; m++) {
+      texts.push_back(medalName(m));
+      texts.push_back(medalLabel(m));
+      texts.push_back(medalDesc(m));
+      texts.push_back(medalHow(m));
+    }
+    for (const char *t : texts) {
+      for (const char *p = t; *p;) {
+        int n = (*p & 0x80) == 0 ? 1 : (*p & 0xE0) == 0xC0 ? 2 : (*p & 0xF0) == 0xE0 ? 3 : 4;
+        std::string ch(p, n);
+        p += n;
+        if (ch == " " || ch == "\n") continue;
+        if (n == 4) {  // beyond the fonts' reach (an emoji)
+          missing++;
+          continue;
+        }
+        c.setCursor(100, 100);
+        c.print(ch.c_str());
+        if (c.getCursorX() == 100) {
+          if (missing++ < 10) printf("  no glyph for \"%s\" in: %s\n", ch.c_str(), t);
+        }
+      }
+    }
+  }
+  gLang = LANG_DEFAULT;
+  CHECK(missing == 0);
+
   c.setFont();
   c.setUTF8Print(false);
   c.setCursor(0, 0);
@@ -418,6 +459,10 @@ static void runTicks(int ms) {
 }
 
 // the real game, from start to finish
+extern bool gamesMenuOpen, gameOpen, runOpen;
+extern uint32_t runOverT;
+extern int8_t introCard;
+
 static void testGame() {
   std::string res = tempDir(), save = tempDir(), cwd = getcwd(nullptr, 0);
   CHECK(symlink((cwd + "/../tools/sdcard/mons").c_str(), (res + "/mons").c_str()) == 0);
@@ -478,6 +523,60 @@ static void testGame() {
   std::string text(saved.begin(), saved.end());
   CHECK(text.find("spe ") != std::string::npos || text.find("sp ") != std::string::npos);
   CHECK(!hostRestartRequested());
+  // a game opens under its how-to-play card: the text does nothing, Ready, GO! sends it off and the game
+  // starts; a swipe sends it off too, and doesn't quit the game
+  auto tapAt = [](int16_t x, int16_t y) {
+    hostPointer(x, y, true);
+    runTicks(150);
+    hostPointer(x, y, false);
+    runTicks(300);
+  };
+  hostSerialPush("NOSAVE");
+  runTicks(100);
+  hostSerialPush("SPEC 5");
+  runTicks(100);
+  hostSerialPush("AWAKE");
+  runTicks(100);
+  hostSerialPush("GAMES");
+  runTicks(300);
+  CHECK(gamesMenuOpen && introCard == -1);
+  tapAt(170, 128);  // Berry Drop's tile
+  CHECK(gameOpen && !gamesMenuOpen && introCard == 0);
+  runTicks(500);    // landed
+  tapAt(233, 240);  // the text
+  CHECK(gameOpen && introCard == 0);
+  tapAt(233, 335);  // Ready, GO!
+  runTicks(400);    // off it goes
+  CHECK(gameOpen && introCard == -1);
+  hostSerialPush("GAMES");
+  runTicks(300);
+  gameOpen = false;  // (Berry Drop, left: the menu opens over it in this test)
+  tapAt(170, 128);
+  runTicks(500);
+  CHECK(gameOpen && introCard == 0);
+  hostPointer(233, 380, true);  // a swipe up from the bottom: it would quit a game, here it sends the card
+  for (int yy = 380; yy >= 200; yy -= 30) {
+    hostPointer(233, yy, true);
+    runTicks(20);
+  }
+  hostPointer(233, 200, false);
+  runTicks(500);
+  CHECK(gameOpen && introCard == -1);
+
+  // a game that ends goes back to the games menu, not home: PokeRun, with no jumps, ends on the first
+  // obstacle; a tap on the result closes it
+  gameOpen = false;
+  hostSerialPush("GAMES");
+  runTicks(300);
+  tapAt(296, 128);  // PokeRun's tile
+  runTicks(500);
+  tapAt(233, 335);  // Ready, GO!
+  for (int i = 0; i < 40 && !runOverT; i++) runTicks(200);  // until it has ended
+  runTicks(1000);
+  CHECK(runOpen && runOverT);  // the result, waiting for a tap
+  tapAt(233, 200);
+  CHECK(!runOpen && gamesMenuOpen);
+
   hostSerialPush("WIPE");
   runTicks(50);
   CHECK(hostRestartRequested());

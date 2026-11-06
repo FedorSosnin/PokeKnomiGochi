@@ -460,6 +460,28 @@ def run_rock():
     return g.rows()
 
 
+def surf_rock():
+    # PikaSurf: a boulder in the rushing water, seen from above
+    g = G(14)
+    g.disk(7, 7.2, 6.2, 5.4, 's', 'S')
+    g.disk(5.0, 5.0, 2.0, 1.3, 'w')  # wet on top
+    g.px(9, 4, 'w')
+    g.px(4, 10, 'S'); g.px(10, 9, 'S'); g.px(8, 11, 'S')
+    g.outline()
+    return g.rows()
+
+
+def surf_board(body='o', shade='O', stripe='w'):
+    # PikaSurf: a surfboard seen from above, its nose pointing down the screen; square like every map,
+    # so the board is the middle of it
+    g = G(24)
+    g.disk(12, 10.5, 5.6, 10.8, body, shade)
+    g.disk(12, 18.5, 3.4, 4.6, body, shade)  # a pointed nose
+    g.rect(12, 2, 12, 20, stripe)  # the stringer
+    g.outline()
+    return g.rows()
+
+
 def run_bush():
     g = G(15)
     g.disk(7, 9.4, 6.4, 4.0, 'g', 'G')
@@ -790,6 +812,9 @@ SPRITES = {
     "POOP": poop(),
     "HEART": heart(),
     "RUN_ROCK": run_rock(),
+    "SURF_ROCK": surf_rock(),
+    "SURF_BOARD": surf_board(),  # yours: orange
+    "SURF_BOARD_P": surf_board('u', 'v'),  # Pikachu's: blue
     "RUN_BUSH": run_bush(),
     "RUN_LOG": run_log(),
     "RUN_STUMP": run_stump(),

@@ -26,7 +26,7 @@ inline uint8_t catchChance(float ballX, float foeX) {
 inline uint8_t catchBreakAt(uint8_t roll100, uint8_t roll3, uint8_t chance) {
   return roll100 < chance ? 0 : 1 + roll3 % CATCH_SHAKES;
 }
-#define QUIZ_ROUNDS 5
+#define QUIZ_ROUNDS 10  // silhouettes in a game of Who's That?, none twice
 
 inline bool catchHit(float ballX, float foeX) {
   float d = ballX - foeX;

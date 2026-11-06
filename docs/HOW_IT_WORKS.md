@@ -35,12 +35,13 @@ Games don't raise anything if you quit by swiping up.
 
 | Game | 😊 | ⚡ | 🍖 | 💨 | Bond 💞 | Burns ⚖️ |
 |---|---|---|---|---|---|---|
-| 🍓 **Tilt Catch** | +5, plus 2 per point | −10, more for high scores | **+5** | Yes | +2 | Yes |
+| 🍓 **Berry Drop** | +5, plus 2 per point | −10, more for high scores | **+5** | Yes | +2 | Yes |
 | 🏃 **PokeRun** | +5, plus 2 per 4 seconds | −10, more for long runs | −5 | Yes | +2 | Yes |
+| 🏄 **PikaSurf** | +5, plus 2 per 4 seconds | −10, more for long runs | −5 | Yes | +2 | Yes |
 | 🕳️ **PokeDungeon** | +5, plus 4 per floor | −10, more for deep dives | −5 | Yes | +2 | Yes |
 | ❓ **Who's That?** | +3, plus 3 per right answer | | | | +1 | |
 
-Tilt Catch, PokeRun and PokeDungeon each add at most +35 joy per game. Who's That? adds at most +18. Energy and food won't drop below 5 from a game.
+Berry Drop, PokeRun, PikaSurf and PokeDungeon each add at most +35 joy per game. Who's That? adds at most +33. Energy and food won't drop below 5 from a game.
 
 ## Battles
 
@@ -92,7 +93,7 @@ Every form in the Pokédex (regular and shiny count apart) has 1–3 ★: its ge
 
 - **Winning a battle** adds attack training (+6 a win).
 - **Every 6 hours of good care** adds defense training (+1). Good care means every need stays at 40 or more. Hours asleep count too, and a need can dip under 40 for up to 15 minutes while it's awake (time to notice and feed it) before the 6 hours start over. The count is saved, so a restart or an update doesn't lose it.
-- **Mini games** add speed training: Tilt Catch, PokeRun and PokeDungeon add 1 for every 5 points.
+- **Mini games** add speed training: Berry Drop, PokeRun, PikaSurf and PokeDungeon add 1 for every 5 points.
 - **Weight** isn't training: every berry adds 4 and candy 12 (6 more if it was already 80% full). Games, battles and time burn it off. Over 50, energy drops twice as fast; 20 or less earns the Fit medal.
 
 Each kind of training stops at 100. Swipe up for the card, then left twice: the **Training** page shows each one's bar, with **MAX** when it's full, and what trains it, plus a row for weight. Training belongs to the Pokémon: a new one starts from zero.
@@ -161,13 +162,13 @@ The game counts its own minutes, and only a clock nobody can set adds time away.
 | 🛡️ **Defense** | +1 for every 6 hours with all four needs at 40 or above (asleep counts, short dips are forgiven) |
 | ⚠️ **Care mistake** | A need at 10 or below counts as a mistake, at most once an hour, and costs 1 💞 |
 | 🏃 **Running away** | With all four needs at 0 for an hour, it's ready to leave. One bit of care resets the clock. |
-| 🔄 **Evolving** | At its evolution level (one level later for each care mistake), with all four needs at 40 or more, a red **Evolve** button appears. Tap it to evolve, or **Keep** to stay as it is: the button comes back an hour later. Tapping away from the question leaves the button there. Every species' level is in [Moves](MOVES.md) |
+| 🔄 **Evolving** | At its evolution level (one level later for each care mistake), with all four needs at 40 or more, a red **Evolve** button appears. Tap it to evolve, or **Keep** to stay as it is: the button comes back an hour later. Tapping away from the question leaves the button there. Every species' level is in [Moves](MOVES.md), and [Evolution stats](EVOLUTION.md) shows what each evolution adds. |
 | 👋 **Goodbye** | A fully evolved Pokémon offers a goodbye from 3 days old. Choose to stay together and it won't ask again; hold your finger on it whenever you're ready. |
 | 🥚 **Next Pokémon** | After a goodbye or letting one go, choose a first form from your Pokédex (Pikachu, not Raichu). A shiny one you have is its own square and always hatches shiny ✨; a regular one has a 25% chance |
 
 ## Medals
 
-Swipe from right to left on the home screen to see them all, 6 to a page; the ones you have earned are green with a check mark. A new medal drops in from the top of the screen on a ribbon; tap it to jump to its page and see it turn green.
+Swipe from right to left on the home screen to see them all, 6 to a page; the ones you have earned are green with a check mark. Tap any of them to see how to earn it. A new medal drops in from the top of the screen on a ribbon; tap it to jump to its page and see it turn green.
 
 | Medal | How to earn it |
 |---|---|
