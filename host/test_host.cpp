@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <ctime>
 #include <string>
 #include <vector>
 #include "U8g2lib.h"
