@@ -53,7 +53,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.48"
+#define FW_VERSION "1.49"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -2528,7 +2528,61 @@ int drawWrapped(const char *s, uint8_t size, int maxW, int y, int lineH, bool dr
 }
 
 // a card is up over a game that is open (a card left over from a closed game counts for nothing)
-bool introUp() { return introCard >= 0 && (gameOpen || quizOpen || runOpen || surfOpen || dungeonOpen); }
+bool introUp() { return introCard >= 0 && (gameOpen || quizOpen || runOpen || surfOpen || dungeonOpen || sdOpen || vbOpen); }
+
+// Play together's games have cards too (after the Games menu's 0..4): the same card on both boards, and
+// the game begins once both players have pressed Ready, GO! (buddyGameReady)
+#define CARD_VOLLEY GAMES_COUNT
+#define CARD_SHOWDOWN (GAMES_COUNT + 1)
+#define CARD_DUEL (GAMES_COUNT + 2)
+const char *introTitle(int g) {
+  if (g == CARD_VOLLEY) return T(S_VOLLEY);
+  if (g == CARD_SHOWDOWN) return T(S_SHOWDOWN);
+  if (g == CARD_DUEL) return T(S_GAME_SURF);
+  return gameLabel(g);
+}
+uint16_t introColor(int g) {
+  if (g == CARD_VOLLEY) return TYPE_ACCENT[TY_GRASS];
+  if (g == CARD_SHOWDOWN) return TYPE_ACCENT[TY_PSYCHIC];
+  if (g == CARD_DUEL) return TYPE_ACCENT[TY_WATER];
+  return gameColor(g);
+}
+const char *introHow(int g) {
+  if (g == CARD_VOLLEY) return T(playKeysUi ? S_HOW_VB_KEYS : S_HOW_VB);
+  if (g == CARD_SHOWDOWN) return T(S_HOW_SD);
+  if (g == CARD_DUEL) return T(playKeysUi ? S_HOW_DUEL_KEYS : S_HOW_DUEL);
+  return gameHowTo(g);
+}
+
+// ---- both ready: each board says so (BM_READY) once its card has gone, until the other surely has it.
+// A buddy on older firmware never says it: its first move counts, or the wait runs out.
+bool bReadyMine = false, bReadyTheirs = false;
+uint32_t bReadyT0 = 0, bReadySendT = 0, bReadyBothT = 0;
+#define BUDDY_READY_WAIT_MS 30000UL
+#define BUDDY_READY_SEND_MS 400UL
+
+void buddyReadyStart(int card) {
+  bReadyMine = bReadyTheirs = false;
+  bReadyT0 = millis();
+  bReadySendT = bReadyBothT = 0;
+  introOpen(card);
+}
+
+bool buddyGameReady() {
+  if (!bReadyMine) return false;
+  if (!bReadyTheirs && millis() - bReadyT0 < BUDDY_READY_WAIT_MS) return false;
+  if (!bReadyBothT) bReadyBothT = millis();
+  return true;
+}
+
+void buddyReadyTick(uint32_t now) {
+  if (bsState != BS_PLAY || !bReadyMine || now - bReadySendT < BUDDY_READY_SEND_MS) return;
+  if (bReadyBothT && now - bReadyBothT > 3000) return;  // they have it by now
+  bReadySendT = now;
+  BuddyMsg m = buddyMsg(BM_READY);
+  m.kind = bsKind;
+  buddyNetSend(m);
+}
 
 // everything drawn so far, at half brightness: what's behind a card or a message
 void dimFrame() {
@@ -2587,6 +2641,10 @@ void introBegin(int g) {
   } else if (g == 4) {
     surfLast = now;
     tiltZero();
+  } else if (g >= CARD_VOLLEY) {  // a game with a buddy: say you're ready; it begins when they are too
+    bReadyMine = true;
+    bReadySendT = 0;
+    tiltZero();
   }
 }
 
@@ -2623,13 +2681,13 @@ void drawIntroCard() {
   if (!introAwayT || now - introAwayT < CARD_AWAY_MS / 2) dimFrame();
   gfx->fillCircle(cx + 4, cy + 8, CARD_R, C565(0x10, 0x10, 0x18));  // its shadow
   gfx->fillCircle(cx, cy, CARD_R, UI_WHITE);
-  fillRing(cx, cy, CARD_R - 12, CARD_R - 7, gameColor(g));  // a thin ring in the game's colour
-  gfx->setTextColor(gameColor(g));
-  int ts = textW(gameLabel(g), 3) <= 270 ? 3 : 2;  // a long name a size down, inside the card's ring
+  fillRing(cx, cy, CARD_R - 12, CARD_R - 7, introColor(g));  // a thin ring in the game's colour
+  gfx->setTextColor(introColor(g));
+  int ts = textW(introTitle(g), 3) <= 270 ? 3 : 2;  // a long name a size down, inside the card's ring
   setSize(ts);
-  setCur(cx - textW(gameLabel(g), ts) / 2, cy + CARD_TITLE_DY + (ts == 3 ? 0 : 4));
-  printT(gameLabel(g));
-  const char *how = gameHowTo(g);
+  setCur(cx - textW(introTitle(g), ts) / 2, cy + CARD_TITLE_DY + (ts == 3 ? 0 : 4));
+  printT(introTitle(g));
+  const char *how = introHow(g);
   int n = drawWrappedAt(how, 2, CARD_TEXT_W, cx, 0, CARD_LINE_H, false);
   int w = CARD_TEXT_W;  // as narrow as it goes in as many lines: even lines, no word left alone
   while (w > 120 && drawWrappedAt(how, 2, w - 12, cx, 0, CARD_LINE_H, false) == n) w -= 12;
@@ -4024,12 +4082,12 @@ void drawCatchScene() {
 void drawCourtScene() {
   int hh = sceneHour();
   bool night = hh < 6 || hh >= 20;
-  uint16_t out = sceneShade(C565(0xc0, 0x6a, 0x48), night), court = sceneShade(C565(0x3c, 0x7c, 0xc0), night);
+  uint16_t out = sceneShade(C565(0xc0, 0x6a, 0x48), night), court = sceneShade(C565(0x2c, 0x76, 0x3c), night);  // a deep green court
   uint16_t line = sceneShade(UI_WHITE, night), post = sceneShade(C565(0x5a, 0x5e, 0x6a), night);
   uint16_t mesh = sceneShade(C565(0x26, 0x2a, 0x34), night);
   gfx->fillRect(0, 0, 466, 466, out);
   gfx->fillRect(VB_LEFT, VB_TOP, VB_RIGHT - VB_LEFT, 466 - VB_TOP, court);
-  for (int y = VB_TOP + 30; y < 466; y += 60) gfx->fillRect(VB_LEFT, y, VB_RIGHT - VB_LEFT, 30, lerp565(court, out, 1, 12));  // light stripes
+  for (int y = VB_TOP + 30; y < 466; y += 60) gfx->fillRect(VB_LEFT, y, VB_RIGHT - VB_LEFT, 30, lerp565(court, UI_WHITE, 1, 12));  // light stripes
   gfx->fillRect(VB_LEFT - 3, VB_TOP, 6, 466 - VB_TOP, line);   // side lines
   gfx->fillRect(VB_RIGHT - 3, VB_TOP, 6, 466 - VB_TOP, line);
   gfx->fillRect(VB_LEFT, 196, VB_RIGHT - VB_LEFT, 5, line);    // attack line
@@ -4564,6 +4622,7 @@ void surfDuelStart() {
   surfSendT = surfTheirCrashT = surfDuelDoneT = 0;
   surfTheirX = surfTheirShownX = SURF_CX + SURF_PIKA_DX;
   surfAcc = 0;
+  buddyReadyStart(CARD_DUEL);
   Serial.printf("buddy: pikasurf vs #%d\n", bPeers[bCur].dex);
 }
 
@@ -4586,6 +4645,7 @@ float surfTheirT(uint32_t now) {
 
 void surfDuelHandle(const BuddyMsg &m) {
   if (!surfOpen || !surfDuel) return;
+  if (m.atk) bReadyTheirs = true;  // their clock runs: they're surfing
   surfTheirMsgT = millis();
   surfTheirX = m.hp;
   surfTheir10 = m.atk;
@@ -4599,6 +4659,7 @@ void surfDuelHandle(const BuddyMsg &m) {
 
 // sends where you are; false when they've been silent too long (they've gone: the duel closes)
 bool surfDuelTick(uint32_t now) {
+  if (!buddyGameReady()) surfDuelT = now;  // "get ready" counts from when both have pressed Ready, GO!
   if (now - surfSendT >= SURF_DUEL_SEND_MS) {
     surfSendT = now;
     surfDuelSend();
@@ -4644,7 +4705,9 @@ void drawSurfDuelText(uint32_t now) {
     snprintf(b, sizeof(b), "%s %us", buddyName(), (unsigned)surfTheirT(now));
     surfText(b, 2, 58, UI_WHITE);
   }
-  if (now - surfDuelT < SURF_DUEL_READY_MS) {
+  if (!buddyGameReady()) {
+    if (introCard < 0) surfText(T(S_BUDDY_WAITING), 3, 240, UI_WHITE);  // their Ready, GO! still to come
+  } else if (now - surfDuelT < SURF_DUEL_READY_MS) {
     surfText(T(S_SD_READY), 3, 240, UI_WHITE);
   } else if (surfDuelDoneT) {  // who won, and both times
     int out = surfDuelOutcome((uint16_t)(surf.t * 10), surfTheir10);
@@ -6833,6 +6896,7 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
     case BM_ANSWER:
     case BM_RESULT:
       if (bsState == BS_INVITING && bsKind == BK_SHOWDOWN) buddyStartSession();  // the ACCEPT was lost
+      bReadyTheirs = true;  // a round under way: they're playing
       sdHandle(m);
       break;
     case BM_VBALL:
@@ -6843,6 +6907,10 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
     case BM_SURF:
       if (bsState == BS_INVITING && bsKind == BK_SURF) buddyStartSession();  // the ACCEPT was lost
       surfDuelHandle(m);
+      break;
+    case BM_READY:  // they've pressed Ready, GO! on their card
+      if (bsState == BS_INVITING && m.kind == bsKind) buddyStartSession();  // the ACCEPT was lost
+      bReadyTheirs = true;
       break;
     case BM_LEAVE:
       if (sdOpen || vbOpen || (surfOpen && surfDuel)) {
@@ -6920,6 +6988,7 @@ void buddyTick(uint32_t now) {
     }
     BuddyMsg m;
     for (int i = 0; i < 8 && buddyNetPoll(m); i++) buddyHandle(m, now);
+    buddyReadyTick(now);
   }
   // touches and messages have already stamped bsT and trT with millis(): with the old now the subtraction would wrap around
   now = millis();
@@ -7375,7 +7444,7 @@ uint16_t playColor(int i) {
   return C[i];
 }
 
-// each game's window: Volley's court (green, like its frame), Who's That? Showdown's burst, PikaSurf
+// each game's window: Volley's court (the game's, deep green), Who's That? Showdown's burst, PikaSurf
 // with the buddy alongside
 void playGlimpsesPaint() {
   if (!playArt) playArt = (uint16_t *)ps_malloc(PLAY_GAME_COUNT * GAME_ART * GAME_ART * sizeof(uint16_t));
@@ -7384,24 +7453,16 @@ void playGlimpsesPaint() {
   int hh = sceneHour();
   bool night = hh < 6 || hh >= 20;
   int16_t theirs = bPeers[bCur].dex;
-  // Poke Ball Volley: a green court, its white lines and the net, the ball in the air over yours
-  gfx->fillScreen(C565(0x3e, 0x9a, 0x48));
-  gfx->fillRect(150, 232, 172, 200, C565(0x5c, 0xb8, 0x58));  // the court
-  gfx->fillRect(150, 232, 172, 3, UI_WHITE);  // its lines
-  gfx->fillRect(150, 232, 3, 200, UI_WHITE);
-  gfx->fillRect(319, 232, 3, 200, UI_WHITE);
-  gfx->fillRect(150, 330, 172, 3, UI_WHITE);  // the middle line
-  gfx->fillRect(128, 226, 216, 14, UI_WHITE);  // the net along the top, its mesh, its posts
-  for (int x = 132; x < 344; x += 8) gfx->fillRect(x, 228, 2, 10, C565(0x2a, 0x4a, 0x2e));
-  gfx->fillRect(124, 214, 8, 40, C565(0x6a, 0x4a, 0x2e));
-  gfx->fillRect(340, 214, 8, 40, C565(0x6a, 0x4a, 0x2e));
-  drawMap(SPR_HOME_BALL, HOME_ICON_N, 248, 262, 3, false);
+  // Poke Ball Volley: the game's own court (so the two always match), its net at the top, the ball in
+  // the air over yours
+  drawCourtScene();
+  drawMap(SPR_HOME_BALL, HOME_ICON_N, 246, 128, 3, false);
   if (pmd.loaded) {
     gPmdForceScale = 2;
-    drawPmdAct(PMD_IDLE, 222, VB_GROUND_Y, now, true, false, 2);
+    drawPmdAct(PMD_IDLE, 222, 252, now, true, false, 2);
     gPmdForceScale = 0;
   }
-  gameGlimpseGrab(playArt, 236, VB_GROUND_Y - 80);
+  gameGlimpseGrab(playArt, 233, VB_TOP + 92);
   // Who's That? Showdown: two silhouettes face off in a pink burst
   gfx->fillScreen(C565(0xb8, 0x3c, 0x78));
   for (int i = 0; i < 16; i += 2) {
@@ -7512,6 +7573,7 @@ void sdStart(bool host) {
   sdPhase = SD_READY;
   sdT = millis();
   sdSendT = 0;
+  buddyReadyStart(CARD_SHOWDOWN);
   Serial.printf("buddy: showdown vs #%d (%s)\n", bPeers[bCur].dex, host ? "host" : "guest");
 }
 
@@ -7590,6 +7652,10 @@ void sdTick(uint32_t now) {
   bool resend = now - sdSendT >= BUDDY_RESEND_MS;
   switch (sdPhase) {
     case SD_READY:
+      if (!buddyGameReady()) {  // until both have pressed Ready, GO!
+        sdT = now;
+        break;
+      }
       if (sdHost && t > SD_READY_MS) sdBeginRound(0);
       break;
     case SD_ASK:
@@ -7661,6 +7727,7 @@ void sdTap(int16_t x, int16_t y) {
 
 void renderShowdown() {
   if (!sdOpen) return;
+  introPaused();  // finishes the card's exit
   gfx->fillScreen(TYPE_ACCENT[TY_PSYCHIC]);  // to the edge: no black ring
   gfx->setTextColor(UI_WHITE);
   char b[48];
@@ -7684,8 +7751,10 @@ void renderShowdown() {
     return;
   }
   if (sdPhase == SD_READY) {
-    setCur(centerX(T(S_SD_READY), 2), 220);
-    printT(T(S_SD_READY));
+    const char *w = buddyGameReady() ? T(S_SD_READY) : T(S_BUDDY_WAITING);  // waiting for their Ready, GO!
+    setCur(centerX(w, 2), 220);
+    printT(w);
+    drawIntroCard();
     gfx->flush();
     return;
   }
@@ -7716,6 +7785,7 @@ void renderShowdown() {
     setCur(centerX(dexName(sdOpts[i]), 2), y + 15);
     printT(dexName(sdOpts[i]));
   }
+  drawIntroCard();
   gfx->flush();
 }
 
@@ -7760,6 +7830,7 @@ void vbStart(bool host) {
   vbPhase = VB_READY;
   vbT = millis();
   tiltZero();
+  buddyReadyStart(CARD_VOLLEY);
   Serial.printf("buddy: volley vs #%d (%s)\n", bPeers[bCur].dex, host ? "host" : "guest");
 }
 
@@ -7798,6 +7869,7 @@ void vbPoint(bool mine) {
 
 void vbHandle(const BuddyMsg &m) {
   if (!vbOpen) return;
+  bReadyTheirs = true;  // the ball on its way: they're playing
   if (m.ack) {  // the buddy got it
     if (m.turn == vbSeqOut) vbOutPending = vbMissPending = false;
     return;
@@ -7853,6 +7925,10 @@ void vbTick(uint32_t now) {
   uint32_t t = now - vbT;
   switch (vbPhase) {
     case VB_READY:
+      if (!buddyGameReady()) {  // until both have pressed Ready, GO!
+        vbT = now;
+        break;
+      }
       if (t > VB_READY_MS) {
         vbPhase = vbHost ? VB_SERVE : VB_AWAY;  // the inviter serves first
         vbT = now;
@@ -7913,6 +7989,7 @@ void vbTick(uint32_t now) {
 
 void renderVolley() {
   if (!vbOpen) return;
+  introPaused();  // finishes the card's exit
   drawCourtScene();  // the net at its top: past it, the buddy's side
   char b[48];
   gfx->setTextColor(UI_WHITE);
@@ -7923,7 +8000,7 @@ void renderVolley() {
   // your Pokemon is the paddle
   gPmdForceScale = 2;
   int vbH = sceneHour();
-  gfx->fillRoundRect((int)vbPadX - 26, VB_GROUND_Y - 5, 52, 10, 5, sceneShade(C565(0x2a, 0x56, 0x8a), vbH < 6 || vbH >= 20));  // its shadow on the court
+  gfx->fillRoundRect((int)vbPadX - 26, VB_GROUND_Y - 5, 52, 10, 5, sceneShade(C565(0x1c, 0x50, 0x28), vbH < 6 || vbH >= 20));  // its shadow on the court
   uint8_t act = vbPadVX > 40 ? PMD_WALKR : vbPadVX < -40 ? PMD_WALKL : PMD_IDLE;
   if (!pmd.has(act)) act = PMD_IDLE;
   drawPmdAct(act, (int)vbPadX, VB_GROUND_Y, millis(), true, false, 2);
@@ -7939,7 +8016,7 @@ void renderVolley() {
     drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, 4, spin, vbBall.x, vbBall.y, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
   if (vbPhase == VB_SERVE) drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)vbPadX - 18, VB_PADDLE_Y - 36, 2, false);
   const char *line = nullptr;
-  if (vbPhase == VB_READY) line = T(S_SD_READY);
+  if (vbPhase == VB_READY) line = buddyGameReady() ? T(S_SD_READY) : T(S_BUDDY_WAITING);
   else if (vbPhase == VB_SERVE) line = T(S_VB_SERVE);
   else if (vbPhase == VB_POINTED) {
     if (vbMineLast) line = T(S_VB_POINT);
@@ -7952,11 +8029,6 @@ void renderVolley() {
     gfx->setTextColor(UI_WHITE);
     setCur(centerX(line, 2), 190);
     printT(line);
-  }
-  if (vbPhase == VB_READY || vbPhase == VB_SERVE) {
-    gfx->setTextColor(UI_WHITE);
-    setCur(centerX(T(S_VB_HINT), 2), 222);
-    printT(T(S_VB_HINT));
   }
   if (vbPhase == VB_DONE) {
     gfx->fillRoundRect(CX - 150, 130, 300, 150, 18, UI_BG_DAY);
@@ -7971,6 +8043,7 @@ void renderVolley() {
     setCur(centerX(b, 2), 228);
     printT(b);
   }
+  drawIntroCard();
   gfx->flush();
 }
 

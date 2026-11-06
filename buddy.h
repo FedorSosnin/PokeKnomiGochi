@@ -32,6 +32,7 @@ enum BuddyType : uint8_t {
   BM_ROUND, BM_ANSWER, BM_RESULT,  // Who's That? Showdown (older firmware drops these: it sees past BM_END)
   BM_VBALL, BM_VMISS,              // Poke Ball Volley: the ball over the net; a point
   BM_SURF,                         // PikaSurf: where you are on the water, your time, and if you've crashed
+  BM_READY,                        // any Play together game: pressed Ready, GO! on its card
   BM_END
 };
 enum BuddyKind : uint8_t { BK_BATTLE = 1, BK_TRADE, BK_SHOWDOWN, BK_VOLLEY, BK_SURF };

@@ -252,7 +252,7 @@ class TestHowToPlayCards(unittest.TestCase):
     character at size 2; the CJK one (unifont, at 1x there) 8 px for ASCII and 16 for the rest."""
 
     IDS = ('S_HOW_BERRY', 'S_HOW_BERRY_KEYS', 'S_HOW_WHO', 'S_HOW_RUN', 'S_HOW_DN', 'S_HOW_DN_KEYS',
-           'S_HOW_SURF', 'S_HOW_SURF_KEYS')
+           'S_HOW_SURF', 'S_HOW_SURF_KEYS', 'S_HOW_VB', 'S_HOW_VB_KEYS', 'S_HOW_SD', 'S_HOW_DUEL', 'S_HOW_DUEL_KEYS')
     MAX_LINES = 6
 
     @classmethod

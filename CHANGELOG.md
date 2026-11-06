@@ -6,6 +6,11 @@ bottom of the clock/settings screen (swipe down) and `web/manifest.json`.
 Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [1.49] - 2026-11-06
+
+- **How to play, with a buddy too:** Poké Ball Volley, Who's That? Showdown and PikaSurf open under the same card as the other games. Each of you presses **Ready, GO!** (or swipes the card away), and the game starts when you both have; until then it says it's waiting. A buddy on an older version starts as before.
+- **Poké Ball Volley on green:** the court is a deep green now instead of blue, and its tile on Play together shows the same court. The directions written on the court are gone: the card has them.
+
 ## [1.48] - 2026-11-06
 
 - **PikaSurf with a buddy:** Play together has PikaSurf now. You both surf the same course at the same time, each on your own screen, with your buddy's Pokémon riding alongside yours. Whoever lasts longer wins. Crash first and it says you lose, then waits for your buddy to finish; when you're both out, it shows both times and goes back to Play together.
