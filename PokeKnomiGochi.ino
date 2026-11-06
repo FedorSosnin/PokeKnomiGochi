@@ -53,7 +53,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.50"
+#define FW_VERSION "1.51"
 
 // the settings page: Wi-Fi, then updates (check / install, and the auto-update switch under it)
 #define SET_WIFI_BTN_Y 178  // change the Wi-Fi
@@ -2058,14 +2058,14 @@ bool render() {
     const char *msg = (pet.ceremony == CER_FAREWELL) ? T(S_FAREWELL)
                       : (pet.ceremony == CER_RUNAWAY) ? T(S_RUNAWAY)
                                                       : T(S_GOODBYE);
-    drawHeader(dexName(pet.speciesId), d.accent, msg);
+    drawHeader(dexName(pet.speciesId), d.accent, msg, nullptr);
     drawCeremony();
     gfx->flush();
     return true;
   }
 
   if (pet.isEgg()) {
-    drawHeader(T(S_EGG_HDR), inkColor(), eggMsg());
+    drawHeader(T(S_EGG_HDR), inkColor(), eggMsg(), nullptr);
     int s = 5, x = CX - 16 * s, y = PET_CY - 16 * s;
     drawMap(SPR_EGG, SPRITE_H, x, y, s, false);
     if (pet.eggCracks() >= 1)
@@ -2089,9 +2089,11 @@ bool render() {
   } else {
     const DexEntry &d = DEX_TBL[pet.speciesId];
     char name[28];
+    char lv[12];
     const char *base = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
-    snprintf(name, sizeof(name), T(S_NAME_FMT), pet.shiny ? "*" : "", base, pet.level());
-    drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg());
+    snprintf(name, sizeof(name), "%s%s", pet.shiny ? "*" : "", base);
+    snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
+    drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg(), lv);
     drawStreakBadge();
     drawPet();
     drawBath();
@@ -8488,12 +8490,32 @@ void drawBattery() {
   }
 }
 
-void drawHeader(const char *name, uint16_t nameColor, const char *msg) {
+// the name, big and bold, with the level (if any) small over it, like a Pokedex entry's number; the
+// status under it
+void drawHeader(const char *name, uint16_t nameColor, const char *msg, const char *level) {
   drawBattery();
+  if (level) {
+    gfx->setTextColor(inkColor());
+    setSize(2);
+    setCur(centerX(level, 2), 30);
+    printT(level);
+  }
   gfx->setTextColor(nameColor);
-  setSize(3);
-  setCur(centerX(name, 3), 52);
+  // Japanese and Korean draw sizes 2 and 3 alike: the name goes a size up there when it fits, so it
+  // stays bigger than the level (as the Pokedex entry does)
+  int ns = 3;
+  if (gCjkFont) {
+    setSize(4);  // CJK measures at the size set
+    if (textW(name, 4) <= 260) ns = 4;
+  }
+  setSize(ns);
+  int nx = centerX(name, ns), ny = ns == 4 ? 48 : 52;
+  setCur(nx, ny);
   printT(name);
+  if (!gCjkFont) {  // drawn twice, a pixel apart: bolder (printT already does it for CJK)
+    setCur(nx + 1, ny);
+    printT(name);
+  }
   gfx->setTextColor(inkColor());
   setSize(2);
   setCur(centerX(msg, 2), 90);
