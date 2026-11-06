@@ -13,6 +13,8 @@ void Pet::begin() {
   } else {
     load();
   }
+  bootSeen = prefs.getUInt("seen", 0);
+  bootLife = lifeMin;
   lastTick = millis();
 }
 
@@ -56,19 +58,75 @@ static uint8_t dropTo(uint8_t v, uint8_t d, uint8_t fl) {
 
 void Pet::setClock(uint32_t nowEpoch) {
   lastSeenEpoch = nowEpoch;
+  advanceDay();
   if (nowEpoch) save();  // saved right away: a power cut doesn't lose the reference
+}
+
+void Pet::noteTime(uint32_t nowEpoch) {
+  if (!nowEpoch) return;
+  lastSeenEpoch = nowEpoch;
+  advanceDay();
+}
+
+// The day follows the clock's, with three guards, so setting the clock (the time screen, the computer's)
+// can't hand out days: it never goes back; a new one needs DAY_MIN_LIVED minutes lived since the last
+// began; and it skips ahead several only if the game lived through them. On network time the day is
+// taken to begin at midnight, so starting it at 2 pm doesn't push tomorrow's candies to 2 am.
+void Pet::advanceDay() {
+  if (!lastSeenEpoch) return;
+  uint32_t d = lastSeenEpoch / 86400;
+  if (d <= gameDay) return;
+  bool first = gameDay == 0;
+  if (!first) {
+    uint32_t lived = lifeMin - dayLife;
+    if (lived < DAY_MIN_LIVED) return;
+    uint32_t most = gameDay + 1 + (lived - DAY_MIN_LIVED) / 1440;
+    if (d > most) d = most;
+  }
+  bool clockDay = d == lastSeenEpoch / 86400;  // not held back: the clock's own day
+  gameDay = d;
+  dayLife = lifeMin - (clockDay && (first || clockTrusted) ? (lastSeenEpoch % 86400) / 60 : 0);
+  pendingSave = true;
 }
 
 void Pet::syncClock(uint32_t nowEpoch) {
   uint32_t seen = prefs.getUInt("seen", 0);
   lastSeenEpoch = nowEpoch;
   if (nowEpoch == 0) return;
-  uint32_t mins = (seen && nowEpoch > seen) ? (nowEpoch - seen) / 60 : 0;
+  applyAway((seen && nowEpoch > seen) ? (nowEpoch - seen) / 60 : 0);
+}
+
+void Pet::trustedTime(uint32_t utc, uint32_t localNow, bool measure) {
+  if (utc < CLOCK_SANE_UTC) return;
+  if (localNow) lastSeenEpoch = localNow;
+  // minutes since the last trusted time, against those the game lived meanwhile (ticks, time away). A
+  // save from before this was counted measures once from the local time it was saved at.
+  uint32_t real = 0, lived = 0;
+  if (refUtc) {
+    real = utc > refUtc ? (utc - refUtc) / 60 : 0;
+    lived = lifeMin - refLife;
+  } else {
+    real = (bootSeen && localNow > bootSeen) ? (localNow - bootSeen) / 60 : 0;
+    lived = lifeMin - bootLife;
+  }
+  applyAway(measure && real > lived ? real - lived : 0);
+  refUtc = utc;  // a game ahead of it (a minute of drift) starts over from here: nothing is taken back
+  refLife = lifeMin;
+  save();
+}
+
+void Pet::awayMinutes(uint32_t mins) {
+  if (mins) applyAway(mins);
+}
+
+void Pet::applyAway(uint32_t mins) {
+  lifeMin += mins;  // lived, even while it waits for a starter or says goodbye
   if (mins < 2 || ceremony != CER_NONE || starterPick || eggPick) {
+    advanceDay();
     save();  // first time, no time to apply, or still choosing what to raise
     return;
   }
-  if (mins > 14UL * 24 * 60) mins = 14UL * 24 * 60;  // cap: 2 weeks
+  if (mins > AWAY_CAP_MIN) mins = AWAY_CAP_MIN;
 
   for (uint32_t i = 0; i < mins; i++) {
     ageMinutes++;
@@ -101,6 +159,7 @@ void Pet::syncClock(uint32_t nowEpoch) {
     // by tapping the critter when it returns (so they see the transformation)
   }
   Serial.printf("offline: %u min applied (lv.%u)\n", mins, level());
+  advanceDay();
   save();
 }
 
@@ -112,7 +171,9 @@ void Pet::update(uint32_t nowMs) {
   }
   while (nowMs - lastTick >= PET_TICK_MS) {
     lastTick += PET_TICK_MS;
+    lifeMin++;  // even while choosing or saying goodbye: the trainer's time
     tick();
+    advanceDay();
   }
 }
 
@@ -961,6 +1022,11 @@ void Pet::save() {
   prefs.putUChar("lend", lastEnd);
   prefs.putBool("fquiet", farewellQuiet);
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
+  prefs.putUInt("life", lifeMin);
+  prefs.putUInt("gday", gameDay);
+  prefs.putUInt("dlife", dayLife);
+  prefs.putUInt("rutc", refUtc);
+  prefs.putUInt("rlife", refLife);
   prefs.putBytes("dexreg", dexReg, sizeof(dexReg));
   prefs.putBytes("dexstr", dexStars, sizeof(dexStars));
   prefs.putUChar("estar", eggStars);
@@ -1057,6 +1123,11 @@ void Pet::load() {
   counted100 = prefs.getBool("l100c", false);
   // from before the count: the Level 100 medal means one got there. If it isn't this one, count it
   if (!prefs.isKey("l100n") && (trainerMedals & MED_LV100) && level() < LEVEL_MAX) lv100Count = 1;
+  lifeMin = prefs.getUInt("life", 0);
+  gameDay = prefs.getUInt("gday", 0);  // older saves: 0, and the first clock sets today without a wait
+  dayLife = prefs.getUInt("dlife", 0);
+  refUtc = prefs.getUInt("rutc", 0);
+  refLife = prefs.getUInt("rlife", 0);
   visitorDay = prefs.getUInt("vday", 0);
   visitDex = prefs.getShort("vdex", 0);
   visitMin = prefs.getUChar("vmin", 0);

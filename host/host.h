@@ -61,6 +61,15 @@ void hostRelayConnected(HostRelaySend send);  // connected (how to send), or NUL
 void hostRelayPeers(int n);                   // the relay's {"n": n}: how many others share the group
 void hostRelayReceived(const uint8_t *data, int len);  // a binary message from the relay
 
+// Network time: the game's clock follows a time server, not the computer's clock (anyone can change
+// that), so changing it can't fake time away. When hostNetTimeWanted() says so (poll it every tick;
+// true once per request), fetch HOST_TIME_URL (a HEAD request, past any cache) and pass its Date header
+// to hostNetTime() as seconds since 1970 UTC, or 0 if it failed. The browser asks its own site instead.
+// Until an answer comes, the game counts no time away from before it started.
+#define HOST_TIME_URL "https://pokewebgochi.3dprintsos.com/"
+bool hostNetTimeWanted(void);
+void hostNetTime(uint32_t utc);
+
 // Audio: 16-bit mono PCM at HOST_AUDIO_RATE. Always fills frames samples (silence if nothing is playing).
 #define HOST_AUDIO_RATE 16000
 void hostAudioRender(int16_t *out, int frames);

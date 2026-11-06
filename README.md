@@ -60,7 +60,7 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 | No port appears | Use a different USB-C cable, because many only charge. On macOS or Windows you may also need the driver from the [CH340 page](https://www.wch-ic.com/products/CH340.html). |
 | The port is busy | Close anything else using it, such as a serial monitor or Klipper. |
 | It fails partway | Run it again. A failed install won't damage the Knomi. |
-| The clock is wrong | The clock needs Wi-Fi. See [Wi-Fi and the clock](#wi-fi-and-the-clock). |
+| The clock is wrong | Put it on Wi-Fi and pick your time zone. See [Wi-Fi and the clock](#wi-fi-and-the-clock). |
 
 ## How to play
 
@@ -78,7 +78,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game a
 | **Tap its name on the card** (✏️) | Rename it |
 | **Swipe from left to right** | Open the Pokédex. The arrows at its sides, or a swipe, turn the pages; tap a Pokémon for its page, and tap it there to give it a pat |
 | **Swipe from right to left** | See your achievements: every medal, 6 to a page. A new medal drops in from the top; tap it to see it there |
-| **Swipe down** | Set the clock, then swipe left for settings |
+| **Swipe down** | The clock and your time zone (or set the time, without Wi-Fi), then swipe left for settings |
 | **Press the button** | Start a wild battle |
 | **Hold the button for 1–3 seconds** | Turn the screen on or off |
 | **Hold the button for 10 seconds** | Asks whether to erase the game and start over |
@@ -181,7 +181,11 @@ The Knomi has no clock battery, so it gets the time over Wi-Fi. If it was alread
 
 To change networks, swipe down, swipe left, tap **Change Wi-Fi**, pick your network, and type the password on the screen. A new network is only saved once it connects.
 
-The time zone is currently fixed to US Eastern time. You can set the clock by hand from the same screen.
+On Wi-Fi the clock sets itself, and swiping down just shows it (**Set by Wi-Fi**). To choose your time zone, tap the city under **Time zone** and use the arrows: each city shows its own time, so pick the one that matches your clock, then tap **OK**. Summer time changes by itself. A new Knomi starts on New York.
+
+Without Wi-Fi you set the time by hand on the same screen. The Knomi can't keep time while it's unplugged, so set it again after that: a time earlier than the one it shows means the next morning.
+
+Changing the clock doesn't speed anything up. Time away only counts by network time, and a new day (candies, the visitor, the streak) needs 12 hours of play since the last one began. [How it works](docs/HOW_IT_WORKS.md#time) has the details.
 
 ### Updates over Wi-Fi
 

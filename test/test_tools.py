@@ -39,6 +39,60 @@ class TestToolsCompile(unittest.TestCase):
                                 f'{name} is executable but has no shebang')
 
 
+class TestTimeZones(unittest.TestCase):
+    """The Knomi's time zones (timezones.h): every POSIX rule gives the same UTC offset as the real zone
+    (the system's tz database), hour by hour for three years, summer time included."""
+
+    @classmethod
+    def setUpClass(cls):
+        with open(os.path.join(ROOT, 'timezones.h'), encoding='utf-8') as fh:
+            src = fh.read()
+        cls.rows = re.findall(r'\{ "([^"]+)", "([^"]+)", "([^"]+)" \}', src)
+        cls.default = int(re.search(r'#define TIME_ZONE_DEFAULT (\d+)', src).group(1))
+
+    def test_the_list(self):
+        self.assertGreaterEqual(len(self.rows), 40)
+        self.assertEqual(self.rows[self.default][0], 'New York')  # every Knomi before the picker
+        cities = [r[0] for r in self.rows]
+        self.assertEqual(len(cities), len(set(cities)), 'a city is saved by its name')
+        for city, _, posix in self.rows:
+            self.assertLess(len(city), 24, city)  # the saved name's buffer
+            self.assertNotIn('<', posix, f'{city}: plain abbreviations only')
+
+    def test_rules_match_the_real_zones(self):
+        try:
+            from zoneinfo import ZoneInfo
+            import time
+            time.tzset
+        except (ImportError, AttributeError):
+            self.skipTest('needs zoneinfo and time.tzset')
+        from datetime import datetime, timezone
+        import time
+        start = int(datetime(2027, 1, 1, tzinfo=timezone.utc).timestamp())
+        end = int(datetime(2030, 1, 1, tzinfo=timezone.utc).timestamp())
+        old = os.environ.get('TZ')
+        try:
+            for city, iana, posix in self.rows:
+                try:
+                    zone = ZoneInfo(iana)
+                except Exception:
+                    self.skipTest(f'no tz database entry for {iana}')
+                os.environ['TZ'] = posix
+                time.tzset()
+                for t in range(start, end, 3600):
+                    rule = time.localtime(t).tm_gmtoff
+                    real = int(datetime.fromtimestamp(t, zone).utcoffset().total_seconds())
+                    if rule != real:
+                        self.fail(f'{city}: {posix} gives {rule}s at '
+                                  f'{datetime.fromtimestamp(t, timezone.utc)} UTC, {iana} {real}s')
+        finally:
+            if old is None:
+                os.environ.pop('TZ', None)
+            else:
+                os.environ['TZ'] = old
+            time.tzset()
+
+
 class TestDexData(unittest.TestCase):
     """Invariants of the Pokedex data source."""
 

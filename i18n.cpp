@@ -52,6 +52,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Ocupa el lugar del tuyo, m\240s d\202bil.", "Vuelve a la naturaleza.",
     "POKEDEX", "P\240gina %d de %d",
     "Viajar",
+    "RELOJ", "Hora por Wi-Fi", "Hora autom\240tica", "ZONA HORARIA",
   },
   // ---------------- EN ----------------
   {
@@ -98,6 +99,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "It replaces your weaker one.", "It goes back to the wild.",
     "POKEDEX", "Page %d of %d",
     "Travel",
+    "CLOCK", "Set by Wi-Fi", "Set automatically", "TIME ZONE",
   },
   // ---------------- FR ----------------
   {
@@ -144,6 +146,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Il remplace ton plus faible.", "Il retourne \205 la nature.",
     "POKEDEX", "Page %d sur %d",
     "Voyager",
+    "HORLOGE", "R\202gl\202e par le Wi-Fi", "R\202gl\202e automatiquement", "FUSEAU HORAIRE",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -195,6 +198,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Er ersetzt deinen schw\204cheren.", "Er kehrt in die Wildnis zur\201ck.",
     "POKEDEX", "Seite %d von %d",
     "Reisen",
+    "UHR", "Per WLAN gestellt", "Automatisch gestellt", "ZEITZONE",
   },
   // ---------------- IT ----------------
   {
@@ -241,6 +245,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Prende il posto del tuo, pi\227 debole.", "Torna in natura.",
     "POKEDEX", "Pagina %d di %d",
     "Viaggia",
+    "OROLOGIO", "Impostata dal Wi-Fi", "Impostata in automatico", "FUSO ORARIO",
   },
   // ---------------- PT ----------------
   {
@@ -287,6 +292,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Fica no lugar do teu, mais fraco.", "Volta para a natureza.",
     "POKEDEX", "P\240gina %d de %d",
     "Viajar",
+    "RELOGIO", "Acertada pelo Wi-Fi", "Acertada automaticamente", "FUSO HORARIO",
   },
   // ---------------- JA ----------------
   {
@@ -356,6 +362,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "よわい まえの と いれかわるよ", "やせいに かえっていったよ",
     "ずかん", "ページ %d/%d",
     "たび",
+    "とけい", "Wi-Fiで あわせたよ", "じどうで あわせたよ", "タイムゾーン",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -407,6 +414,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "약한 이전 것과 바뀌어요", "야생으로 돌아갔어요",
     "도감", "%d/%d 페이지",
     "여행",
+    "시계", "Wi-Fi로 맞췄어요", "자동으로 맞췄어요", "시간대",
   },
 };
 

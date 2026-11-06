@@ -16,6 +16,14 @@ static bool gStarted = false;
 EM_JS(void, jsHaptic, (int sfx), { if (Module.haptic) Module.haptic(sfx); });
 static void haptic(uint8_t sfx) { jsHaptic(sfx); }
 
+// network time (host.h): the page asks its own site, past the cache, and hands back the answer's Date
+// header in seconds (0: none). The page and the game come from the same place, so the header is readable.
+EM_JS(void, jsNetTime, (), {
+  fetch(location.origin + location.pathname, { method: 'HEAD', cache: 'no-store' })
+    .then(r => { const t = Date.parse(r.headers.get('Date') || ''); Module._webNetTime(isNaN(t) ? 0 : Math.floor(t / 1000)); })
+    .catch(() => Module._webNetTime(0));
+});
+
 extern "C" {
 
 // the page has mounted /save and read it back from IndexedDB: the game can start
@@ -31,6 +39,7 @@ EMSCRIPTEN_KEEPALIVE void webStart(void) {
 EMSCRIPTEN_KEEPALIVE uint8_t *webFrame(void) {
   if (!gStarted) return nullptr;
   hostTick();
+  if (hostNetTimeWanted()) jsNetTime();
   if (hostRestartRequested()) {  // erased the save: start over in a fresh page
     hostFlushSave();
     EM_ASM({ Module.saveAndReload(); });
@@ -41,6 +50,7 @@ EMSCRIPTEN_KEEPALIVE uint8_t *webFrame(void) {
   return gFrame;
 }
 
+EMSCRIPTEN_KEEPALIVE void webNetTime(uint32_t utc) { hostNetTime(utc); }
 EMSCRIPTEN_KEEPALIVE void webPointer(int x, int y, int down) { hostPointer(x, y, down != 0); }
 EMSCRIPTEN_KEEPALIVE void webHover(void) { hostPointerHover(); }
 EMSCRIPTEN_KEEPALIVE void webTilt(int left, int right) { hostTiltKeys(left != 0, right != 0); }

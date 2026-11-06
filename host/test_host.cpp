@@ -15,6 +15,7 @@
 #include "host.h"
 #include "host_hal.h"
 #include "host_internal.h"
+#include "rtcbat.h"
 #include <Preferences.h>
 
 static int gFails = 0, gChecks = 0;
@@ -384,6 +385,30 @@ static void testAudio() {
   audioSetSleeping(false);
 }
 
+// the clock: the computer's until a time server answers, then the server's (setting the computer's
+// clock changes nothing after that)
+static void testClock() {
+  uint32_t os = (uint32_t)time(nullptr);
+  CHECK(!clockFromNetwork() && clockUtc() == 0);
+  int32_t off = (int32_t)(rtcEpoch() - os);  // the computer's time zone
+  CHECK(off > -15 * 3600 && off < 15 * 3600);
+  CHECK(hostNetTimeWanted());   // asked at start...
+  CHECK(!hostNetTimeWanted());  // ...once
+  hostNetTime(0);               // no answer
+  CHECK(clockPoll() == CLOCK_NONE && !clockFromNetwork());
+  hostNetTime(12345);           // nonsense: ignored
+  CHECK(clockPoll() == CLOCK_NONE && !clockFromNetwork());
+  uint32_t server = os + 3 * 3600;  // the server says three hours later: the computer's clock was set back
+  hostNetTime(server);
+  CHECK(clockPoll() == CLOCK_TRUSTED);
+  CHECK(clockFromNetwork());
+  CHECK(clockUtc() >= server && clockUtc() <= server + 2);
+  int32_t local = (int32_t)(rtcEpoch() - clockUtc());
+  CHECK(local > -15 * 3600 && local < 15 * 3600);  // shown in the computer's time zone
+  CHECK(clockPoll() == CLOCK_NONE);
+  CHECK(!hostNetTimeWanted());  // no need to ask again yet
+}
+
 static void runTicks(int ms) {
   for (int i = 0; i < ms / 5; i++) {
     hostTick();
@@ -471,6 +496,7 @@ int main() {
   testBuddy();
   testRelay();
   testAudio();
+  testClock();
   testGame();
   printf("host layer: %d checks, %d failures\n", gChecks, gFails);
   return gFails ? 1 : 0;

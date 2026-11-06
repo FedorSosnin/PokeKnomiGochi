@@ -142,6 +142,17 @@ Every zone's Pokémon are **common**, **rare** or **legendary**:
 
 Joy also drops 2 more per minute while 🍖 is below 30, and 2 more while 🧼 is below 30.
 
+## Time
+
+The game counts its own minutes, and only a clock nobody can set adds time away. Changing a device's clock moves the hours on screen, never your Pokémon's age, and never hands out an extra day.
+
+| What | How |
+|---|---|
+| 🕰️ **Time away** | Applied when you come back, up to 2 weeks at once. The Knomi measures it by network time over Wi-Fi. Mac, Windows and the web ask a time server when they start, and keep counting with the computer's own clock, which runs on while it sleeps and can't be set. Without Wi-Fi or a server, time away waits until one answers. |
+| 📅 **A new day** | Candies, the visitor and the streak move on at midnight, once 12 hours have been played since the last day began. The day never goes back, so a clock that's wrong and then corrected loses nothing and keeps the streak going. |
+| 🌍 **Time zone** | The Knomi uses the city you pick (swipe down, tap the city). Mac, Windows and the web use the computer's. |
+| ✋ **Setting the time** | Only on a Knomi without Wi-Fi: on Wi-Fi, and on Mac, Windows and the web, the time screen just shows the clock. |
+
 ## Growing up
 
 | What | How |

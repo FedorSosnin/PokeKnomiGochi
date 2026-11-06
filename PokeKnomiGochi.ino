@@ -28,6 +28,7 @@
 #include "pet.h"
 #include "sdmon.h"
 #include "rtcbat.h"
+#include "timezones.h"
 #include "i18n.h"
 #include "audio.h"
 #include "blit.h"
@@ -51,7 +52,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.45"
+#define FW_VERSION "1.46"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -154,11 +155,34 @@ int16_t wifiKbX = 0, wifiKbY = 0;
 bool clockOpen = false;       // time-setting screen (swipe down)
 int clockH = 12, clockM = 0;  // time being edited
 bool clockEdited = false;      // set by hand: don't overwrite it with network time
+bool tzPickOpen = false;      // the time zone picker, over the time page (the Knomi's)
+int tzPickIdx = 0;            // the city on show (TIME_ZONES)
+#ifdef BOARD_HOST
+bool clockTzUi = false;       // the time page shows where the time comes from: the computer, no zones
+#else
+bool clockTzUi = true;        // ...Wi-Fi, and the time zone button
+#endif
+#define TIME_STATUS_Y 180     // the locked time page: "Set by Wi-Fi"
+#define TZ_LABEL_Y 210        // "Time zone"
+#define TZ_BTN_X 83           // the city button
+#define TZ_BTN_Y 234
+#define TZ_BTN_W 300
+#define TZ_BTN_H 40
+#define TZ_CITY_Y 200         // the picker: the city's name, then its UTC offset
+#define TZ_ARROW_Y 214        // ...and the arrows either side
+#define UI_MUTED C565(0x7a, 0x78, 0x84)  // grey text that still reads on the cream (UI_TRACK is fainter)
 
-// bath scene: foam over the pet and cleanup when it pops
+// bath scene: water drops showering down and soap bubbles foaming up over the pet, then it sparkles clean
 uint32_t bathUntil = 0;
 bool bathPending = false;
-struct { int16_t x, y; uint8_t r, ph; } bubbles[14];
+// even ones are drops, odd ones bubbles. x: from the pet's centre (the bath follows it if it walks);
+// y: where a bubble starts and a sparkle shows at the end; v: a drop's fall speed (hundredths of a px
+// per ms) or a bubble's size; ph: how far into its fall a drop starts, or a bubble's sway
+struct { int16_t x, y; uint8_t v, ph; } bathDrops[14];
+int16_t bathDuckX = 0;      // the rubber duck on the ground: its left edge, set when the bath starts...
+bool bathDuckLeft = true;   // ...beside the pet, on the side with room, looking at it
+#define BATH_DUCK_S 3       // the duck: its 14x14 map at 3x (42 px, still small beside the pet)...
+#define BATH_DUCK_GAP 64    // ...this far from the pet's centre
 uint32_t feedMenuUntil = 0;   // food picker open until this millis
 
 // "taps" minigame: keep the pokeball in the air
@@ -324,8 +348,9 @@ struct Btn {
   const char *const *icon;
 };
 // on an arc of radius 260 around (233, 150), spaced by each icon's body (rows 6-15: the handheld is
-// narrower than the berries; the moon's sparkles and the bubble's drops left out), so the gaps look the
-// same, about 10 px. Moving them, keep both: the arc, and equal gaps between the bodies (not the centres).
+// narrower than the bag; the moon's zZ left out), so the gaps look the same, 10-13 px. The drop is the
+// narrowest, so the row ends a little further in on the right. Moving them, keep both: the arc, and
+// equal gaps between the bodies (not the centres).
 #define BTN_COUNT 5
 #define HOME_PANEL_Y 296  // the bottom panel: the bars, then the icons
 #define FEED_Y 272        // the food picker, just over the bars
@@ -333,8 +358,8 @@ Btn buttons[BTN_COUNT] = {
   { 116, 382, SPR_HOME_BAG },     // the bag: berries and candy (more items later)
   { 174, 403, SPR_HOME_GAMES },   // the mini games
   { 233, 410, SPR_HOME_MAP },     // battle: a map of the zones, places to travel to
-  { 298, 402, SPR_HOME_MOON },    // light
-  { 350, 382, SPR_HOME_BUBBLE },  // bath
+  { 298, 402, SPR_HOME_MOON },    // light (sleep): a moon and zZ
+  { 352, 381, SPR_HOME_DROP },    // bath: a drop of water
 };
 #define BTN_LIGHT 3  // the one that still works while it sleeps
 #define BTN_HALF 27  // the 54x54 icon (HOME_ICON_N at 3x)
@@ -466,7 +491,11 @@ void setup() {
     Serial.printf("RTC has no time: seeded to %u%s\n", seed,
                   seen > 1767225600UL ? " (from the last saved time)" : "");
   }
+#ifdef BOARD_HOST
+  pet.noteTime(e);  // the computer's clock can be set by anyone: time away waits for the time server
+#else
   pet.syncClock(e);
+#endif
 
   audioBegin();  // ES8311 + I2S + amplificador (plays a startup jingle)
 
@@ -577,11 +606,14 @@ void loop() {
   }
 
 #ifdef BOARD_KNOMI_V2
-  if (clockPoll()) {  // applies the time spent off as soon as network time is available
-    if (clockWasSeed()) pet.setClock(rtcEpoch());
-    else pet.syncClock(rtcEpoch());
+  uint8_t clk = clockPoll();
+  if (clk == CLOCK_TRUSTED) {  // network time: applies the time spent off, as it measures it
+    pet.trustedTime(clockUtc(), rtcEpoch(), !clockWasSeed());  // a made-up seed measures nothing
     if (clockOpen && !clockEdited) clockLoadNow();  // the open time screen also picks it up
+  } else if (clk == CLOCK_GAP) {  // the host slept: its monotonic clock knows for how long
+    pet.awayMinutes(clockGapMin());
   }
+  pet.clockTrusted = clockFromNetwork();
 
   // Wi-Fi updates: this firmware is confirmed once it has run 30 s (a broken update rolls
   // back), and a new one is looked for once a day, only with the screen dimmed: the
@@ -603,8 +635,7 @@ void loop() {
   static uint32_t lastClock = 0;
   if (now - lastClock > 30000) {
     lastClock = now;
-    uint32_t e = rtcEpoch();
-    if (e) pet.lastSeenEpoch = e;
+    pet.noteTime(rtcEpoch());  // and moves the day on at midnight (Pet::advanceDay)
   }
 
   // health heartbeat every 5 min (for the soak test; dropped if there is no monitor)
@@ -945,8 +976,9 @@ void handleSerial() {
     rtcSetEpoch((uint32_t)line.substring(7).toInt());
     Serial.printf("rtc=%u\n", rtcEpoch());
     Serial.println("DONE");
-  } else if (line == "TIME") {
-    Serial.printf("rtc=%u\n", rtcEpoch());
+  } else if (line == "TIME") {  // the clock, network time (0: none), the game's day and minutes lived
+    Serial.printf("rtc=%u utc=%u net=%d day=%u life=%u age=%u\n", rtcEpoch(), clockUtcNow(), clockFromNetwork(),
+                  pet.dayNumber(), pet.lifeMin, pet.ageMinutes);
     Serial.println("DONE");
   } else if (line == "GAL") {
     galleryOpen = !galleryOpen;
@@ -970,7 +1002,8 @@ void handleSerial() {
     pet.rename(line.substring(5).c_str());
     Serial.printf("nick=%s\n", pet.nick);
     Serial.println("DONE");
-  } else if (line == "CAREDAY") {  // simulates a new cared-for day (testing)
+  } else if (line == "CAREDAY") {  // simulates a new cared-for day (testing): a day lived, too
+    pet.lifeMin += 1440;
     pet.setClock(pet.lastSeenEpoch + 86400);
     pet.caress();
     Serial.printf("streak=%u bond=%u medals=0x%X\n", pet.streak, pet.bond, pet.medals);
@@ -1260,6 +1293,12 @@ void onSwipe(int dir) {
     return;
   }
   if (pet.awaitingStarter()) return;  // blocked during the starter choice
+#ifdef BOARD_KNOMI_V2
+  if (clockOpen && tzPickOpen && clockPage == 0) {  // the time zone picker: the next city, left advancing
+    tzPickStep(dir > 0 ? -1 : 1);
+    return;
+  }
+#endif
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)  // on the host, wifi is the system's business: there is no page
   if (clockOpen && wifiSetupState() == WS_OFF) {  // time <-> settings; left advances
     uint8_t next = dir > 0 ? 0 : 1;
@@ -1760,6 +1799,8 @@ static uint32_t screenKey() {
   } else if (clockOpen) {
     h = mixKey(h, clockH * 60 + clockM);
     h = mixKey(h, clockPage);
+    h = mixKey(h, clockLocked() ? rtcEpoch() / 60 : 0);  // a shown clock moves on by the minute
+    h = mixKey(h, tzPickOpen * 256 + tzPickIdx + clockTzUi * 65536);
     h = mixKey(h, wifiSetupState());
     h = mixKey(h, wifiListPage);
     h = mixKey(h, wifiKbLayer);
@@ -4120,9 +4161,29 @@ void drawStatBonus(int y, uint16_t val, int bon) {
   printT(plus);
 }
 
-// ---------- on-screen time setting (swipe down) ----------
-// The user sets their LOCAL time by eye; the firmware uses it as is, so
-// no time zone handling is needed. It preserves the day (doesn't break streak/age).
+// ---------- the time screen (swipe down) ----------
+// Network time (the Knomi on Wi-Fi) and the computer's clock (Mac, Windows, the web) only show the
+// time: there is nothing to set. Without network time (a Knomi off Wi-Fi, the Waveshare board) the
+// user sets their LOCAL time by eye, and the firmware uses it as is. Setting it never applies time
+// away, and the game's day (Pet::advanceDay) won't move on faster than the hours it lives.
+
+// network time now for the console (the Waveshare board has none)
+uint32_t clockUtcNow() {
+#ifdef BOARD_KNOMI_V2
+  return clockUtc();
+#else
+  return 0;
+#endif
+}
+
+// a clock the user can't set here: shown, not edited
+bool clockLocked() {
+#ifdef BOARD_HOST
+  return true;  // the computer's own clock: the system sets it
+#else
+  return clockFromNetwork();
+#endif
+}
 
 // copies the current time into the editor. The clock comes first: lastSeenEpoch is only recorded every 30 s.
 void clockLoadNow() {
@@ -4136,16 +4197,131 @@ void clockLoadNow() {
 void openClock() {
   clockLoadNow();
   clockPage = 0;
+  tzPickOpen = false;
   clockOpen = true;
 }
 
+// The new time goes on whichever day is nearer to the clock's: after a night unplugged (a Knomi
+// without Wi-Fi wakes on the time it was saved at), 9 PM -> 8 AM means the next morning.
 void applyClock() {
-  uint32_t base = pet.lastSeenEpoch ? pet.lastSeenEpoch : rtcEpoch();
+  uint32_t base = rtcEpoch() ? rtcEpoch() : pet.lastSeenEpoch;
   uint32_t e = (base / 86400) * 86400 + (uint32_t)clockH * 3600 + (uint32_t)clockM * 60;
+  if (e + 43200 < base) e += 86400;
+  else if (e > base + 43200) e -= 86400;
   rtcSetEpoch(e);
   pet.setClock(e);
   clockOpen = false;
 }
+
+// the big h:mm and AM/PM of the time screens (shown in 12-hour format; inside it is still 24)
+void drawBigTime(int h24, int m) {
+  bool cjk = gCjkFont;  // digits in the classic font in every language: the CJK one has no big sizes
+  if (cjk) {
+    gfx->setFont();
+    gfx->setUTF8Print(false);
+    gFontAscent = 0;
+    gCjkFont = false;
+  }
+  char t[8];
+  snprintf(t, sizeof(t), "%d:%02d", clock12Hour(h24), m);
+  // centred as one group, whatever the digits: "4:27 PM" and "12:05 AM" alike. The widths leave out the
+  // blank column after the last letter, so what shows is what's centred
+  int tw = textW(t, 7) - 7, aw = textW("AM", 3) - 3, gap = 12;
+  int x0 = CX - (tw + gap + aw) / 2;
+  if (t[0] == '1') x0 -= 4;  // a 1 is drawn a column in from its left edge: half that column back
+  setSize(7);
+  setCur(x0, 108);
+  printT(t);
+  setSize(3);
+  setCur(x0 + tw + gap, 136);
+  printT(h24 < 12 ? "AM" : "PM");
+  if (cjk) applyLangFont();
+}
+
+#ifdef BOARD_KNOMI_V2
+// ---- the time zone picker (the Knomi's: network time is UTC). The preview shows the time in each
+// city, so the right one is simply the one that shows the time on the wall.
+// "UTC-5", "UTC+5:30": the offset of local time from UTC, in seconds
+void fmtUtcOffset(char *b, size_t n, int32_t off) {
+  int32_t a = off < 0 ? -off : off;
+  if (a % 3600) snprintf(b, n, "UTC%c%d:%02d", off < 0 ? '-' : '+', (int)(a / 3600), (int)(a % 3600 / 60));
+  else snprintf(b, n, "UTC%c%d", off < 0 ? '-' : '+', (int)(a / 3600));
+}
+
+void tzPickerOpen() {
+  int i = clockTzIndex();
+  tzPickIdx = i >= 0 ? i : TIME_ZONE_DEFAULT;
+  tzPickOpen = true;
+}
+
+void renderTzPicker() {
+  gfx->fillScreen(UI_BG_DAY);
+  gfx->setTextColor(UI_INK);
+  setSize(3);
+  setCur(centerX(T(S_TIME_ZONE), 3), 44);
+  printT(T(S_TIME_ZONE));
+  uint32_t utc = clockUtc() ? clockUtc() : rtcEpoch();
+  uint32_t l = clockLocalIn(tzPickIdx, utc);
+  drawBigTime((l / 3600) % 24, (l / 60) % 60);
+  const char *city = TIME_ZONES[tzPickIdx].city;
+  setSize(3);
+  setCur(centerX(city, 3), TZ_CITY_Y);
+  printT(city);
+  char off[16];
+  fmtUtcOffset(off, sizeof(off), (int32_t)(l - utc));
+  gfx->setTextColor(UI_MUTED);
+  setSize(2);
+  setCur(centerX(off, 2), TZ_CITY_Y + 40);
+  printT(off);
+  drawPageArrows(tzPickIdx, TIME_ZONE_COUNT, TZ_ARROW_Y);
+  gfx->fillRoundRect(133, 340, 200, 48, 14, UI_BAR_OK);
+  gfx->setTextColor(UI_BG_DAY);
+  setSize(3);
+  setCur(CX - 18, 352);
+  printT("OK");
+  drawCloseButton();
+  gfx->flush();
+}
+
+void tzPickStep(int d) {
+  int i = tzPickIdx + d;
+  if (i < 0 || i >= TIME_ZONE_COUNT) return;
+  tzPickIdx = i;
+  sfxPlay(SFX_TAP);
+}
+
+void tzPickerTap(int16_t x, int16_t y) {
+  if (closeHit(x, y)) {  // back to the time, nothing changed
+    sfxPlay(SFX_TAP);
+    tzPickOpen = false;
+    return;
+  }
+  if (int d = pageArrowAt(x, y, tzPickIdx, TIME_ZONE_COUNT, TZ_ARROW_Y)) {
+    tzPickStep(d);
+    return;
+  }
+  if (y >= 340 && y <= 388 && x >= 133 && x <= 333) {
+    sfxPlay(SFX_TAP);
+    clockSetTz(tzPickIdx);
+    pet.setClock(rtcEpoch());  // the hours move, no time passes; the day waits its 12 hours as always
+    clockLoadNow();
+    tzPickOpen = false;
+  }
+}
+
+// the locked time screen's button: the city, opening the picker
+void drawTzButton() {
+  char b[32];
+  int i = clockTzIndex();
+  snprintf(b, sizeof(b), "%s >", TIME_ZONES[i >= 0 ? i : TIME_ZONE_DEFAULT].city);
+  gfx->fillRoundRect(TZ_BTN_X, TZ_BTN_Y, TZ_BTN_W, TZ_BTN_H, 12, UI_WHITE);
+  gfx->drawRoundRect(TZ_BTN_X, TZ_BTN_Y, TZ_BTN_W, TZ_BTN_H, 12, UI_INK);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(b, 2), TZ_BTN_Y + 14);
+  printT(b);
+}
+#endif
 
 void drawClockBtn(int x, int y, const char *l) {
   gfx->fillRoundRect(x, y, 58, 58, 12, UI_WHITE);
@@ -4429,36 +4605,53 @@ void renderClock() {
     return;
   }
 #endif
+#ifdef BOARD_KNOMI_V2
+  if (tzPickOpen) {
+    renderTzPicker();
+    return;
+  }
+#endif
+  bool locked = clockLocked();
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
-  setCur(centerX(T(S_SET_TIME), 3), 44);
-  printT(T(S_SET_TIME));
+  const char *title = locked ? T(S_CLOCK) : T(S_SET_TIME);
+  setCur(centerX(title, 3), 44);
+  printT(title);
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
   drawClockDots();
 #endif
 
-  // the time is shown in 12-hour format; internally it is still 24
-  char t[8];
-  int h12 = clock12Hour(clockH);
-  snprintf(t, sizeof(t), "%d:%02d", h12, clockM);
-  setSize(7);
-  setCur(CX - 105 + (h12 < 10 ? 42 : 0), 108);  // the minutes don't jump around: they stay above their buttons
-  printT(t);
-  setSize(3);
-  setCur(CX + 109, 136);
-  printT(clockH < 12 ? "AM" : "PM");
-
-  drawClockBtn(104, 190, "-");  // hour -
-  drawClockBtn(170, 190, "+");  // hour +
-  drawClockBtn(252, 190, "-");  // min -
-  drawClockBtn(318, 190, "+");  // min +
-  setSize(2);
-  gfx->setTextColor(UI_TRACK);
-  setCur(120, 256);
-  printT(T(S_HOUR));
-  setCur(276, 256);
-  printT(T(S_MIN));
+  if (locked) {  // network time or the computer's: shown as it runs, with where it comes from
+    uint32_t e = rtcEpoch();
+    drawBigTime((e / 3600) % 24, (e / 60) % 60);
+    const char *st = clockTzUi ? T(S_SET_BY_WIFI) : T(S_SET_AUTO);
+    gfx->setTextColor(UI_BAR_OK);
+    setSize(2);
+    setCur(centerX(st, 2), clockTzUi ? TIME_STATUS_Y : TIME_STATUS_Y + 16);
+    printT(st);
+#ifdef BOARD_KNOMI_V2
+    if (clockTzUi) {
+      gfx->setTextColor(UI_MUTED);
+      setSize(2);
+      setCur(centerX(T(S_TIME_ZONE), 2), TZ_LABEL_Y);
+      printT(T(S_TIME_ZONE));
+      drawTzButton();
+    }
+#endif
+  } else {
+    drawBigTime(clockH, clockM);
+    drawClockBtn(104, 190, "-");  // hour -
+    drawClockBtn(170, 190, "+");  // hour +
+    drawClockBtn(252, 190, "-");  // min -
+    drawClockBtn(318, 190, "+");  // min +
+    setSize(2);
+    gfx->setTextColor(UI_TRACK);
+    setCur(120, 256);
+    printT(T(S_HOUR));
+    setCur(276, 256);
+    printT(T(S_MIN));
+  }
 
   // sound switch (left of the language row)
   bool snd = audioEnabled();
@@ -4480,11 +4673,13 @@ void renderClock() {
   setCur(LANG_PILL_X + (LANG_PILL_W - textW(lp, 2)) / 2, LANG_PILL_Y + 8);
   printT(lp);
 
-  gfx->fillRoundRect(133, 340, 200, 48, 14, UI_BAR_OK);
-  gfx->setTextColor(UI_BG_DAY);
-  setSize(3);
-  setCur(CX - 18, 352);
-  printT("OK");
+  if (!locked) {
+    gfx->fillRoundRect(133, 340, 200, 48, 14, UI_BAR_OK);
+    gfx->setTextColor(UI_BG_DAY);
+    setSize(3);
+    setCur(CX - 18, 352);
+    printT("OK");
+  }
 
   drawCloseButton();
 
@@ -4499,6 +4694,12 @@ void renderClock() {
 }
 
 void clockTap(int16_t x, int16_t y) {
+#ifdef BOARD_KNOMI_V2
+  if (tzPickOpen && clockPage == 0) {
+    tzPickerTap(x, y);
+    return;
+  }
+#endif
   if (closeHit(x, y) && wifiSetupState() == WS_OFF) {  // as swiping up does: nothing set
     sfxPlay(SFX_TAP);
     wifiSetupStop();
@@ -4511,7 +4712,14 @@ void clockTap(int16_t x, int16_t y) {
     return;
   }
 #endif
-  if (y >= 190 && y <= 248) {  // row of +/- buttons
+#ifdef BOARD_KNOMI_V2
+  if (clockLocked() && clockTzUi && x >= TZ_BTN_X && x < TZ_BTN_X + TZ_BTN_W && y >= TZ_BTN_Y && y < TZ_BTN_Y + TZ_BTN_H) {
+    sfxPlay(SFX_TAP);
+    tzPickerOpen();
+    return;
+  }
+#endif
+  if (!clockLocked() && y >= 190 && y <= 248) {  // row of +/- buttons
     clockEdited = true;
     if (x >= 104 && x < 162) clockH = (clockH + 23) % 24;
     else if (x >= 170 && x < 228) clockH = (clockH + 1) % 24;
@@ -4532,7 +4740,7 @@ void clockTap(int16_t x, int16_t y) {
       return;
     }
   }
-  if (y >= 340 && y <= 388 && x >= 133 && x <= 333) { applyClock(); return; }
+  if (!clockLocked() && y >= 340 && y <= 388 && x >= 133 && x <= 333) { applyClock(); return; }
 }
 
 // flame + streak number at the top left
@@ -7519,14 +7727,20 @@ void startBath() {
   if (pet.isEgg() || pet.sleeping || pet.ceremony || bathUntil) return;
   bathUntil = millis() + 3000;
   bathPending = true;
-  int cx = (int)beh.x;
-  for (auto &b : bubbles) {
-    b.x = cx - 70 + random(140);
-    b.y = PET_GROUND - random(150);
-    b.r = 8 + random(16);
-    b.ph = random(64);
+  for (auto &d : bathDrops) {
+    d.x = -70 + random(140);
+    d.y = PET_GROUND - random(150);
+    d.v = 26 + random(16);
+    d.ph = random(256);
   }
+  int cx = (int)beh.x;
+  bathDuckLeft = cx < 300;  // to the pet's right, looking left; near the right edge, to its left instead
+  bathDuckX = bathDuckLeft ? cx + BATH_DUCK_GAP : cx - BATH_DUCK_GAP - 14 * BATH_DUCK_S;
 }
+
+#define BATH_RAIN_TOP 120               // the drops start under the name and status lines...
+#define BATH_RAIN_LAND (PET_GROUND - 4)  // ...and splash on the ground
+#define BATH_SPLASH 24                  // px of "fall" the splash lasts
 
 void drawBath() {
   uint32_t now = millis();
@@ -7546,21 +7760,43 @@ void drawBath() {
     return;
   }
   uint32_t left = bathUntil - now;
+  // the rubber duck, sitting on the ground the whole bath, rocking a little
+  drawMap(bathDuckLeft ? SPR_BATH_DUCK : SPR_BATH_DUCK_R, 14, bathDuckX,
+          PET_GROUND - 13 * BATH_DUCK_S - ((now / 300) % 2) * 2, BATH_DUCK_S, false);
   if (left > 800) {
-    // foam: bubbles swaying and rising little by little
+    // drops fall over the pet and splash where they land, each fall a little to one side;
+    // soap bubbles swell up around it, sway and drift up
+    const int span = BATH_RAIN_LAND - BATH_RAIN_TOP;
+    uint32_t el = 3000 - left;
     float t = now / 220.0f;
-    for (auto &b : bubbles) {
-      int bx = b.x + (int)(sinf(t + b.ph) * 6);
-      int by = b.y - (int)((3000 - left) / 90);
-      gfx->fillCircle(bx, by, b.r, UI_WHITE);
-      gfx->drawCircle(bx, by, b.r, 0x7E3D);
-      gfx->fillCircle(bx - b.r / 3, by - b.r / 3, b.r / 4, UI_BG_DAY);
+    for (int i = 0; i < 14; i++) {
+      auto &d = bathDrops[i];
+      if (i % 2) {
+        int r = 6 + d.v % 10;
+        if (el < 500) r = r * (int)el / 500;  // they swell in
+        if (r < 2) continue;
+        int bx = (int)beh.x + d.x + (int)(sinf(t + d.ph) * 6), by = d.y - (int)(el / 90);
+        gfx->fillCircle(bx, by, r, UI_WHITE);
+        gfx->drawCircle(bx, by, r, 0x7E3D);
+        gfx->fillCircle(bx - r / 3, by - r / 3, r / 4 > 1 ? r / 4 : 1, UI_BG_DAY);
+        continue;
+      }
+      uint32_t p = el * d.v / 100 + d.ph;  // px fallen since the bath began
+      int cycle = p / (span + BATH_SPLASH), pos = p % (span + BATH_SPLASH);
+      int x = (int)beh.x + d.x + (int)((cycle * 37 + i * 13) % 31) - 15;
+      if (pos < span) {
+        drawMap(SPR_RAINDROP, 9, x - 13, BATH_RAIN_TOP + pos - 13, 3, false);
+      } else {  // the splash: two white droplets hopping out to the sides (white shows on grass and sand)
+        int k = (pos - span) / 4;
+        gfx->fillRect(SNAP2(x - 10 - 2 * k), SNAP2(BATH_RAIN_LAND - 6 - k), 6, 6, UI_WHITE);
+        gfx->fillRect(SNAP2(x + 4 + 2 * k), SNAP2(BATH_RAIN_LAND - 6 - k), 6, 6, UI_WHITE);
+      }
     }
   } else {
-    // the bubbles pop: sparkles
+    // clean: sparkles
     for (int i = 0; i < 8; i++) {
-      auto &b = bubbles[i];
-      int sx = b.x + (i % 3) * 6 - 6, sy = b.y - 18;
+      auto &b = bathDrops[i];
+      int sx = (int)beh.x + b.x + (i % 3) * 6 - 6, sy = b.y - 18;
       uint16_t col = (i % 2) ? UI_BAR_WARN : UI_WHITE;
       gfx->fillRect(sx - 6, sy - 1, 13, 3, col);
       gfx->fillRect(sx - 1, sy - 6, 3, 13, col);
@@ -8146,8 +8382,18 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       if (y > 376 && y < 440) return pressSet(t, 150, 384, 166, 40, T(S_CANCEL));
       return false;
     }
+    if (tzPickOpen && clockPage == 0) {  // the picker: its arrows and OK
+      if (int d = pageArrowAt(x, y, tzPickIdx, TIME_ZONE_COUNT, TZ_ARROW_Y))
+        return pressSet(t, CX + d * pageArrowDx(TZ_ARROW_Y) - CLOSE_R, TZ_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+      if (pressIn(x, y, 133, 340, 200, 48)) return pressSet(t, 133, 340, 200, 48, "OK");
+      return false;
+    }
+    if (clockLocked() && clockTzUi && pressIn(x, y, TZ_BTN_X, TZ_BTN_Y, TZ_BTN_W, TZ_BTN_H)) {
+      int i = clockTzIndex();
+      return pressSet(t, TZ_BTN_X, TZ_BTN_Y, TZ_BTN_W, TZ_BTN_H, TIME_ZONES[i >= 0 ? i : TIME_ZONE_DEFAULT].city);
+    }
 #endif
-    if (y >= 190 && y <= 248) {
+    if (!clockLocked() && y >= 190 && y <= 248) {
       static const int16_t BX[4] = { 104, 170, 252, 318 };
       for (int i = 0; i < 4; i++) {
         if (x < BX[i] || x >= BX[i] + 58) continue;
@@ -8164,7 +8410,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       }
       return false;
     }
-    if (pressIn(x, y, 133, 340, 200, 48)) return pressSet(t, 133, 340, 200, 48, "OK");
+    if (!clockLocked() && pressIn(x, y, 133, 340, 200, 48)) return pressSet(t, 133, 340, 200, 48, "OK");
     return false;
   }
   if (pet.ceremony) return false;

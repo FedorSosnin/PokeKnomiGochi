@@ -78,6 +78,7 @@ enum {
   WM_UPDATE_FOUND,       // the update check is back (wParam: asked; lParam: UpdateResult*)
   WM_UPDATE_READY,       // the new .exe is checked and beside this one (lParam: std::wstring*, its path, or empty: failed)
   WM_TEST,               // --console: a test event (lParam: std::string*)
+  WM_NET_TIME,           // the time server's answer (lParam: seconds since 1970 UTC, 0: none)
 };
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
 enum {
@@ -1115,12 +1116,52 @@ static void consoleThread() {
   }
 }
 
+// ---- network time: the game's clock follows a time server (the Date of an answer from HOST_TIME_URL),
+// not the PC's clock, so setting the PC's clock can't fake time away. A HEAD request on its own thread;
+// the answer goes to the game's thread (0: none) ----
+static void fetchNetTime() {
+  std::thread([] {
+    const char *env = getenv("POKEMACGOCHI_TIME_URL");  // testing
+    std::wstring url = wide(env && *env ? env : HOST_TIME_URL);
+    URL_COMPONENTS u = {sizeof(u)};
+    wchar_t host[256] = L"", path[2048] = L"";
+    u.lpszHostName = host;
+    u.dwHostNameLength = 256;
+    u.lpszUrlPath = path;
+    u.dwUrlPathLength = 2048;
+    uint32_t utc = 0;
+    if (WinHttpCrackUrl(url.c_str(), 0, 0, &u)) {
+      HINTERNET c = WinHttpConnect(httpSession(), host, u.nPort, 0);
+      HINTERNET r = c ? WinHttpOpenRequest(c, L"HEAD", path[0] ? path : L"/", NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
+                                           u.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0)
+                      : NULL;
+      SYSTEMTIME st;
+      DWORD len = sizeof(st);
+      if (r) {
+        WinHttpSetTimeouts(r, 8000, 8000, 15000, 15000);
+        if (WinHttpSendRequest(r, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+            WinHttpReceiveResponse(r, NULL) &&
+            WinHttpQueryHeaders(r, WINHTTP_QUERY_DATE | WINHTTP_QUERY_FLAG_SYSTEMTIME, WINHTTP_HEADER_NAME_BY_INDEX,
+                                &st, &len, WINHTTP_NO_HEADER_INDEX)) {
+          FILETIME ft;  // 100 ns since 1601
+          if (SystemTimeToFileTime(&st, &ft))
+            utc = (uint32_t)(((((uint64_t)ft.dwHighDateTime) << 32 | ft.dwLowDateTime) - 116444736000000000ULL) / 10000000ULL);
+        }
+        WinHttpCloseHandle(r);
+      }
+      if (c) WinHttpCloseHandle(c);
+    }
+    PostMessageW(gWnd, WM_NET_TIME, 0, (LPARAM)utc);
+  }).detach();
+}
+
 // ---- the game loop and the window's messages ----
 static DWORD gLastTick = 0;  // timeGetTime(): to the millisecond with timeBeginPeriod(1)
 static void tick() {
   gLastTick = timeGetTime();
   if (!gConsole) readTilt();  // tests steer with their own commands
   hostTick();
+  if (hostNetTimeWanted()) fetchNetTime();
   bool dirty = hostFrameDirty();
   if (dirty) hostFrameRGBA(gCanvas);
   // the frame grows while the mouse is over the ball (a look at the cursor each tick is all it takes)
@@ -1276,6 +1317,9 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
       delete r;
       return 0;
     }
+    case WM_NET_TIME:
+      hostNetTime((uint32_t)lp);
+      return 0;
     case WM_UPDATE_READY: {
       std::wstring *path = (std::wstring *)lp;
       if (!path->empty() && (*path)[0] != L'!') swapInUpdate(*path);

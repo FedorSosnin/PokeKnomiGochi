@@ -5,25 +5,95 @@
 // No RTC or PMU. The time is a software clock set via NTP over the wifi
 // the Knomi already had saved in the NVS (WiFi.begin() without credentials), so the
 // firmware doesn't handle the password. Without a network, setup() seeds with the last saved time.
+#include <Preferences.h>
 #include <WiFi.h>
 #include <esp_sntp.h>
 #include <esp_wifi.h>
 #include <time.h>
-
-// New York; the game uses LOCAL time as the epoch (see openClock), there are no time zones
-#ifndef KNOMI_TZ
-#define KNOMI_TZ "EST5EDT,M3.2.0,M11.1.0"
-#endif
+#include "timezones.h"
 #define WIFI_TIMEOUT_MS 30000UL
 #define NTP_RESYNC_MS (24UL * 3600UL * 1000UL)
 #define NTP_RETRY_MS (10UL * 60UL * 1000UL)
 #define WIFI_RECONNECT_MS 60000UL
 
-static uint32_t baseEpoch = 0, baseMs = 0;
+// The clock keeps UTC (millis() on top of a base) and shows it in the chosen time zone: changing the zone
+// moves the hours, never the time that passed. fromNet: the base came from NTP and nobody set it since.
+static uint32_t baseUtc = 0, baseMs = 0;
+static bool fromNet = false;
+static int tzIdx = TIME_ZONE_DEFAULT;
 
-bool rtcBegin() { return true; }
-uint32_t rtcEpoch() { return baseEpoch ? baseEpoch + (millis() - baseMs) / 1000 : 0; }
-void rtcSetEpoch(uint32_t e) { baseEpoch = e; baseMs = millis(); }
+static uint32_t civilEpoch(const struct tm &t);
+
+static void tzUse(int i) {
+  setenv("TZ", TIME_ZONES[i].posix, 1);
+  tzset();
+}
+
+// the saved city (by name, so the list can grow); New York until one is picked
+static void tzLoad() {
+  Preferences p;
+  p.begin("tamapoke", true);  // read-only
+  char city[24] = "";
+  if (p.isKey("tzc")) p.getString("tzc", city, sizeof(city));
+  p.end();
+  for (int i = 0; i < TIME_ZONE_COUNT; i++)
+    if (!strcmp(city, TIME_ZONES[i].city)) tzIdx = i;
+  tzUse(tzIdx);
+}
+
+static int32_t offsetAt(uint32_t utc) {  // local minus UTC in the zone in use
+  time_t t = utc;
+  struct tm lt;
+  localtime_r(&t, &lt);
+  return (int32_t)(civilEpoch(lt) - utc);
+}
+
+static uint32_t rtcUtc() {
+  if (!baseUtc) return 0;
+  uint32_t d = millis() - baseMs;
+  if (d >= 86400000UL) {  // moves the base along once a day, so millis() wrapping (49 days) can't bite
+    baseUtc += d / 1000;
+    baseMs += d / 1000 * 1000;
+    d = millis() - baseMs;
+  }
+  return baseUtc + d / 1000;
+}
+
+bool rtcBegin() {
+  tzLoad();
+  return true;
+}
+uint32_t rtcEpoch() {
+  uint32_t u = rtcUtc();
+  return u ? u + offsetAt(u) : 0;
+}
+void rtcSetEpoch(uint32_t e) {  // local: back to UTC (twice, for a day that changes to or from summer time)
+  uint32_t u = e - offsetAt(e);
+  baseUtc = e - offsetAt(u);
+  baseMs = millis();
+  fromNet = false;
+}
+bool clockFromNetwork() { return fromNet; }
+uint32_t clockUtc() { return fromNet ? rtcUtc() : 0; }
+uint32_t clockGapMin() { return 0; }  // millis() runs through light sleep: no gaps
+
+int clockTzIndex() { return tzIdx; }
+void clockSetTz(int i) {
+  if (i < 0 || i >= TIME_ZONE_COUNT) return;
+  tzIdx = i;
+  tzUse(i);
+  Preferences p;
+  p.begin("tamapoke", false);
+  p.putString("tzc", TIME_ZONES[i].city);
+  p.end();
+}
+uint32_t clockLocalIn(int tz, uint32_t utc) {
+  if (tz < 0 || tz >= TIME_ZONE_COUNT) return utc;
+  tzUse(tz);
+  uint32_t l = utc + offsetAt(utc);
+  tzUse(tzIdx);
+  return l;
+}
 
 // If the clock was still on setup()'s fixed seed, the jump to network time measures no
 // absence: applying it would age the pet up to the 2-week cap.
@@ -64,7 +134,9 @@ void clockPollPause(bool p) {
 
 // Non-blocking state machine: connects, waits for NTP and repeats every 24 h. The wifi stays
 // on if there was a network (the buddy needs it, and the Knomi is always plugged in via USB).
-bool clockPoll() {
+static bool clockStep();
+uint8_t clockPoll() { return clockStep() ? CLOCK_TRUSTED : CLOCK_NONE; }
+static bool clockStep() {
   if (paused) return false;
   enum { IDLE = CLK_IDLE, CONNECTING = CLK_CONNECTING, WAIT_NTP = CLK_WAIT_NTP };
   uint32_t now = millis();
@@ -73,7 +145,7 @@ bool clockPoll() {
       if (stayedOn && WiFi.status() == WL_CONNECTED) {
         if (now - lastTry < wait) return false;
         lastTry = t0 = now;  // still connected: just ask for the time again
-        configTzTime(KNOMI_TZ, "pool.ntp.org", "time.google.com");
+        configTzTime(TIME_ZONES[tzIdx].posix, "pool.ntp.org", "time.google.com");
         st = WAIT_NTP;
         return false;
       }
@@ -103,7 +175,7 @@ bool clockPoll() {
     case CONNECTING:
       if (WiFi.status() == WL_CONNECTED) {
         Serial.printf("wifi ok, ip=%s\n", WiFi.localIP().toString().c_str());
-        configTzTime(KNOMI_TZ, "pool.ntp.org", "time.google.com");
+        configTzTime(TIME_ZONES[tzIdx].posix, "pool.ntp.org", "time.google.com");
         t0 = now;
         st = WAIT_NTP;
       } else if (now - t0 > WIFI_TIMEOUT_MS) {
@@ -125,8 +197,10 @@ bool clockPoll() {
       bool ok = synced && localtime_r(&tt, &tmv);
       if (ok) {
         wasSeed = rtcEpoch() < CLOCK_REAL_MIN;
-        rtcSetEpoch(civilEpoch(tmv));
-        Serial.printf("NTP ok, local time %02d:%02d\n", tmv.tm_hour, tmv.tm_min);
+        baseUtc = (uint32_t)tt;
+        baseMs = millis();
+        fromNet = true;
+        Serial.printf("NTP ok, local time %02d:%02d (%s)\n", tmv.tm_hour, tmv.tm_min, TIME_ZONES[tzIdx].city);
       } else Serial.println("NTP: no response");
       stayedOn = WiFi.status() == WL_CONNECTED;
       if (stayedOn) WiFi.setSleep(false);  // with power saving, network-wide messages are lost
@@ -195,6 +269,8 @@ void rtcSetEpoch(uint32_t e) {
   rtc.setDateTime(RTC_DateTime(tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday,
                                tmv.tm_hour, tmv.tm_min, tmv.tm_sec));
 }
+
+bool clockFromNetwork() { return false; }  // no Wi-Fi time on this board: the battery-backed RTC, set by hand
 
 bool batBegin() {
   pmuOk = pmu.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);

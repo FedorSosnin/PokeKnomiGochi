@@ -77,6 +77,29 @@ static NSInteger httpStatus(NSURLResponse *r) {
   return [r isKindOfClass:NSHTTPURLResponse.class] ? ((NSHTTPURLResponse *)r).statusCode : 0;
 }
 
+// ---- network time: the game's clock follows a time server (the Date of an answer from HOST_TIME_URL),
+// not the Mac's clock, so setting the Mac's clock can't fake time away. 0 to the game: no answer ----
+static void fetchNetTime() {
+  NSString *env = NSProcessInfo.processInfo.environment[@"POKEMACGOCHI_TIME_URL"];  // testing
+  NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:env.length ? env : @HOST_TIME_URL]
+                                                     cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                                                 timeoutInterval:15];
+  req.HTTPMethod = @"HEAD";
+  [[NSURLSession.sharedSession dataTaskWithRequest:req completionHandler:^(NSData *d, NSURLResponse *r, NSError *e) {
+    uint32_t utc = 0;
+    NSString *date = !e && [r isKindOfClass:NSHTTPURLResponse.class] ? [(NSHTTPURLResponse *)r valueForHTTPHeaderField:@"Date"] : nil;
+    if (date) {
+      NSDateFormatter *f = [NSDateFormatter new];
+      f.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+      f.timeZone = [NSTimeZone timeZoneForSecondsFromGMT:0];
+      f.dateFormat = @"EEE, dd MMM yyyy HH:mm:ss zzz";
+      NSDate *t = [f dateFromString:date];
+      if (t) utc = (uint32_t)t.timeIntervalSince1970;
+    }
+    dispatch_async(dispatch_get_main_queue(), ^{ hostNetTime(utc); });
+  }] resume];
+}
+
 // ---- the buddy relay (relay/): Knomis and Macs meet on the Wi-Fi by themselves; the relay adds
 // the browsers, which can't. One WebSocket, retried with a growing pause when it drops. ----
 static NSURLSessionWebSocketTask *gRelay = nil;
@@ -855,6 +878,7 @@ static NSRect initialFrame(bool ownSave) {
 
 - (void)tick:(NSTimer *)t {
   hostTick();
+  if (hostNetTimeWanted()) fetchNetTime();
   if (hostFrameDirty()) [_view showFrame];
   if (hostRestartRequested()) {
     hostFlushSave();

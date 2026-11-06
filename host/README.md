@@ -18,7 +18,7 @@ Runs the game on something that isn't a board. It is split in two so a future we
 | `PokeKnomiGochi.ino` includes | Picks `host_hal.h` |
 | `sdmon.cpp` includes | Reads sprites from a folder through `host_pak.h` |
 | `loop()` frame rate | Caps the idle interval at 150 ms, since there is no battery to protect |
-| Clock screen | No Wi-Fi settings page, because the system owns Wi-Fi |
+| Clock screen | Only shows the time ("Set automatically"): no setting it, no time zones, and no Wi-Fi settings page, because the system owns all three |
 | `tiltZero()` | With arrow keys, straight is always zero |
 
 `rtcbat.cpp`, `audio.cpp`, `wifi_setup.cpp` and `buddy_net.cpp` are not compiled here. `host_board.cpp`, `host_buddy.cpp` and `host_audio.cpp` replace them, and `sfx_notes.h` keeps one table of sound effects for both.
@@ -29,7 +29,11 @@ Arduino adds prototypes to a `.ino` before compiling it. `gen_sketch_unit.py` do
 
 The game runs in ticks: the front end calls `hostTick()`, one pass of `loop()`, and `delay()` does not wait. Nothing blocks, which is what WebAssembly needs.
 
-`millis()` advances at most 250 ms per tick, so it stops when the process stops. A Mac waking from sleep shows up as a gap between the system clock and `millis()`. `clockPoll()` reports that gap and the game applies it through `syncClock()`, the same way it applies time spent switched off.
+`millis()` advances at most 250 ms per tick, so it stops when the process stops.
+
+The game's clock (`host_board.cpp`) is UTC from an anchor, moved along by a monotonic clock that keeps counting while the computer sleeps (`CLOCK_MONOTONIC` on macOS, `GetTickCount64()` on Windows, `performance.now()` in the browser), and shown in the system's time zone. A Mac waking from sleep shows up as a gap between that clock and `millis()`: `clockPoll()` reports `CLOCK_GAP` and the game applies it as time away.
+
+The anchor starts as the system clock and moves to a time server as soon as the front end has an answer. When `hostNetTimeWanted()` says so, the front end sends a HEAD request to `HOST_TIME_URL` (the browser asks its own site) and passes the `Date` header to `hostNetTime()`. Then `clockPoll()` reports `CLOCK_TRUSTED`, and `Pet::trustedTime()` applies whatever the game missed since the last trusted time, measured against the minutes it lived meanwhile (`Pet::lifeMin`). So time away from before the app started comes from the server, never from the system clock, and with no answer nothing is applied until one comes (it asks again every 2 minutes). Changing the system clock changes nothing. If it disagrees with the game's by more than 2 minutes, the server is asked again, at most every 15 minutes, which also catches a browser whose clock stopped while the computer slept. `POKEMACGOCHI_TIME_URL` points a test copy at another server.
 
 ## Build and test
 

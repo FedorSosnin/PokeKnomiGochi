@@ -92,6 +92,7 @@ enum StrId : uint8_t {
   S_STARS_BETTER, S_STARS_YOURS_BETTER, S_STARS_SAME, S_STARS_REPLACES, S_STARS_TO_WILD,
   S_DEX_TITLE, S_PAGE_OF_FMT,  // "POKEDEX", "Page %d of %d"
   S_TRAVEL,  // the zones' screen: "Travel"
+  S_CLOCK, S_SET_BY_WIFI, S_SET_AUTO, S_TIME_ZONE,  // the time page when the network sets it; the zone picker
   STR_COUNT
 };
 

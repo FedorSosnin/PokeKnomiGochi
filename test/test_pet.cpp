@@ -24,6 +24,12 @@ static void makePet(Pet &p, int16_t dex) {
   p.eggTap();  // 3 taps = immediate hatch
 }
 
+// the clock moves to epoch and the game lived that long too (a new day needs the hours lived)
+static void liveTo(Pet &p, uint32_t epoch) {
+  if (epoch > p.lastSeenEpoch && p.lastSeenEpoch) p.lifeMin += (epoch - p.lastSeenEpoch) / 60;
+  p.setClock(epoch);
+}
+
 static void setStats(Pet &p, uint8_t f, uint8_t j, uint8_t e, uint8_t h) {
   p.fullness = f; p.joy = j; p.energy = e; p.hygiene = h;
 }
@@ -635,7 +641,7 @@ TEST(visitor, leftover_minutes_end_with_the_day) {
   makePet(p, 4);
   p.setClock(20000UL * 86400 + 20 * 3600);
   p.visitorArrived(16);
-  p.setClock(20001UL * 86400 + 20 * 3600);  // the next day
+  liveTo(p, 20001UL * 86400 + 20 * 3600);  // the next day
   CHECK(!p.visitorResumable());
   CHECK_EQ(p.visitMin, (uint8_t)0);
   CHECK(p.visitorDueNow());                  // today's own visit instead
@@ -983,7 +989,7 @@ TEST(streak, first_care_of_the_day_counts) {
   CHECK_EQ(p.bestStreak, (uint16_t)1);
   p.caress();
   CHECK_MSG(p.streak == 1, "the second care of the same day does not count");
-  p.setClock(101u * 86400);
+  liveTo(p, 101u * 86400);
   p.caress();
   CHECK_EQ(p.streak, (uint16_t)2);
 }
@@ -993,9 +999,9 @@ TEST(streak, a_missed_day_resets) {
   makePet(p, 4);
   p.setClock(100u * 86400);
   p.caress();
-  p.setClock(101u * 86400);
+  liveTo(p, 101u * 86400);
   p.caress();
-  p.setClock(105u * 86400);  // gap of days
+  liveTo(p, 105u * 86400);  // gap of days
   p.caress();
   CHECK_EQ(p.streak, (uint16_t)1);
   CHECK_MSG(p.bestStreak == 2, "the best streak is kept");
@@ -1012,7 +1018,7 @@ TEST(streak, celebrates_milestones) {
   Pet p;
   makePet(p, 4);
   for (uint32_t d = 100; d < 103; d++) {
-    p.setClock(d * 86400);
+    liveTo(p, d * 86400);
     p.caress();
   }
   CHECK_EQ(p.streak, (uint16_t)3);
@@ -1452,6 +1458,171 @@ TEST(offline, no_clock_applies_nothing) {
   CHECK_EQ(p.fullness, (uint8_t)80);
 }
 
+// ---------------------------------------------------------------- time: only the hours lived count
+#define DAY(d, h, m) ((uint32_t)(d) * 86400 + (h) * 3600 + (m) * 60)
+#define UTC0 1790000000UL  // some network time (UTC), autumn 2026
+
+TEST(time, setting_the_clock_late_does_not_make_a_day) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(DAY(1000, 10, 0));
+  p.feedCandy();
+  p.feedCandy();
+  CHECK(!p.canHaveCandy());
+  p.setClock(DAY(1000, 23, 59));  // the time screen, set to just before midnight
+  advance(p, 2);
+  p.noteTime(DAY(1001, 0, 1));
+  CHECK_EQ(p.dayNumber(), (uint32_t)1000);
+  CHECK_MSG(!p.canHaveCandy(), "no new candies: the day began 10 h ago, not 12");
+  advance(p, 118);  // 12 hours lived since the day began at midnight
+  CHECK_EQ(p.dayNumber(), (uint32_t)1001);
+  CHECK(p.canHaveCandy());
+}
+
+TEST(time, doing_it_again_and_again_gives_at_most_two_days_a_day) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(DAY(1000, 0, 0));
+  uint32_t clock = DAY(1000, 0, 0);
+  for (int i = 0; i < 24 * 60; i++) {  // a day of play, the clock set to 23:59 every minute
+    clock = (clock / 86400) * 86400 + 23 * 3600 + 59 * 60;
+    p.setClock(clock);
+    advance(p, 1);
+    clock += 60;
+    p.noteTime(clock);
+  }
+  CHECK_MSG(p.dayNumber() <= 1002, "12 hours lived per day: no more than 2 days in 24 hours");
+}
+
+TEST(time, the_clock_going_back_keeps_the_day) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(DAY(1000, 12, 0));
+  p.feedCandy();
+  p.feedCandy();
+  p.setClock(DAY(999, 12, 0));  // a day back
+  CHECK_EQ(p.dayNumber(), (uint32_t)1000);
+  CHECK_MSG(!p.canHaveCandy(), "going back doesn't refill the candies");
+}
+
+TEST(time, the_streak_survives_network_time_putting_the_date_back) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(DAY(1000, 9, 0));
+  p.caress();
+  liveTo(p, DAY(1001, 9, 0));
+  p.caress();
+  CHECK_EQ(p.streak, (uint16_t)2);
+  p.setClock(DAY(1000, 9, 5));  // the real date comes back a day behind
+  p.caress();
+  liveTo(p, DAY(1001, 9, 0));
+  p.caress();
+  liveTo(p, DAY(1002, 9, 0));
+  p.caress();
+  CHECK_EQ(p.streak, (uint16_t)3);  // not reset to 1: no gap
+}
+
+TEST(time, skipping_ahead_needs_the_days_lived) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(DAY(1000, 12, 0));
+  p.caress();
+  p.lifeMin += 13 * 60;  // half a day more lived...
+  p.setClock(DAY(1003, 12, 0));  // ...but the clock says three days
+  CHECK_EQ(p.dayNumber(), (uint32_t)1001);  // one day, so the streak goes on rather than breaking
+  p.caress();
+  CHECK_EQ(p.streak, (uint16_t)2);
+}
+
+TEST(time, an_old_save_starts_today_and_the_next_day_at_midnight) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(DAY(1000, 21, 0));
+  p.flushSave();
+  Preferences pr;  // as a save from before the game counted its days
+  pr.begin("tamapoke", false);
+  pr.remove("gday");
+  pr.remove("dlife");
+  pr.remove("life");
+  pr.end();
+  Pet q;
+  q.begin();
+  q.syncClock(DAY(1000, 21, 1));
+  CHECK_EQ(q.dayNumber(), (uint32_t)1000);
+  advance(q, 3 * 60);  // to just past midnight: the day is taken to have begun at midnight
+  q.noteTime(DAY(1001, 0, 1));
+  CHECK_EQ(q.dayNumber(), (uint32_t)1001);
+}
+
+TEST(time, network_time_applies_the_time_off) {
+  Pet p;
+  makePet(p, 4);
+  setStats(p, 80, 80, 80, 100);
+  p.trustedTime(UTC0, DAY(1000, 8, 0));  // the first one only starts counting
+  CHECK_EQ(p.ageMinutes, (uint32_t)0);
+  advance(p, 10);  // 10 minutes on
+  uint32_t age = p.ageMinutes;
+  p.trustedTime(UTC0 + 70 * 60, DAY(1000, 9, 10));  // off for an hour
+  CHECK_EQ(p.ageMinutes, age + 60);
+  CHECK_EQ(p.fullness, (uint8_t)15);
+}
+
+TEST(time, what_a_monotonic_clock_applied_is_not_applied_twice) {
+  Pet p;
+  makePet(p, 4);
+  p.trustedTime(UTC0, DAY(1000, 8, 0));
+  p.awayMinutes(30);  // the computer slept half an hour
+  uint32_t age = p.ageMinutes;
+  p.trustedTime(UTC0 + 30 * 60, DAY(1000, 8, 30));
+  CHECK_EQ(p.ageMinutes, age);
+}
+
+TEST(time, a_clock_or_zone_change_is_no_time_away) {
+  Pet p;
+  makePet(p, 4);
+  p.trustedTime(UTC0, DAY(1000, 10, 0));
+  p.clockTrusted = true;
+  uint32_t age = p.ageMinutes;
+  p.trustedTime(UTC0 + 60, DAY(1001, 1, 1));  // 15 hours east, a minute later
+  CHECK_EQ(p.ageMinutes, age);  // a minute: under the two that count
+  CHECK_EQ(p.dayNumber(), (uint32_t)1000);  // 10 h lived since midnight: not tomorrow yet
+}
+
+TEST(time, a_save_from_before_network_time_measures_from_its_saved_time) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(DAY(1000, 8, 0));  // saved at 8:00, no network time counted yet
+  Pet q;
+  q.begin();
+  q.trustedTime(UTC0, DAY(1000, 18, 0));  // back at 18:00
+  CHECK_EQ(q.ageMinutes, p.ageMinutes + 600);
+  q.trustedTime(UTC0 + 120, DAY(1000, 18, 2));  // from here on, by network time
+  CHECK_EQ(q.ageMinutes, p.ageMinutes + 602);
+}
+
+TEST(time, a_seed_clock_measures_nothing) {
+  Pet p;
+  makePet(p, 4);
+  p.setClock(DAY(500, 0, 0));  // the made-up seed of a Knomi that never had the time
+  p.trustedTime(UTC0, DAY(1000, 8, 0), false);
+  CHECK_EQ(p.ageMinutes, (uint32_t)0);
+}
+
+TEST(time, the_count_is_saved) {
+  Pet p;
+  makePet(p, 4);
+  p.trustedTime(UTC0, DAY(1000, 8, 0));
+  advance(p, 5);
+  p.flushSave();
+  Pet q;
+  q.begin();
+  CHECK_EQ(q.lifeMin, p.lifeMin);
+  CHECK_EQ(q.dayNumber(), (uint32_t)1000);
+  uint32_t age = q.ageMinutes;
+  q.trustedTime(UTC0 + 65 * 60, DAY(1000, 9, 5));  // an hour off after those 5 minutes
+  CHECK_EQ(q.ageMinutes, age + 60);
+}
+
 // ---------------------------------------------------------------- saving
 TEST(save, state_survives_a_reboot) {
   Pet a;
@@ -1573,7 +1744,7 @@ TEST(joy, the_visitor_brings_a_third_candy) {
   q.begin();
   q.setClock(86400UL * 1000 + 21 * 3600);
   CHECK(!q.canHaveCandy());
-  q.setClock(86400UL * 1001 + 20 * 3600);  // the next day: 2 again, until its visitor comes
+  liveTo(q, 86400UL * 1001 + 20 * 3600);  // the next day: 2 again, until its visitor comes
   CHECK(q.canHaveCandy());
   q.feedCandy();
   q.feedCandy();
@@ -1596,7 +1767,7 @@ TEST(joy, two_candies_a_day) {
   Pet q;
   q.begin();
   CHECK_MSG(!q.canHaveCandy(), "rebooting does not hand out candies");
-  p.setClock(86400UL * 1001);
+  liveTo(p, 86400UL * 1001);
   CHECK(p.canHaveCandy());
   p.feedCandy();
   CHECK_EQ(p.candyToday, (uint8_t)1);

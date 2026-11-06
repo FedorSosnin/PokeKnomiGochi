@@ -6,7 +6,13 @@ bottom of the clock/settings screen (swipe down) and `web/manifest.json`.
 Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [Unreleased]
+## [1.46] - 2026-11-06
+
+- **Time zones on the Knomi:** swipe down and tap the city under **Time zone**. Each city shows its own time, so pick the one that matches your clock; summer time changes by itself. Knomis start on New York, as before.
+- **The clock sets itself:** on Wi-Fi the Knomi's time screen just shows the time (**Set by Wi-Fi**). Without Wi-Fi you still set it by hand, and a time earlier than the one shown now means the next morning, so a Knomi unplugged overnight catches up in one go. Mac, Windows and the web follow the computer's clock and time zone, and their time screen only shows it.
+- **Changing the clock doesn't pay:** the game counts its own minutes and only takes time away from a clock nobody can set: network time on the Knomi, and on Mac, Windows and the web a time server plus the computer's own sleep-proof clock. Setting the clock forward no longer levels your Pokémon up, and a new day (candies, the visitor, the streak) needs 12 hours of play since the last one began, so setting the time to 11:59 PM doesn't hand out candies. The day never goes back either: when the real time returns, nothing is lost and the streak carries on.
+- **The big clock** is centred whatever the hour, and looks the same in Japanese and Korean.
+- **New Sleep and Bath icons:** the moon on the home screen now drifts off with a blue zZ instead of sparkles, and bath is a drop of water instead of a bubble. Giving a bath matches: little drops shower down on your Pokémon and splash around it while soap bubbles foam up and a rubber duck sits beside it, before it sparkles clean.
 
 ## [1.45] - 2026-11-05
 

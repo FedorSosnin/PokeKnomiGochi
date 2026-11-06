@@ -36,6 +36,11 @@
 #define FAREWELL_AGE_MIN (3UL * 24 * 60)   // says goodbye after 3 game days (in final form)
 #define SHINY_AFTER_GOODBYE 4              // 1 in 4 after a goodbye or release
 #define RUNAWAY_TICKS 60                   // runs away after 1 h with EVERYTHING at zero
+// Time (docs/HOW_IT_WORKS.md, "Time"): the game counts its own minutes, and only a clock the player
+// can't set (network time, a monotonic clock) adds time away. A new day needs this many of them.
+#define DAY_MIN_LIVED 720                  // 12 h lived since the last day began
+#define AWAY_CAP_MIN (14UL * 24 * 60)      // the most time away applied at once: 2 weeks
+#define CLOCK_SANE_UTC 1767225600UL        // 2026-01-01: an earlier UTC time can't be the network's
 
 // milliseconds left until `deadline` (0 if already passed, or if deadline==0:
 // "timer inactive"). All game timers (dialogs,
@@ -107,7 +112,9 @@ public:
   int16_t prevSpeciesId = -1;  // for the evolution animation
   uint8_t careMistakes = 0;   // neglects: each delays evolution by 1 level
   bool sleeping = false;
-  uint32_t lastSeenEpoch = 0;   // last RTC time seen (for offline progression)
+  uint32_t lastSeenEpoch = 0;   // last RTC time seen (local, as if UTC): the scene's hour and the day
+  uint32_t lifeMin = 0;         // minutes the game has lived (live ticks + time away): the trainer's, never reset
+  bool clockTrusted = false;    // the clock is network time (set by the sketch): a new day starts at its midnight
   uint8_t ceremony = CER_NONE;  // goodbye/runaway/release in progress
   uint8_t lastEnd = CER_NONE;   // how the previous one ended (affects the egg)
   uint8_t dexReg[19] = { 0 };       // pokedex of raised ones (151-bit bitmap)
@@ -214,8 +221,15 @@ public:
   void eggTap();  // touch the egg: 3 touches and it hatches
   void newEgg();   // start over with a random starter
   void release();  // release (long press + confirm)
-  void syncClock(uint32_t nowEpoch);  // applies the time elapsed while off
+  void syncClock(uint32_t nowEpoch);  // applies the time elapsed while off, by the saved local time (an RTC, older saves)
   void setClock(uint32_t nowEpoch);   // sets the time without applying progression
+  void noteTime(uint32_t nowEpoch);   // the clock's local time now, without saving (the loop, every 30 s)
+  // A clock the player can't set (NTP, a time server) says it is utc (localNow there): applies the minutes
+  // the game missed since the last one (off, asleep, closed). measure false: just start counting from
+  // here (the clock it replaces was a made-up seed, so there is nothing to measure).
+  void trustedTime(uint32_t utc, uint32_t localNow, bool measure = true);
+  void awayMinutes(uint32_t mins);    // a monotonic clock says the game missed these minutes (the host asleep)
+  uint32_t dayNumber() const { return gameDay; }  // the game's day (today()), for the tests and the console
   void startFarewell();  // also usable from the serial console (BYE)
   void startRunaway();   // also usable from the serial console (RUN)
   void rescue();         // cares for it all at once: cancels the runaway
@@ -329,7 +343,15 @@ private:
   uint8_t buddyPeak = 0;       // most buddies on screen since boot (the medals keep the record)
   uint32_t milestoneUntil = 0; // streak milestone celebration
 
-  uint32_t today() const { return lastSeenEpoch ? lastSeenEpoch / 86400 : 0; }
+  // the day: follows the clock's, but never goes back, and only moves on after DAY_MIN_LIVED minutes lived,
+  // so setting the clock can't make days (candies, visitors, the streak). 0: no clock yet
+  uint32_t gameDay = 0;
+  uint32_t dayLife = 0;          // lifeMin when the day began
+  uint32_t refUtc = 0, refLife = 0;  // the last trusted time, and lifeMin then
+  uint32_t bootSeen = 0, bootLife = 0;  // the saved local time and lifeMin at start (saves from before refUtc)
+  uint32_t today() const { return gameDay; }
+  void advanceDay();
+  void applyAway(uint32_t mins);  // time away: the bars drop, it ages, maybe hatches
   void registerCare();   // first care of the day: streak + bond
   void addBond(uint8_t amt);
   void checkMedals();

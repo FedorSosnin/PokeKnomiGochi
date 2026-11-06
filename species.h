@@ -599,15 +599,15 @@ static const char* const SPR_HOME_GAMES[18] = {  // 18x18
 };
 
 static const char* const SPR_HOME_MOON[18] = {  // 18x18
-  "............k.....",
-  "......kk...kfk....",
-  "....kkffk.kfffk...",
-  "...kfffyk..kfk....",
-  "..kffyyyk...k...k.",
-  ".kffyyyk.......kfk",
-  ".kfyyyfk......kfff",
-  "kffyyfffk......kfk",
-  "kfyyffffk.......k.",
+  ".............vvvvv",
+  "......kk.......vv.",
+  "....kkffk.....vv..",
+  "...kfffyk....vvvvv",
+  "..kffyyyk.vvv.....",
+  ".kffyyyk....v.....",
+  ".kfyyyfk...v......",
+  "kffyyfffk.vvv.....",
+  "kfyyffffk.........",
   "kfywfffffkk..kkk..",
   "kffffffffffkkYYYk.",
   "kfffffffffYYYYYYk.",
@@ -619,25 +619,54 @@ static const char* const SPR_HOME_MOON[18] = {  // 18x18
   "......kkkkk.......",
 };
 
-static const char* const SPR_HOME_BUBBLE[18] = {  // 18x18
-  "..............kk..",
-  ".............kwbk.",
-  "..kkk........kbBk.",
-  ".kwbbk........kk..",
-  ".kbbBk...kkkkk....",
-  "..kkk..kkbbbbbkk..",
-  "......kbwwbbbbbBk.",
-  ".....kbwwbbbbbbbBk",
-  ".....kbwbbbbbbbbBk",
-  "....kbbbbbbbbbbbBk",
-  "....kbbbbbbbbbbbBk",
-  "....kbbbbbbbbbbBBk",
-  "....kbbbbbbbbbbBBk",
-  ".....kbbbbbbbbBBk.",
-  ".....kBbbbbbbBBBk.",
-  "......kkBBBBBBkk..",
-  "........kkkkkk....",
+static const char* const SPR_HOME_DROP[18] = {  // 18x18
   "..................",
+  "..................",
+  "........kk........",
+  ".......kuvk.......",
+  ".......kuvk.......",
+  "......kuuuvk......",
+  "......kuuuvk......",
+  ".....kuuuuuvk.....",
+  "....kuwuuuuuvk....",
+  "....kuwuuuuuvk....",
+  "...kuwuuuuuuuvk...",
+  "...kuwuuuuuuuvk...",
+  "...kuwuuuuuuuvk...",
+  "...kvuuuuuuuuvk...",
+  "....kuuuuuuuvk....",
+  "....kvvuuuuvvk....",
+  ".....kkvvvvkk.....",
+  ".......kkkk.......",
+};
+
+static const char* const SPR_RAINDROP[9] = {  // 9x9
+  "....k....",
+  "...kuk...",
+  "...kuk...",
+  "..kuuvk..",
+  ".kuwuuvk.",
+  ".kuwuuvk.",
+  ".kuuuuvk.",
+  "..kvvvk..",
+  "...kkk...",
+};
+
+static const char* const SPR_BATH_DUCK[14] = {  // 14x14
+  "..............",
+  "..............",
+  "....kkkk......",
+  "...kfwwfk.....",
+  ".kkfkfffk.....",
+  "koofffffk...k.",
+  "kOOYYfffkkkkfk",
+  ".kkkkfffffffYk",
+  "..kfffffffffYk",
+  "..kffffYffYfYk",
+  "..kfffffYYffYk",
+  "..kYYYffffYYYk",
+  "...kkkYYYYkkk.",
+  "......kkkk....",
 };
 
 static const char* const SPR_TROPHY[12] = {  // 12x12
@@ -653,6 +682,23 @@ static const char* const SPR_TROPHY[12] = {  // 12x12
   "....kffk....",
   "...kfffYk...",
   "...kkkkkk...",
+};
+
+static const char* const SPR_BATH_DUCK_R[14] = {  // 14x14
+  "..............",
+  "..............",
+  "......kkkk....",
+  ".....kfwwfk...",
+  ".....kfffkfkk.",
+  ".k...kfffffook",
+  "kfkkkkfffYYOOk",
+  "kYfffffffkkkk.",
+  "kYfffffffffk..",
+  "kYfYffYffffk..",
+  "kYffYYfffffk..",
+  "kYYYffffYYYk..",
+  ".kkkYYYYkkk...",
+  "....kkkk......",
 };
 
 static const char* const SPR_EGG[32] = {  // 32x32
