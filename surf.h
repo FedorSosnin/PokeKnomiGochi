@@ -23,13 +23,15 @@
 #define SURF_DOUBLE_FROM 12.0f   // from here on a row can block two lanes, up to half of them
 #define SURF_MOVE_V 259.0f       // how fast yours crosses at full tilt (Berry Drop's: 22 px every 85 ms)
 #define SURF_REACT 0.3f          // time to see a row and start moving, on top of the crossing
-#define SURF_ROCK_HALF_W 24      // a rock (its pixel art at 4x, a little forgiving)
-#define SURF_ROCK_HALF_H 20
+#define SURF_ROCK_HALF_W 36      // a rock (its pixel art at 5x, 70 px): two side by side leave no room to sit
+#define SURF_ROCK_HALF_H 24      // between them, so the way through is always an open lane
 #define SURF_PET_HALF_W 18       // yours on its board: what can touch a rock (the board is long: its nose counts)
 #define SURF_PET_HALF_H 30
 #define SURF_PIKA_HALF_W 14      // Pikachu on his smaller board
 #define SURF_PIKA_HALF_H 22
 #define SURF_ROWS 4
+#define SURF_FIXED_DT (1.0f / 120)  // the game steps in these, whatever the frame rate: two boards in a duel,
+                                    // started from the same seed, then see the very same rows
 // Pikachu: beside yours at first, then pulling ahead until he is out of sight (about 40 s in)
 #define SURF_PIKA_DX 76          // his place beside yours
 #define SURF_PIKA_PULL_FROM 10.0f
@@ -43,7 +45,7 @@
 struct SurfRow {
   float y;
   uint8_t lanes;     // the blocked ones: bit 0 the left lane, 1 the middle, 2 the right
-  int8_t jitter[3];  // each rock a little off its lane's middle
+  int8_t jitter[3];  // the row a little off the lanes' middles (all its rocks alike: the gaps never widen)
   bool on;
 };
 struct SurfState {
@@ -122,7 +124,8 @@ inline void surfSpawn(SurfState &s) {
   slot->on = true;
   slot->y = SURF_SPAWN_Y;
   slot->lanes = lanes;
-  for (int i = 0; i < 3; i++) slot->jitter[i] = (int8_t)((int)(surfRand(s) % 17) - 8);
+  int8_t j = (int8_t)((int)(surfRand(s) % 17) - 8);
+  for (int i = 0; i < 3; i++) slot->jitter[i] = j;
   s.lastSafe = 7 & ~lanes;
   s.sinceRow = 0;
   s.spawnIn = surfMinGap(s.t) * (1.0f + 0.4f * surfRand01(s));
@@ -213,6 +216,19 @@ inline void surfStep(SurfState &s, float dt, float tilt) {
   s.spawnIn -= dt;
   if (s.spawnIn <= 0) surfSpawn(s);
   surfPikaStep(s, dt);
+}
+
+// how far the water has gone by after t seconds (the speed's integral): what a duel compares
+inline float surfDistAt(float t) {
+  float tMax = (SURF_SPEED_MAX - SURF_SPEED_START) / SURF_SPEED_GAIN;  // when it stops speeding up
+  if (t <= tMax) return SURF_SPEED_START * t + SURF_SPEED_GAIN * t * t / 2;
+  return surfDistAt(tMax) + SURF_SPEED_MAX * (t - tMax);
+}
+
+// A duel with a buddy (both on the same course): who lasted longer, in tenths of a second as they
+// travel; 1 yours, -1 theirs, 0 a draw
+inline int surfDuelOutcome(uint16_t mine10, uint16_t theirs10) {
+  return mine10 > theirs10 ? 1 : mine10 < theirs10 ? -1 : 0;
 }
 
 // automatic player for tests and the screenshots: makes for the opening of the next row, at full tilt

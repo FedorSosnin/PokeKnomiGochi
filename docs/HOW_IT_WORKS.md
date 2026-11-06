@@ -109,7 +109,7 @@ While at least one buddy or the daily visitor is on your screen:
 
 It's the same with one friend or five, so extra devices don't stack it. Tap the green **PARTY BOOST** button for the list of who's here. Tap a friend for its stats (level, HP, ATK, DEF, SPD, and a buddy's Pokédex count), then swipe to a buddy's Battle, Trade and Play menu. The ✕ goes back to the list.
 
-The **daily visitor** brings a candy (a third one that day) and stays 60 awake minutes. It steps out while yours sleeps (or while four buddies fill the row) and comes back the same day, and its time survives a restart. Leftover minutes end at midnight.
+The **daily visitor** brings a candy (a third one that day) and stays 60 minutes. It only arrives while yours is awake, but once it's there it stays even if yours goes to sleep, its minutes still running. It steps out while four buddies fill the row and comes back the same day, and its time survives a restart. Leftover minutes end at midnight. Tap it to see its stats.
 
 ## Zones
 

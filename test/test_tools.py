@@ -390,6 +390,8 @@ class TestTextBuffers(unittest.TestCase):
         'S_VB_THEY_SCORE_FMT': ('name_or_nick',),
         'S_SHINY_WILD_FMT': ('name',),
         'S_VISIT_CANDY_FMT': ('name',),
+        'S_DUEL_WAIT_FMT': ('name_or_nick',),
+        'S_DUEL_CRASHED_FMT': ('name_or_nick',),
     }
     DIGITS = {'u': 5, 'd': 5, 'lu': 10}
     SPEC = re.compile(r'%0?\d*(lu|u|d|s)')

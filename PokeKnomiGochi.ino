@@ -53,7 +53,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "1.47"
+#define FW_VERSION "1.48"
 
 #define UPD_BTN_Y 296      // settings page: the Wi-Fi update button
 bool otaChecking = false;  // it says "Searching..." while the check runs
@@ -243,9 +243,21 @@ bool runOpen = false, runJump = false, runNewHi = false, runBot = false;
 // PikaSurf (surf.h): yours on a board, rocks coming up the rushing water, Pikachu alongside
 bool surfOpen = false, surfNewHi = false, surfBot = false;
 SurfState surf;
-PmdMon surfPika;  // Pikachu on his board
+PmdMon surfPika;  // Pikachu on his board (in a duel, the buddy's Pokemon on it)
 uint32_t surfLast = 0, surfOverT = 0;
 uint8_t surfScale = 3;
+float surfAcc = 0;  // time not yet stepped: the game moves in fixed steps (SURF_FIXED_DT)
+// a PikaSurf duel with a buddy (BK_SURF): both on the same course (the session id is the seed), each
+// sending where it is and its time; the buddy rides alongside in Pikachu's place. Whoever lasts longer
+// wins; the first to crash waits for the other, then both go back to Play together
+bool surfDuel = false, surfTheirDone = false;
+uint32_t surfDuelT = 0, surfSendT = 0, surfTheirMsgT = 0, surfTheirCrashT = 0, surfDuelDoneT = 0;
+float surfTheirX = 0, surfTheirShownX = 0;
+uint16_t surfTheir10 = 0;  // their time in tenths of a second, as they last said: surfing, or final
+#define SURF_DUEL_READY_MS 1800UL  // "get ready", as the other games with a buddy
+#define SURF_DUEL_SEND_MS 200UL    // where you are, this often (each one says it all: a lost one doesn't matter)
+#define SURF_DUEL_GONE_MS 10000UL  // nothing from them this long: they've gone
+#define SURF_DUEL_DONE_MS 6000UL   // the result, then back to Play together
 bool dungeonOpen = false, dnBot = false, dnNewHi = false, dnHeld = false;
 DnState dn;
 
@@ -264,6 +276,7 @@ bool buddyMenuOpen = false;
 bool partyOpen = false;  // the Party Boost screen: who is around and what it gives
 uint32_t farHintUntil = 0;  // after "stay together": how to get the goodbye back
 bool partyVisitor = false;  // ...showing the visitor's stats
+bool partyVisitorOnly = false;  // ...opened by tapping the visitor at home: closing goes home, not to the list
 uint8_t buddyPage = 1;      // the buddy view: 0 its stats, 1 Battle/Trade/Play
 bool buddyFromParty = false;  // opened from Party Boost: closing goes back there
 // With a buddy or the visitor around, ATK, DEF and SPD in wild battles: the same however many are
@@ -1229,7 +1242,7 @@ void handleTouch() {
     // long press without moving on the pet -> release dialog
     if (!holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen && !buddyMenuOpen && !partyOpen && !tradeOpen && millis() - tStart > 3000 &&
         abs(tXl - tX0) < 30 && abs(tYl - tY0) < 30 && inPetZone(tX0, tY0) &&
-        !pet.isEgg() && !confirmUntil && !pet.ceremony) {
+        !pet.isEgg() && !confirmUntil && !pet.ceremony && !homeModal()) {
       if (pet.canFarewellNow()) {  // a goodbye it's ready for (put off before): that dialog again
         choiceKind = 2;
         choiceUntil = millis() + 12000;
@@ -1500,11 +1513,16 @@ void onTap(int16_t x, int16_t y) {
     sfxPlay(SFX_TAP);
     return;
   }
-  if (celebrationTap(x, y)) return;
+  if (homeModalTap(x, y)) return;  // a medal, evolving or the goodbye is up: it answers, nothing behind
   if (partyPillAt(x, y)) {  // the Party Boost button
     sfxPlay(SFX_TAP);
     partyOpen = true;
-    partyVisitor = false;
+    partyVisitor = partyVisitorOnly = false;
+    return;
+  }
+  if (visitorAt(x, y)) {  // the visitor: its stats (it has no menu)
+    sfxPlay(SFX_TAP);
+    partyOpen = partyVisitor = partyVisitorOnly = true;
     return;
   }
   int bt = buddyAt(x, y);
@@ -1551,6 +1569,40 @@ void onTap(int16_t x, int16_t y) {
     pet.caress();
     if (!pet.sleeping) sfxPlay(SFX_HEART);
   }
+}
+
+// A medal (or a streak) being celebrated, the evolve button, or the goodbye ("wants to tell you..."):
+// drawn over everything with the rest dimmed, and nothing behind answers a tap. A tap off it puts it
+// away (the medal seen; evolving asked again later, as Keep; the goodbye as "stay together").
+bool homeModal() {
+  if (pet.isEgg() || pet.ceremony) return false;
+  return pet.showMedal() || pet.showMilestone() || pet.wantEvolveButton() || (!pet.canRunawayNow() && pet.wantFarewellButton());
+}
+
+bool homeModalTap(int16_t x, int16_t y) {
+  if (!homeModal()) return false;
+  if (celebrationTap(x, y)) return true;  // on the banner: the medal's page
+  if (pet.showMedal() || pet.showMilestone()) {
+    pet.endCelebration();  // off it: seen
+    return true;
+  }
+  if (pet.wantEvolveButton()) {
+    if (x >= EVO_BTN_X && x <= EVO_BTN_X + EVO_BTN_W && y >= EVO_BTN_Y && y <= EVO_BTN_Y + EVO_BTN_H) {
+      choiceKind = 1;  // the evolve/keep dialog
+      choiceUntil = millis() + 12000;
+    } else {
+      pet.declineEvolve();  // off it: as Keep, asked again an hour later
+    }
+    return true;
+  }
+  if (x >= FAR_BTN_X && x <= FAR_BTN_X + FAR_BTN_W && y >= FAR_BTN_Y && y <= FAR_BTN_Y + FAR_BTN_H) {
+    choiceKind = 2;  // the goodbye dialog
+    choiceUntil = millis() + 12000;
+  } else {
+    pet.declineFarewell();  // off it: as "stay together" (holding the pet brings it back)
+    farHintUntil = millis() + 6000;
+  }
+  return true;
 }
 
 // ---------- render ----------
@@ -2011,6 +2063,7 @@ bool render() {
     gfx->fillRect(0, HOME_PANEL_Y, 466, 466 - HOME_PANEL_Y, gNight ? UI_BG_NIGHT : UI_BG_DAY);
     drawBars();
     drawButtons();
+    if (homeModal()) dimFrame();  // what's behind a medal, the evolve button or the goodbye
     drawCelebration();
     if (pet.wantEvolveButton()) drawEvolveButton();        // red CTA: evolve
     else if (pet.canRunawayNow()) drawRunawayButton();     // grim CTA: runaway (neglect)
@@ -2124,7 +2177,11 @@ void quitGame() {
   if (battleOpen) closeBattle();
   if (quizOpen) closeQuiz();
   if (runOpen) closeRun();
-  if (surfOpen) closeSurf();
+  if (surfOpen) {
+    if (surfDuel && !surfDuelDoneT) buddyNetSend(buddyMsg(BM_LEAVE));
+    if (surfDuel) buddyEndSession();
+    closeSurf();
+  }
   if (dungeonOpen) closeDungeon();
   gameOpen = gamesMenuOpen = false;
 }
@@ -2473,6 +2530,12 @@ int drawWrapped(const char *s, uint8_t size, int maxW, int y, int lineH, bool dr
 // a card is up over a game that is open (a card left over from a closed game counts for nothing)
 bool introUp() { return introCard >= 0 && (gameOpen || quizOpen || runOpen || surfOpen || dungeonOpen); }
 
+// everything drawn so far, at half brightness: what's behind a card or a message
+void dimFrame() {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  for (int i = 0; i < 466 * 466; i++) fb[i] = (fb[i] >> 1) & 0x7BEF;
+}
+
 void introOpen(int g) {
   introCard = g;
   introT = millis();
@@ -2557,10 +2620,7 @@ void drawIntroCard() {
   uint32_t now = millis();
   int cx, cy;
   introCardPos(now, cx, cy);
-  if (!introAwayT || now - introAwayT < CARD_AWAY_MS / 2) {
-    uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
-    for (int i = 0; i < 466 * 466; i++) fb[i] = (fb[i] >> 1) & 0x7BEF;
-  }
+  if (!introAwayT || now - introAwayT < CARD_AWAY_MS / 2) dimFrame();
   gfx->fillCircle(cx + 4, cy + 8, CARD_R, C565(0x10, 0x10, 0x18));  // its shadow
   gfx->fillCircle(cx, cy, CARD_R, UI_WHITE);
   fillRing(cx, cy, CARD_R - 12, CARD_R - 7, gameColor(g));  // a thin ring in the game's colour
@@ -2842,7 +2902,9 @@ void visitTick(uint32_t now) {
     else if (pet.visitorDueNow()) startVisitWith(0, false);
     return;
   }
-  if (pet.sleeping || pet.ceremony || buddyCount(bPeers) >= BUDDY_MAX) {  // steps out: its minutes wait
+  // once here it stays its hour, its minutes running, even if yours goes to sleep (it only arrives when
+  // yours is awake); a goodbye or a full party (four buddies) still sends it out, its minutes waiting
+  if (pet.ceremony || buddyCount(bPeers) >= BUDDY_MAX) {
     endVisit();
     return;
   }
@@ -4466,15 +4528,144 @@ void startSurf() {
 
 void closeSurf() {
   surfOpen = false;
+  surfDuel = false;
   introCard = -1;
   surfBot = false;
   surfPika.unload();
 }
 
 void surfTap() {
+  if (surfDuel) {
+    if (surfDuelDoneT && millis() - surfDuelDoneT > 1200) surfDuelEnd();  // time to read who won
+    return;
+  }
   if (surfOverT && millis() - surfOverT > 800) {  // time to read the result
     closeSurf();
     gameEndToMenu();
+  }
+}
+
+// ---- PikaSurf against a buddy
+void surfDuelStart() {
+  startSurf();
+  if (!surfOpen) {
+    buddyNetSend(buddyMsg(BM_LEAVE));
+    buddyEndSession();
+    return;
+  }
+  surfStart(surf, bsId);                // the same course on both boards
+  surf.pikaY = SURF_PIKA_GONE_Y + 100;  // no Pikachu: the buddy rides alongside
+  surfPika.unload();
+  surfPika.load(bPeers[bCur].dex, bPeers[bCur].shiny);
+  surfDuel = true;
+  surfTheirDone = false;
+  surfTheir10 = 0;
+  surfDuelT = surfTheirMsgT = millis();
+  surfSendT = surfTheirCrashT = surfDuelDoneT = 0;
+  surfTheirX = surfTheirShownX = SURF_CX + SURF_PIKA_DX;
+  surfAcc = 0;
+  Serial.printf("buddy: pikasurf vs #%d\n", bPeers[bCur].dex);
+}
+
+void surfDuelSend() {
+  BuddyMsg m = buddyMsg(BM_SURF);
+  m.kind = BK_SURF;
+  m.hp = (uint16_t)surf.x;
+  float t10 = surf.t * 10;
+  m.atk = t10 > 65000 ? 65000 : (uint16_t)t10;
+  m.move = surf.dead ? 1 : 0;
+  buddyNetSend(m);
+}
+
+// their time now: as they last said, and on from there while they're still surfing
+float surfTheirT(uint32_t now) {
+  float t = surfTheir10 / 10.0f;
+  if (!surfTheirDone && now - surfDuelT >= SURF_DUEL_READY_MS) t += (now - surfTheirMsgT) / 1000.0f;
+  return t;
+}
+
+void surfDuelHandle(const BuddyMsg &m) {
+  if (!surfOpen || !surfDuel) return;
+  surfTheirMsgT = millis();
+  surfTheirX = m.hp;
+  surfTheir10 = m.atk;
+  if (m.move && !surfTheirDone) {
+    surfTheirDone = true;
+    surfTheirCrashT = millis();
+    if (!surf.dead) sfxPlay(SFX_HEART);  // they're out: you've won once you crash
+    Serial.printf("buddy: pikasurf, they crashed at %.1f s\n", m.atk / 10.0f);
+  }
+}
+
+// sends where you are; false when they've been silent too long (they've gone: the duel closes)
+bool surfDuelTick(uint32_t now) {
+  if (now - surfSendT >= SURF_DUEL_SEND_MS) {
+    surfSendT = now;
+    surfDuelSend();
+  }
+  if (now - surfTheirMsgT > SURF_DUEL_GONE_MS && !surfDuelDoneT) {
+    Serial.printf("buddy: pikasurf, nothing from them for %lu ms\n", (unsigned long)(now - surfTheirMsgT));
+    buddySetNote(S_BUDDY_LEFT_FMT);
+    closeSurf();
+    buddyEndSession();
+    return false;
+  }
+  return true;
+}
+
+// both have crashed: who lasted longer, and the reward of any game with a buddy
+void surfDuelFinish() {
+  surfDuelDoneT = millis();
+  uint16_t mine10 = (uint16_t)(surf.t * 10);
+  int out = surfDuelOutcome(mine10, surfTheir10);
+  uint8_t a = surf.t / 4 > 10 ? 10 : (uint8_t)(surf.t / 4);  // as many points as the other games give
+  uint8_t b = out > 0 ? (a ? a - 1 : 0) : out < 0 ? a + 1 : a;
+  if (out > 0 && !a) a = 1;
+  pet.showdownResult(a, b);
+  sfxPlay(out > 0 ? SFX_MEDAL : SFX_LEVEL);
+  Serial.printf("buddy: pikasurf over, %.1f s against %.1f s\n", surf.t, surfTheir10 / 10.0f);
+}
+
+// done: back to Play together, where the next game can be picked (home if the buddy has gone)
+void surfDuelEnd() {
+  closeSurf();
+  buddyEndSession();
+  bool back = bPeers[bCur].on && !pet.isEgg() && !pet.sleeping && !pet.ceremony && !choiceKind;
+  if (back) openPlayMenu();
+  Serial.printf("buddy: pikasurf done, back to %s\n", back ? "Play together" : "home");
+}
+
+// the words over a duel: getting ready; their crash; yours, while they surf on; and who won
+void drawSurfDuelText(uint32_t now) {
+  char b[72];  // the waiting line in Japanese, with a long name, takes 54
+  snprintf(b, sizeof(b), "%us", (unsigned)surf.t);
+  if (!surfDuelDoneT) {
+    surfText(b, 4, 22, UI_WHITE);
+    snprintf(b, sizeof(b), "%s %us", buddyName(), (unsigned)surfTheirT(now));
+    surfText(b, 2, 58, UI_WHITE);
+  }
+  if (now - surfDuelT < SURF_DUEL_READY_MS) {
+    surfText(T(S_SD_READY), 3, 240, UI_WHITE);
+  } else if (surfDuelDoneT) {  // who won, and both times
+    int out = surfDuelOutcome((uint16_t)(surf.t * 10), surfTheir10);
+    if (out > 0) strlcpy(b, T(S_SD_WIN), sizeof(b));
+    else if (out < 0) snprintf(b, sizeof(b), T(S_SD_LOSE_FMT), buddyName());
+    else strlcpy(b, T(S_SD_DRAW), sizeof(b));
+    surfText(b, 3, 206, out > 0 ? UI_BAR_WARN : UI_WHITE);
+    snprintf(b, sizeof(b), "%s %us", T(S_SD_YOU_LBL), (unsigned)surf.t);
+    surfText(b, 2, 250, UI_WHITE);
+    snprintf(b, sizeof(b), "%s %us", buddyName(), (unsigned)(surfTheir10 / 10));
+    surfText(b, 2, 276, UI_WHITE);
+  } else if (surf.dead) {  // out first: you lose, and wait for them to finish
+    surfText(T(S_DUEL_LOSE), 4, 200, UI_WHITE);
+    snprintf(b, sizeof(b), T(S_DUEL_WAIT_FMT), buddyName());
+    gfx->setTextColor(C565(0x0c, 0x24, 0x48));
+    drawWrapped(b, 2, 320, 254, 22, true);  // its shadow, then the words
+    gfx->setTextColor(UI_WHITE);
+    drawWrappedAt(b, 2, 320, CX - 2, 252, 22, true);
+  } else if (surfTheirDone && now - surfTheirCrashT < 2500) {  // they're out: you've won once you crash
+    snprintf(b, sizeof(b), T(S_DUEL_CRASHED_FMT), buddyName());
+    surfText(b, 2, 250, UI_BAR_WARN);
   }
 }
 
@@ -4511,12 +4702,12 @@ void drawSurfWake(int x, int tailY, uint32_t now, bool night) {
 // a rock: foam piling up under it where the water hits, and parting along its sides
 void drawSurfRock(int x, int y, bool night) {
   uint16_t foam = night ? C565(0xc8, 0xdc, 0xf0) : UI_WHITE;
-  gfx->fillCircle(x, y + 8, 27, foam);
+  gfx->fillCircle(x, y + 10, 34, foam);
   for (int i = 0; i < 3; i++) {  // spray thrown up and out on either side
-    gfx->fillRect(SNAP2(x - 30 - i * 6), SNAP2(y - 4 - i * 10), 4, 4, foam);
-    gfx->fillRect(SNAP2(x + 26 + i * 6), SNAP2(y - 4 - i * 10), 4, 4, foam);
+    gfx->fillRect(SNAP2(x - 38 - i * 6), SNAP2(y - 6 - i * 10), 4, 4, foam);
+    gfx->fillRect(SNAP2(x + 34 + i * 6), SNAP2(y - 6 - i * 10), 4, 4, foam);
   }
-  drawMap(SPR_SURF_ROCK, 14, x - 28, y - 30, 4, false);
+  drawMap(SPR_SURF_ROCK, 14, x - 35, y - 38, 5, false);
 }
 
 // a rider on its board, the board's middle at (x, y); feet on the board, looking down the screen
@@ -4542,17 +4733,37 @@ void surfText(const char *s, uint8_t size, int y, uint16_t color) {
 }
 
 void renderSurf() {
-  if (pet.ceremony || !pmd.loaded) { closeSurf(); return; }
+  if (pet.ceremony || !pmd.loaded) {
+    if (surfDuel) buddyNetSend(buddyMsg(BM_LEAVE));
+    closeSurf();
+    return;
+  }
   uint32_t now = millis();
-  if (surfOverT && now - surfOverT > 4000) { closeSurf(); gameEndToMenu(); return; }
+  if (surfDuel) {
+    if (!surfDuelTick(now)) return;  // they've gone
+    if (surfDuelDoneT && now - surfDuelDoneT > SURF_DUEL_DONE_MS) { surfDuelEnd(); return; }
+  } else if (surfOverT && now - surfOverT > 4000) {
+    closeSurf();
+    gameEndToMenu();
+    return;
+  }
 
-  if (introPaused()) {
-    surfLast = now;  // under its card the water waits
+  if (introPaused() || (surfDuel && now - surfDuelT < SURF_DUEL_READY_MS)) {
+    surfLast = now;  // under its card (or while getting ready) the water waits
   } else if (!surf.dead) {
     float tilt = surfBot ? surfBotTilt(surf) : playerTilt();
-    surfStep(surf, (now - surfLast) / 1000.0f, tilt);
+    surfAcc += (now - surfLast) / 1000.0f;
+    if (surfAcc > 0.12f) surfAcc = 0.12f;  // a stall (a flash save) must not crash you
     surfLast = now;
-    if (surf.dead) {
+    while (surfAcc >= SURF_FIXED_DT && !surf.dead) {
+      surfStep(surf, SURF_FIXED_DT, tilt);
+      surfAcc -= SURF_FIXED_DT;
+    }
+    if (surf.dead && surfDuel) {
+      sfxPlay(SFX_DENY);
+      surfDuelSend();  // they hear it at once
+      Serial.printf("pikasurf duel: crashed at %.1f s\n", surf.t);
+    } else if (surf.dead) {
       uint16_t secs = (uint16_t)surf.t;
       surfNewHi = secs > pet.surfHi;
       pet.surfResult(secs);  // the reward and record only when it really ends
@@ -4561,6 +4772,7 @@ void renderSurf() {
       Serial.printf("pikasurf: %u s\n", secs);
     }
   }
+  if (surfDuel && surf.dead && surfTheirDone && !surfDuelDoneT) surfDuelFinish();
 
   int hh = sceneHour();
   bool night = hh < 6 || hh >= 20;
@@ -4569,11 +4781,26 @@ void renderSurf() {
     if (r.on)
       for (int i = 0; i < 3; i++)
         if (r.lanes >> i & 1) drawSurfRock(surfRockX(r, i), (int)r.y, night);
-  if (surf.pikaY < SURF_PIKA_GONE_Y)
+  if (surfDuel) {  // the buddy: level with yours while you both surf, falling behind once they've crashed
+    float want = surfTheirX;  // where they are, but never hidden right behind yours: alongside, as Pikachu rides
+    if (fabsf(want - surf.x) < 70) want = surf.x + (surf.x < SURF_CX ? 70 : -70);
+    float step = 600.0f * 0.04f, d = want - surfTheirShownX;
+    surfTheirShownX += d > step ? step : d < -step ? -step : d;
+    int ty = SURF_PET_Y + (int)(surfDistAt(surfTheirT(now)) - surfDistAt(surf.t));
+    if (ty > -70 && ty < 540)
+      drawSurfRider(surfPika, SPR_SURF_BOARD_P, 3, (int)surfTheirShownX, ty, surfTheirDone ? PMD_HURT : PMD_IDLE, 2, now, night);
+  } else if (surf.pikaY < SURF_PIKA_GONE_Y) {
     drawSurfRider(surfPika, SPR_SURF_BOARD_P, 3, (int)surf.pikaX, (int)surf.pikaY, PMD_IDLE, 2, now, night);
+  }
   drawSurfRider(pmd, SPR_SURF_BOARD, 4, (int)surf.x, SURF_PET_Y, surf.dead ? PMD_HURT : PMD_IDLE, surfScale, now, night);
 
   char b[24];
+  if (surfDuel) {
+    drawSurfDuelText(now);
+    drawIntroCard();
+    gfx->flush();
+    return;
+  }
   snprintf(b, sizeof(b), "%us", (unsigned)surf.t);
   if (surfOverT) {  // the result over the water, under yours
     surfText(b, 5, 214, UI_WHITE);
@@ -6453,6 +6680,11 @@ void buddyStartSession() {
     vbStart(inviter);
     return;
   }
+  if (bsKind == BK_SURF) {
+    bsState = BS_PLAY;
+    surfDuelStart();
+    return;
+  }
   bsState = BS_TRADE;
   tradeOpen = true;
   trPhase = TR_PICK;
@@ -6608,11 +6840,19 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
       if (bsState == BS_INVITING && bsKind == BK_VOLLEY) buddyStartSession();
       vbHandle(m);
       break;
+    case BM_SURF:
+      if (bsState == BS_INVITING && bsKind == BK_SURF) buddyStartSession();  // the ACCEPT was lost
+      surfDuelHandle(m);
+      break;
     case BM_LEAVE:
-      if (sdOpen || vbOpen) {
+      if (sdOpen || vbOpen || (surfOpen && surfDuel)) {
         buddySetNote(S_BUDDY_LEFT_FMT);
         if (sdOpen) sdClose();
         if (vbOpen) vbClose();
+        if (surfOpen && surfDuel) {
+          closeSurf();
+          buddyEndSession();
+        }
         break;
       }
       if (bPvp) {
@@ -6700,10 +6940,11 @@ void buddyTick(uint32_t now) {
   if (!bPeers[bCur].on) {
     buddyNetSetPeer(0);
     buddyMenuOpen = playMenuOpen = false;
-    if (sdOpen || vbOpen) {
+    if (sdOpen || vbOpen || (surfOpen && surfDuel)) {
       buddySetNote(S_BUDDY_LEFT_FMT);
       if (sdOpen) sdClose();
       if (vbOpen) vbClose();
+      if (surfOpen && surfDuel) closeSurf();
     }
     if (bPvp && bPhase < BP_END) {
       if (bPhase != BP_RAN) buddyGoneFromBattle();
@@ -6820,6 +7061,13 @@ void drawBuddyTop() {
 }
 
 // the buddy under a touch on the main screen (its notice counts too), -1 if none
+// the visitor under a tap at home, once it has arrived and stands with the others
+bool visitorAt(int16_t x, int16_t y) {
+  if (visitPhase != VP_HANG || pet.isEgg() || pet.sleeping || pet.ceremony) return false;
+  int n = partyOthers(), vx = partyBuddyX(n, partyBuddies() + 1);
+  return abs(x - vx) < partyHalf(n) && y > PET_GROUND - partyTall(n) && y < PET_GROUND;
+}
+
 int buddyAt(int16_t x, int16_t y) {
   int n = partyOthers(), k = 0;
   if (!partyBuddies() || !buddyVisible()) return -1;  // asleep: they are there, but not for playing
@@ -6984,7 +7232,13 @@ void renderParty() {
   int n = partyFriends(who);
   if (!n) { partyOpen = false; return; }  // everyone left
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
-  if (partyVisitor && !visitorHere()) partyVisitor = false;  // it left meanwhile
+  if (partyVisitor && !visitorHere()) {  // it left meanwhile
+    partyVisitor = false;
+    if (partyVisitorOnly) {
+      partyOpen = partyVisitorOnly = false;
+      return;
+    }
+  }
   if (partyVisitor) {  // the visitor's stats: a wild one of its level, and how long it stays
     uint8_t lvl = btlCapLevel(pet.level());
     BtlFighter f = btlMakeWild(visitDex, lvl, btlWildGene(8));
@@ -7054,10 +7308,11 @@ void renderParty() {
 }
 
 void partyTap(int16_t x, int16_t y) {
-  if (partyVisitor) {  // the visitor's stats: the close button goes back to the list
+  if (partyVisitor) {  // the visitor's stats: the close button goes back to the list (home, if tapped there)
     if (closeHit(x, y)) {
       sfxPlay(SFX_TAP);
       partyVisitor = false;
+      if (partyVisitorOnly) partyOpen = partyVisitorOnly = false;
     }
     return;
   }
@@ -7103,47 +7358,120 @@ void buddyMenuTap(int16_t x, int16_t y) {
   sfxPlay(SFX_TAP);
   if (row == 0) buddyInvite(BK_BATTLE);
   else if (row == 1) buddyInvite(BK_TRADE);
-  else if (row == 2) playMenuOpen = true;
+  else if (row == 2) openPlayMenu();
 }
 
 // ---------- "Play together": games only buddies can play ----------
-#define PLAY_ROW_Y 186
-#define PLAY_ROW_H 56
-static const StrId PLAY_GAMES[] = { S_SHOWDOWN, S_VOLLEY };
-static const uint8_t PLAY_KINDS[] = { BK_SHOWDOWN, BK_VOLLEY };
+// App tiles in a row, as on the Games menu: each a window onto its game, painted when the menu opens
+static const StrId PLAY_GAMES[] = { S_VOLLEY, S_SHOWDOWN, S_GAME_SURF };
+static const uint8_t PLAY_KINDS[] = { BK_VOLLEY, BK_SHOWDOWN, BK_SURF };
 #define PLAY_GAME_COUNT (int)(sizeof(PLAY_GAMES) / sizeof(PLAY_GAMES[0]))
+#define PLAY_TILE_Y 222
+static const int16_t PLAY_X[PLAY_GAME_COUNT] = { 97, 233, 369 };  // a little wider than the Games grid: their names are long
+uint16_t *playArt = nullptr;
+
+uint16_t playColor(int i) {
+  static const uint16_t C[PLAY_GAME_COUNT] = { TYPE_ACCENT[TY_GRASS], TYPE_ACCENT[TY_PSYCHIC], TYPE_ACCENT[TY_WATER] };
+  return C[i];
+}
+
+// each game's window: Volley's court (green, like its frame), Who's That? Showdown's burst, PikaSurf
+// with the buddy alongside
+void playGlimpsesPaint() {
+  if (!playArt) playArt = (uint16_t *)ps_malloc(PLAY_GAME_COUNT * GAME_ART * GAME_ART * sizeof(uint16_t));
+  if (!playArt) return;
+  uint32_t now = millis();
+  int hh = sceneHour();
+  bool night = hh < 6 || hh >= 20;
+  int16_t theirs = bPeers[bCur].dex;
+  // Poke Ball Volley: a green court, its white lines and the net, the ball in the air over yours
+  gfx->fillScreen(C565(0x3e, 0x9a, 0x48));
+  gfx->fillRect(150, 232, 172, 200, C565(0x5c, 0xb8, 0x58));  // the court
+  gfx->fillRect(150, 232, 172, 3, UI_WHITE);  // its lines
+  gfx->fillRect(150, 232, 3, 200, UI_WHITE);
+  gfx->fillRect(319, 232, 3, 200, UI_WHITE);
+  gfx->fillRect(150, 330, 172, 3, UI_WHITE);  // the middle line
+  gfx->fillRect(128, 226, 216, 14, UI_WHITE);  // the net along the top, its mesh, its posts
+  for (int x = 132; x < 344; x += 8) gfx->fillRect(x, 228, 2, 10, C565(0x2a, 0x4a, 0x2e));
+  gfx->fillRect(124, 214, 8, 40, C565(0x6a, 0x4a, 0x2e));
+  gfx->fillRect(340, 214, 8, 40, C565(0x6a, 0x4a, 0x2e));
+  drawMap(SPR_HOME_BALL, HOME_ICON_N, 248, 262, 3, false);
+  if (pmd.loaded) {
+    gPmdForceScale = 2;
+    drawPmdAct(PMD_IDLE, 222, VB_GROUND_Y, now, true, false, 2);
+    gPmdForceScale = 0;
+  }
+  gameGlimpseGrab(playArt, 236, VB_GROUND_Y - 80);
+  // Who's That? Showdown: two silhouettes face off in a pink burst
+  gfx->fillScreen(C565(0xb8, 0x3c, 0x78));
+  for (int i = 0; i < 16; i += 2) {
+    float a0 = i * 6.28318f / 16, a1 = (i + 1) * 6.28318f / 16;
+    gfx->fillTriangle(233, 240, 233 + (int)(400 * cosf(a0)), 240 + (int)(400 * sinf(a0)),
+                      233 + (int)(400 * cosf(a1)), 240 + (int)(400 * sinf(a1)), C565(0xf0, 0x8c, 0xc0));
+  }
+  gfx->fillCircle(233, 244, 70, C565(0xff, 0xd6, 0xec));
+  int box[4];
+  if (const uint8_t *t = thumbs.get(pet.speciesId)) drawThumbFit(t, 196, 250, 64, 64, 2, true, 0, box);
+  if (buddyDexOk(theirs))
+    if (const uint8_t *t = thumbs.get(theirs)) drawThumbFit(t, 272, 250, 64, 64, 2, true, 0, box);
+  setSize(3);
+  gfx->setTextColor(UI_INK);
+  setCur(CX - 16, 176);
+  printT("VS");
+  gameGlimpseGrab(playArt + GAME_ART * GAME_ART, 233, 240);
+  // PikaSurf: yours on its board, the buddy's Pokemon alongside on Pikachu's, a rock coming up
+  drawSurfWater(300.0f, night);
+  drawSurfRock(262, 316, night);
+  drawSurfWake(272, 190, now, night);
+  drawMap(SPR_SURF_BOARD_P, 24, 236, 190, 3, false);
+  if (buddyDexOk(theirs))
+    if (const uint8_t *t = thumbs.get(theirs)) drawThumb(t, 272 - 32, 166, 2, false);
+  if (pmd.loaded) {
+    uint8_t fit = pmdFitScale(pmd, PMD_IDLE, 76, 76);
+    drawSurfRider(pmd, SPR_SURF_BOARD, 4, 194, 214, PMD_IDLE, fit > 3 ? 3 : fit, now, night);
+  }
+  gameGlimpseGrab(playArt + 2 * GAME_ART * GAME_ART, 233, 250);
+}
+
+void openPlayMenu() {
+  playGlimpsesPaint();
+  playMenuOpen = true;
+}
+
+int playGameAt(int16_t x, int16_t y) {
+  for (int i = 0; i < PLAY_GAME_COUNT; i++) {
+    int dx = x - PLAY_X[i], dy = y - PLAY_TILE_Y;
+    if ((abs(dx) < GAME_ICON_R + 8 && abs(dy) < GAME_ICON_R + 8) || (abs(dx) < 60 && dy > 0 && dy < GAME_ICON_R + 48)) return i;
+  }
+  return -1;
+}
 
 void renderPlayMenu() {
   if (!bPeers[bCur].on) { playMenuOpen = false; return; }
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
-  setCur(centerX(T(S_PLAY_TOGETHER), 3), 84);
+  setCur(centerX(T(S_PLAY_TOGETHER), 3), 76);
   printT(T(S_PLAY_TOGETHER));
   setSize(2);
-  gfx->setTextColor(UI_INK);
-  setCur(centerX(buddyName(), 2), 126);
+  gfx->setTextColor(UI_MUTED);
+  setCur(centerX(buddyName(), 2), 118);
   printT(buddyName());
   for (int i = 0; i < PLAY_GAME_COUNT; i++) {
-    int y = PLAY_ROW_Y + i * (PLAY_ROW_H + 10);
-    gfx->fillRoundRect(CX - 150, y, 300, PLAY_ROW_H, 14, TYPE_ACCENT[TY_PSYCHIC]);
-    gfx->setTextColor(UI_WHITE);
-    setCur(centerX(T(PLAY_GAMES[i]), 2), y + 20);
-    printT(T(PLAY_GAMES[i]));
+    drawTile(playArt ? playArt + i * GAME_ART * GAME_ART : nullptr, PLAY_X[i], PLAY_TILE_Y, GAME_ICON_R, playColor(i));
+    drawTileLabel(T(PLAY_GAMES[i]), PLAY_X[i], PLAY_TILE_Y + GAME_ICON_R + TILE_FRAME + 6);
   }
   drawCloseButton();
   gfx->flush();
 }
 
 void playMenuTap(int16_t x, int16_t y) {
-  for (int i = 0; i < PLAY_GAME_COUNT; i++) {
-    int gy = PLAY_ROW_Y + i * (PLAY_ROW_H + 10);
-    if (abs(x - CX) <= 150 && y >= gy && y < gy + PLAY_ROW_H) {
-      sfxPlay(SFX_TAP);
-      playMenuOpen = false;
-      buddyInvite(PLAY_KINDS[i]);
-      return;
-    }
+  int i = playGameAt(x, y);
+  if (i >= 0) {
+    sfxPlay(SFX_TAP);
+    playMenuOpen = false;
+    buddyInvite(PLAY_KINDS[i]);
+    return;
   }
   if (closeHit(x, y)) {  // back to the buddy menu
     sfxPlay(SFX_TAP);
@@ -8886,10 +9214,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, CX - 130, BUDDY_ROW_Y + row * BUDDY_ROW_STEP, 260, BUDDY_ROW_H, T(BUDDY_ROW_LABEL[row]));
   }
   if (playMenuOpen) {
-    for (int i = 0; i < PLAY_GAME_COUNT; i++) {
-      int gy = PLAY_ROW_Y + i * (PLAY_ROW_H + 10);
-      if (abs(x - CX) <= 150 && y >= gy && y < gy + PLAY_ROW_H) return pressSet(t, CX - 150, gy, 300, PLAY_ROW_H, T(PLAY_GAMES[i]));
-    }
+    int i = playGameAt(x, y);
+    if (i >= 0)
+      return pressSet(t, PLAY_X[i] - GAME_ICON_R, PLAY_TILE_Y - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, T(PLAY_GAMES[i]));
     if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     return false;
   }
@@ -9014,6 +9341,16 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, x0 + item * 66, FEED_Y, 66, 64, nullptr, ICON[item]);
   }
   if (pet.isEgg()) return false;
+  if (homeModal()) {  // a medal, evolving or the goodbye is up: only its own button lights
+    const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
+    if (!pet.showMedal() && !pet.showMilestone() && pet.wantEvolveButton() && pressIn(x, y, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H))
+      return pressSet(t, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H, T(S_EVO_TAP));
+    if (!pet.showMedal() && !pet.showMilestone() && !pet.wantEvolveButton() && pressIn(x, y, FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H)) {
+      snprintf(buf, sizeof(buf), T(S_FAREWELL_BTN), nm);
+      return pressSet(t, FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H, buf);
+    }
+    return false;
+  }
   if (partyPillAt(x, y)) {
     pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, T(S_PARTY_BOOST));
     t.soft = true;  // it lies where swipes down start

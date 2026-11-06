@@ -54,7 +54,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Viajar",
     "RELOJ", "Hora por Wi-Fi", "Hora autom\240tica", "ZONA HORARIA",
     "Inclina o arrastra a tu Pokemon para atrapar las bayas que caen. Si fallas 3, se acaba!", "Inclina, usa las flechas o arrastra a tu Pokemon para atrapar las bayas que caen. Si fallas 3, se acaba!", "Toca el nombre del Pokemon de la sombra. Cu\240ntos de los 10 aciertas?", "Toca donde sea para saltar los obst\240culos. Corre todo lo que puedas!", "Toca los bordes de la pantalla para andar. Come bayas, choca con Pokemon salvajes para luchar y busca la escalera!", "Toca los bordes de la pantalla o usa las flechas para andar. Come bayas, choca con Pokemon salvajes para luchar y busca la escalera!", "Inclina o arrastra a tu Pokemon para surfear. Esquiva las rocas y sigue el ritmo de Pikachu!", "Inclina, usa las flechas o arrastra a tu Pokemon para surfear. Esquiva las rocas y sigue a Pikachu!", "PikaSurf",
-    "Conseguida!", "A\243n no", "Listos, YA!",
+    "Conseguida!", "A\243n no", "Listos, YA!", "Perdiste!", "Esperando a que %s termine...", "%s se estrell\242!",
   },
   // ---------------- EN ----------------
   {
@@ -103,7 +103,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Travel",
     "CLOCK", "Set by Wi-Fi", "Set automatically", "TIME ZONE",
     "Tilt or drag your Pokemon to catch the falling berries. Miss 3 and it's over!", "Tilt, use the arrow keys, or drag your Pokemon to catch the falling berries. Miss 3 and it's over!", "Tap the name of the Pokemon in the shadow. How many of the 10 can you get right?", "Tap anywhere to jump over obstacles. Run as far as you can!", "Tap the edges of the screen to walk. Eat berries, walk into wild Pokemon to battle, and find the stairs!", "Tap the edges of the screen or use the arrow keys to walk. Eat berries, walk into wild Pokemon to battle, and find the stairs!", "Tilt or drag your Pokemon to surf left and right. Dodge the rocks and keep up with Pikachu!", "Tilt, use the arrow keys, or drag your Pokemon to surf. Dodge the rocks and keep up with Pikachu!", "PikaSurf",
-    "Earned!", "Not yet", "Ready, GO!",
+    "Earned!", "Not yet", "Ready, GO!", "You lose!", "Waiting for %s to finish...", "%s crashed!",
   },
   // ---------------- FR ----------------
   {
@@ -152,7 +152,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Voyager",
     "HORLOGE", "R\202gl\202e par le Wi-Fi", "R\202gl\202e automatiquement", "FUSEAU HORAIRE",
     "Penche ou fais glisser ton Pokemon pour attraper les baies qui tombent. 3 rat\202es et c'est fini!", "Penche, utilise les fl\212ches ou fais glisser ton Pokemon pour attraper les baies. 3 rat\202es et c'est fini!", "Touche le nom du Pokemon dans l'ombre. Combien en trouveras-tu sur 10?", "Touche l'\202cran pour sauter les obstacles. Cours le plus loin possible!", "Touche les bords de l'\202cran pour avancer. Mange des baies, fonce sur les Pokemon sauvages et trouve l'escalier!", "Touche les bords de l'\202cran ou les fl\212ches pour avancer. Mange des baies, fonce sur les Pokemon sauvages et trouve l'escalier!", "Penche ou fais glisser ton Pokemon pour surfer. Esquive les rochers et suis Pikachu!", "Penche, utilise les fl\212ches ou fais glisser ton Pokemon pour surfer. Esquive les rochers et suis Pikachu!", "PikaSurf",
-    "Obtenue!", "Pas encore", "C'est parti!",
+    "Obtenue!", "Pas encore", "C'est parti!", "Perdu!", "On attend que %s finisse...", "%s s'est \202cras\202!",
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -206,7 +206,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Reisen",
     "UHR", "Per WLAN gestellt", "Automatisch gestellt", "ZEITZONE",
     "Neige oder zieh dein Pokemon, um die fallenden Beeren zu fangen. 3 verpasst und es ist vorbei!", "Neigen, Pfeiltasten oder dein Pokemon ziehen: Fang die fallenden Beeren. 3 verpasst und es ist vorbei!", "Tippe auf den Namen des Pokemon im Schatten. Wie viele von 10 schaffst du?", "Tippe irgendwo, um \201ber Hindernisse zu springen. Lauf, so weit du kannst!", "Tippe an den Bildschirmrand, um zu laufen. Iss Beeren, lauf in wilde Pokemon zum K\204mpfen und finde die Treppe!", "Tippe an den Bildschirmrand oder nimm die Pfeiltasten. Iss Beeren, lauf in wilde Pokemon zum K\204mpfen und finde die Treppe!", "Neige oder zieh dein Pokemon zum Surfen. Weich den Felsen aus und bleib an Pikachu dran!", "Neigen, Pfeiltasten oder dein Pokemon ziehen zum Surfen. Weich den Felsen aus und bleib an Pikachu dran!", "PikaSurf",
-    "Geschafft!", "Noch nicht", "Bereit, LOS!",
+    "Geschafft!", "Noch nicht", "Bereit, LOS!", "Verloren!", "Warte, bis %s fertig ist...", "%s ist gecrasht!",
   },
   // ---------------- IT ----------------
   {
@@ -255,7 +255,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Viaggia",
     "OROLOGIO", "Impostata dal Wi-Fi", "Impostata in automatico", "FUSO ORARIO",
     "Inclina o trascina il tuo Pokemon per prendere le bacche che cadono. 3 mancate ed \212 finita!", "Inclina, usa le frecce o trascina il tuo Pokemon per prendere le bacche che cadono. 3 mancate ed \212 finita!", "Tocca il nome del Pokemon nell'ombra. Quanti ne indovini su 10?", "Tocca dove vuoi per saltare gli ostacoli. Corri pi\227 lontano che puoi!", "Tocca i bordi dello schermo per muoverti. Mangia bacche, vai contro i Pokemon selvatici per lottare e trova le scale!", "Tocca i bordi dello schermo o usa le frecce per muoverti. Mangia bacche, vai contro i Pokemon selvatici per lottare e trova le scale!", "Inclina o trascina il tuo Pokemon per surfare. Schiva gli scogli e stai dietro a Pikachu!", "Inclina, usa le frecce o trascina il tuo Pokemon per surfare. Schiva gli scogli e stai dietro a Pikachu!", "PikaSurf",
-    "Ottenuta!", "Non ancora", "Pronti, VIA!",
+    "Ottenuta!", "Non ancora", "Pronti, VIA!", "Hai perso!", "Aspetta che %s finisca...", "%s si \212 schiantato!",
   },
   // ---------------- PT ----------------
   {
@@ -304,7 +304,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Viajar",
     "RELOGIO", "Acertada pelo Wi-Fi", "Acertada automaticamente", "FUSO HORARIO",
     "Inclina ou arrasta o teu Pokemon para apanhar as bagas que caem. Falhas 3 e acaba!", "Inclina, usa as setas ou arrasta o teu Pokemon para apanhar as bagas que caem. Falhas 3 e acaba!", "Toca no nome do Pokemon da sombra. Quantos acertas em 10?", "Toca em qualquer lado para saltar os obst\240culos. Corre o mais longe que puderes!", "Toca nos lados para andar. Come bagas, vai contra Pokemon selvagens para lutar e encontra as escadas!", "Toca nos lados ou usa as setas para andar. Come bagas, vai contra Pokemon selvagens para lutar e encontra as escadas!", "Inclina ou arrasta o teu Pokemon para surfar. Desvia-te das rochas e acompanha o Pikachu!", "Inclina, usa as setas ou arrasta o teu Pokemon para surfar. Desvia-te das rochas e acompanha o Pikachu!", "PikaSurf",
-    "Conseguida!", "Ainda falta", "Prontos, J\240!",
+    "Conseguida!", "Ainda falta", "Prontos, J\240!", "Perdeste!", "A esperar que %s acabe...", "%s bateu!",
   },
   // ---------------- JA ----------------
   {
@@ -376,7 +376,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "たび",
     "とけい", "Wi-Fiで あわせたよ", "じどうで あわせたよ", "タイムゾーン",
     "かたむけるか ポケモンを ドラッグして おちてくる きのみを キャッチ! 3かい おとすと おわり!", "かたむけるか やじるしキー または ポケモンを ドラッグして おちてくる きのみを キャッチ! 3かい おとすと おわり!", "かげの ポケモンの なまえを タッチ! 10もんで なんもん あてられるかな?", "どこでも タッチで ジャンプ! しょうがいぶつを とびこえて どこまでも はしろう!", "がめんの はしを タッチして あるこう! きのみを たべて やせいの ポケモンに ぶつかって たたかい かいだんを さがそう!", "がめんの はしか やじるしキーで あるこう! きのみを たべて やせいの ポケモンに ぶつかって たたかい かいだんを さがそう!", "かたむけるか ポケモンを ドラッグして なみのりしよう! いわを よけて ピカチュウに ついていこう!", "かたむけるか やじるしキー または ポケモンを ドラッグして なみのり! いわを よけて ピカチュウに ついていこう!", "PikaSurf",
-    "ゲット!", "まだだよ", "よーい ドン!",
+    "ゲット!", "まだだよ", "よーい ドン!", "まけ!", "%sが おわるのを まってるよ...", "%sが ぶつかった!",
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -430,7 +430,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "여행",
     "시계", "Wi-Fi로 맞췄어요", "자동으로 맞췄어요", "시간대",
     "기울이거나 포켓몬을 끌어서 떨어지는 나무열매를 받아요! 3번 놓치면 끝!", "기울이거나 화살표 키, 또는 포켓몬을 끌어서 떨어지는 나무열매를 받아요! 3번 놓치면 끝!", "그림자 속 포켓몬의 이름을 눌러요. 10문제 중 몇 개나 맞힐까?", "아무 데나 눌러서 장애물을 뛰어넘어요. 최대한 멀리 달려요!", "화면 가장자리를 눌러서 걸어요. 나무열매를 먹고, 야생 포켓몬에 부딪혀 싸우고, 계단을 찾아요!", "화면 가장자리나 화살표 키로 걸어요. 나무열매를 먹고, 야생 포켓몬에 부딪혀 싸우고, 계단을 찾아요!", "기울이거나 포켓몬을 끌어서 파도를 타요! 바위를 피하고 피카츄를 따라가요!", "기울이거나 화살표 키, 또는 포켓몬을 끌어서 파도를 타요! 바위를 피하고 피카츄를 따라가요!", "PikaSurf",
-    "획득!", "아직이에요", "준비, 시작!",
+    "획득!", "아직이에요", "준비, 시작!", "졌어요!", "%s 끝나길 기다리는 중...", "%s 부딪혔어요!",
   },
 };
 

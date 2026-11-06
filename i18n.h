@@ -99,6 +99,7 @@ enum StrId : uint8_t {
   S_GAME_SURF,  // "PikaSurf"
   S_MEDAL_GOT, S_MEDAL_TODO,  // a medal's card: earned, or not yet
   S_READY_GO,  // a game's how-to-play card: its button
+  S_DUEL_LOSE, S_DUEL_WAIT_FMT, S_DUEL_CRASHED_FMT,  // PikaSurf with a buddy: out first; waiting; they're out
   STR_COUNT
 };
 

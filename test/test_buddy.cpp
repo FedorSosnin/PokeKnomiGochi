@@ -269,3 +269,24 @@ TEST(buddy, volley_messages_are_checked) {
   m.def = 40;    // not a real score
   CHECK(!parseCopy(m, out));
 }
+
+TEST(buddy, surf_messages_are_checked) {
+  BuddyMsg out, m;
+  buddyInit(m, BM_INVITE, 5, 6, 7);
+  m.kind = BK_SURF;  // the newest game can be invited to
+  CHECK(parseCopy(m, out));
+  m.kind = BK_SURF + 1;
+  CHECK(!parseCopy(m, out));
+  buddyInit(m, BM_SURF, 5, 6, 7);
+  m.kind = BK_SURF;
+  m.hp = 233;    // in the middle of the water
+  m.atk = 415;   // 41.5 s
+  m.move = 1;    // crashed
+  CHECK(parseCopy(m, out));
+  CHECK_EQ(out.atk, (uint16_t)415);
+  m.hp = 600;    // off the screen
+  CHECK(!parseCopy(m, out));
+  m.hp = 233;
+  m.move = 2;    // neither surfing nor crashed
+  CHECK(!parseCopy(m, out));
+}

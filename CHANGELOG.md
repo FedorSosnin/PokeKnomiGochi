@@ -6,6 +6,14 @@ bottom of the clock/settings screen (swipe down) and `web/manifest.json`.
 Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [1.48] - 2026-11-06
+
+- **PikaSurf with a buddy:** Play together has PikaSurf now. You both surf the same course at the same time, each on your own screen, with your buddy's Pokémon riding alongside yours. Whoever lasts longer wins. Crash first and it says you lose, then waits for your buddy to finish; when you're both out, it shows both times and goes back to Play together.
+- **Play together tiles:** Poké Ball Volley (on a green court), Who's That? Showdown and PikaSurf are app tiles, like the Games menu.
+- **Messages come first:** a new medal, the **EVOLVE!** button and "… wants to tell you" now dim the rest of the screen, and a tap can't reach anything behind them. Tap the message to open it, or tap off it to put it away (the medal is kept; evolving is offered again later; the goodbye as "stay together").
+- **The visitor:** tap it to see its stats. It no longer leaves when your Pokémon goes to sleep: once it's here, it stays its hour.
+- **PikaSurf:** the rocks are a little bigger, so two side by side leave no gap to sit in: the way through is always an open lane.
+
 ## [1.47] - 2026-11-06
 
 - **PikaSurf, a new mini game:** your Pokémon surfs down the screen on a board while the water rushes up, and rocks come at you in three lanes. Tilt, drag your Pokémon or use the arrow keys to dodge them. Pikachu surfs alongside on his own board and never hits one, until he's just faster than you and pulls ahead out of sight. It speeds up like PokeRun, and one rock ends the run. It trains speed and keeps a record, like the other games.

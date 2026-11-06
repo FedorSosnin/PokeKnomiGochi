@@ -214,6 +214,18 @@ TEST(surf, standing_still_does_not_last) {
   }
 }
 
+TEST(surf, parking_between_two_lanes_does_not_last) {
+  // two rocks side by side leave no room between them: the way through is an open lane
+  for (int x : { 183, 283 })
+    for (uint32_t seed = 1; seed <= 25; seed++) {
+      SurfState s;
+      surfStart(s, seed * 7907);
+      s.x = x;
+      while (!s.dead && s.t < 120) surfStep(s, SURF_FIXED_DT, 0);
+      CHECK_MSG(s.dead && s.t < 90, "sat between the lanes and lasted");
+    }
+}
+
 TEST(surf, the_first_rows_are_single_rocks) {
   SurfState s;
   surfStart(s, 12345);
@@ -245,4 +257,31 @@ TEST(surf, the_record_and_its_reward) {
   p.surfResult(30);
   CHECK_EQ(p.surfHi, (uint16_t)52);
   CHECK_MSG(p.runHi == run, "does not touch the PokeRun record");
+}
+
+TEST(surf, a_duel_on_the_same_course) {
+  // the same session id gives both boards the same rows, whatever their frame rates
+  SurfState a, b;
+  surfStart(a, 424242);
+  surfStart(b, 424242);
+  for (int i = 0; i < 30 * 60; i++) {
+    for (int k = 0; k < 4; k++) surfStep(a, SURF_FIXED_DT, surfBotTilt(a));  // a quick board and a slow one,
+    if (i % 2 == 0)                                                           // both in fixed steps
+      for (int k = 0; k < 8; k++) surfStep(b, SURF_FIXED_DT, surfBotTilt(b));
+  }
+  // b ran the same 60 s in its own rhythm: the same rows came up
+  CHECK(fabsf(a.t - b.t) < 0.01f);
+  for (int i = 0; i < SURF_ROWS; i++) {
+    CHECK_EQ(a.rows[i].on, b.rows[i].on);
+    if (a.rows[i].on) {
+      CHECK_EQ((int)a.rows[i].lanes, (int)b.rows[i].lanes);
+      CHECK(fabsf(a.rows[i].y - b.rows[i].y) < 1.0f);
+    }
+  }
+  CHECK_EQ(surfDuelOutcome(415, 300), 1);
+  CHECK_EQ(surfDuelOutcome(300, 415), -1);
+  CHECK_EQ(surfDuelOutcome(300, 300), 0);
+  CHECK(surfDistAt(0) == 0);
+  CHECK(fabsf(surfDistAt(10) - (200 * 10 + 2.5f * 100)) < 0.5f);
+  CHECK(surfDistAt(200) > surfDistAt(100));
 }

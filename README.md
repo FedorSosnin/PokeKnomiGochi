@@ -170,6 +170,7 @@ If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over 
 - **Play:** games only buddies can play together, with joy and bond for both afterwards, a bit more for the winner, and the **Playmate** medal.
   - **Who's That? Showdown** shows you both the same silhouette at the same moment: the first to tap the right name gets the point, and a wrong tap is out for that round. 10 questions.
   - **Poké Ball Volley:** your screen is your half of a volleyball court, with the net along the top, and your Pokémon is the paddle; tilt or drag to move, and it runs left and right with you, facing you when it stands still. A ball over the top of your screen drops in on your buddy's. Every shot curves and the ball slowly speeds up, so a match to 3 points lasts about a minute.
+  - **PikaSurf:** you both surf the same course at once, your buddy's Pokémon riding alongside yours. Whoever lasts longer wins; the first to crash waits for the other to finish, and then you're both back on Play together.
 
 ### Party Boost
 
