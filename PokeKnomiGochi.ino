@@ -1466,9 +1466,17 @@ void onSwipe(int dir) {
   }
 }
 
+#if UI_V2
+static void v2StarterTap(int16_t x, int16_t y);  // V2: the starter screen (starter_v2.h, included with the scene)
+static void v2StarterScreen();
+#endif
 void onTap(int16_t x, int16_t y) {
   // Serial.printf("TOUCH %d %d\n", x, y);  // diagnostic (silenced: floods the log)
   if (pet.awaitingStarter()) {  // first game: choose starter
+#if UI_V2
+    v2StarterTap(x, y);  // V2: tap one, then YES (starter_v2.h)
+    return;
+#endif
     for (int i = 0; i < 3; i++) {
       int ry = STARTER_ROW_Y + i * (STARTER_ROW_H + STARTER_ROW_GAP);
       if (x >= 70 && x <= 396 && y >= ry && y <= ry + STARTER_ROW_H) {
@@ -1872,6 +1880,11 @@ void drawScene(uint8_t biome, uint32_t now, bool night) {
 
 // first game: choose a starter among Bulbasaur / Charmander / Squirtle
 void renderStarterSelect() {
+#if UI_V2
+  v2StarterScreen();  // V2: the four starters walk toward you through the Field (starter_v2.h)
+  gfx->flush();
+  return;
+#endif
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   const char *t = T(S_CHOOSE_STARTER);
   gfx->setTextColor(UI_INK);
@@ -2019,6 +2032,9 @@ void printT(const char *s) {
 // Screens that only change on a touch (or with data that changes very rarely):
 // while their "key" doesn't change they are neither repainted nor flushed over QSPI.
 static bool staticScreen() {
+#if UI_V2
+  if (pet.awaitingStarter()) return false;  // V2: the starters walk
+#endif
   if (pet.awaitingStarter()) return true;
   if (pet.awaitingEggPick() || buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || surfOpen || dungeonOpen) return false;  // the gallery manages its own repainting
   if (kbOpen || clockOpen) return true;
@@ -10066,6 +10082,11 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
 
   // --- everything else (same order as onTap) ---
   if (pet.awaitingStarter()) {
+#if UI_V2
+    if (int b = v2StarterBtnAt(x, y))  // V2: the question's YES and BACK
+      return pressSet(t, V2_SQ_BTN_X[b - 1][0], V2_SQ_BTN_Y, V2_SQ_BTN_X[b - 1][1] - V2_SQ_BTN_X[b - 1][0], V2_SQ_BTN_H, T(b == 1 ? S_YES : S_BACK_BTN));
+    return false;
+#endif
     for (int i = 0; i < 3; i++) {
       int ry = STARTER_ROW_Y + i * (STARTER_ROW_H + STARTER_ROW_GAP);
       if (pressIn(x, y, 70, ry, 326, STARTER_ROW_H)) return pressSet(t, 70, ry, 326, STARTER_ROW_H, dexName(STARTER_DEX[i]));

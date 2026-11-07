@@ -1277,3 +1277,4 @@ void v2HostBackdrop(int which, int tod) {
 
 #include "walk_v2.h"   // step 4: the walk
 #include "menus_v2.h"  // step 5: the menus
+#include "starter_v2.h"  // step 6: the starter screen

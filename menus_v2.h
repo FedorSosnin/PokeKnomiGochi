@@ -1472,16 +1472,18 @@ static void v2LblOval(int x0, int y0, int x1, int y1, Rgb col) {  // PIL's ellip
 // PokeRun's Charmander mid-leap, facing the way it runs: its walk's second frame (label_run()), the one picture
 // a thumbnail can't give
 static void v2LblRunner(int cx, int feet) {
-  static PmdMon m;
-  if (!m.load(4)) {
+  PmdMon *m = new PmdMon;  // (only for this: not kept)
+  if (!m->load(4)) {
+    delete m;
     v2LblThumb(4, cx, feet, false);
     return;
   }
-  uint8_t act = m.has(PMD_WALKR) ? PMD_WALKR : PMD_IDLE;
+  uint8_t act = m->has(PMD_WALKR) ? PMD_WALKR : PMD_IDLE;
   gPmdForceScale = 1;
-  drawPmdActM(m, act, cx, feet, m.acts[act].frames > 1 ? m.acts[act].ms[0] + 1 : 0, true, false, 1);
+  drawPmdActM(*m, act, cx, feet, m->acts[act].frames > 1 ? m->acts[act].ms[0] + 1 : 0, true, false, 1);
   gPmdForceScale = 0;
-  m.unload();
+  m->unload();
+  delete m;
 }
 // PikaSurf's: the water, Pikachu on his board, a wake behind (label_surf())
 static void v2LblSurf() {

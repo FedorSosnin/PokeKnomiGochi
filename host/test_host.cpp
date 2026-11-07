@@ -478,6 +478,26 @@ static void testGame() {
   hostFrameRGBA(rgba.data());
   CHECK(!hostFrameDirty());
   CHECK(rgba[3] == 255);
+#if !defined(UI_V2) || UI_V2
+  {  // V2: the four starters walk through the Field; a tap shorter than the game's polling interval is not lost:
+     // Bulbasaur, then the question's YES, and it's yours at once
+    extern Pet pet;
+    CHECK(pet.awaitingStarter());
+    hostPointer(100, 280, true);
+    hostPointer(100, 280, false);
+    int16_t x, y;
+    CHECK(hostPointerRead(&x, &y) && x == 100 && y == 280);
+    runTicks(150);
+    CHECK(!hostPointerRead(&x, &y));
+    runTicks(400);  // the question slides up
+    hostPointer(169, 386, true);
+    runTicks(100);
+    hostPointer(169, 386, false);
+    runTicks(300);
+    CHECK(!pet.awaitingStarter() && !pet.isEgg() && pet.speciesId == 1);
+    CHECK(hostFrameDirty());
+  }
+#else
   int center = (HOST_CANVAS_SIZE * HOST_CANVAS_SIZE / 2 + HOST_CANVAS_SIZE / 2) * 4;
   CHECK(rgba[center] > 200 && rgba[center + 1] > 200);  // the light background of the starter choice
 
@@ -490,6 +510,7 @@ static void testGame() {
   CHECK(!hostPointerRead(&x, &y));
   runTicks(150);  // chose Bulbasaur: the background becomes the egg's
   CHECK(hostFrameDirty());
+#endif
 
   // the arrow keys are a ramp, with the sign playerTilt() expects
   hostTiltKeys(false, true);

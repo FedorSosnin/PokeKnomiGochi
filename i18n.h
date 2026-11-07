@@ -107,6 +107,7 @@ enum StrId : uint8_t {
   S_RESET_BTN, S_RESET_WARN,  // V2: the clock page's START OVER, and what "Start over?" erases
   S_CART_VOLLEY, S_CART_SHOWDOWN, S_PLAY_WITH_FMT,  // V2: Play together's cartridge titles ("\n" breaks a line), "with %s"
   S_PLAY_AGAIN,  // V2: the button at the end of a game
+  S_TAP_ONE, S_CHOOSE_Q_FMT,  // V2: the starter screen's line under its board, and "Choose PIKACHU?"
 #endif
   STR_COUNT
 };
