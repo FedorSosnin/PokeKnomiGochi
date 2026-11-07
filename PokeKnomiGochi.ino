@@ -2871,6 +2871,10 @@ void drawIntroCard() {
   uint32_t now = millis();
   int cx, cy;
   introCardPos(now, cx, cy);
+#if UI_V2
+  v2IntroCard(cx, cy, !introAwayT || now - introAwayT < CARD_AWAY_MS / 2, introTitle(g), introHow(g));  // V2: board, panel, button
+  return;
+#endif
   if (!introAwayT || now - introAwayT < CARD_AWAY_MS / 2) dimFrame();
   gfx->fillCircle(cx + 4, cy + 8, CARD_R, C565(0x10, 0x10, 0x18));  // its shadow
   gfx->fillCircle(cx, cy, CARD_R, UI_WHITE);
@@ -3080,6 +3084,12 @@ void renderQuiz() {
   char b[32];
   if (quizPhase == QP_END) {
 #if UI_V2
+    snprintf(b, sizeof(b), "%u/%u", quizScore, QUIZ_ROUNDS);  // V2: the result in a panel over the dimmed burst
+    v2GameResult(gameLabel(1), nullptr, b, false, nullptr, quizScore >= 3 ? T(S_GREAT_JOY) : T(S_PLUS_JOY));
+    gfx->flush();
+    return;
+#endif
+#if UI_V2
     gfx->setTextColor(UI_INK);  // on the burst's light middle
 #endif
     snprintf(b, sizeof(b), "%u/%u", quizScore, QUIZ_ROUNDS);
@@ -3096,11 +3106,15 @@ void renderQuiz() {
   bool reveal = quizPhase == QP_REVEAL;
   if (reveal) snprintf(b, sizeof(b), T(S_ITS_FMT), dexName(quizAnswer));
   else strlcpy(b, T(S_WHO_Q), sizeof(b));
+#if UI_V2
+  v2QuizHead(b, quizRound + 1, QUIZ_ROUNDS);  // V2: the question (or the answer) on a board, the round in a panel
+#else
   setCur(centerX(b, 2), 48);
   printT(b);
   snprintf(b, sizeof(b), "%u/%u", quizRound + 1, QUIZ_ROUNDS);
   setCur(centerX(b, 2), 72);
   printT(b);
+#endif
   gPmdForceScale = pmdFitScale(quizPmd, PMD_IDLE, 300, 166);
   drawPmdActM(quizPmd, PMD_IDLE, CX, 262, reveal ? millis() : 0, true, !reveal, 8);
   gPmdForceScale = 0;
@@ -3110,10 +3124,14 @@ void renderQuiz() {
     uint16_t bg = UI_WHITE;
     if (reveal && quizOpts[i] == quizAnswer) bg = UI_BAR_OK;
     else if (reveal && quizOpts[i] == quizTapped) bg = UI_BAR_BAD;
+#if UI_V2
+    v2QuizOption(83 + inset, y, 300 - 2 * inset, QUIZ_OPT_H, dexName(quizOpts[i]), bg);  // V2: panels, V1's boxes
+#else
     gfx->fillRoundRect(83 + inset, y, 300 - 2 * inset, QUIZ_OPT_H, 10, bg);
     gfx->setTextColor(bg == UI_WHITE ? UI_INK : UI_WHITE);
     setCur(centerX(dexName(quizOpts[i]), 2), y + 15);
     printT(dexName(quizOpts[i]));
+#endif
   }
   drawIntroCard();  // its how-to-play card, while it is up
   gfx->flush();
@@ -3941,7 +3959,11 @@ void renderCatchResult() {
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   char b[48];
   snprintf(b, sizeof(b), T(S_CAUGHT_FMT), dexName(bFoe.dex));
+#if UI_V2
+  v2CaughtBack(b);  // V2: a gold burst, the news on a red ribbon
+#else
   catchBannerAt(b, C565(0x1e, 0x7d, 0x3c), RESULT_BANNER_Y, 2);
+#endif
 
   int top, bottom, left, right;
   if (pmdBoxAll(wildPmd, PMD_IDLE, top, bottom, left, right)) {  // as big as it fits, centred in its box
@@ -3954,7 +3976,11 @@ void renderCatchResult() {
     drawPmdActM(wildPmd, PMD_IDLE, CX, RESULT_ART_BOTTOM - (down > 0 ? down : 0), millis(), true, false, 8);
     gPmdForceScale = 0;
   }
+#if UI_V2
+  v2CaughtStars(bCatchStars, bCatchResult == CR_NEW ? 1 : 2);  // V2: pixel stars, sparkles, the lines' panel
+#else
   drawStars(CX, RESULT_STARS_Y, RESULT_STAR_R, bCatchStars);
+#endif
 
   setSize(2);
   if (bCatchResult == CR_NEW) {
@@ -4388,6 +4414,16 @@ void renderGame() {
       gameEndToMenu();
       return;
     }
+#if UI_V2
+    {  // V2: the result in a panel over the dimmed clearing
+      char big[24], rec[24];
+      snprintf(big, sizeof(big), T(S_SCORE_FMT), gameScore);
+      snprintf(rec, sizeof(rec), T(S_RECORD_FMT), pet.gameHi);
+      v2GameResult(gameLabel(0), nullptr, big, gameNewHi && gameScore > 0, rec, gameScore >= 10 ? T(S_GREAT_JOY) : T(S_PLUS_JOY));
+      gfx->flush();
+      return;
+    }
+#endif
     char buf[22];
     snprintf(buf, sizeof(buf), T(S_SCORE_FMT), gameScore);
     gfx->setTextColor(ink);
@@ -4675,6 +4711,15 @@ void renderDungeon() {
   }
 
   if (dnOverT) {
+#if UI_V2
+    char top[44], big[12], rec[24];  // V2: the result in a panel over the dimmed dungeon
+    snprintf(top, sizeof(top), T(S_BTL_LOST), dexName(dn.me.dex));
+    snprintf(big, sizeof(big), "B%uF", dn.floor);
+    snprintf(rec, sizeof(rec), T(S_RECORD_FMT), pet.dungeonHi);
+    v2GameResult(gameLabel(3), top, big, dnNewHi, rec, dn.floor >= 5 ? T(S_GREAT_JOY) : T(S_PLUS_JOY));
+  }
+  if (dnOverT && !UI_V2) {
+#endif
     gfx->fillRoundRect(83, 130, 300, 190, 16, UI_WHITE);
     gfx->drawRoundRect(83, 130, 300, 190, 16, UI_INK);
     gfx->setTextColor(UI_INK);
@@ -4828,6 +4873,13 @@ void renderRun() {
   char b[24];
   snprintf(b, sizeof(b), "%us", (unsigned)run.t);
   gfx->setTextColor(ink);
+#if UI_V2
+  if (runOverT) {  // V2: the result in a panel over the dimmed run
+    char rec[24];
+    snprintf(rec, sizeof(rec), T(S_RECORD_FMT), pet.runHi);
+    v2GameResult(gameLabel(2), nullptr, b, runNewHi, rec, run.t >= 30 ? T(S_GREAT_JOY) : T(S_PLUS_JOY));
+  } else
+#endif
   if (runOverT) {
     setSize(5);
     setCur(centerX(b, 5), 62);
@@ -5166,6 +5218,13 @@ void renderSurf() {
     return;
   }
   snprintf(b, sizeof(b), "%us", (unsigned)surf.t);
+#if UI_V2
+  if (surfOverT) {  // V2: the result in a panel over the dimmed water
+    char rec[24];
+    snprintf(rec, sizeof(rec), T(S_RECORD_FMT), pet.surfHi);
+    v2GameResult(gameLabel(4), nullptr, b, surfNewHi, rec, surf.t >= 30 ? T(S_GREAT_JOY) : T(S_PLUS_JOY));
+  } else
+#endif
   if (surfOverT) {  // the result over the water, under yours
     surfText(b, 5, 214, UI_WHITE);
     if (surfNewHi) {

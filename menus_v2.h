@@ -2100,3 +2100,135 @@ void v2HostWifiShot(int which) {
 }
 #endif
 #endif
+
+// ----- the games' ends, their how-to cards, Who's That? and a catch -----
+static void v2DimFrame(int a256) {  // everything a256/256 of the way to the night tint
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  const uint16_t tint = sc565(0x120E22);
+  for (int i = 0; i < V2_W * V2_W; i++) fb[i] = v2Blend(fb[i], tint, a256);
+}
+// a game's result (rooms2_px.py game_over()): the game behind, dimmed 45%, its name on a board; in a panel a
+// line on what happened (the dungeon's faint), the score big, the record (or NEW RECORD! in gold) and the
+// happiness it brought, in green. As in V1 it goes back to the games by itself
+static void v2GameResult(const char *title, const char *top, const char *big, bool newHi, const char *record, const char *joy) {
+  v2DimFrame(115);
+  char b[40];
+  v2Sign(v2Caps(title, b, sizeof(b)), 70);
+  int bs = textW(big, 4) <= 250 ? 4 : 3, h = 18 + (top ? 28 : 0) + 8 * bs + 12 + (record ? 26 : 0) + 16 + 16;
+  v2Panel(96, 112, 370, 112 + h, 12);
+  int y = 130;
+  setSize(2);
+  if (top) {
+    gfx->setTextColor(UI_INK);
+    setCur(centerX(top, 2), y);
+    printT(top);
+    y += 28;
+  }
+  gfx->setTextColor(UI_INK);
+  setSize(bs);
+  setCur(centerX(big, bs), y);
+  printT(big);
+  y += 8 * bs + 12;
+  setSize(2);
+  if (record) {
+    const char *r = newHi ? T(S_NEW_RECORD) : record;
+    gfx->setTextColor(newHi ? C565(0xc0, 0x84, 0x10) : V2_INK_MUTED);
+    setCur(centerX(r, 2), y);
+    printT(r);
+    y += 26;
+  }
+  gfx->setTextColor(C565(0x3c, 0x8a, 0x4c));
+  setCur(centerX(joy, 2), y);
+  printT(joy);
+}
+
+// a game's how-to card (rooms2_px.py howto()): its name on a board, how to play in a panel, READY, GO! where
+// V1's button is (where its tap is); the whole card drops in and flies off as V1's did, (cx, cy) its middle
+static void v2IntroCard(int cx, int cy, bool dim, const char *title, const char *how) {
+  if (dim) v2DimFrame(115);
+  int dx = cx - CX, dy = cy - CY;
+  char b[40];
+  setSize(2);
+  v2Caps(title, b, sizeof(b));
+  int w = textW(b, 2) + 28, bx = cx - w / 2, by = cy - 170;  // the board, moving with the card (v2Sign() stays put)
+  const uint16_t dark = C565(0x3a, 0x24, 0x14);
+  gfx->fillRect(bx - 3, by - 3, w + 7, 31, dark);
+  gfx->fillRect(bx, by, w + 1, 25, C565(0x8a, 0x5a, 0x30));
+  gfx->fillRect(bx, by, w + 1, 4, C565(0xb0, 0x7a, 0x45));
+  gfx->fillRect(bx + 5, by + 10, 4, 4, dark);
+  gfx->fillRect(bx + w - 8, by + 10, 4, 4, dark);
+  gfx->setTextColor(C565(0xff, 0xf3, 0xdc));
+  setCur(cx - textW(b, 2) / 2, by + 6);
+  printT(b);
+  v2Panel(86 + dx, cy - 128, 380 + dx, cy + 140, 12);
+  int n = drawWrappedAt(how, 2, 264, cx, 0, 22, false);
+  gfx->setTextColor(UI_INK);
+  drawWrappedAt(how, 2, 264, cx, cy - 110 + (176 - (n * 22 - 6)) / 2, 22, true);
+  char go[32];
+  v2LabelButton(CX - 117 + dx, cy + 79, CX + 117 + dx, cy + 125, v2Caps(T(S_READY_GO), go, sizeof(go)), C565(0x58, 0xb8, 0x68));
+}
+
+// Who's That? (batch3.py quiz_play()): the question, or the answer once it's shown, on a board; the round in a
+// small panel under it; the names as white panels where V1's are, green for the answer, red for a wrong tap
+static void v2QuizHead(const char *q, int round, int rounds) {
+  char b[48];
+  v2Sign(v2Caps(q, b, sizeof(b)), 40);
+  snprintf(b, sizeof(b), "%d / %d", round, rounds);
+  setSize(2);
+  int w = textW(b, 2) + 24;
+  gfx->fillRoundRect(CX - w / 2 - 2, 74, w + 4, 28, 8, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(CX - w / 2, 76, w, 24, 6, UI_WHITE);
+  gfx->setTextColor(UI_INK);
+  setCur(centerX(b, 2), 81);
+  printT(b);
+}
+static void v2QuizOption(int x, int y, int w, int h, const char *name, uint16_t bg) {
+  if (bg == UI_WHITE) {
+    gfx->fillRoundRect(x - 3, y - 3, w + 6, h + 6, 10, C565(0x3a, 0x4a, 0x5a));
+    gfx->fillRoundRect(x, y, w, h, 8, UI_WHITE);
+  } else {
+    v2Button(x, y, w, h, bg);
+  }
+  gfx->setTextColor(bg == UI_WHITE ? UI_INK : UI_WHITE);
+  setSize(2);
+  setCur(x + w / 2 - textW(name, 2) / 2, y + h / 2 - 7);
+  printT(name);
+}
+
+// a catch (rooms_px.py caught_screen(), approved): a gold burst, a red ribbon with the news, sparkles round the
+// Pokemon, its stars as pixel stars, what it means for your Pokedex in a panel; the X
+static void v2CaughtBack(const char *news) {
+  v2Cached(114, scBurst, 2);
+  setSize(2);
+  int w = textW(news, 2) + 28;
+  if (w < 240) w = 240;
+  const uint16_t fold = C565(0x88, 0x2c, 0x2c);
+  for (int sx = -1; sx <= 1; sx += 2) {  // the ribbon's folded ends, notched
+    int ex = CX + sx * w / 2;
+    gfx->fillRect(sx < 0 ? ex - 20 : ex, 58, 21, 29, fold);
+    gfx->fillTriangle(ex + sx * 20, 58, ex + sx * 30, 58, ex + sx * 20, 72, fold);
+    gfx->fillTriangle(ex + sx * 20, 72, ex + sx * 30, 86, ex + sx * 20, 86, fold);
+  }
+  gfx->fillRect(CX - w / 2 - 3, 52, w + 6, 39, C565(0x3a, 0x24, 0x14));
+  gfx->fillRect(CX - w / 2, 55, w, 33, C565(0xc8, 0x50, 0x50));
+  gfx->fillRect(CX - w / 2, 55, w, 5, C565(0xe8, 0x70, 0x70));
+  gfx->setTextColor(UI_WHITE);
+  setCur(centerX(news, 2), 64);
+  printT(news);
+}
+static void v2CaughtStars(uint8_t n, int lines) {
+  static const char *const STAR[7] = { "...k...", "..kfk..", "kkkfkkk", "kfffffk", ".kfffk.", ".kfkfk.", "kk...kk" };
+  scScreen();
+  scGradeTod = 0;
+  for (int i = 0; i < 3; i++) {
+    const ScKey k[2] = { { 'k', 0x8A5A10 }, { 'f', (Rgb)(i < n ? 0xFFD95E : 0xFFFFFF) } };
+    scSprite(STAR, 7, 196 + i * 28, 250, 3, k, 2);
+  }
+  static const int16_t SPARK[6][2] = { { 150, 140 }, { 318, 150 }, { 130, 250 }, { 336, 236 }, { 180, 100 }, { 290, 104 } };
+  for (auto &p : SPARK) {  // white pixel sparkles
+    scGridRect(p[0], p[1] - 8, p[0] + 4, p[1] + 12, 0xFFFFFF);
+    scGridRect(p[0] - 8, p[1], p[0] + 12, p[1] + 4, 0xFFFFFF);
+  }
+  if (lines > 1) v2Panel(46, 282, 420, 350, 10);  // the lines go at 292 (and 320), as V1's: up to 30 letters
+  else v2Panel(92, 282, 374, 318, 10);
+}

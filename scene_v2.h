@@ -1053,8 +1053,9 @@ static void scCourt(int tod) {
 
 // Who's That?: the classic burst of rays in two blues, stepped on the grid, with a lighter middle and a
 // checker edge round it (g_quiz). Showdown has the same burst in pinks. It doesn't change with the hour.
-static void scBurst(int pink) {
-  const Rgb a = pink ? 0xC84874 : 0x3F8FD8, b = pink ? 0xD8608A : 0x5AA8EC, glow = pink ? 0xEE9AB4 : 0x8CC8F4;
+static void scBurst(int pink) {  // 0 blue (Who's That?), 1 pink (Showdown), 2 gold (a catch)
+  static const Rgb A[3] = { 0x3F8FD8, 0xC84874, 0xE8A23C }, B[3] = { 0x5AA8EC, 0xD8608A, 0xF0C04A }, G[3] = { 0x8CC8F4, 0xEE9AB4, 0xFFF0B0 };
+  const Rgb a = A[pink], b = B[pink], glow = G[pink];
   for (int cy = 0; cy < V2_W; cy += 4)
     for (int cx = 0; cx < V2_W; cx += 4) {
       int dx = cx + 2 - 233, dy = cy + 2 - 200, r2 = dx * dx + dy * dy;
