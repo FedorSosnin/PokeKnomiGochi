@@ -63,6 +63,7 @@ TEST(egg, does_not_hatch_while_choosing_starter) {
   CHECK_EQ(p.speciesId, (int16_t)7);
 }
 
+#if !UI_V2  // 1.51's egg: V2 has none (the starter or the pick is yours at once: v2pick below)
 TEST(egg, hatches_on_its_own_after_3_minutes) {
   mockNvsReset();
   Pet p;
@@ -90,6 +91,7 @@ TEST(egg, three_taps_hatch) {
   CHECK(!p.isEgg());
   CHECK_EQ(p.speciesId, (int16_t)4);
 }
+#endif
 
 TEST(egg, hatching_rolls_genes_and_resets_the_individual) {
   Pet p;
@@ -202,7 +204,9 @@ TEST(feed, asleep_or_egg_does_not_eat) {
   Pet e;
   mockNvsReset();
   e.begin();
-  e.chooseStarter(4);
+#if !UI_V2
+  e.chooseStarter(4);  // (V2: the egg is only the wait for a starter)
+#endif
   e.fullness = 40;
   e.feedBerry(0);
   CHECK_EQ(e.fullness, (uint8_t)40);
@@ -887,11 +891,19 @@ static int shinyCount(uint8_t ending, int rounds) {
   return shinies;
 }
 
+#if UI_V2
+TEST(v2pick, no_shiny_roll_a_shiny_only_when_picked) {  // V2 (Fedor): "no shiny odds"
+  CHECK_EQ(shinyCount(CER_FAREWELL, 500), 0);
+  CHECK_EQ(shinyCount(CER_RELEASE, 500), 0);
+  CHECK_EQ(shinyCount(CER_RUNAWAY, 500), 0);
+}
+#else
 TEST(egg, letting_go_gives_a_25_percent_shiny_chance) {
   CHECK_RANGE(shinyCount(CER_FAREWELL, 2000), 400, 600);
   CHECK_RANGE(shinyCount(CER_RELEASE, 2000), 400, 600);
   CHECK_MSG(shinyCount(CER_RUNAWAY, 2000) < 150, "a runaway does not get the prize");
 }
+#endif
 
 TEST(egg, after_a_runaway_there_is_no_choice) {
   Pet p;
@@ -913,7 +925,11 @@ TEST(egg, first_game_is_still_the_starter) {
 TEST(egg, choice_stops_time_and_survives_a_reboot) {
   Pet p;
   makePet(p, 25);
+#if UI_V2
+  p.startFarewell();  // (V2: a goodbye opens the Pokedex pick; before one, it's the starters: v2pick below)
+#else
   p.release();
+#endif
   p.newEgg();
   uint32_t age = p.ageMinutes;
   mockSetMillis(10 * PET_TICK_MS);
@@ -983,6 +999,90 @@ TEST(egg, runaway_penalizes_rarity) {
     CHECK_MSG(DEX_TBL[d].rarity == R_COMMON, "after a runaway only commons come up");
   }
 }
+
+#if UI_V2
+// ---------------------------------------------------------------- V2: the starters, then the Pokedex (Fedor)
+// "For the first game, we get the 4 starters and we will get the 4 starters UNTIL a player has kept a pokemon
+// for 4 days and was offered to swap it or keep it. In which case they can now choose from any non evolved
+// pokemon from their pikadex."
+TEST(v2pick, the_starters_until_a_goodbye_is_offered) {
+  Pet p;
+  makePet(p, 25);
+  CHECK(!p.canPickFromDex());
+  p.catchWild(102);
+  p.release();
+  p.newEgg();
+  CHECK(p.awaitingStarter());
+  CHECK(!p.awaitingEggPick());
+  CHECK_MSG(!p.chooseEgg(102), "no Pokedex pick yet");
+  p.chooseStarter(7);
+  CHECK_MSG(!p.isEgg(), "a starter is yours at once: no egg");
+  CHECK_EQ(p.speciesId, (int16_t)7);
+  p.startRunaway();
+  p.newEgg();
+  CHECK(p.awaitingStarter());
+}
+
+TEST(v2pick, a_goodbye_offered_opens_the_pokedex_for_good) {
+  Pet p;
+  makePet(p, 26);  // Raichu: a final form
+  p.catchWild(102);
+  p.ageMinutes = FAREWELL_AGE_MIN - 2;
+  setStats(p, 90, 90, 90, 90);
+  advance(p, 1);
+  CHECK(!p.canPickFromDex());
+  advance(p, 1);
+  CHECK_MSG(p.canFarewellNow() && p.canPickFromDex(), "offered on its 4th day");
+  p.declineFarewell();  // "stay together": it was offered all the same
+  Pet again;
+  again.begin();
+  CHECK_MSG(again.canPickFromDex(), "kept in the save");
+  again.startRunaway();
+  again.newEgg();
+  CHECK_MSG(again.awaitingEggPick() && !again.awaitingStarter(), "from now on the Pokedex, even after a runaway");
+  CHECK(again.chooseEgg(102));
+  CHECK_MSG(!again.isEgg(), "the pick is yours at once");
+  CHECK_EQ(again.speciesId, (int16_t)102);
+  CHECK(!again.shiny);
+}
+
+TEST(v2pick, a_shiny_starter_only_if_you_own_its_shiny) {
+  Pet p;
+  makePet(p, 25);
+  p.release();
+  p.newEgg();
+  p.chooseStarter(4, true);  // no shiny Charmander in the Pokedex
+  CHECK_EQ(p.speciesId, (int16_t)4);
+  CHECK(!p.shiny);
+  p.catchWild(1, true, 3);  // a 3-star shiny Bulbasaur
+  p.release();
+  p.newEgg();
+  p.chooseStarter(1, true);
+  CHECK(p.shiny);
+  CHECK_EQ(p.petStars(), (uint8_t)3);
+}
+
+TEST(v2pick, an_older_saves_goodbye_counts_and_its_egg_hatches) {
+  mockNvsReset();
+  mockSetMillis(0);
+  Preferences n;
+  n.begin("tamapoke", false);
+  n.putBool("init", true);
+  n.putShort("dexn", -1);   // an egg, picked in 1.51 and not hatched
+  n.putShort("eggT2", 4);
+  n.putUChar("lend", CER_FAREWELL);
+  uint8_t reg[19] = { 0x09 };  // Bulbasaur and Charmander in the Pokedex
+  n.putBytes("dexreg", reg, sizeof(reg));
+  n.end();
+  Pet p;
+  p.begin();
+  CHECK_MSG(p.canPickFromDex(), "it said goodbye in 1.51");
+  CHECK(p.isEgg());
+  p.update(millis());
+  CHECK_MSG(!p.isEgg(), "V2 has no egg: it hatches");
+  CHECK_EQ(p.speciesId, (int16_t)4);
+}
+#endif
 
 // ---------------------------------------------------------------- streak
 TEST(streak, first_care_of_the_day_counts) {
@@ -1427,6 +1527,7 @@ TEST(offline, under_two_minutes_does_nothing) {
   CHECK_EQ(p.fullness, (uint8_t)80);
 }
 
+#if !UI_V2  // V2 has no egg to hatch while away
 TEST(offline, egg_hatches_while_you_are_away) {
   Pet p;
   makePet(p, 4);
@@ -1441,6 +1542,7 @@ TEST(offline, egg_hatches_while_you_are_away) {
   CHECK(!p.isEgg());
   CHECK_EQ(p.speciesId, (int16_t)4);
 }
+#endif
 
 TEST(offline, sleeping_rests_while_off_too) {
   Pet p;

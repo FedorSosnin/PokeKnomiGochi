@@ -34,6 +34,13 @@ void Pet::newEgg() {
     if (shinyBase < 8) shinyBase = 8;
   }
   eggShiny = (random(shinyBase) == 0);
+#if UI_V2
+  // V2 (Fedor): no egg and no shiny roll. The four starters until a goodbye has been offered, then any base form
+  // in the Pokedex, regular or shiny: a Pokemon is shiny only when you pick a shiny form you own
+  starterPick = !pickOk || eggChoiceCount() == 0;
+  eggPick = !starterPick;
+  eggShiny = false;
+#endif
   eggStars = 0;  // picking a form sets its band; a drawn egg rolls 90-110
   eggTaps = 0;
   fullness = 80;
@@ -169,6 +176,12 @@ void Pet::update(uint32_t nowMs) {
     newEgg();
     return;
   }
+#if UI_V2
+  if (isEgg() && !starterPick && !eggPick && ceremony == CER_NONE) {  // V2 has no egg: an older version's hatches now
+    hatch();
+    return;
+  }
+#endif
   while (nowMs - lastTick >= PET_TICK_MS) {
     lastTick += PET_TICK_MS;
     lifeMin++;  // even while choosing or saying goodbye: the trainer's time
@@ -206,6 +219,12 @@ void Pet::tick() {
     if (ageMinutes >= 3) hatch();  // if you don't touch it, it hatches on its own after 3 min
     return;
   }
+#if UI_V2
+  if (!pickOk && canFarewellNow()) {  // V2: its goodbye is offered from now on: the next Pokemon comes from the Pokedex
+    pickOk = true;
+    save();
+  }
+#endif
 
   // sleep is rest: energy recovers and needs drop MUCH
   // slower than awake and with a floor (it wakes up wanting some cuddles, not at
@@ -340,9 +359,23 @@ bool Pet::chooseEgg(int16_t dex, bool shinyForm) {
   if (shinyForm) eggShiny = true;  // otherwise the roll from newEgg() stays: a surprise
   eggStars = starsOf(dex, shinyForm);  // a 3-star form hatches a 3-star Pokemon
   eggPick = false;
+#if UI_V2
+  hatch();  // V2: no egg, it's yours at once (and shiny only if picked: newEgg() rolls none)
+  return true;
+#endif
   save();
   return true;
 }
+
+#if UI_V2
+void Pet::chooseStarter(int16_t dex, bool shinyForm) {
+  eggTarget = dex;
+  eggShiny = shinyForm && hasForm(dex, true);
+  eggStars = hasForm(dex, eggShiny) ? starsOf(dex, eggShiny) : 0;  // one you have: its stars, as a pick's
+  starterPick = eggPick = false;
+  hatch();
+}
+#endif
 
 int16_t Pet::registeredAt(int idx) const {
   for (int16_t d = 1; d <= 151; d++)
@@ -573,6 +606,9 @@ bool Pet::canRunawayNow() const {
 
 void Pet::startFarewell() {
   if (isEgg() || ceremony != CER_NONE) return;
+#if UI_V2
+  pickOk = true;  // V2: a goodbye said was a goodbye offered
+#endif
   lastEnd = CER_FAREWELL;
   ceremony = CER_FAREWELL;
   ceremonyUntil = millis() + CEREMONY_MS;
@@ -1028,6 +1064,9 @@ void Pet::save() {
   prefs.putBool("sleep", sleeping);
   prefs.putUChar("lend", lastEnd);
   prefs.putBool("fquiet", farewellQuiet);
+#if UI_V2
+  prefs.putBool("pkok", pickOk);
+#endif
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putUInt("life", lifeMin);
   prefs.putUInt("gday", gameDay);
@@ -1107,6 +1146,9 @@ void Pet::load() {
   sleeping = prefs.getBool("sleep", false);
   lastEnd = prefs.getUChar("lend", CER_NONE);
   farewellQuiet = prefs.getBool("fquiet", false);
+#if UI_V2
+  pickOk = prefs.getBool("pkok", false) || lastEnd == CER_FAREWELL || farewellQuiet;  // older saves: a goodbye said or put off
+#endif
   prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
   bool hadStars = prefs.isKey("dexstr");
   if (hadStars) prefs.getBytes("dexstr", dexStars, sizeof(dexStars));

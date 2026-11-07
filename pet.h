@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <Preferences.h>
+#include "ui_v2.h"
 
 // 1 tick = 1 game minute. Lower this value to test faster
 // (e.g. 5000UL = stats drop 12x faster).
@@ -258,7 +259,14 @@ public:
   }
   // first game: the player picks a starter (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }
+#if UI_V2
+  // V2: one of the four starters, every time until a goodbye has been offered (pickOk). No egg: it's yours at
+  // once, its shiny form if you own it and picked it
+  void chooseStarter(int16_t dex, bool shinyForm = false);
+  bool canPickFromDex() const { return pickOk; }
+#else
   void chooseStarter(int16_t dex) { eggTarget = dex; starterPick = eggPick = false; save(); }
+#endif
   // after a goodbye or release the next egg is chosen from those already registered
   bool awaitingEggPick() const { return eggPick; }
   bool chooseEgg(int16_t dex, bool shinyForm = false);  // a shiny form hatches shiny
@@ -337,6 +345,11 @@ private:
   bool farewellQuiet = false;  // chose "stay together" once: the goodbye isn't offered by itself again
   bool starterPick = false;     // first game: waiting for the player to pick a starter
   bool eggPick = false;         // new egg: waiting for the player to pick from the pokedex
+#if UI_V2
+  // V2 (Fedor): a goodbye has been offered once (a final form 3 days old): every new Pokemon after that is picked
+  // from the Pokedex, not from the four starters
+  bool pickOk = false;
+#endif
   uint8_t neglectTicks = 0;
   void careMinute(bool asleep);
   uint32_t ceremonyUntil = 0;

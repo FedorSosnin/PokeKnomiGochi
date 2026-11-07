@@ -10,6 +10,10 @@ fail=0
 echo "== firmware logic (pet.cpp / i18n.cpp / dex.h) =="
 make --no-print-directory run || fail=1
 
+echo
+echo "== the same logic with 1.51's rules (UI_V2=0) =="
+make --no-print-directory v1 | tail -1 || fail=1
+
 if [[ "${1:-}" == "--asan" ]]; then
   echo
   echo "== the same suite with AddressSanitizer + UBSan =="
