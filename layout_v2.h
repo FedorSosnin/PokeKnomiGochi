@@ -62,3 +62,11 @@ static const int16_t V2_MANSION_RISE[4] = { 20, 226, 446, 330 };   // added to t
 // the walk (when it walks): PMD Walk facing down, slowed 2.0x (one step cycle = 1.2 s)
 #define V2_WALK_PACE_X10 20
 #define V2_STREAM_LOOP_MS 8400    // a tuft takes this long from the bottom to the horizon
+
+// the food picker: a text-box bubble out of the bag (its tail points at it), the foods on round seats 66 px
+// apart; it grows to the right, so with the candy gone it's three seats from the same left edge
+#define V2_FEED_X0 101
+#define V2_FEED_Y0 264
+#define V2_FEED_H 72
+#define V2_FEED_CELL 66
+#define V2_FEED_SEAT_R 30

@@ -1543,6 +1543,21 @@ void onTap(int16_t x, int16_t y) {
     confirmUntil = 0;
     return;
   }
+#if UI_V2
+  if (feedMenuUntil) {       // food picker: V2's bubble out of the bag
+    int count = pet.canHaveCandy() ? 4 : 3;
+    int x0 = V2_FEED_X0;
+    if (timeLeft(feedMenuUntil) && y >= V2_FEED_Y0 && y <= V2_FEED_Y0 + V2_FEED_H && x >= x0 && x <= x0 + count * 66) {
+      int item = (x - x0) / 66;
+      if (item >= count) item = count - 1;
+      if (item == 3) pet.feedCandy();
+      else pet.feedBerry(item);
+      sfxPlay(SFX_EAT);
+    }
+    feedMenuUntil = 0;
+    return;
+  }
+#else
   if (feedMenuUntil) {       // food picker
     int count = pet.canHaveCandy() ? 4 : 3;
     int x0 = CX - count * 33;
@@ -1556,6 +1571,7 @@ void onTap(int16_t x, int16_t y) {
     feedMenuUntil = 0;
     return;
   }
+#endif
   if (pet.isEgg()) {
     pet.eggTap();
     sfxPlay(SFX_TAP);
@@ -1668,7 +1684,16 @@ extern "C" bool hostQuietForUpdate() {
 // ---------- render ----------
 
 bool gNight = false;  // real night (by time) or sleeping: set by render()
-uint16_t inkColor() { return gNight ? UI_INK_NIGHT : UI_INK; }
+#if UI_V2
+bool gV2Dark = false;  // V2: the home's zone is dark at every hour (the Cave, the Mansion): light text over it
+#endif
+uint16_t inkColor() {
+#if UI_V2
+  return gNight || gV2Dark ? UI_INK_NIGHT : UI_INK;
+#else
+  return gNight ? UI_INK_NIGHT : UI_INK;
+#endif
+}
 
 // ---------- background scene: type biome + real RTC time ----------
 
@@ -2078,7 +2103,15 @@ bool render() {
   gNight = pet.sleeping || h < 6 || h >= 20;
   // drawScene covers the full 466x466: no prior fillScreen(BLACK) so
   // an overlapping DMA flush never captures half-black (anti-flicker)
+#if UI_V2
+  {  // V2: the pixel scene of the Pokemon's Travel zone, from its buffer
+    uint8_t zone = v2HomeZone();
+    gV2Dark = zone == Z_CAVE || zone == Z_MANSION;
+    v2DrawScene(zone, v2HomeTod());
+  }
+#else
   drawScene(pet.isEgg() ? 0 : DEX_TBL[pet.speciesId].biome, millis(), gNight);
+#endif
 
   if (pet.ceremony) {
     const DexEntry &d = DEX_TBL[pet.speciesId];
@@ -2120,8 +2153,8 @@ bool render() {
     const char *base = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
     snprintf(name, sizeof(name), "%s%s", pet.shiny ? "*" : "", base);
     snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
-    drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg(), lv);
 #if UI_V2
+    drawHeader(name, gNight || gV2Dark ? v2LightAccent(d.accent) : d.accent, statusMsg(), lv);
     // V2: the scene runs to the rim; the bars ride on it and the icons sit on their band
     drawPet();
     drawBath();
@@ -2130,6 +2163,7 @@ bool render() {
     v2DrawBand();
     v2DrawIcons();
 #else
+    drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg(), lv);
     drawStreakBadge();
     drawPet();
     drawBath();
@@ -2153,12 +2187,16 @@ bool render() {
     } else {
       // once the day's candies are used up, the menu stays at the three berries
       int count = pet.canHaveCandy() ? 4 : 3;
+#if UI_V2
+      v2DrawFoodPicker(count);  // a text-box bubble out of the bag
+#else
       int x0 = CX - count * 33;
       gfx->fillRoundRect(x0, FEED_Y, count * 66, 64, 14, UI_WHITE);
       gfx->drawRoundRect(x0, FEED_Y, count * 66, 64, 14, inkColor());
       static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
       for (int i = 0; i < count; i++) drawMap(FOOD[i], HOME_ICON_N, x0 + 6 + 66 * i, FEED_Y + 5, 3, false);
       if (count == 4) drawCandyCount(x0 + 6 + 66 * 3, FEED_Y + 5, pet.candiesLeft());
+#endif
     }
   }
 
@@ -9113,6 +9151,9 @@ void drawPetPMD() {
   int n = partyOthers();
   int px = n ? PARTY_MINE_X : (int)beh.x;
   if (n) gPmdForceScale = partyMineScale(n);
+#if UI_V2
+  v2PetShadow(px, PET_GROUND - 4, n ? 30 : 42);  // V2: a soft shadow on the grass under it
+#endif
   drawPmdAct(act, px, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, partyScale(n, true));
   gPmdForceScale = 0;
 
@@ -9538,11 +9579,19 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   if (feedMenuUntil) {
     static const char *const *const ICON[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
     int count = pet.canHaveCandy() ? 4 : 3;
+#if UI_V2
+    int x0 = V2_FEED_X0;
+    if (y < V2_FEED_Y0 || y > V2_FEED_Y0 + V2_FEED_H || x < x0 || x > x0 + count * 66) return false;
+    int item = (x - x0) / 66;
+    if (item >= count) item = count - 1;
+    return pressSet(t, x0 + item * 66, V2_FEED_Y0, 66, V2_FEED_H, nullptr, ICON[item]);
+#else
     int x0 = CX - count * 33;
     if (y < FEED_Y || y > FEED_Y + 64 || x < x0 || x > x0 + count * 66) return false;
     int item = (x - x0) / 66;
     if (item >= count) item = count - 1;
     return pressSet(t, x0 + item * 66, FEED_Y, 66, 64, nullptr, ICON[item]);
+#endif
   }
   if (pet.isEgg()) return false;
   if (homeModal()) {  // a medal, evolving or the goodbye is up: only its own button lights

@@ -68,12 +68,12 @@ static void v2SegBox(float rOut, float a0, float a1, float h, int &x0, int &y0, 
   if (y1 > 464) y1 = 464;
 }
 
-// Over dark scenes (night, asleep; later the Cave and the Mansion) the dark see-through tint
-// disappears, so the track and the band go white and fainter there.
-static bool v2DarkScene() { return gNight; }
-static uint16_t v2TrackCol() { return v2DarkScene() ? UI_WHITE : V2_TRACK; }
-static int v2RimA() { return v2DarkScene() ? 15 : 46; }    // 18% (6% white)
-static int v2TrackA() { return v2DarkScene() ? 20 : 56; }  // 22% (8% white)
+// The bars' empty track is the dark see-through tint everywhere. The band under the icons is too, except
+// over dark scenes (night, asleep, the Cave, the Mansion), where it would vanish: there it's white and
+// fainter, as in the night mockups.
+static bool v2DarkScene() { return gNight || gV2Dark; }
+#define V2_RIM_A 46    // 18%
+#define V2_TRACK_A 56  // 22%
 
 // ---------- the need bars ----------
 
@@ -145,8 +145,8 @@ static void v2Bar(uint16_t *fb, const V2Bar &b, uint8_t val, const char *lab, bo
   V2Seg rim = v2Seg(V2_BAR_RIN - V2_BAR_RIM, V2_BAR_ROUT + V2_BAR_RIM, a0, a1);
   V2Seg track = v2Seg(V2_BAR_RIN, V2_BAR_ROUT, a0, a1);
   V2Seg full = v2Seg(V2_BAR_RIN, V2_BAR_ROUT, f0, f1);
-  uint16_t tcol = v2TrackCol();
-  int ra = v2RimA(), ta = v2TrackA();
+  const uint16_t tcol = V2_TRACK;
+  const int ra = V2_RIM_A, ta = V2_TRACK_A;
   int x0, y0, x1, y1;
   v2SegBox(V2_BAR_ROUT + V2_BAR_RIM, a0, a1, (V2_BAR_ROUT - V2_BAR_RIN) / 2.0f + V2_BAR_RIM, x0, y0, x1, y1);
   for (int y = y0; y <= y1; y += 2) {
@@ -190,8 +190,9 @@ static void v2DrawBand() {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   V2Seg rim = v2Seg(V2_BAND_RIN - 3, V2_BAND_ROUT + 3, V2_BAND_A0, V2_BAND_A1);
   V2Seg band = v2Seg(V2_BAND_RIN, V2_BAND_ROUT, V2_BAND_A0, V2_BAND_A1);
-  uint16_t col = v2TrackCol();
-  int ra = v2RimA(), ta = v2TrackA();
+  bool dark = v2DarkScene();
+  uint16_t col = dark ? UI_WHITE : V2_TRACK;
+  int ra = dark ? 26 : V2_RIM_A, ta = dark ? 31 : V2_TRACK_A;  // white at 10% and 12%
   int x0, y0, x1, y1;
   v2SegBox(V2_BAND_ROUT + 3, V2_BAND_A0, V2_BAND_A1, (V2_BAND_ROUT - V2_BAND_RIN) / 2.0f + 3, x0, y0, x1, y1);
   for (int y = y0; y <= y1; y += 2) {
@@ -260,4 +261,501 @@ static void v2Header(const char *name, uint16_t nameColor, const char *msg, cons
   setSize(2);
   setCur(centerX(msg, 2), V2_STATUS_Y);
   printT(msg);
+}
+
+// ---------- the text box and the food picker ----------
+
+#define V2_RIM C565(0x3a, 0x4a, 0x5a)   // panels' and buttons' dark rim
+#define V2_LINE C565(0xa8, 0xd8, 0xe8)  // the soft line inside a panel
+#define V2_SEAT C565(0xe4, 0xea, 0xf2)  // a round seat for something to pick
+
+// The V2 panel, a Pokemon-style text box: white, a 3 px dark rim, a soft 2 px line inside. x1 and y1 are
+// inside it, as in the mockups.
+static void v2Panel(int x0, int y0, int x1, int y1, int r) {
+  int w = x1 - x0 + 1, h = y1 - y0 + 1;
+  gfx->fillRoundRect(x0 - 3, y0 - 3, w + 6, h + 6, r + 2, V2_RIM);
+  gfx->fillRoundRect(x0, y0, w, h, r, UI_WHITE);
+  int ri = r - 3 < 2 ? 2 : r - 3;
+  gfx->drawRoundRect(x0 + 3, y0 + 3, w - 6, h - 6, ri, V2_LINE);
+  gfx->drawRoundRect(x0 + 4, y0 + 4, w - 8, h - 8, ri > 1 ? ri - 1 : 1, V2_LINE);
+}
+
+// a count on a red disc with a dark rim (the candies left today)
+static void v2CountBadge(int cx, int cy, int n) {
+  char b[8];
+  snprintf(b, sizeof(b), "%d", n);
+  gfx->fillCircle(cx, cy, 12, V2_RIM);
+  gfx->fillCircle(cx, cy, 10, UI_BAR_BAD);
+  gfx->setTextColor(UI_WHITE);
+  setSize(2);
+  setCur(cx - textW(b, 2) / 2 + 1, cy - 7);
+  printT(b);
+}
+
+// The food picker: a text-box bubble out of the bag, its tail pointing at it, each food on a round seat
+// (the candy, while there are any left today, with its count)
+static void v2DrawFoodPicker(int count) {
+  static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
+  int x0 = V2_FEED_X0, y0 = V2_FEED_Y0, x1 = x0 + count * V2_FEED_CELL, y1 = y0 + V2_FEED_H;
+  gfx->fillTriangle(118, y1, 146, y1, 124, y1 + 16, V2_RIM);  // the tail's rim, under the box's
+  v2Panel(x0, y0, x1, y1, 14);
+  gfx->fillTriangle(121, y1 - 3, 143, y1 - 3, 125, y1 + 10, UI_WHITE);  // its inside, over the rim
+  for (int i = 0; i < count; i++) {
+    int cx = x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * i, cy = y0 + 36;
+    gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, V2_SEAT);
+    drawMap(FOOD[i], HOME_ICON_N, cx - 27, cy - 27, 3, false);
+  }
+  if (count == 4) v2CountBadge(x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * 3 + 22, y0 + 8, pet.candiesLeft());
+}
+
+// ---------- the scenes: the home's backdrop, in the Pokemon's Travel zone ----------
+// All on a 4 px grid (one 8-bit pixel = 2 Knomi pixels), drawn the way the V2 mockups' scripts draw them
+// (pixelhills.py, zones_px.py, mansion2.py; dusk and night as batch3.py's render_tod). Colours are
+// 0xRRGGBB and mixed in 8-bit RGB, as there. Nothing in a scene moves yet, so it is drawn once into a
+// buffer and copied in every frame; it's drawn again only when the zone or the time of day changes.
+
+typedef uint32_t Rgb;
+#define V2_W 466
+#define Z_MEADOW 5  // after the five zones: the egg's
+static inline uint16_t sc565(Rgb c) { return ((c >> 8) & 0xF800) | ((c >> 5) & 0x07E0) | ((c >> 3) & 0x1F); }
+static inline Rgb scRgb(int r, int g, int b) {
+  r = r < 0 ? 0 : r > 255 ? 255 : r;
+  g = g < 0 ? 0 : g > 255 ? 255 : g;
+  b = b < 0 ? 0 : b > 255 ? 255 : b;
+  return (Rgb)r << 16 | (Rgb)g << 8 | (Rgb)b;
+}
+static inline Rgb scMix(Rgb a, Rgb b, double t) {  // the mockups' lerp()
+  int ar = a >> 16, ag = (a >> 8) & 255, ab = a & 255, br = b >> 16, bg = (b >> 8) & 255, bb = b & 255;
+  return scRgb((int)(ar + (br - ar) * t), (int)(ag + (bg - ag) * t), (int)(ab + (bb - ab) * t));
+}
+
+static uint16_t *scFb;      // where the scene is drawn
+static uint8_t scGradeTod;  // 0: colours as given; 1, 2: a day scene's land at dusk or at night
+static Rgb scGrade(Rgb c) {
+  if (!scGradeTod) return c;
+  int r = c >> 16, g = (c >> 8) & 255, b = c & 255;
+  if (scGradeTod == 2) return scRgb((int)(r * .30 + 8), (int)(g * .36 + 12), (int)(b * .55 + 30));  // about a third of the light, toward blue
+  return scMix(scRgb((int)(r * .94), (int)(g * .90), (int)(b * .84)), 0xFFAA6E, .16);                 // a warm wash
+}
+// a rectangle with both corners inside it, as PIL draws them
+static void scRect(int x0, int y0, int x1, int y1, Rgb c) {
+  if (x0 < 0) x0 = 0;
+  if (y0 < 0) y0 = 0;
+  if (x1 > V2_W - 1) x1 = V2_W - 1;
+  if (y1 > V2_W - 1) y1 = V2_W - 1;
+  if (x0 > x1 || y0 > y1) return;
+  uint16_t v = sc565(scGrade(c));
+  for (int y = y0; y <= y1; y++) {
+    uint16_t *p = scFb + y * V2_W + x0;
+    for (int x = x0; x <= x1; x++) *p++ = v;
+  }
+}
+static inline void scCell(int x, int y, Rgb c) { scRect(x, y, x + 3, y + 3, c); }
+
+struct ScKey { char ch; Rgb c; };
+static void scSprite(const char *const *rows, int nr, int x, int y, int s, const ScKey *keys, int nk) {
+  for (int j = 0; j < nr; j++)
+    for (int i = 0; rows[j][i]; i++)
+      for (int k = 0; k < nk; k++)
+        if (keys[k].ch == rows[j][i]) {
+          scRect(x + i * s, y + j * s, x + i * s + s - 1, y + j * s + s - 1, keys[k].c);
+          break;
+        }
+}
+
+// a scene's colours (the mockups' PX entries)
+struct ScPal { Rgb top, bot, far, mid, near, dark, trunk, cloud, cloudSh, sun, halo; double lit; Rgb fl[3]; };
+static const ScPal SC_DAY = { 0x7FBDE6, 0xD8EEE8, 0xA7D7B0, 0x86C58E, 0x6DB673, 0x3F7E52, 0x7E5530,
+                              0xFFFFFF, 0xCFE3EF, 0xFFE48A, 0xFFF3C8, .28, { 0xFFFFFF, 0xFFD95E, 0xF08AA4 } };
+static const ScPal SC_NIGHT = { 0x0C1224, 0x233058, 0x25364C, 0x1E2E40, 0x1A2A36, 0x101C26, 0x1A1A22,
+                                0x2E3858, 0x252E4A, 0xE8EEF5, 0x2A3456, .10, { 0x5A6A8A, 0x6A6A5A, 0x6A5A72 } };
+static const ScPal SC_DUSK_SKY = { 0xC75A4A, 0xF6B46A, 0, 0, 0, 0, 0, 0xFFD9B8, 0xE89A7C, 0xFFF1C8, 0xFFD29A, .22, { 0, 0, 0 } };
+
+// the role colours of a tree, pine, palm or rock standing on `base`
+static void scTreeKeys(ScKey *k, const ScPal &p, Rgb base, Rgb dark) {
+  k[0] = { '1', dark };
+  k[1] = { '2', scMix(base, 0xFFFFFF, p.lit + .1) };
+  k[2] = { '3', scMix(base, dark, .25) };
+  k[3] = { '4', scMix(base, dark, .6) };
+  k[4] = { '5', p.trunk };
+}
+static void scRole(const char *const *rows, int nr, int x, int y, int s, const ScPal &p, Rgb base) {
+  ScKey k[5];
+  scTreeKeys(k, p, base, p.dark);
+  scSprite(rows, nr, x, y, s, k, 5);
+}
+
+// ----- sky, sun and moon, clouds -----
+static void scSky(Rgb top, Rgb bot) {
+  Rgb c[3] = { top, scMix(top, bot, .5), bot };
+  const int edge[4] = { 0, 124, 196, 300 };
+  for (int i = 0; i < 3; i++) scRect(0, edge[i], V2_W, edge[i + 1], c[i]);
+  for (int i = 1; i <= 2; i++)  // two rows of checker each side of where the bands meet
+    for (int y = edge[i] - 8; y < edge[i] + 8; y += 4)
+      for (int x = 0; x < V2_W; x += 4)
+        if ((x / 4 + y / 4) % 2 == 0) scCell(x, y, y < edge[i] ? c[i] : c[i - 1]);
+}
+static void scDisc(int x, int y, int r, Rgb col, int ox, int oy) {
+  for (int cy = y - r - 4; cy < y + r + 4; cy += 4)
+    for (int cx = x - r - 4; cx < x + r + 4; cx += 4) {
+      int dx = cx + 2 - x - ox, dy = cy + 2 - y - oy;
+      if (dx * dx + dy * dy <= r * r) scCell(cx / 4 * 4, cy / 4 * 4, col);
+    }
+}
+static const int16_t SC_STARS[10][2] = { {70, 130}, {118, 96}, {160, 158}, {342, 74}, {334, 196},
+                                         {404, 120}, {96, 200}, {268, 152}, {392, 176}, {196, 140} };  // clear of the name
+// the sun in its halo, fading out in a checker; at night a crescent moon and square stars
+static void scSun(const ScPal &p, bool night, int x, int y) {
+  Rgb mid = scMix(p.top, p.bot, .5);
+  if (night) {
+    for (auto &s : SC_STARS) scCell(s[0] / 4 * 4, s[1] / 4 * 4, 0xFFFFFF);
+    scDisc(x, y, 22, p.sun, 0, 0);
+    scDisc(x, y, 18, mid, 10, -8);
+    return;
+  }
+  scDisc(x, y, 34, p.halo, 0, 0);
+  for (int cy = y - 34; cy < y + 34; cy += 4)
+    for (int cx = x - 34; cx < x + 34; cx += 4) {
+      int r2 = (cx + 2 - x) * (cx + 2 - x) + (cy + 2 - y) * (cy + 2 - y);
+      if (r2 > 28 * 28 && r2 <= 34 * 34 && (cx / 4 + cy / 4) % 2) scCell(cx / 4 * 4, cy / 4 * 4, mid);
+    }
+  scDisc(x, y, 24, p.sun, 0, 0);
+}
+static void scCloud(const ScPal &p, int x, int y, int s) {
+  const ScKey k[2] = { { 'x', p.cloud }, { 's', p.cloudSh } };
+  scSprite(SPR_V2_CLOUD, 5, x, y, s, k, 2);
+}
+
+// ----- hills -----
+struct ScEll { int16_t x0, y0, x1, y1; };
+struct ScLayer { Rgb col; const ScEll *e; uint8_t n; };
+static const ScEll SC_FAR[3] = { { -120, 214, 230, 500 }, { 200, 200, 600, 520 }, { 20, 226, 446, 330 } };  // [2]: the Mansion's rise
+static const ScEll SC_MID[2] = { { -200, 246, 300, 600 }, { 240, 256, 700, 620 } };
+static const ScEll SC_NEAR[1] = { { -400, 276, 866, 1100 } };
+static const ScEll SC_DUNES[2] = { { -200, 262, 300, 600 }, { 240, 270, 700, 620 } };
+static const ScEll SC_SHORE[1] = { { -400, 284, 866, 1100 } };
+static bool scInEll(float x, float y, const ScEll &e) {
+  float rx = (e.x1 - e.x0) / 2.0f, ry = (e.y1 - e.y0) / 2.0f;
+  float a = (x - (e.x0 + rx)) / rx, b = (y - (e.y0 + ry)) / ry;
+  return a * a + b * b <= 1;
+}
+static int scLay(const ScLayer *L, int nl, float x, float y) {
+  for (int i = nl - 1; i >= 0; i--)
+    for (int k = 0; k < L[i].n; k++)
+      if (scInEll(x, y, L[i].e[k])) return i + 1;
+  return 0;
+}
+// Stepped hills, each with a lit top row and a checker fringe under it. from = 1 draws them all; 2 draws
+// the nearer ones again, over the trees and houses that stand on the far ones.
+static void scHills(const ScLayer *L, int nl, double lit, int from) {
+  Rgb litc[3], half[3];
+  for (int i = 0; i < nl; i++) {
+    litc[i] = scMix(L[i].col, 0xFFFFFF, lit);
+    half[i] = scMix(L[i].col, 0xFFFFFF, lit / 2);
+  }
+  for (int cy = 192; cy < V2_W; cy += 4)  // the hills all start below y 200
+    for (int cx = 0; cx < V2_W; cx += 4) {
+      int l = scLay(L, nl, cx + 2, cy + 2);
+      if (l < from) continue;
+      Rgb c = L[l - 1].col;
+      if (scLay(L, nl, cx + 2, cy + 2 - 4) != l) c = litc[l - 1];
+      else if (scLay(L, nl, cx + 2, cy + 2 - 8) != l && (cx / 4 + cy / 4) % 2 == 0) c = half[l - 1];
+      scCell(cx, cy, c);
+    }
+}
+
+// ----- details -----
+static void scGrass(const ScPal &p, const int16_t (*pts)[2], int n) {
+  const ScKey k[2] = { { 'G', p.dark }, { 'g', scMix(p.near, p.dark, .35) } };
+  for (int i = 0; i < n; i++) scSprite(SPR_V2_TALLGRASS, 5, pts[i][0], pts[i][1], 3, k, 2);
+}
+static void scFlowers(const int16_t (*pts)[2], int n, const Rgb *cols, int nc) {
+  for (int i = 0; i < n; i++) scCell(pts[i][0] / 4 * 4, pts[i][1] / 4 * 4, cols[i % nc]);
+}
+static void scFence(int y, int x0, int x1, Rgb post, Rgb rail, int step) {
+  for (int x = x0; x < x1; x += step) {
+    scRect(x, y - 16, x + 3, y + 3, post);
+    scRect(x, y - 16, x + 3, y - 13, scMix(post, 0xFFFFFF, .3));
+  }
+  scRect(x0, y - 12, x1, y - 9, rail);
+  scRect(x0, y - 4, x1, y - 1, rail);
+}
+static void scHouse(int x, int y, bool lit) {
+  const ScKey k[8] = { { 'k', 0x1B1B25 }, { 'r', 0xE8503A }, { 'R', 0xB53224 }, { 'w', 0xFFFFFF },
+                       { 'b', 0x7CC4EA }, { 'B', 0x4F93C4 }, { 'C', 0x7E5530 }, { 'y', 0xF8D990 } };
+  scSprite(SPR_V2_HOUSE, 12, x, y, 3, k, 8);
+  if (!lit) return;
+  uint8_t g = scGradeTod;  // at night its windows light up, warm and ungraded
+  scGradeTod = 0;
+  const ScKey w[2] = { { 'b', 0xF0C04A }, { 'B', 0xC08410 } };
+  scSprite(SPR_V2_HOUSE, 12, x, y, 3, w, 2);
+  scGradeTod = g;
+}
+
+// ----- the zones -----
+static ScPal scFieldPal() {
+  ScPal p = SC_DAY;
+  p.top = 0xA8DCF0; p.bot = 0xE2F2EA; p.far = 0xA6DC90; p.mid = 0x8FCE7A; p.near = 0x79BD4F; p.dark = 0x4F8A32;
+  return p;
+}
+static ScPal scForestPal() {
+  ScPal p = SC_DAY;
+  p.top = 0x9FD6F0; p.bot = 0xDCEFE4; p.far = 0x5FA36C; p.mid = 0x3F8A4C; p.near = 0x4F9A55; p.dark = 0x1F4A2A; p.lit = .18;
+  return p;
+}
+static ScPal scBeachPal() {
+  ScPal p = SC_DAY;
+  p.near = 0xE2CF98; p.mid = 0xECDCAC; p.dark = 0xB89A5E; p.trunk = 0x8A5A30;
+  return p;
+}
+static ScPal scCavePal() {
+  ScPal p = SC_DAY;
+  p.top = 0x201C2C; p.bot = 0x2F2A3F; p.far = 0x3A3450; p.mid = 0x494258; p.near = 0x544B63; p.dark = 0x1A1624; p.lit = .12;
+  return p;
+}
+static ScPal scMansionPal() {
+  ScPal p = SC_NIGHT;
+  p.top = 0x140F2C; p.bot = 0x2A2350; p.far = 0x241E40; p.mid = 0x1E2034; p.near = 0x25283A; p.dark = 0x0D0B20; p.lit = .12;
+  p.cloud = 0x3A3260; p.cloudSh = 0x2C2650;
+  return p;
+}
+
+// the three hill layers every zone shares (the Mansion adds its rise to the far ones)
+static void scStdHills(const ScPal &p, int from, bool rise = false) {
+  ScLayer L[3] = { { p.far, SC_FAR, (uint8_t)(rise ? 3 : 2) }, { p.mid, SC_MID, 2 }, { p.near, SC_NEAR, 1 } };
+  scHills(L, 3, p.lit, from);
+}
+
+static const int16_t SC_GRASS6[6][2] = { {58, 316}, {112, 300}, {330, 300}, {380, 318}, {40, 344}, {414, 342} };
+static const int16_t SC_FLOWERS5[5][2] = { {168, 324}, {296, 330}, {150, 352}, {318, 356}, {232, 346} };
+
+static void scLandMeadow(const ScPal &p) {
+  static const int16_t trees[5][2] = { {64, 196}, {100, 206}, {326, 194}, {362, 186}, {398, 200} };
+  scStdHills(p, 1);
+  for (auto &t : trees) scRole(SPR_V2_TREE, 10, t[0], t[1], 3, p, p.mid);
+  scStdHills(p, 2);
+  scGrass(p, SC_GRASS6, 6);
+  scFlowers(SC_FLOWERS5, 5, p.fl, 3);
+}
+
+static void scLandField(const ScPal &p, bool night) {
+  static const int16_t trees[3][2] = { {326, 194}, {362, 186}, {398, 200} };
+  const ScKey bird[1] = { { 'k', 0x18181F } };
+  scSprite(SPR_V2_BIRD_UP, 3, 196, 150, 3, bird, 1);
+  scSprite(SPR_V2_BIRD_UP, 3, 226, 140, 3, bird, 1);
+  scStdHills(p, 1);
+  scHouse(50, 186, night);
+  for (auto &t : trees) scRole(SPR_V2_TREE, 10, t[0], t[1], 3, p, p.mid);
+  scStdHills(p, 2);
+  scFence(262, 0, 160, 0x9A6F43, 0xB38A58, 24);  // the Field tile's wooden fence
+  scFence(266, 312, 466, 0x9A6F43, 0xB38A58, 24);
+  scGrass(p, SC_GRASS6, 6);
+  scFlowers(SC_FLOWERS5, 5, p.fl, 3);
+}
+
+static void scLandForest(const ScPal &p) {
+  static const int16_t big[4][2] = { {14, 246}, {52, 258}, {384, 254}, {418, 244} };
+  static const int16_t grass[4][2] = { {112, 300}, {330, 300}, {40, 344}, {414, 342} };
+  static const int16_t flowers[3][2] = { {150, 330}, {300, 336}, {180, 352} };
+  const Rgb pink = 0xE9587A;
+  scStdHills(p, 1);
+  for (int tx = 0; tx < V2_W; tx += 26) {  // a wall of pines on the far hills, open behind the pet
+    if (tx > 150 && tx < 300) continue;
+    scRole(SPR_V2_PINE, 12, tx - 10, 178 + (tx * 37 % 18), 3, p, p.far);
+  }
+  scStdHills(p, 2);
+  for (auto &t : big) scRole(SPR_V2_PINE, 12, t[0], t[1], 4, p, p.mid);
+  scGrass(p, grass, 4);
+  scFlowers(flowers, 3, &pink, 1);
+}
+
+static void scLandBeach(const ScPal &p) {
+  static const int16_t glint[25][2] = {  // where the mockup's waves glint (its random.Random(3))
+    {120, 236}, {300, 236}, {276, 236}, {64, 236}, {188, 236}, {308, 248}, {240, 248}, {320, 248}, {296, 248},
+    {32, 248}, {308, 260}, {4, 260}, {464, 260}, {428, 260}, {240, 260}, {132, 272}, {280, 272}, {116, 272},
+    {96, 272}, {364, 272}, {240, 284}, {276, 284}, {428, 284}, {280, 284}, {240, 284} };
+  const Rgb sea = 0x4F96C4, seaHi = 0xBFE6F5;
+  scRect(0, 224, V2_W, 300, sea);
+  scRect(0, 224, V2_W, 227, scMix(sea, 0xFFFFFF, .35));  // the horizon
+  for (auto &g : glint) scRect(g[0], g[1], g[0] + 11, g[1] + 3, g[1] < 260 ? seaHi : scMix(seaHi, sea, .4));
+  ScLayer L[2] = { { p.mid, SC_DUNES, 2 }, { p.near, SC_SHORE, 1 } };
+  scHills(L, 2, p.lit, 1);
+  ScKey palm[5];  // palms on the dunes, a size up so they read at the Knomi's size
+  scTreeKeys(palm, p, 0x58B868, 0x2F6A3A);
+  scSprite(SPR_V2_PALM, 12, 34, 224, 4, palm, 5);
+  scSprite(SPR_V2_PALM, 12, 368, 236, 4, palm, 5);
+  scHills(L, 2, p.lit, 2);
+  const ScKey shell[3] = { { 'p', 0xF08AA4 }, { 'w', 0xFFFFFF }, { 'o', 0xF5863D } };
+  scSprite(SPR_V2_STARFISH, 4, 96, 318, 3, shell, 3);
+  scSprite(SPR_V2_SHELL, 3, 350, 324, 3, shell, 3);
+  scSprite(SPR_V2_STARFISH, 4, 60, 346, 3, shell, 3);
+  scSprite(SPR_V2_SHELL, 3, 396, 344, 3, shell, 3);
+  const ScKey crab[3] = { { 'r', 0xE86F5F }, { 'w', 0xFFFFFF }, { 'k', 0x1B1B25 } };
+  scSprite(SPR_V2_CRAB, 6, 300, 332, 3, crab, 3);
+}
+
+static void scCave() {
+  const ScPal p = scCavePal();
+  scRect(0, 0, V2_W, V2_W, p.top);
+  for (int cy = 0; cy < 300; cy += 4)  // the back wall: a lighter hollow in the middle
+    for (int cx = 0; cx < V2_W; cx += 4) {
+      float a = (cx + 2 - 233) / 150.0f, b = (cy + 2 - 190) / 130.0f, r = a * a + b * b;
+      if (r < 1) scCell(cx, cy, (r > .45f || (r > .35f && (cx / 4 + cy / 4) % 2)) ? p.bot : 0x3A3450);
+    }
+  static const int16_t drip[6][3] = { {40, 70, 120}, {110, 40, 80}, {170, 30, 60}, {300, 36, 70}, {360, 44, 96}, {430, 70, 130} };
+  for (auto &s : drip)  // stalactites, lit on their left edge
+    for (int cy = 0; cy < s[2]; cy += 4) {
+      float half = s[1] / 2.0f * (1 - (float)cy / s[2]);
+      for (int cx = (int)(s[0] - half) / 4 * 4; cx <= (int)(s[0] + half); cx += 4)
+        scCell(cx, cy, cx < s[0] - half + 4 ? 0x5A5270 : 0x494258);
+    }
+  scStdHills(p, 1);
+  const ScKey cr[2] = { { 't', 0x8FF0E0 }, { 'T', 0x3FB8A8 } };
+  static const int16_t back[4][3] = { {70, 196, 3}, {96, 206, 2}, {350, 192, 3}, {378, 204, 2} };
+  static const int16_t front[4][3] = { {60, 300, 4}, {90, 316, 3}, {374, 304, 4}, {404, 324, 3} };
+  for (auto &c : back) scSprite(SPR_V2_CRYSTAL, 6, c[0], c[1], c[2], cr, 2);
+  scStdHills(p, 2);
+  for (auto &c : front) scSprite(SPR_V2_CRYSTAL, 6, c[0], c[1], c[2], cr, 2);
+  scRole(SPR_V2_ROCK, 5, 150, 330, 3, p, p.near);
+  scRole(SPR_V2_ROCK, 5, 300, 336, 3, p, p.near);
+  static const int16_t glint[6][2] = { {120, 150}, {340, 140}, {200, 230}, {260, 210}, {150, 260}, {320, 250} };
+  for (int k = 0; k < 6; k++) scCell(glint[k][0] / 4 * 4, glint[k][1] / 4 * 4, k % 2 ? 0x8FF0E0 : 0x3FB8A8);
+}
+
+// MANSION_PAL in sprites_v2.h has no I, J or O: a letter isn't its index
+static Rgb scMansionCol(char c) {
+  switch (c) {
+    case 'A': return 0x3D3262; case 'B': return 0x2C2448; case 'C': return 0x342A55; case 'D': return 0x1E1838;
+    case 'E': return 0x4E4280; case 'F': return 0x7A6AA8; case 'G': return 0x2A2244; case 'H': return 0x4A2E1A;
+    case 'K': return 0x0D0B20; case 'L': return 0xF0C04A; case 'M': return 0x141024; case 'N': return 0xFFF0B0;
+    case 'P': return 0xB070F0;
+  }
+  return 0;
+}
+// the big mansion at 4x: outlined (every empty cell touching it is ink), then moonlight on its left edges
+static void scMansion(int x, int y) {
+  const int MW = 58, MH = 34, s = 4;
+  auto at = [&](int cx, int cy) -> char {
+    if (cx < 0 || cy < 0 || cx >= MW || cy >= MH) return '.';
+    return SPR_V2_MANSION[cy][cx];
+  };
+  for (int cy = 0; cy < MH; cy++)  // as the mockup: the outline stays inside the sprite's grid
+    for (int cx = 0; cx < MW; cx++)
+      if (at(cx, cy) == '.' && (at(cx + 1, cy) != '.' || at(cx - 1, cy) != '.' || at(cx, cy + 1) != '.' || at(cx, cy - 1) != '.'))
+        scRect(x + cx * s, y + cy * s, x + cx * s + s - 1, y + cy * s + s - 1, 0x0D0B20);
+  for (int cy = 0; cy < MH; cy++)
+    for (int cx = 0; cx < MW; cx++) {
+      char c = at(cx, cy);
+      if (c == '.') continue;
+      Rgb col = ((c == 'A' || c == 'C') && at(cx - 1, cy) == '.') ? 0x5A4C8A : scMansionCol(c);
+      scRect(x + cx * s, y + cy * s, x + cx * s + s - 1, y + cy * s + s - 1, col);
+    }
+}
+
+static void scMansionZone() {
+  const ScPal p = scMansionPal();
+  scSky(p.top, p.bot);
+  scSun(p, true, 372, 128);
+  scCloud(p, 60, 150, 3);
+  scStdHills(p, 1, true);
+  scMansion(233 - 58 * 2, 230 - 34 * 4);  // centred behind the pet, its walls standing on the rise
+  const ScKey bare[1] = { { '1', p.dark } };
+  scSprite(SPR_V2_BARE, 11, 28, 170, 4, bare, 1);
+  scStdHills(p, 2);
+  static const int16_t stones[7][3] = { {352, 258, 3}, {378, 252, 3}, {404, 262, 3}, {428, 256, 3}, {364, 286, 4}, {402, 290, 4}, {436, 284, 3} };
+  const ScKey stone[2] = { { 'o', 0x0D0B20 }, { 's', 0x5A5F7C } };
+  for (int i = 0; i < 7; i++)  // the graveyard down the right slope
+    if (i % 3 == 1) scSprite(SPR_V2_CROSS, 7, stones[i][0], stones[i][1], stones[i][2], stone, 2);
+    else scSprite(SPR_V2_TOMB, 7, stones[i][0], stones[i][1], stones[i][2], stone, 2);
+  scFence(312, 340, 466, 0x0D0B20, 0x0D0B20, 18);  // behind an iron fence
+  for (int x = 340; x < 466; x += 18) scRect(x + 1, 292, x + 2, 295, 0x0D0B20);
+  static const int16_t grass[2][2] = { {40, 330}, {120, 304} };
+  scGrass(p, grass, 2);
+}
+
+// Draws a whole scene on the canvas. tod: 0 day, 1 dusk, 2 night. The Cave and the Mansion look the same at
+// every hour; the others are drawn by day with their land graded, under a dusk or a night sky.
+static void scPaint(uint8_t zone, uint8_t tod) {
+  scFb = (uint16_t *)gfx->getFramebuffer();
+  scGradeTod = 0;
+  if (zone == Z_CAVE) { scCave(); return; }
+  if (zone == Z_MANSION) { scMansionZone(); return; }
+  ScPal p = zone == Z_FIELD ? scFieldPal() : zone == Z_FOREST ? scForestPal() : zone == Z_BEACH ? scBeachPal() : SC_DAY;
+  if (tod == 0) {  // the zone's own sky
+    scSky(p.top, p.bot);
+    if (zone == Z_FIELD) {
+      scSun(p, false, 110, 134);
+      scCloud(p, 260, 110, 4);
+      scCloud(p, 330, 182, 3);
+    } else if (zone == Z_FOREST) {
+      scSun(p, false, 352, 128);
+      scCloud(p, 118, 104, 4);
+    } else {
+      scSun(p, false, 352, 128);
+      scCloud(p, 116, 104, 4);
+      scCloud(p, 292, 184, 4);
+    }
+  } else {  // the dusk or night sky, the same over every zone
+    const ScPal &s = tod == 2 ? SC_NIGHT : SC_DUSK_SKY;
+    scSky(s.top, s.bot);
+    scSun(s, tod == 2, 352, 128);
+    scCloud(s, 116, 104, 4);
+    scCloud(s, 292, 184, 4);
+  }
+  scGradeTod = tod;
+  if (zone == Z_FIELD) scLandField(p, tod == 2);
+  else if (zone == Z_FOREST) scLandForest(p);
+  else if (zone == Z_BEACH) scLandBeach(p);
+  else scLandMeadow(p);
+  scGradeTod = 0;
+}
+
+// the home's scene: from the buffer, drawn again only when the zone or the time of day changes
+static uint16_t *v2SceneBuf = nullptr;
+static int v2SceneKey = -1;
+static void v2DrawScene(uint8_t zone, uint8_t tod) {
+  if (zone == Z_CAVE || zone == Z_MANSION) tod = 0;
+  int key = zone * 4 + tod;
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  if (!v2SceneBuf) v2SceneBuf = (uint16_t *)ps_malloc(V2_W * V2_W * sizeof(uint16_t));
+  if (key == v2SceneKey && v2SceneBuf) {
+    memcpy(fb, v2SceneBuf, V2_W * V2_W * sizeof(uint16_t));
+    return;
+  }
+  scPaint(zone, tod);  // without the buffer (no memory) it's drawn every frame
+  if (v2SceneBuf) {
+    memcpy(v2SceneBuf, fb, V2_W * V2_W * sizeof(uint16_t));
+    v2SceneKey = key;
+  }
+}
+
+// the home's zone (an egg's is the meadow) and its time of day: night while it sleeps or after 8 pm,
+// dusk in the hours either side of the day
+static uint8_t v2HomeZone() { return pet.isEgg() ? Z_MEADOW : zoneOf(pet.speciesId); }
+static uint8_t v2HomeTod() {
+  int h = sceneHour();
+  if (pet.sleeping || h < 6 || h >= 20) return 2;
+  return (h < 8 || h >= 18) ? 1 : 0;
+}
+
+// a soft shadow under the pet, on the 4 px grid, wherever it stands
+static void v2PetShadow(int cx, int cy, int rx) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  int a = gNight || gV2Dark ? 90 : 77;  // 35% at night, 30% by day
+  for (int y = (cy - 8) / 4 * 4; y <= cy + 8; y += 4)
+    for (int x = (cx - rx - 4) / 4 * 4; x <= cx + rx + 4; x += 4) {
+      float dx = (x + 2 - cx) / (float)rx, dy = (y + 2 - cy) / 7.0f;
+      if (dx * dx + dy * dy > 1) continue;
+      for (int yy = y; yy < y + 4 && yy < V2_W; yy++)
+        for (int xx = x; xx < x + 4 && xx < V2_W; xx++)
+          if (xx >= 0 && yy >= 0) fb[yy * V2_W + xx] = v2Blend(fb[yy * V2_W + xx], 0, a);
+    }
+}
+
+// a name over a dark scene: the Pokemon's own colour, brightened (Gengar's comes out lilac)
+static uint16_t v2LightAccent(uint16_t c) {
+  int r = (c >> 11) << 3, g = ((c >> 5) & 63) << 2, b = (c & 31) << 3, m = r > g ? (r > b ? r : b) : (g > b ? g : b);
+  if (m < 1) m = 1;
+  Rgb s = scMix(scRgb(r * 255 / m, g * 255 / m, b * 255 / m), 0xFFFFFF, .25);
+  return sc565(s);
 }

@@ -608,6 +608,13 @@ static void testGame() {
     runTicks(300);
     const uint16_t *fb = gfx->getFramebuffer();
     CHECK(fb[329 * 466 + 429] == 0x5DCD);  // r 218 at 26 degrees: near the bar's lower end, clear of its label
+    // the scene follows the Pokemon's Travel zone, and is drawn again when that changes
+    pet.speciesId = 74;  // Geodude: the Cave, the same at every hour
+    runTicks(300);
+    CHECK(fb[4 * 466 + 233] == 0x20E5);  // the cave's top, #201c2c
+    pet.speciesId = 94;  // Gengar: the Mansion
+    runTicks(300);
+    CHECK(fb[4 * 466 + 233] == 0x1065);  // its night sky, #140f2c
   }
 #endif
 
