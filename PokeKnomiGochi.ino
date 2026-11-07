@@ -9772,6 +9772,11 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   if (zoneScreen == ZS_PICK) {
     int z = zonePickAt(x, y);
     if (z < 0) return false;
+#if UI_V2
+    int16_t bx, by, bw;
+    v2IsleTagBox(z, bx, by, bw);  // V2: round the wedge's tag
+    return pressSet(t, bx, by, bw, 44, z == ZONE_RANDOM ? T(S_RANDOM_BATTLE) : T(ZONE_NAME[z]));
+#endif
     return pressSet(t, ZONE_XY[z][0] - ZONE_ICON_R, ZONE_XY[z][1] - ZONE_ICON_R, 2 * ZONE_ICON_R, 2 * ZONE_ICON_R,
                     z == ZONE_RANDOM ? T(S_RANDOM_BATTLE) : T(ZONE_NAME[z]));
   }
