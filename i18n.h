@@ -108,7 +108,7 @@ enum StrId : uint8_t {
   S_CART_VOLLEY, S_CART_SHOWDOWN, S_PLAY_WITH_FMT,  // V2: Play together's cartridge titles ("\n" breaks a line), "with %s"
   S_PLAY_AGAIN,  // V2: the button at the end of a game
   S_TAP_ONE, S_CHOOSE_Q_FMT,  // V2: the starter screen's line under its board, and "Choose PIKACHU?"
-  S_THANKS_DAYS_FMT,  // V2: under a goodbye's "Goodbye, GENGAR!" (S_VISIT_BYE_FMT): "Thank you for 4 days"
+  S_THANKS_DAYS_FMT,  // V2: under a goodbye's "Goodbye, GENGAR!" (the visitor's string): "Thank you for 4 days"
 #endif
   STR_COUNT
 };
