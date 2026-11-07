@@ -2191,7 +2191,8 @@ bool render() {
     uint8_t zone = v2HomeZone();
     gV2Dark = zone == Z_CAVE || zone == Z_MANSION;
     v2WalkUpdate();
-    if (zone == Z_MEADOW || !v2DrawWalkScene(zone, v2HomeTod())) v2DrawScene(zone, v2HomeTod());
+    uint8_t tod = pet.ceremony && pet.ceremony != CER_RUNAWAY ? 1 : v2HomeTod();  // a goodbye at sunset (r11-farewell.png)
+    if (zone == Z_MEADOW || !v2DrawWalkScene(zone, tod)) v2DrawScene(zone, tod);
   }
 #else
   drawScene(pet.isEgg() ? 0 : DEX_TBL[pet.speciesId].biome, millis(), gNight);
@@ -2202,7 +2203,17 @@ bool render() {
     const char *msg = (pet.ceremony == CER_FAREWELL) ? T(S_FAREWELL)
                       : (pet.ceremony == CER_RUNAWAY) ? T(S_RUNAWAY)
                                                       : T(S_GOODBYE);
+#if UI_V2
+    {  // V2: its name and level over the scene; the panel says goodbye (v2Departure())
+      char lv[12];
+      snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
+      drawHeader(pet.nick[0] ? pet.nick : dexName(pet.speciesId), UI_WHITE, "", lv);  // (white: a red name vanishes in the sunset)
+      (void)msg;
+      (void)d;
+    }
+#else
     drawHeader(dexName(pet.speciesId), d.accent, msg, nullptr);
+#endif
     drawCeremony();
     gfx->flush();
     return true;
@@ -9177,6 +9188,12 @@ void drawHeader(const char *name, uint16_t nameColor, const char *msg, const cha
 // ceremony animation (10s): farewell = bow with hearts and it
 // walks away; runaway = it gets scared and runs off. Replaces the idle.
 void drawCeremony() {
+#if UI_V2
+  if (pmd.loaded) {  // V2: it walks away up the hill and over it, hearts or rain, the goodbye panel (starter_v2.h)
+    v2Departure();
+    return;
+  }
+#endif
   if (!pmd.loaded) { drawPet(); return; }  // fallback if there is no PMD sprite
   uint32_t now = millis();
   float t = pet.ceremonyT();               // 0..1 over the 10s
@@ -9725,6 +9742,9 @@ void behNext() {
 }
 
 void drawPetPMD() {
+#if UI_V2
+  if (v2Arrival()) return;  // V2: a new one walking in from behind the hill (starter_v2.h)
+#endif
   uint32_t now = millis();
 
   if (pet.evolving()) {

@@ -61,6 +61,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Voley\nPoke", "Duelo", "con %s",
     "Jugar otra vez!",
     "Toca uno para elegir!", "Elegir a %s?",
+    "Gracias por %u d\241as",
 #endif
   },
   // ---------------- EN ----------------
@@ -117,6 +118,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Poke\nVolley", "Show\ndown", "with %s",
     "Play Again!",
     "Tap one to choose!", "Choose %s?",
+    "Thank you for %u days",
 #endif
   },
   // ---------------- FR ----------------
@@ -173,6 +175,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Volley\nPoke", "Duel", "avec %s",
     "Rejouer!",
     "Touche pour choisir!", "Choisir %s?",
+    "Merci pour ces %u jours",
 #endif
   },
   // ---------------- DE ----------------
@@ -234,6 +237,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Poke\nVolley", "Duell", "mit %s",
     "Nochmal spielen!",
     "Tippe einen an!", "%s w\204hlen?",
+    "Danke f\201r %u Tage",
 #endif
   },
   // ---------------- IT ----------------
@@ -290,6 +294,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Palla\nvolo", "Sfida", "con %s",
     "Gioca ancora!",
     "Tocca per scegliere!", "Scegli %s?",
+    "Grazie per %u giorni",
 #endif
   },
   // ---------------- PT ----------------
@@ -346,6 +351,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Volei\nPoke", "Duelo", "com %s",
     "Jogar de novo!",
     "Toca para escolher!", "Escolher %s?",
+    "Obrigado por %u dias",
 #endif
   },
   // ---------------- JA ----------------
@@ -425,6 +431,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ボール\nバレー", "たいけつ", "%sと",
     "もういっかい!",
     "タッチして えらんでね!", "%sに する?",
+    "%uにち ありがとう",
 #endif
   },
   // ---------------- KO ----------------
@@ -486,6 +493,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "몬스터볼\n배구", "대결", "함께: %s",
     "다시 하기!",
     "하나를 눌러 골라요!", "%s, 고를까요?",
+    "%u일 동안 고마워",
 #endif
   },
 };

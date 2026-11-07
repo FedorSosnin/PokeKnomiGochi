@@ -77,6 +77,7 @@ static int8_t v2StarterSel = -1;        // the one tapped, or -1: they walk
 static int8_t v2StarterAsked = -1;      // the one the question names (it keeps it as it slides down)
 static uint32_t v2StarterSelT = 0;      // when it was tapped: its hop
 static V2Ask v2StarterQ;
+static uint32_t v2ArriveT = 0;  // when a new one started walking in (0: none; v2Arrival() below)
 
 static void v2StarterLoad() {
   if (v2StarterPmd) return;
@@ -164,6 +165,7 @@ static void v2StarterTap(int16_t x, int16_t y) {
     bool shiny = v2StarterPmd && v2StarterPmd[k].shiny;
     v2StarterFree();
     pet.chooseStarter(V2_STARTERS[k], shiny);
+    v2ArriveT = millis();  // it walks in (v2Arrival())
     return;
   }
   int k = v2StarterAt(x, y);
@@ -271,7 +273,7 @@ static void v2PickTap(int16_t x, int16_t y) {
       bool shiny = eggPickShiny;
       v2PickBack();
       eggPickPage = 0;
-      pet.chooseEgg(dex, shiny);
+      if (pet.chooseEgg(dex, shiny)) v2ArriveT = millis();  // it walks in (v2Arrival())
       return;
     }
     if (b == 3) {  // CHOOSE: are you sure?
@@ -306,4 +308,147 @@ static void v2PickTap(int16_t x, int16_t y) {
   if (!dex) return;
   sfxPlay(SFX_TAP);
   v2PickOpen(dex, shiny);
+}
+
+// ----- a goodbye: it walks away up the hill and over it (r11-farewell.png); a new one walks in -----
+// Fedor: "the old pokemon walks backwards into the scene behind the hills", and the new one "walks in from a
+// distance". A goodbye (or a release) is the home's scene at sunset, with the name and level over it and the
+// panel and icons gone: over the ceremony's 10 s it thanks you (a heart pops up over it), turns its back, and
+// walks away up the near hill, smaller and smaller, then over the crest, where the hill hides it as it goes down
+// the far side. Hearts float up and a panel says goodbye ("Thank you for 4 days"). A runaway goes the same way
+// at the hour's light, in the rain, head down first, and the panel says it ran away. A new Pokemon comes the
+// other way: up from behind the crest, toward you, bigger and bigger, to its place, and the home goes on.
+#define V2_CREST_Y 276     // the near hill's top at the middle (V2_HILL_NEAR, on the 4 px grid)
+#define V2_ARRIVE_MS 3600
+// v2ArriveT (declared with the starters): when a new one started walking in (0: none)
+
+// its scale at home, as drawPetPMD() gets it from drawPmdActM()
+static uint8_t v2HomeScale(PmdMon &m) {
+  uint8_t mx = partyScale(partyOthers(), true), s = m.acts[PMD_IDLE].h ? 170 / m.acts[PMD_IDLE].h : 5;
+  if (s < 2) s = 2;
+  return s > mx ? mx : s;
+}
+// a Pokemon at (x, feet), scale s; behind: past the crest, so the hill hides what's under its top line (what
+// was there before it was drawn is put back, grass and pines and all)
+static uint16_t *v2CrestKeep = nullptr;
+#define V2_CREST_KEEP_W 160
+#define V2_CREST_KEEP_H 96
+static void v2CrestPet(PmdMon &m, uint8_t act, int x, int feet, int s, uint32_t t, bool behind) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  int x0 = x - V2_CREST_KEEP_W / 2, h = feet + 4 - V2_CREST_Y;
+  if (h > V2_CREST_KEEP_H) h = V2_CREST_KEEP_H;
+  if (behind && h > 0 && !v2CrestKeep) v2CrestKeep = (uint16_t *)ps_malloc(V2_CREST_KEEP_W * V2_CREST_KEEP_H * sizeof(uint16_t));
+  bool keep = behind && h > 0 && v2CrestKeep && x0 >= 0 && x0 + V2_CREST_KEEP_W <= V2_W;
+  if (keep)
+    for (int r = 0; r < h; r++) memcpy(v2CrestKeep + r * V2_CREST_KEEP_W, fb + (V2_CREST_Y + r) * V2_W + x0, V2_CREST_KEEP_W * 2);
+  if (!behind) v2PetShadow(x, feet - 4, 6 + 9 * s);
+  gPmdForceScale = s;
+  drawPmdActM(m, m.has(act) ? act : PMD_IDLE, x, feet, t, true, false, s);
+  gPmdForceScale = 0;
+  if (keep)
+    for (int r = 0; r < h; r++) memcpy(fb + (V2_CREST_Y + r) * V2_W + x0, v2CrestKeep + r * V2_CREST_KEEP_W, V2_CREST_KEEP_W * 2);
+}
+// a pixel heart, its top left at (x, y)
+static void v2PixHeart(int x, int y, int cell, Rgb col) {
+  static const char *const H[6] = { ".pp.pp.", "ppppppp", "ppppppp", ".ppppp.", "..ppp..", "...p..." };
+  const ScKey k[1] = { { 'p', col } };
+  scSprite(H, 6, x, y, cell, k, 1);
+}
+
+static void v2Departure() {
+  if (!pmd.loaded) return;
+  uint32_t now = millis();
+  float t = pet.ceremonyT();
+  bool ranAway = pet.ceremony == CER_RUNAWAY;
+  int s0 = v2HomeScale(pmd), h1 = pmd.acts[PMD_WALKU].h ? pmd.acts[PMD_WALKU].h : pmd.acts[PMD_IDLE].h;
+  scScreen();
+  scGradeTod = 0;
+  if (ranAway) {  // rain, slanting down the screen
+    for (int i = 0; i < 44; i++) {
+      int rx = (i * 47 + now / 3) % 470, ry = (i * 91 + now / 2) % 480 - 12;
+      scGridRect(rx, ry, rx + 4, ry + 12, 0x8AB4E0);
+    }
+  } else {  // hearts floating up, swaying, over the sky
+    static const int16_t HX[6] = { 120, 300, 190, 350, 90, 250 };
+    for (int i = 0; i < 6; i++) {
+      int y = 250 - (int)((now / 12 + i * 61) % 170), x = HX[i] + (int)(8 * sinf(now * 0.003f + i));
+      v2PixHeart(x, y, 3, i % 2 ? 0xF080A0 : 0xE85878);
+    }
+  }
+  // where it is: thanking you, turning its back, walking up the hill, then over the crest
+  const float T1 = ranAway ? 0.20f : 0.14f, T2 = T1 + 0.08f, T3 = 0.70f, T4 = 0.88f;
+  uint8_t act = PMD_IDLE;
+  int feet = PET_GROUND, s = s0, x = CX;
+  bool behind = false;
+  uint32_t at = now;
+  if (t < T1) {
+    if (ranAway) {  // head down, trembling
+      act = PMD_HURT;
+      x = CX + (int)(4 * sinf(now * 0.04f));
+    }
+  } else if (t < T2) {  // it turns its back: the views from facing you round to facing away
+    static const uint8_t TURN[5] = { PMD_WALKD, PMD_WALKDL, PMD_WALKL, PMD_WALKUL, PMD_WALKU };
+    act = TURN[(int)((t - T1) / (T2 - T1) * 5) % 5];
+    at = 0;
+  } else if (t < T3) {  // up the hill, smaller and smaller
+    float u = (t - T2) / (T3 - T2);
+    act = PMD_WALKU;
+    s = s0 - (int)(u * (s0 - 1) + 0.5f);
+    feet = PET_GROUND - (int)(u * (PET_GROUND - V2_CREST_Y + 4));
+  } else if (t < T4) {  // over the crest and down the far side, out of sight
+    float u = (t - T3) / (T4 - T3);
+    act = PMD_WALKU;
+    s = 1;
+    feet = V2_CREST_Y - 4 + (int)(u * (h1 + 8));
+    behind = true;
+  } else {
+    act = 0xFF;  // gone
+  }
+  if (act != 0xFF) v2CrestPet(pmd, act, x, feet, s, at, behind);
+  if (!ranAway && t < T1) {  // its thank-you heart, popping up over its head
+    int hy = feet - pmd.acts[PMD_IDLE].h * s0 - 30 - (int)(t / T1 * 24);
+    v2PixHeart(CX - 14, hy, 4, 0xE85878);
+  }
+  // the panel: goodbye, and how long you had it (counting the day it's on); or that it ran away
+  const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
+  v2Panel(96, 312, 370, 380, 12);
+  setSize(2);
+  if (ranAway) {
+    gfx->setTextColor(UI_INK);
+    setCur(centerX(T(S_RUNAWAY), 2), 338);
+    printT(T(S_RUNAWAY));
+    return;
+  }
+  char a[40];
+  char b[40];
+  snprintf(a, sizeof(a), T(S_VISIT_BYE_FMT), nm);
+  snprintf(b, sizeof(b), T(S_THANKS_DAYS_FMT), (unsigned)(1 + pet.ageMinutes / 1440));
+  gfx->setTextColor(UI_INK);
+  setCur(centerX(a, 2), 326);
+  printT(a);
+  gfx->setTextColor(V2_INK_MUTED);
+  setCur(centerX(b, 2), 350);
+  printT(b);
+}
+
+// a new one walking in; false once it's in its place (or with nothing to walk in)
+static bool v2Arrival() {
+  if (!v2ArriveT) return false;
+  uint32_t e = millis() - v2ArriveT;
+  if (e >= V2_ARRIVE_MS || pet.isEgg()) {
+    v2ArriveT = 0;
+    return false;
+  }
+  if (!pmd.loaded) return false;  // (its sprite is still on its way: the walk starts when it's there)
+  float u = e / (float)V2_ARRIVE_MS;
+  int s0 = v2HomeScale(pmd), h1 = pmd.acts[PMD_WALKD].h ? pmd.acts[PMD_WALKD].h : pmd.acts[PMD_IDLE].h;
+  if (u < 0.25f) {  // up from behind the crest
+    float k = u / 0.25f;
+    v2CrestPet(pmd, PMD_WALKD, CX, V2_CREST_Y - 4 + (int)((1 - k) * (h1 + 8)), 1, v2WalkT() + e, true);
+  } else {  // toward you, bigger and bigger
+    float k = (u - 0.25f) / 0.75f;
+    int s = 1 + (int)(k * (s0 - 1) + 0.5f), feet = V2_CREST_Y - 4 + (int)(k * (PET_GROUND - V2_CREST_Y + 4));
+    v2CrestPet(pmd, PMD_WALKD, CX, feet, s, e, false);
+  }
+  return true;
 }

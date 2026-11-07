@@ -91,6 +91,7 @@ static const ExpectedFmt EXPECTED[] = {
 #if UI_V2
   { S_PLAY_WITH_FMT,   "%s" },  // V2: Play together's "with PIKACHU" (menus_v2.h)
   { S_CHOOSE_Q_FMT,    "%s" },  // V2: the starter screen's "Choose PIKACHU?" (starter_v2.h)
+  { S_THANKS_DAYS_FMT, "%u" },  // V2: a goodbye's panel (starter_v2.h)
 #endif
 };
 static const int NUM_EXPECTED = (int)(sizeof(EXPECTED) / sizeof(EXPECTED[0]));
