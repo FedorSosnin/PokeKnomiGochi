@@ -8272,9 +8272,21 @@ void renderShowdown() {
   char b[48];
   // the score: you on the left, the buddy on the right
   setSize(2);
+#if UI_V2
+  if (sdPhase == SD_DONE) {  // V2: the news on a ribbon, the two face to face, the score in a panel
+    if (sdMine() > sdTheirs()) strlcpy(b, T(S_SD_WIN), sizeof(b));
+    else if (sdMine() < sdTheirs()) snprintf(b, sizeof(b), T(S_SD_LOSE_FMT), buddyName());
+    else strlcpy(b, T(S_SD_DRAW), sizeof(b));
+    v2BuddyResult(b, sdMine(), sdTheirs(), buddyPmd[bCur], false);
+    gfx->flush();
+    return;
+  }
+  v2ScorePanel(sdMine(), sdTheirs(), 30);  // V2: the score in a panel
+#else
   snprintf(b, sizeof(b), "%s %u : %u %s", T(S_SD_YOU_LBL), sdMine(), sdTheirs(), buddyName());
   setCur(centerX(b, 2), 44);
   printT(b);
+#endif
   if (sdPhase == SD_DONE) {
 #if UI_V2
     gfx->setTextColor(UI_INK);  // on the burst's light middle
@@ -8297,8 +8309,12 @@ void renderShowdown() {
     gfx->setTextColor(UI_INK);
 #endif
     const char *w = buddyGameReady() ? T(S_SD_READY) : T(S_BUDDY_WAITING);  // waiting for their Ready, GO!
+#if UI_V2
+    v2SmallPanel(w, 214);  // V2: in a small panel
+#else
     setCur(centerX(w, 2), 220);
     printT(w);
+#endif
     drawIntroCard();
     gfx->flush();
     return;
@@ -8312,8 +8328,12 @@ void renderShowdown() {
   } else {
     snprintf(b, sizeof(b), "%u/%u", sdRound + 1, SD_ROUNDS);
   }
+#if UI_V2
+  v2SmallPanel(b, 76);  // V2: the round (or who got it) in a small panel
+#else
   setCur(centerX(b, 2), 72);
   printT(b);
+#endif
   gPmdForceScale = pmdFitScale(quizPmd, PMD_IDLE, 300, 166);
   drawPmdActM(quizPmd, PMD_IDLE, CX, 262, reveal ? millis() : 0, true, !reveal, 8);
   gPmdForceScale = 0;
@@ -8325,10 +8345,14 @@ void renderShowdown() {
     if (reveal && sdOpts[i] == sdAnswer) bg = UI_BAR_OK;
     else if (i == sdMyPick && sdOpts[i] != sdAnswer) bg = UI_BAR_BAD;
     else if (locked) bg = UI_TRACK;  // answered: out until the round ends
+#if UI_V2
+    v2QuizOption(83 + inset, y, 300 - 2 * inset, SD_OPT_H, dexName(sdOpts[i]), bg == UI_TRACK ? C565(0x8e, 0x8c, 0x96) : bg);  // V2
+#else
     gfx->fillRoundRect(83 + inset, y, 300 - 2 * inset, SD_OPT_H, 10, bg);
     gfx->setTextColor(bg == UI_WHITE || bg == UI_TRACK ? UI_INK : UI_WHITE);
     setCur(centerX(dexName(sdOpts[i]), 2), y + 15);
     printT(dexName(sdOpts[i]));
+#endif
   }
   drawIntroCard();
   gfx->flush();
@@ -8539,9 +8563,13 @@ void renderVolley() {
   char b[48];
   gfx->setTextColor(UI_WHITE);
   setSize(2);
+#if UI_V2
+  if (vbPhase != VB_DONE) v2ScorePanel(vbMine, vbTheirs, 30);  // V2: the score in a panel over the net
+#else
   snprintf(b, sizeof(b), "%s %u : %u %s", T(S_SD_YOU_LBL), vbMine, vbTheirs, buddyName());
   setCur(centerX(b, 2), 36);
   printT(b);
+#endif
   // your Pokemon is the paddle
   gPmdForceScale = 2;
 #if UI_V2
@@ -8574,11 +8602,23 @@ void renderVolley() {
       line = b;
     }
   }
+#if UI_V2
+  if (line) v2SmallPanel(line, 186);  // V2: in a small panel
+  if (vbPhase == VB_DONE) {  // V2: as Showdown's end, over the dimmed court
+    if (vbMine > vbTheirs) strlcpy(b, T(S_SD_WIN), sizeof(b));
+    else snprintf(b, sizeof(b), T(S_SD_LOSE_FMT), buddyName());
+    v2BuddyResult(b, vbMine, vbTheirs, buddyPmd[bCur], true);
+    drawIntroCard();
+    gfx->flush();
+    return;
+  }
+#else
   if (line) {
     gfx->setTextColor(UI_WHITE);
     setCur(centerX(line, 2), 190);
     printT(line);
   }
+#endif
   if (vbPhase == VB_DONE) {
     gfx->fillRoundRect(CX - 150, 130, 300, 150, 18, UI_BG_DAY);
     gfx->setTextColor(UI_INK);

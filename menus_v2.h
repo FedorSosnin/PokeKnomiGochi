@@ -2197,13 +2197,13 @@ static void v2QuizOption(int x, int y, int w, int h, const char *name, uint16_t 
 
 // a catch (rooms_px.py caught_screen(), approved): a gold burst, a red ribbon with the news, sparkles round the
 // Pokemon, its stars as pixel stars, what it means for your Pokedex in a panel; the X
-static void v2CaughtBack(const char *news) {
-  v2Cached(114, scBurst, 2);
+// a red ribbon with the news across the top, its ends folded and notched (the caught and showdown screens)
+static void v2Ribbon(const char *news) {
   setSize(2);
   int w = textW(news, 2) + 28;
   if (w < 240) w = 240;
   const uint16_t fold = C565(0x88, 0x2c, 0x2c);
-  for (int sx = -1; sx <= 1; sx += 2) {  // the ribbon's folded ends, notched
+  for (int sx = -1; sx <= 1; sx += 2) {
     int ex = CX + sx * w / 2;
     gfx->fillRect(sx < 0 ? ex - 20 : ex, 58, 21, 29, fold);
     gfx->fillTriangle(ex + sx * 20, 58, ex + sx * 30, 58, ex + sx * 20, 72, fold);
@@ -2215,6 +2215,10 @@ static void v2CaughtBack(const char *news) {
   gfx->setTextColor(UI_WHITE);
   setCur(centerX(news, 2), 64);
   printT(news);
+}
+static void v2CaughtBack(const char *news) {
+  v2Cached(114, scBurst, 2);
+  v2Ribbon(news);
 }
 static void v2CaughtStars(uint8_t n, int lines) {
   static const char *const STAR[7] = { "...k...", "..kfk..", "kkkfkkk", "kfffffk", ".kfffk.", ".kfkfk.", "kk...kk" };
@@ -2231,4 +2235,71 @@ static void v2CaughtStars(uint8_t n, int lines) {
   }
   if (lines > 1) v2Panel(46, 282, 420, 350, 10);  // the lines go at 292 (and 320), as V1's: up to 30 letters
   else v2Panel(92, 282, 374, 318, 10);
+}
+
+// ----- the buddy games: the score, Showdown's round, how it ended (batch3.py volley_play(), showdown_win()) -----
+// the score in a white panel at y: you and the buddy, in capitals
+static void v2ScorePanel(int mine, int theirs, int y) {
+  char b[48], c[48];
+  snprintf(b, sizeof(b), "%s %u : %u %s", T(S_SD_YOU_LBL), mine, theirs, buddyName());
+  v2Caps(b, c, sizeof(c));
+  setSize(2);
+  int w = textW(c, 2) + 28;
+  gfx->fillRoundRect(CX - w / 2 - 3, y - 3, w + 6, 34, 10, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(CX - w / 2, y, w, 28, 8, UI_WHITE);
+  gfx->setTextColor(UI_INK);
+  setCur(centerX(c, 2), y + 6);
+  printT(c);
+}
+// a line in a small white panel (the round, who got it, waiting...)
+static void v2SmallPanel(const char *s, int y) {
+  setSize(2);
+  int w = textW(s, 2) + 24;
+  gfx->fillRoundRect(CX - w / 2 - 2, y - 2, w + 4, 28, 8, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(CX - w / 2, y, w, 24, 6, UI_WHITE);
+  gfx->setTextColor(UI_INK);
+  setCur(centerX(s, 2), y + 5);
+  printT(s);
+}
+// how a buddy game ended (showdown_win()): the news on the ribbon, yours and theirs face to face with VS
+// between, the score in a panel with who's who under it; it closes by itself, as in V1. dim: over the court
+static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, bool dim) {
+  if (dim) v2DimFrame(115);
+  char c[48];
+  v2Ribbon(v2Caps(news, c, sizeof(c)));
+  PmdMon *two[2] = { &pmd, &them };
+  for (int k = 0; k < 2; k++) {
+    PmdMon &m = *two[k];
+    if (!m.loaded) continue;
+    int x = k ? 330 : 140;
+    uint8_t s = pmdFitScale(m, PMD_IDLE, 150, 140);
+    gPmdForceScale = s < 4 ? s : 4;
+    v2PetShadow(x, 240, 40);
+    bool shiny = m.shiny;
+    m.shiny = false;  // (no sparkles over the ribbon)
+    drawPmdActM(m, PMD_IDLE, x, 244, millis(), true, false, 4);
+    m.shiny = shiny;
+    gPmdForceScale = 0;
+  }
+  gfx->setTextColor(UI_WHITE);
+  setSize(3);
+  v2Bold("VS", centerX("VS", 3), 160);
+  v2Panel(120, 252, 346, 322, 12);
+  char b[24];
+  snprintf(b, sizeof(b), "%u : %u", mine, theirs);
+  gfx->setTextColor(UI_INK);
+  setSize(4);
+  int sx = centerX(b, 4);
+  setCur(sx, 262);
+  printT(b);
+  const char *ln = strchr(b, ':');  // who's who, under each number
+  int lx = sx + (int)(ln - b - 1) * 12, rx = sx + (int)(ln - b + 2) * 24 + (int)strlen(ln + 2) * 12;
+  v2Caps(T(S_SD_YOU_LBL), c, sizeof(c));
+  setSize(2);
+  gfx->setTextColor(V2_INK_MUTED);
+  setCur(lx - textW(c, 2) / 2, 300);
+  printT(c);
+  const char *nm = buddyName();
+  setCur(rx - textW(nm, 2) / 2, 300);
+  printT(nm);
 }
