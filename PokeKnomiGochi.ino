@@ -9037,7 +9037,8 @@ void renderZones() {
   dexGridSync(dex);
   snprintf(b, sizeof(b), "%d/%d", pet.zoneCaught(zoneCur), zoneSize(zoneCur));
 #if UI_V2
-  v2GridHead(T(ZONE_NAME[zoneCur]), b, ZONE_GRID_X, ZONE_GRID_Y, ZONE_CELL, 3);  // V2: the board, a white panel
+  char zb[32];
+  v2GridHead(v2Caps(T(ZONE_NAME[zoneCur]), zb, sizeof(zb)), b, ZONE_GRID_X, ZONE_GRID_Y, ZONE_CELL, 3);  // V2: the board, a white panel
 #else
   drawDexGridHead(b, T(ZONE_NAME[zoneCur]), 26);
 #endif
@@ -9052,8 +9053,8 @@ void renderZones() {
     }
   }
 #if UI_V2
-  v2LabelButton(ZONE_BTN_X + 3, ZONE_BTN_Y + 3, ZONE_BTN_X + ZONE_BTN_W - 3, ZONE_BTN_Y + ZONE_BTN_H - 3, T(S_ZONE_SEARCH),
-                ZONE_COLOR[zoneCur]);  // V2: Search as a V2 button; the page as dots
+  v2LabelButton(ZONE_BTN_X + 3, ZONE_BTN_Y + 3, ZONE_BTN_X + ZONE_BTN_W - 3, ZONE_BTN_Y + ZONE_BTN_H - 3,
+                v2Caps(T(S_ZONE_SEARCH), zb, sizeof(zb)), ZONE_COLOR[zoneCur]);  // V2: SEARCH as a V2 button; the page as dots
   int zpages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
   v2Dots(zpages, zonePage, ZONE_PAGE_Y);
 #else
