@@ -6579,7 +6579,12 @@ void drawDexArt(PmdMon &a, uint8_t starsA, PmdMon *b, uint8_t starsB) {
     box[2] = x + half;
     box[3] = ground + down;
     gPmdForceScale = s;
+#if UI_V2
+    uint8_t view = v2SpinAct(*m[i], now);  // V2: it turns round, standing still in each view
+    drawPmdActM(*m[i], view, x, ground - hop, view == PMD_IDLE ? now : 0, true, false, 8);
+#else
     drawPmdActM(*m[i], PMD_IDLE, x, ground - hop, now, true, false, 8);
+#endif
     gPmdForceScale = 0;
     drawStars(x, starY, DEX_STAR_R, i ? starsB : starsA);
     if (patted) {  // the heart pops in beside its head and floats up, under the name

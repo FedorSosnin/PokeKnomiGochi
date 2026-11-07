@@ -88,6 +88,9 @@ static void v2Bedroom(int tod) {
   scRR(408, 230, 416, 238, 0x58B868);
   scRR(368, 194, 372, 200, 0x6A6F84);  // the aerial
   scRR(380, 190, 384, 200, 0x6A6F84);
+  static const char *const BALL[7] = { "..kkk..", ".krrrk.", "krlrrrk", "kkkwkkk", "kwwwwwk", ".kwwwk.", "..kkk.." };
+  static const ScKey BALL_K[4] = { { 'k', 0x1B1B25 }, { 'r', 0xE8503A }, { 'l', 0xF6A08A }, { 'w', 0xFFFFFF } };
+  scSprite(BALL, 7, 388, 172, 4, BALL_K, 4);  // a Poke Ball sitting on top of the TV (Fedor)
   // a plant by the bed, a shelf of books over it, a poster
   scRR(172, 268, 196, 304, 0xC86A3C);
   scRR(172, 268, 196, 272, 0xE08A5A);
@@ -557,10 +560,25 @@ static void v2GridHead(const char *title, const char *count, int x0, int y0, int
   v2Panel(x0 - 6, y0 - 6, x0 + 3 * cell + 6, y0 + rows * cell + 6, 10);
 }
 // an entry's board: its number and name ("???" until it's caught)
+// an entry's name on the board ("???" until it's caught), its number in white under the board (Fedor)
 static void v2DexBoard(int16_t dex, bool reg) {
-  char b[40];
-  snprintf(b, sizeof(b), "N.%03d  %s", dex, reg ? dexName(dex) : "???");
-  v2Sign(b);
+  v2Sign(reg ? dexName(dex) : "???");
+  char num[8];
+  snprintf(num, sizeof(num), "N.%03d", dex);
+  gfx->setTextColor(UI_WHITE);
+  setSize(2);
+  setCur(centerX(num, 2), V2_BOARD_Y + 35);
+  printT(num);
+}
+// An entry's Pokemon turns round, a full turn every 2 s (Fedor): eight views from the packs' walks, 45 degrees
+// apart, each held 250 ms: facing you, then turning to show its left side, its back, its right side, standing
+// still in each view (each walk's first frame), shinies too (Fedor). A pack without all the walks just faces you.
+#define V2_SPIN_STEP_MS 250
+static uint8_t v2SpinAct(const PmdMon &m, uint32_t now) {
+  static const uint8_t VIEW[8] = { PMD_WALKD, PMD_WALKDL, PMD_WALKL, PMD_WALKUL, PMD_WALKU, PMD_WALKUR, PMD_WALKR, PMD_WALKDR };
+  for (uint8_t a : VIEW)
+    if (!m.has(a)) return PMD_IDLE;
+  return VIEW[(now / V2_SPIN_STEP_MS) % 8];
 }
 // under the art: the type chip on the room, then the next form and the fact in a panel (dex_entry())
 static void v2DexInfo(int16_t dex, bool withFact) {

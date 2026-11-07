@@ -18,7 +18,8 @@ Generates /mons/pNNN.bin (and shiny psNNN.bin) in the multi-action TPK2 format:
 
 Acciones: 0 Idle, 1 WalkL, 2 WalkR, 3 Sleep, 4 Eat, 5 Hurt, 6 Attack,
 7 Pose, 8 Hop, 9 Nod, 10 DeepBreath, 11 Sit. Missing ones are skipped.
-In the tail: 12 WalkD (walking toward you) and 13 WalkU (walking away), for V2's walk.
+In the tail: 12 WalkD (walking toward you) and 13 WalkU (walking away), for V2's walk, and the
+diagonals 14 WalkDR, 15 WalkUR, 16 WalkUL, 17 WalkDL, for the Pokedex entry's turn.
 1.51's loader stops after nActs and never reads the tail, so these packs still work there.
 
   python3 tools/pack_pmd.py             # all 151, normal + shiny
@@ -57,10 +58,15 @@ ACTIONS = [
     (10, 'DeepBreath', 0),
     (11, 'Sit', 0),
 ]
-# V2's walk, in the tail: Walk row 0 (down, toward you) and row 4 (up, away from you)
+# V2's walk, in the tail: Walk row 0 (down, toward you) and row 4 (up, away from you), then the four
+# diagonals (rows 1, 3, 5, 7: down-right, up-right, up-left, down-left) for the Pokedex entry's turn
 TAIL = [
     (12, 'Walk', 0),
     (13, 'Walk', 4),
+    (14, 'Walk', 1),
+    (15, 'Walk', 3),
+    (16, 'Walk', 5),
+    (17, 'Walk', 7),
 ]
 
 
