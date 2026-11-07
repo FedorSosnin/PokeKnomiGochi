@@ -2303,3 +2303,189 @@ static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, 
   setCur(rx - textW(nm, 2) / 2, 300);
   printT(nm);
 }
+
+// ----- the home's dialogs and moments (rooms2_px.py release_dialog(), batch3.py medal_banner(), bath(), evolving()) -----
+// V1's colours as V2's: grey buttons get white words
+static uint16_t v2BtnCol(uint16_t c, uint16_t &ink) {
+  if (c == UI_TRACK) {
+    ink = UI_WHITE;
+    return C565(0x8e, 0x8c, 0x96);
+  }
+  if (c == UI_BAR_BAD) return C565(0xe8, 0x50, 0x3a);
+  if (c == UI_BAR_OK) return C565(0x58, 0xb8, 0x68);
+  if (c == UI_BAR_WARN) return C565(0xf0, 0xc0, 0x4a);
+  return c;
+}
+// a question over the dimmed home with two V2 buttons in V1's boxes, where its taps are: evolve or keep, say
+// goodbye or stay, take care of it or let it go, a buddy's invitation
+static void v2ChoiceDialog(const char *q, const char *o1, uint16_t c1, uint16_t t1, const char *o2, uint16_t c2, uint16_t t2) {
+  dimFrame();
+  v2Panel(73, 156, 393, 344, 12);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(q, 2), 178);
+  printT(q);
+  char a[40], b[40];
+  c1 = v2BtnCol(c1, t1);
+  c2 = v2BtnCol(c2, t2);
+  v2LabelButton(96, 209, 370, 255, v2Caps(o1, a, sizeof(a)), c1, t1);
+  v2LabelButton(96, 271, 370, 317, v2Caps(o2, b, sizeof(b)), c2, t2);
+}
+// "Release GENGAR?" (release_dialog()): YES in red and NO in green, in V1's two boxes
+static void v2ReleaseDialog(const char *q) {
+  dimFrame();
+  v2Panel(84, 160, 382, 324, 12);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(q, 2), 196);
+  printT(q);
+  char a[16], b[16];
+  v2LabelButton(121, 255, 215, 301, v2Caps(T(S_YES), a, sizeof(a)), C565(0xe8, 0x50, 0x3a));
+  v2LabelButton(251, 255, 345, 301, v2Caps(T(S_NO), b, sizeof(b)), C565(0x58, 0xb8, 0x68));
+}
+// the evolve, goodbye and runaway buttons (v2b-evolve.png): V2 buttons under the pet, breathing a little; a long
+// line goes on two
+static void v2CtaButton(int x, int y, int w, int h, const char *s, uint16_t col, uint16_t ink, int period) {
+  int p = SNAP2((int)(2.5f * sinf(millis() * 6.2831853f / period)));
+  v2Button(x - p, y - p, w + 2 * p, h + 2 * p, col);
+  char c[64], l1[64];
+  v2Caps(s, c, sizeof(c));
+  setSize(2);
+  gfx->setTextColor(ink);
+  if (textW(c, 2) <= w - 24) {
+    setCur(centerX(c, 2), y + h / 2 - 7);
+    printT(c);
+    return;
+  }
+  int n = (int)strlen(c), cut = -1;
+  for (int i = 1; i < n; i++)
+    if (c[i] == ' ' && (cut < 0 || abs(2 * i - n) < abs(2 * cut - n))) cut = i;
+  if (cut < 0) cut = n;
+  snprintf(l1, sizeof(l1), "%.*s", cut, c);
+  setCur(centerX(l1, 2), y + h / 2 - 19);
+  printT(l1);
+  if (cut < n) {
+    setCur(centerX(c + cut + 1, 2), y + h / 2 + 3);
+    printT(c + cut + 1);
+  }
+}
+
+// a new medal (medal_banner()): a pixel medal on a red and blue ribbon, the news in a panel under it: "MEDAL!"
+// in gold and its name big; white pixel sparkles twinkle once it has settled. A streak's has a flame. dy: as
+// it slides in (V1's)
+static void v2MedalBanner(const char *l1, const char *l2, bool medal, int dy) {
+  scScreen();
+  scGradeTod = 0;
+  const uint16_t red = C565(0xc8, 0x50, 0x50), blue = C565(0x4f, 0x93, 0xc4);
+  for (int k = 0; k < 2; k++) {  // the ribbon
+    int x0 = 205 + 28 * k, t = 104 + dy, b = 150 + dy;
+    uint16_t c = k ? blue : red;
+    gfx->fillRect(x0, t, 29, b - t - 10, c);
+    gfx->fillTriangle(x0, b - 10, x0 + 14, b - 10, x0, b, c);
+    gfx->fillTriangle(x0 + 14, b - 10, x0 + 28, b - 10, x0 + 28, b, c);
+  }
+  scOval(scE(197, 126 + dy, 269, 198 + dy), 0xC08410);
+  scOval(scE(203, 132 + dy, 263, 192 + dy), 0xF0C04A, 0xFFD95E);
+  if (medal) {
+    static const char *const STAR[7] = { "...k...", "..kfk..", "kkkfkkk", "kfffffk", ".kfffk.", ".kfkfk.", "kk...kk" };
+    const ScKey k[2] = { { 'k', 0x8A5A10 }, { 'f', 0xFFFFFF } };
+    scSprite(STAR, 7, 223, 152 + dy, 3, k, 2);
+  } else {
+    static const char *const FLAME[8] = { "...r...", "..rr...", "..rrr..", ".rryrr.", ".ryyyr.", "rryyyrr", ".ryyyr.", "..rrr.." };
+    const ScKey k[2] = { { 'r', 0xE8503A }, { 'y', 0xFFE060 } };
+    scSprite(FLAME, 8, 223, 150 + dy, 3, k, 2);
+  }
+  v2Panel(104, 204 + dy, 362, 266 + dy, 10);
+  gfx->setTextColor(C565(0xc0, 0x84, 0x10));
+  setSize(2);
+  setCur(centerX(l1, 2), 213 + dy);
+  printT(l1);
+  int s = textW(l2, 3) <= 240 ? 3 : 2;
+  gfx->setTextColor(UI_INK);
+  setSize(s);
+  v2Bold(l2, centerX(l2, s), (s == 3 ? 234 : 238) + dy);
+  if (dy) return;
+  static const int16_t SP[4][2] = { { 180, 148 }, { 290, 138 }, { 300, 190 }, { 166, 194 } };
+  uint32_t beat = millis() / 350;
+  for (int i = 0; i < 4; i++) {
+    if ((beat + i) % 4 == 0) continue;  // one resting at a time: they twinkle
+    scGridRect(SP[i][0], SP[i][1] - 8, SP[i][0] + 4, SP[i][1] + 12, 0xFFFFFF);
+    scGridRect(SP[i][0] - 8, SP[i][1], SP[i][0] + 12, SP[i][1] + 4, 0xFFFFFF);
+  }
+}
+
+// the bath (bath()): soap bubbles as pixel bubbles, and the V2 rubber duck facing its Pokemon
+static void v2Bubble(int x, int y, int r) {
+  scScreen();
+  scGradeTod = 0;
+  scOval(scE(x - r, y - r, x + r, y + r), 0xD6ECF8, 0xFFFFFF);
+  scGridRect(x - r / 2, y - r / 2, x - r / 2 + 4, y - r / 2 + 4, 0xFFFFFF);
+}
+static void v2BathDuck(int x, int y, bool faceLeft) {  // its 14 x 12 at 3x; it looks right as drawn
+  scScreen();
+  scGradeTod = 0;
+  for (int j = 0; j < 12; j++)
+    for (int i = 0; i < 14; i++) {
+      char ch = SPR_V2_DUCK[j][faceLeft ? 13 - i : i];
+      Rgb c = ch == 'k' ? 0x1B1B25 : ch == 'y' ? 0xFFD95E : ch == 'Y' ? 0xE0B860 : ch == 'o' ? 0xF5863D : ch == 'w' ? 0xFFFFFF : SC_NONE;
+      if (c != SC_NONE) scRect(x + i * 3, y + j * 3, x + i * 3 + 2, y + j * 3 + 2, c);
+    }
+}
+
+// evolving (evolving()): the whole screen goes dark, pale rays turn slowly round it, a gold glow swells and
+// shrinks round its Pokemon, which blinks white between the old form and the new, faster and faster (as V1), white
+// pixel sparkles twinkle round it, and the header says it in white; V1's white flash ends it
+static uint16_t *v2RayAng = nullptr;  // each 4 px cell's angle round the middle, in tenths of a degree
+static void v2EvolveFX(PmdMon &oldForm, float t, const char *name, const char *lv) {
+  uint32_t now = millis();
+  const int cx = CX, cy = PET_GROUND - 50;
+  v2DimFrame(141);  // 55%
+  if (!v2RayAng) {
+    v2RayAng = (uint16_t *)ps_malloc(117 * 117 * sizeof(uint16_t));
+    if (v2RayAng)
+      for (int j = 0; j < 117; j++)
+        for (int i = 0; i < 117; i++) {
+          float a = atan2f(j * 4 + 2 - (float)cy, i * 4 + 2 - (float)cx) * 572.9578f;
+          v2RayAng[j * 117 + i] = (uint16_t)(a < 0 ? a + 3600 : a);
+        }
+  }
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  const uint16_t pale = sc565(0xFFF0B0);
+  int rot = (int)((now / 4) % 240);  // the rays turn: one pair of 12 degrees every 960 ms
+  for (int j = 0; j < 117 && v2RayAng; j++)
+    for (int i = 0; i < 117; i++) {
+      int dx = i * 4 + 2 - cx, dy = j * 4 + 2 - cy;
+      if (dx * dx + dy * dy < 40 * 40 || ((v2RayAng[j * 117 + i] + rot) / 120) % 2) continue;
+      for (int y = j * 4; y < j * 4 + 4 && y < V2_W; y++)
+        for (int x = i * 4; x < i * 4 + 4 && x < V2_W; x++) fb[y * V2_W + x] = v2Blend(fb[y * V2_W + x], pale, 72);  // 28%
+    }
+  scScreen();
+  scGradeTod = 0;
+  int g = (int)(4 * sinf(now * 0.008f)) * 2;  // the glow breathes
+  scOval(scE(cx - 80 - g, cy - 80 - g, cx + 80 + g, cy + 80 + g), 0xF0C04A);
+  scOval(scE(cx - 68 - g, cy - 68 - g, cx + 68 + g, cy + 68 + g), 0xFFD95E);
+  int period = 60 + (int)(220 * (1.0f - t));
+  bool showOld = t < 0.9f && oldForm.loaded && ((now / period) % 2) == 0;
+  if (showOld) drawPmdActM(oldForm, PMD_IDLE, cx, PET_GROUND, 0, true, true, 5);
+  else drawPmdAct(PMD_IDLE, cx, PET_GROUND, 0, true, true, 5);
+  for (int y = cy - 180; y < PET_GROUND + 4; y++)  // the silhouette is drawn in ink: it shines white instead
+    for (int x = cx - 150; x < cx + 150; x++)
+      if (y >= 0 && fb[y * V2_W + x] == INK_K) fb[y * V2_W + x] = UI_WHITE;
+  static const int16_t SP[5][2] = { { 150, 160 }, { 320, 150 }, { 130, 300 }, { 336, 290 }, { 233, 132 } };
+  for (int i = 0; i < 5; i++) {
+    if ((now / 260 + i * 2) % 5 == 0) continue;
+    scGridRect(SP[i][0], SP[i][1] - 10, SP[i][0] + 4, SP[i][1] + 14, 0xFFFFFF);
+    scGridRect(SP[i][0] - 10, SP[i][1], SP[i][0] + 14, SP[i][1] + 4, 0xFFFFFF);
+  }
+  gfx->setTextColor(UI_WHITE);  // the header, in white over it all
+  setSize(2);
+  setCur(centerX(lv, 2), V2_LEVEL_Y);
+  printT(lv);
+  setSize(3);
+  v2Bold(name, centerX(name, 3), V2_NAME_Y);
+  gfx->setTextColor(C565(0xff, 0xf0, 0xb0));
+  setSize(2);
+  setCur(centerX(T(S_EVOLVING), 2), V2_STATUS_Y);
+  printT(T(S_EVOLVING));
+  if (t > 0.9f) gfx->fillCircle(cx, cy, (int)(300 * (t - 0.9f) / 0.1f), UI_WHITE);  // the flash
+}

@@ -455,6 +455,16 @@ static const int16_t STARTER_DEX[3] = { 1, 4, 7 };
 #define STARTER_ROW_Y 110
 #define STARTER_ROW_H 70
 #define STARTER_ROW_GAP 8
+#if UI_V2  // V2: the evolve and goodbye buttons under the pet, over the icons (v2b-evolve.png)
+#define EVO_BTN_W 200
+#define EVO_BTN_H 52
+#define EVO_BTN_X (CX - EVO_BTN_W / 2)
+#define EVO_BTN_Y 292
+#define FAR_BTN_W 380
+#define FAR_BTN_H 56
+#define FAR_BTN_X (CX - FAR_BTN_W / 2)
+#define FAR_BTN_Y 290
+#else
 // evolution CTA button (centered, mid-screen)
 #define EVO_BTN_W 256
 #define EVO_BTN_H 64
@@ -465,6 +475,7 @@ static const int16_t STARTER_DEX[3] = { 1, 4, 7 };
 #define FAR_BTN_H 58
 #define FAR_BTN_X (CX - FAR_BTN_W / 2)
 #define FAR_BTN_Y 176
+#endif
 // the CST9217 signals on the INT pin when there is touch data; we use it to avoid
 // reading the I2C bus while the chip is asleep (that read hung for ~1s)
 volatile bool gTouchIrq = false;
@@ -2263,6 +2274,11 @@ bool render() {
     if (!timeLeft(confirmUntil)) {
       confirmUntil = 0;
     } else {
+#if UI_V2
+      char rq[48];  // V2: "Release GENGAR?" in a panel over the dimmed home
+      snprintf(rq, sizeof(rq), T(S_RELEASE_FMT), dexName(pet.speciesId));
+      v2ReleaseDialog(rq);
+#else
       gfx->fillRoundRect(94, 168, 278, 152, 16, UI_WHITE);
       gfx->drawRoundRect(94, 168, 278, 152, 16, UI_INK);
       // 48 and not 28: the buffer was sized when every string was one byte
@@ -2282,6 +2298,7 @@ bool render() {
       gfx->fillRoundRect(248, 252, 100, 52, 12, UI_BAR_BAD);
       setCur(248 + (100 - textW(T(S_NO), 2)) / 2, 270);
       printT(T(S_NO));
+#endif
     }
   }
 
@@ -2313,6 +2330,12 @@ bool render() {
   // V2: a medal's banner, in front of everything on the screen. A dialog asking something answers taps
   // before the banner does (onTap): over it, the banner would hide the question while a tap pressed the
   // button beneath, so while one is open the banner waits, whole (as found for 1.52's fix)
+  if (pet.evolving()) {  // the evolution, over everything
+    char en[28], el[12];
+    snprintf(en, sizeof(en), "%s%s", pet.shiny ? "*" : "", pet.nick[0] ? pet.nick : dexName(pet.speciesId));
+    snprintf(el, sizeof(el), T(S_LVL_FMT), pet.level());
+    v2EvolveFX(evoPmd, pet.evolveT(), en, el);
+  }
   if (!pet.isEgg() && !choiceKind && !confirmUntil) drawCelebration();
   if (buddyMenuOpen) {  // a buddy's Battle/Trade/Play over all of it, dimmed (its stats page is a screen of its own)
     if (bPeers[bCur].on) v2BuddyActions(buddyTradeOk());
@@ -6014,6 +6037,10 @@ void drawCelebration() {
   }
   if (!l1 || !l2) return;
   int dy = -celebOffset(), by = CELEB_BOX_Y + dy;
+#if UI_V2
+  v2MedalBanner(l1, l2, medal, dy);  // V2: a pixel medal on its ribbon, the news in a panel
+  return;
+#endif
   gfx->fillRoundRect(CELEB_X, by, CELEB_W, CELEB_BOX_H, 16, UI_BAR_WARN);
   gfx->drawRoundRect(CELEB_X, by, CELEB_W, CELEB_BOX_H, 16, UI_INK);
   gfx->drawRoundRect(CELEB_X + 4, by + 4, CELEB_W - 8, CELEB_BOX_H - 8, 12, MEDAL_GOLD);
@@ -9186,6 +9213,10 @@ void drawChoiceDialog() {
     q = T(S_FAR_Q); o1 = T(S_FAR_GO); o2 = T(S_FAR_STAY);
     c1 = UI_BAR_WARN; t1 = UI_INK; c2 = UI_BAR_OK; t2 = UI_WHITE;
   }
+#if UI_V2
+  v2ChoiceDialog(q, o1, c1, t1, o2, c2, t2);  // V2: a panel over the dimmed home, V2 buttons in V1's boxes
+  return;
+#endif
   gfx->fillRoundRect(73, 156, 320, 188, 16, UI_WHITE);
   gfx->drawRoundRect(73, 156, 320, 188, 16, UI_INK);
   gfx->setTextColor(UI_INK);
@@ -9204,6 +9235,10 @@ void drawChoiceDialog() {
 
 // big red CTA button for evolving (pulses to draw attention)
 void drawEvolveButton() {
+#if UI_V2
+  v2CtaButton(EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H, T(S_EVO_TAP), C565(0xe8, 0x50, 0x3a), UI_WHITE, 1000);  // V2
+  return;
+#endif
   uint32_t now = millis();
   int p = (int)(5 * sinf(now * 0.006f));  // pulses: -5..5
   int x = EVO_BTN_X - p, y = EVO_BTN_Y - p, w = EVO_BTN_W + 2 * p, h = EVO_BTN_H + 2 * p;
@@ -9219,6 +9254,14 @@ void drawEvolveButton() {
 
 // gold farewell CTA button: "<name> wants to tell you something..."
 void drawFarewellButton() {
+#if UI_V2
+  {  // V2: a gold V2 button under the pet
+    char fb[52];
+    snprintf(fb, sizeof(fb), T(S_FAREWELL_BTN), pet.nick[0] ? pet.nick : dexName(pet.speciesId));
+    v2CtaButton(FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H, fb, C565(0xf0, 0xc0, 0x4a), UI_INK, 1250);
+    return;
+  }
+#endif
   uint32_t now = millis();
   int p = (int)(4 * sinf(now * 0.005f));
   int x = FAR_BTN_X - p, y = FAR_BTN_Y - p, w = FAR_BTN_W + 2 * p, h = FAR_BTN_H + 2 * p;
@@ -9236,6 +9279,14 @@ void drawFarewellButton() {
 // grim runaway CTA button from neglect: "<name> feels abandoned..."
 // (sad ending: dark blue-gray, slow muted pulse)
 void drawRunawayButton() {
+#if UI_V2
+  {  // V2: a dark slate V2 button under the pet, slow
+    char rb[52];
+    snprintf(rb, sizeof(rb), T(S_RUNAWAY_BTN), pet.nick[0] ? pet.nick : dexName(pet.speciesId));
+    v2CtaButton(FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H, rb, C565(0x3a, 0x44, 0x5a), C565(0xc8, 0xd2, 0xe0), 2000);
+    return;
+  }
+#endif
   uint32_t now = millis();
   int p = (int)(3 * sinf(now * 0.003f));
   int x = FAR_BTN_X - p, y = FAR_BTN_Y - p, w = FAR_BTN_W + 2 * p, h = FAR_BTN_H + 2 * p;
@@ -9253,6 +9304,9 @@ void drawRunawayButton() {
 // epic evolution animation: radial halo + spinning rays + accelerating blink of the
 // sprite + sparks shooting out + final flash
 void drawEvolveFX(uint32_t now) {
+#if UI_V2
+  return;  // V2: drawn over everything at the end of the home's frame (v2EvolveFX)
+#endif
   float t = pet.evolveT();          // 0..1
   int cx = CX, cy = PET_GROUND - 96;
 
@@ -9385,8 +9439,12 @@ void drawBath() {
   uint32_t left = bathUntil - now;
   // the rubber duck, sitting on the ground the whole bath, rocking a little
   int duckX = bathDuckLeft ? (int)beh.x + BATH_DUCK_GAP : (int)beh.x - BATH_DUCK_GAP - 14 * BATH_DUCK_S;  // it follows the pet
+#if UI_V2
+  v2BathDuck(duckX, PET_GROUND - 12 * BATH_DUCK_S - ((now / 300) % 2) * 2, bathDuckLeft);  // V2: the V2 duck, facing its Pokemon
+#else
   drawMap(bathDuckLeft ? SPR_BATH_DUCK : SPR_BATH_DUCK_R, 14, duckX,
           PET_GROUND - 13 * BATH_DUCK_S - ((now / 300) % 2) * 2, BATH_DUCK_S, false);
+#endif
   if (left > 800) {
     // drops fall over the pet and splash where they land, each fall a little to one side;
     // soap bubbles swell up around it, sway and drift up
@@ -9400,9 +9458,13 @@ void drawBath() {
         if (el < 500) r = r * (int)el / 500;  // they swell in
         if (r < 2) continue;
         int bx = (int)beh.x + d.x + (int)(sinf(t + d.ph) * 6), by = d.y - (int)(el / 90);
+#if UI_V2
+        v2Bubble(bx, by, r);  // V2: a pixel bubble
+#else
         gfx->fillCircle(bx, by, r, UI_WHITE);
         gfx->drawCircle(bx, by, r, 0x7E3D);
         gfx->fillCircle(bx - r / 3, by - r / 3, r / 4 > 1 ? r / 4 : 1, UI_BG_DAY);
+#endif
         continue;
       }
       uint32_t p = el * d.v / 100 + d.ph;  // px fallen since the bath began
