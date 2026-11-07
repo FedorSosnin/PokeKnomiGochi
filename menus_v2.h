@@ -1423,9 +1423,11 @@ static void v2Cart(int x, int y, const uint16_t *pic, const char *title, Rgb col
   if (pic) gfx->draw16bitRGBBitmap(lx0 + 3, py, (uint16_t *)pic + (V2_LBL_H - h) * V2_LBL_W, V2_LBL_W, h);
 }
 
-// ----- the labels' pictures, painted each time the menu opens (the hour's light, your Pokemon) -----
+// ----- the labels' pictures: starters in the games' backgrounds (Fedor: "they can lean towards a starter on the
+// labels. No need to make a million of these") -----
 // Eight: the five games in the cartridges' order, then Play together's three. Each is painted at the canvas's
-// top left (not shown): the game's background at half size, then what stands in it at 1x.
+// top left (not shown): the game's background at half size, then what stands in it at 1x. A set is painted when
+// its menu opens and the hour's light (or Berry Drop's title) has changed since: one set all day, near enough.
 static uint16_t *v2LblArt = nullptr;
 static uint16_t *v2Lbl(int i) { return v2LblArt ? v2LblArt + i * V2_LBL_W * V2_LBL_H : nullptr; }
 static bool v2LblStart() {
@@ -1443,17 +1445,8 @@ static void v2LblKeep(int i) {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer(), *a = v2Lbl(i);
   for (int j = 0; j < V2_LBL_H; j++) memcpy(a + j * V2_LBL_W, fb + j * V2_W, V2_LBL_W * sizeof(uint16_t));
 }
-// your Pokemon at 1x, its feet at (cx, feet): a shiny keeps its colours, but its sparkles would fill a label
-static void v2LblMon(uint8_t act, int cx, int feet) {
-  if (!pmd.loaded) return;
-  bool shiny = pmd.shiny;
-  pmd.shiny = false;
-  gPmdForceScale = 1;
-  drawPmdAct(pmd.has(act) ? act : PMD_IDLE, cx, feet, 0, true, false, 1);
-  gPmdForceScale = 0;
-  pmd.shiny = shiny;
-}
-// another Pokemon at 1x from its Pokedex thumbnail, its feet at (cx, feet); sil: its silhouette
+// a Pokemon at 1x from its Pokedex thumbnail (its sprite's first idle frame), its feet at (cx, feet); sil: its
+// silhouette
 static void v2LblThumb(int16_t dex, int cx, int feet, bool sil) {
   const uint8_t *b = dex > 0 && dex <= 151 ? thumbs.get(dex) : nullptr;
   if (!b) return;
@@ -1476,26 +1469,44 @@ static void v2LblOval(int x0, int y0, int x1, int y1, Rgb col) {  // PIL's ellip
       if (dx * dx + dy * dy <= 1.0f && x >= 0 && y >= 0) ((uint16_t *)gfx->getFramebuffer())[y * V2_W + x] = sc565(col);
     }
 }
-// PikaSurf's: the water, your Pokemon on its board, a wake behind (label_surf())
+// PokeRun's Charmander mid-leap, facing the way it runs: its walk's second frame (label_run()), the one picture
+// a thumbnail can't give
+static void v2LblRunner(int cx, int feet) {
+  static PmdMon m;
+  if (!m.load(4)) {
+    v2LblThumb(4, cx, feet, false);
+    return;
+  }
+  uint8_t act = m.has(PMD_WALKR) ? PMD_WALKR : PMD_IDLE;
+  gPmdForceScale = 1;
+  drawPmdActM(m, act, cx, feet, m.acts[act].frames > 1 ? m.acts[act].ms[0] + 1 : 0, true, false, 1);
+  gPmdForceScale = 0;
+  m.unload();
+}
+// PikaSurf's: the water, Pikachu on his board, a wake behind (label_surf())
 static void v2LblSurf() {
   v2SurfWater(0, v2HourTod());
   v2LblBack(152, 188);
   v2LblOval(22, 33, 56, 40, 0xF5863D);  // the board
   v2LblOval(24, 33, 54, 36, 0xFFB070);
-  v2LblMon(PMD_IDLE, 39, 36);
+  v2LblThumb(25, 39, 36, false);
   for (int k = 0; k < 4; k++) gfx->fillRect(6 + k * 3, 38 - k, 5, 2, UI_WHITE);
 }
+static int16_t v2LblKey[2] = { -1, -1 };  // what each set was painted for (-1: not yet)
 static void v2PaintGameLabels() {
   if (!v2LblStart()) return;
-  // Berry Drop: the clearing, your Pokemon under three falling berries. A title on three lines leaves room
-  // for the picture's bottom 30 rows only: two berries, lower down
+  // Berry Drop: the clearing, Bulbasaur under three falling berries. A title on three lines leaves room for the
+  // picture's bottom 30 rows only: two berries, lower down
   char l[3][32];
   bool cjk = v2CartFont(gameLabel(0));
   int lo = v2CartLines(gameLabel(0), l) == 3 ? 13 : 0;
   classicFontEnd(cjk);
+  int16_t key = v2HourTod() * 2 + (lo ? 1 : 0);
+  if (key == v2LblKey[0]) return;
+  v2LblKey[0] = thumbs.loaded ? key : -1;  // (no thumbnails yet: painted again next time)
   v2TiltScene();
   v2LblBack(152, 288);
-  v2LblMon(PMD_IDLE, 40, 41);
+  v2LblThumb(1, 40, 41, false);
   static const char *const *const BERRY[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
   static const int8_t BXY[3][2] = { { 14, 2 }, { 58, 8 }, { 30, -4 } };
   for (int k = 0; k < (lo ? 2 : 3); k++) drawMap(BERRY[k], HOME_ICON_N, BXY[k][0], BXY[k][1] + lo, 1, false);
@@ -1511,45 +1522,47 @@ static void v2PaintGameLabels() {
   printT("?");
   classicFontEnd(cjk);
   v2LblKeep(1);
-  // PokeRun: the forest run, your Pokemon leaping a log, speed lines behind it (its land is 18 px lower)
+  // PokeRun: the forest run, Charmander leaping a log, speed lines behind it (its land is 18 px lower)
   v2RunScene(0);
   v2LblBack(120, 256 + V2_RUN_DY);
   gfx->fillRect(50, 30, 19, 7, sc565(0x8A5A34));
   gfx->fillRect(50, 30, 19, 2, sc565(0xA87048));
   gfx->fillRect(66, 30, 3, 7, sc565(0x6E4428));
-  v2LblMon(PMD_WALKR, 34, 26);
+  v2LblRunner(34, 26);
   for (int k = 0; k < 3; k++) gfx->fillRect(8 + k * 4, 14 + k * 4, 11, 2, UI_WHITE);
   v2LblKeep(2);
   // PikaSurf
   v2LblSurf();
   v2LblKeep(3);
-  // PokeDungeon: a room's wall and its flagstones, your Pokemon by a berry
+  // PokeDungeon: a room's wall and its flagstones, Squirtle by a berry
   static const uint8_t ROOM[3][4] = { { DN_WALL, DN_WALL, DN_WALL, DN_WALL }, { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR }, { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR } };
   for (int ty = 0; ty < 3; ty++)
     for (int tx = 0; tx < 4; tx++) dnDrawTileKind(ROOM[ty][tx], ty == 0, tx + 3, ty + 5, 137 + tx * DN_TILE, 73 + ty * DN_TILE);
   v2LblBack(152, 108);
-  v2LblMon(PMD_IDLE, 40, 40);
+  v2LblThumb(7, 40, 40, false);
   drawMap(SPR_BERRY_ORAN, HOME_ICON_N, 60, 24, 1, false);
   v2LblKeep(4);
 }
 static void v2PaintPlayLabels() {
   if (!v2LblStart()) return;
-  int16_t theirs = buddyDexOk(bPeers[bCur].dex) ? bPeers[bCur].dex : 0;
-  // Poke Ball Volley: the court, the ball over your Pokemon
+  int16_t key = v2HourTod();
+  if (key == v2LblKey[1]) return;
+  v2LblKey[1] = thumbs.loaded ? key : -1;
+  // Poke Ball Volley: the court, the ball over Charmander
   v2CourtScene();
   v2LblBack(152, 208);
   drawMap(SPR_HOME_BALL, HOME_ICON_N, 30, 12, 1, false);
-  v2LblMon(PMD_IDLE, 60, 40);
+  v2LblThumb(4, 60, 40, false);
   v2LblKeep(5);
-  // Who's That? Showdown: yours and theirs face to face on the pink burst
+  // Who's That? Showdown: Bulbasaur and Squirtle face to face on the pink burst
   v2BurstScene(true);
   v2LblBack(152, 156);
-  v2LblMon(PMD_IDLE, 22, 40);
-  v2LblThumb(theirs, 60, 40, false);
+  v2LblThumb(1, 22, 40, false);
+  v2LblThumb(7, 60, 40, false);
   v2LblKeep(6);
-  // PikaSurf together: theirs alongside
+  // PikaSurf together: Squirtle alongside Pikachu
   v2LblSurf();
-  v2LblThumb(theirs, 62, 38, false);
+  v2LblThumb(7, 62, 38, false);
   v2LblKeep(7);
 }
 
