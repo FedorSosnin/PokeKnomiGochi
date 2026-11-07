@@ -1842,3 +1842,261 @@ static void v2TradeDone(int16_t dex, bool shiny) {
   int w = textW(b, 2) + 40;
   v2LabelButton(CX - w / 2, 352, CX + w / 2, 392, b, C565(0x58, 0xb8, 0x68));
 }
+
+// ----- the keyboards: a nickname and a Wi-Fi password (batch3.py keyboard(), wifi_list()) -----
+// "As big as the screen allows" (Fedor): QWERTY, 10 keys of 37 x 52 a row, four rows edge to edge from y 120.
+// Letters (small, or capitals with shift, which locks), numbers and symbols, more symbols; shift and
+// backspace wide on the third row, the layer key, SPACE and OK along the bottom. Between them all, the
+// printable ASCII, as V1's layers. The typed text at size 3 in a panel above, its title over it.
+static const char *const V2_KB[4][3] = {
+  { "qwertyuiop", "asdfghjkl", "zxcvbnm" },
+  { "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM" },
+  { "1234567890", "-/:;()$&@", ".,?!'\"#%" },
+  { "[]{}#%^*+=", "_\\|~<>`\"'", ".,?!'\"#%" },
+};
+#define V2_KW 37
+#define V2_KGAP 4
+#define V2_KH 52
+#define V2_KY0 120
+#define V2_KSTEP (V2_KH + 6)
+#define V2_KWIDE 52
+// a key: a character (32..126), or one of these
+#define V2K_SHIFT 1  // shift (letters), or the other symbols' key
+#define V2K_BKSP 2
+#define V2K_LAYER 3  // 123, or back to ABC
+#define V2K_OK 5
+static int v2KbRowX(int n, int extra) { return 233 - (n * V2_KW + (n - 1) * V2_KGAP + extra) / 2; }
+// every key of layer L with its box, in drawing order; returns how many (at most 40)
+struct V2Key { int16_t x0, y0, x1, y1; int8_t code; };
+static int v2KbKeys(int L, V2Key *k) {
+  int n = 0;
+  for (int r = 0; r < 2; r++) {
+    const char *row = V2_KB[L][r];
+    int len = (int)strlen(row), x = v2KbRowX(len, 0), y = V2_KY0 + r * V2_KSTEP;
+    for (int i = 0; i < len; i++, x += V2_KW + V2_KGAP) k[n++] = { (int16_t)x, (int16_t)y, (int16_t)(x + V2_KW), (int16_t)(y + V2_KH), (int8_t)row[i] };
+  }
+  const char *row = V2_KB[L][2];
+  int len = (int)strlen(row), y = V2_KY0 + 2 * V2_KSTEP, x = v2KbRowX(len, 2 * (V2_KWIDE + V2_KGAP));
+  k[n++] = { (int16_t)x, (int16_t)y, (int16_t)(x + V2_KWIDE), (int16_t)(y + V2_KH), V2K_SHIFT };
+  x += V2_KWIDE + V2_KGAP;
+  for (int i = 0; i < len; i++, x += V2_KW + V2_KGAP) k[n++] = { (int16_t)x, (int16_t)y, (int16_t)(x + V2_KW), (int16_t)(y + V2_KH), (int8_t)row[i] };
+  k[n++] = { (int16_t)x, (int16_t)y, (int16_t)(x + V2_KWIDE), (int16_t)(y + V2_KH), V2K_BKSP };
+  y += V2_KSTEP;
+  k[n++] = { 40, (int16_t)y, 120, (int16_t)(y + V2_KH), V2K_LAYER };
+  k[n++] = { 126, (int16_t)y, 318, (int16_t)(y + V2_KH), ' ' };
+  k[n++] = { 324, (int16_t)y, 426, (int16_t)(y + V2_KH), V2K_OK };
+  return n;
+}
+// the key under (x, y) in layer L (the gaps between keys count as their nearest key's), or -1
+static int v2KbAt(int L, int x, int y, V2Key *box = nullptr) {
+  V2Key k[40];
+  int n = v2KbKeys(L, k);
+  for (int i = 0; i < n; i++)
+    if (x >= k[i].x0 - 2 && x <= k[i].x1 + 2 && y >= k[i].y0 - 3 && y <= k[i].y1 + 3) {
+      if (box) *box = k[i];
+      return k[i].code;
+    }
+  return -1;
+}
+// the layer a layer key leads to: shift turns letters small and capital (and the symbols' key swaps the two
+// symbol layers); the bottom key goes from letters to numbers, and back
+static int v2KbNext(int L, int code) {
+  if (code == V2K_SHIFT) return L < 2 ? 1 - L : 5 - L;
+  return L < 2 ? 2 : 0;
+}
+// a key in the V2 button style (key()): a dark rim, a lit stripe along its top; held: a bar under its label
+static void v2Key(const V2Key &k, const char *lab, uint16_t col, uint16_t ink, int size, bool held) {
+  gfx->fillRoundRect(k.x0 - 2, k.y0 - 2, k.x1 - k.x0 + 5, k.y1 - k.y0 + 5, 6, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(k.x0, k.y0, k.x1 - k.x0 + 1, k.y1 - k.y0 + 1, 5, col);
+  gfx->fillRect(k.x0 + 4, k.y0 + 2, k.x1 - k.x0 - 7, 3, lerp565(col, UI_WHITE, 8, 16));
+  if (held) gfx->fillRect(k.x0 + 8, k.y1 - 7, k.x1 - k.x0 - 15, 3, UI_WHITE);
+  bool cjk = classicFontBegin();  // the keys' letters and arrows are the classic font's in every language
+  gfx->setTextColor(ink);
+  setSize(size);
+  setCur((k.x0 + k.x1) / 2 - textW(lab, size) / 2 + 1, (k.y0 + k.y1) / 2 - 4 * size + 1);
+  printT(lab);
+  classicFontEnd(cjk);
+}
+// the whole keyboard: its title, what's been typed (the end of it, if it's long), the keys of layer L; hot:
+// the key under the finger, lit, and big over the text (the finger hides the real one); ready: OK is green
+static void v2Keyboard(int L, const char *title, const char *typed, int hot, bool ready) {
+  v2MenuBackdrop();
+  gfx->setTextColor(C565(0xff, 0xf3, 0xdc));
+  setSize(2);
+  setCur(centerX(title, 2), 36);
+  printT(title);
+  v2Panel(84, 58, 382, 104, 8);
+  bool cjk = classicFontBegin();
+  size_t len = strlen(typed);
+  const char *show = len > 15 ? typed + len - 15 : typed;  // 15 letters at size 3 fill the panel
+  char line[20];
+  snprintf(line, sizeof(line), "%s_", show);
+  gfx->setTextColor(UI_INK);
+  setSize(3);
+  setCur(100, 70);
+  printT(line);
+  classicFontEnd(cjk);
+  V2Key k[40];
+  int n = v2KbKeys(L, k);
+  const uint16_t grey = C565(0xaa, 0xb0, 0xbc), blue = C565(0x4f, 0x93, 0xc4);
+  for (int i = 0; i < n; i++) {
+    char lab[8] = { (char)k[i].code, 0 };
+    bool lit = k[i].code == hot;
+    switch (k[i].code) {
+      case V2K_SHIFT:
+        if (L < 2) v2Key(k[i], "\x18", lit || L == 1 ? blue : grey, UI_WHITE, 3, L == 1);  // the font's up arrow
+        else v2Key(k[i], L == 2 ? "#+=" : "123", lit ? blue : grey, UI_WHITE, 2, false);
+        break;
+      case V2K_BKSP: v2Key(k[i], "\x1b", lit ? blue : grey, UI_WHITE, 3, false); break;  // its left arrow
+      case V2K_LAYER: v2Key(k[i], L < 2 ? "123" : "ABC", lit ? blue : grey, UI_WHITE, 2, false); break;
+      case V2K_OK: v2Key(k[i], "OK", lit ? blue : ready ? C565(0x58, 0xb8, 0x68) : grey, UI_WHITE, 2, false); break;
+      case ' ': v2Key(k[i], "SPACE", lit ? blue : UI_WHITE, lit ? UI_WHITE : C565(0x8e, 0x8c, 0x96), 2, false); break;
+      default: v2Key(k[i], lab, lit ? blue : UI_WHITE, lit ? UI_WHITE : UI_INK, 3, false);
+    }
+  }
+  if (hot > 0) {  // what the finger is on, big, where the text was
+    char big[8] = { (char)hot, 0 };
+    if (hot == ' ') strlcpy(big, "SPACE", sizeof(big));
+    else if (hot == V2K_SHIFT) strlcpy(big, L < 2 ? "\x18" : L == 2 ? "#+=" : "123", sizeof(big));
+    else if (hot == V2K_BKSP) strlcpy(big, "\x1b", sizeof(big));
+    else if (hot == V2K_LAYER) strlcpy(big, L < 2 ? "123" : "ABC", sizeof(big));
+    else if (hot == V2K_OK) strlcpy(big, "OK", sizeof(big));
+    int s = strlen(big) > 3 ? 4 : 6;
+    bool c2 = classicFontBegin();
+    setSize(s);
+    int w = textW(big, s) + 36;
+    gfx->fillRoundRect(CX - w / 2, 30, w, 84, 14, blue);
+    gfx->setTextColor(UI_WHITE);
+    setCur(CX - textW(big, s) / 2 + s / 2, 72 - 4 * s);
+    printT(big);
+    classicFontEnd(c2);
+  }
+  v2CloseX();
+}
+
+// the nickname's keyboard: it starts in capitals for an empty name, and turns small after the first letter
+static uint8_t v2NameLayer = 0;
+static void v2NameKbOpen() { v2NameLayer = nameLen ? 0 : 1; }
+static void v2NameKb() {
+  char title[24];
+  v2Keyboard(v2NameLayer, v2Caps(T(S_NAME), title, sizeof(title)), nameBuf, -1, true);
+}
+static void v2NameKbTap(int16_t x, int16_t y) {
+  if (closeHit(x, y)) {  // the X: out without renaming (V1 had only OK)
+    sfxPlay(SFX_TAP);
+    kbOpen = false;
+    return;
+  }
+  int c = v2KbAt(v2NameLayer, x, y);
+  if (c < 0) return;
+  sfxPlay(SFX_TAP);
+  if (c == V2K_SHIFT || c == V2K_LAYER) {
+    v2NameLayer = v2KbNext(v2NameLayer, c);
+  } else if (c == V2K_BKSP) {
+    if (nameLen) nameBuf[--nameLen] = 0;
+  } else if (c == V2K_OK) {
+    pet.rename(nameBuf);
+    kbOpen = false;
+  } else if (nameLen < sizeof(nameBuf) - 1) {
+    nameBuf[nameLen++] = (char)c;
+    nameBuf[nameLen] = 0;
+    if (nameLen == 1 && v2NameLayer == 1) v2NameLayer = 0;  // a capital first, then small letters
+  }
+  screenKeyValid = false;  // (the layer isn't in the screen's key)
+}
+// what a key says in the press preview over the finger (words for the arrows: the CJK font has none)
+static const char *v2KeyLabel(int c, int L, char *buf) {
+  if (c == V2K_SHIFT) return L < 2 ? (L == 1 ? "abc" : "ABC") : L == 2 ? "#+=" : "123";
+  if (c == V2K_BKSP) return "<-";
+  if (c == V2K_LAYER) return L < 2 ? "123" : "ABC";
+  if (c == V2K_OK) return "OK";
+  if (c == ' ') return "SPACE";
+  buf[0] = (char)c;
+  buf[1] = 0;
+  return buf;
+}
+
+#ifdef BOARD_KNOMI_V2  // the Knomi's own Wi-Fi setup
+// the Wi-Fi list (wifi_list()): the networks found, strongest first, in rows in a panel (V1's rows, where its taps
+// are: 5 of 48 from y 88); the one in use is blue. SCAN under them, the page buttons at the sides, the X cancels
+#define V2_WIFI_ROW_Y 88  // V1's WIFI_ROW_Y, _H and WIFI_ROWS, defined further down
+#define V2_WIFI_ROW_H 48
+static void v2WifiList(int page, int n, const char *(*net)(int), const char *cur) {
+  v2MenuBackdrop();
+  v2Sign("WI-FI");
+  int pages = (n + 4) / 5;
+  if (pages < 1) pages = 1;
+  v2Panel(86, 76, 380, 378, 10);
+  setSize(2);
+  for (int r = 0; r < 5; r++) {
+    int idx = page * 5 + r;
+    if (idx >= n) break;
+    int y = V2_WIFI_ROW_Y + r * V2_WIFI_ROW_H;
+    bool inUse = cur[0] && !strcmp(cur, net(idx));
+    gfx->fillRoundRect(98, y, 270, V2_WIFI_ROW_H - 6, 8, inUse ? C565(0x4f, 0x93, 0xc4) : C565(0xee, 0xf2, 0xf8));
+    char line[21];
+    strlcpy(line, net(idx), sizeof(line));  // 20 letters fill the row
+    bool cjk = classicFontBegin();  // network names are bytes, not the language's
+    gfx->setTextColor(inUse ? UI_WHITE : UI_INK);
+    setCur(112, y + 13);
+    printT(line);
+    classicFontEnd(cjk);
+  }
+  v2LabelButton(179, 337, 287, 371, "SCAN", C565(0x8e, 0x8c, 0x96));  // V1's middle box (its sides turn pages too)
+  drawPageArrows(page, pages, V2_PAGE_ARROW_Y);
+  if (pages > 1) v2Dots(pages, page, 388);
+  v2CloseX();
+}
+// the password's keyboard: "< network" over it goes back to the list, as the X does
+static void v2WifiKbTap(int16_t x, int16_t y) {
+  if (y < 56 || closeHit(x, y)) {
+    sfxPlay(SFX_TAP);
+    wifiSetupBackToList();
+    return;
+  }
+  int c = v2KbAt(wifiKbLayer, x, y);
+  if (c < 0) return;
+  if (c == V2K_SHIFT || c == V2K_LAYER) wifiKbLayer = v2KbNext(wifiKbLayer, c);
+  else if (c == V2K_BKSP) wifiSetupDelete();
+  else if (c != V2K_OK) wifiSetupType((char)c);
+  else if (wifiSetupCanSubmit()) {
+    sfxPlay(SFX_TAP);
+    wifiSetupSubmit();
+  } else {
+    sfxPlay(SFX_DENY);  // fewer than 8 characters
+  }
+}
+// what the settings page shows while the Wi-Fi is being set: the list, the keyboard, or how it's going
+static void v2WifiScreen(uint8_t ws) {
+  if (ws == WS_LIST) {
+    v2WifiList(wifiListPage, wifiSetupNetCount(), wifiSetupNet, clockWifiSsid());
+    return;
+  }
+  if (ws == WS_PASS) {
+    char title[40];
+    snprintf(title, sizeof(title), "< %.24s", wifiSetupSsid());
+    v2Keyboard(wifiKbLayer, title, wifiSetupPass(), wifiKbHover, wifiSetupCanSubmit());
+    return;
+  }
+  v2MenuBackdrop();
+  v2Sign("WI-FI");
+  const char *msg = ws == WS_SCAN ? T(S_WIFI_SEARCH) : ws == WS_OK ? T(S_WIFI_SAVED) : ws == WS_FAIL ? T(S_WIFI_KEPT) : T(S_WIFI_TRYING);
+  setSize(2);
+  int w = textW(msg, 2) + 40;
+  v2Panel(CX - w / 2, 204, CX + w / 2, 252, 10);
+  gfx->setTextColor(ws == WS_OK ? C565(0x3c, 0x8a, 0x4c) : ws == WS_FAIL ? UI_BAR_BAD : UI_INK);
+  setCur(centerX(msg, 2), 220);
+  printT(msg);
+}
+#ifdef BOARD_HOST
+// the screenshot tool's way in (the host has no Wi-Fi setup of its own): 0 the list, 1 to 4 the keyboard's layers
+static const char *v2HostNet(int i) {
+  static const char *const N[7] = { "Home-5G", "Home", "Coffee Shop", "Neighbor", "PokeCenter", "Library guest", "Garage" };
+  return i >= 0 && i < 7 ? N[i] : "";
+}
+void v2HostWifiShot(int which) {
+  if (which == 0) v2WifiList(0, 7, v2HostNet, "Home-5G");
+  else v2Keyboard(which - 1, "< Home-5G", "pika#25", which == 3 ? '#' : -1, which != 4);
+}
+#endif
+#endif

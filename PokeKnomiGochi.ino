@@ -5434,6 +5434,9 @@ void drawClockDots() {
 
 // password keyboard key at those coordinates, -1 if none
 int wifiKeyAt(int16_t x, int16_t y) {
+#if UI_V2
+  return v2KbAt(wifiKbLayer, x, y);  // V2: the key's character, or one of its own codes
+#endif
   if (x < KB_X || y < KB_Y) return -1;
   int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;
   if (col >= KB_COLS || row >= 5) return -1;
@@ -5462,6 +5465,13 @@ void settingsTap(int16_t x, int16_t y) {
       }
       break;
     case WS_LIST: {
+#if UI_V2
+      if (int a = pageArrowAt(x, y, wifiListPage, (wifiSetupNetCount() + WIFI_ROWS - 1) / WIFI_ROWS, V2_PAGE_ARROW_Y)) {
+        sfxPlay(SFX_TAP);  // V2: the side buttons turn the list's pages
+        wifiListPage += a;
+        break;
+      }
+#endif
       int pages = (wifiSetupNetCount() + WIFI_ROWS - 1) / WIFI_ROWS;
       if (y >= WIFI_ROW_Y && y < WIFI_ROW_Y + WIFI_ROWS * WIFI_ROW_H) {
         sfxPlay(SFX_TAP);
@@ -5477,6 +5487,10 @@ void settingsTap(int16_t x, int16_t y) {
       break;
     }
     case WS_PASS: {
+#if UI_V2
+      v2WifiKbTap(x, y);  // V2: its own keys
+      break;
+#endif
       if (y < 80) { wifiSetupBackToList(); break; }  // "< network": back to the list
       int i = wifiKeyAt(x, y);
       if (i < 0) break;
@@ -5649,6 +5663,13 @@ void renderSettings() {
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   WifiSetupState ws = wifiSetupState();
+#if UI_V2
+  if (ws != WS_OFF) {  // V2: the list, the password's keyboard and how it's going, on the dimmed room
+    v2WifiScreen(ws);
+    gfx->flush();
+    return;
+  }
+#endif
   if (ws == WS_LIST) { renderWifiList(); gfx->flush(); return; }
   if (ws == WS_PASS) { renderWifiKeyboard(); gfx->flush(); return; }
   if (ws != WS_OFF) {
@@ -6427,9 +6448,17 @@ void openKeyboard() {
   strncpy(nameBuf, pet.nick, sizeof(nameBuf) - 1);
   nameBuf[sizeof(nameBuf) - 1] = 0;
   nameLen = strlen(nameBuf);
+#if UI_V2
+  v2NameKbOpen();  // V2: capitals for an empty name's first letter
+#endif
 }
 
 void renderKeyboard() {
+#if UI_V2
+  v2NameKb();  // V2: as big as the screen allows, QWERTY
+  gfx->flush();
+  return;
+#endif
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(2);
@@ -6462,6 +6491,10 @@ void renderKeyboard() {
 }
 
 void keyboardTap(int16_t x, int16_t y) {
+#if UI_V2
+  v2NameKbTap(x, y);  // V2: its own keys (and an X to leave without renaming)
+  return;
+#endif
   // filter BEFORE dividing: with x/y below KB_X/KB_Y the subtraction is negative
   // and integer division truncates toward zero (not toward -inf), so col/row
   // would come out 0 instead of negative and the filter below wouldn't catch it
@@ -9894,6 +9927,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (kbOpen) {
+#if UI_V2
+    V2Key k;  // V2: round the key under the finger
+    int c = v2KbAt(v2NameLayer, x, y, &k);
+    if (c < 0) return closeHit(x, y) && pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+    return pressSet(t, k.x0, k.y0, k.x1 - k.x0 + 1, k.y1 - k.y0 + 1, v2KeyLabel(c, v2NameLayer, buf));
+#endif
     if (x < KB_X || y < KB_Y) return false;
     int col = (x - KB_X) / KB_W, row = (y - KB_Y) / KB_H;
     if (col >= KB_COLS || row >= 5) return false;
@@ -9916,6 +9955,16 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       if (ws == WS_OFF && pressIn(x, y, 96, AUTO_ROW_Y, 274, AUTO_ROW_H)) return pressSet(t, 96, AUTO_ROW_Y, 274, AUTO_ROW_H, T(S_AUTO_UPDATE));
       if (ws != WS_LIST) return false;  // the password keyboard has its own preview
       int n = wifiSetupNetCount();
+#if UI_V2
+      if (int d = pageArrowAt(x, y, wifiListPage, (n + WIFI_ROWS - 1) / WIFI_ROWS, V2_PAGE_ARROW_Y))  // V2: the side buttons
+        return pressSet(t, CX + d * pageArrowDx(V2_PAGE_ARROW_Y) - CLOSE_R, V2_PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+      if (y >= WIFI_ROW_Y && y < WIFI_ROW_Y + WIFI_ROWS * WIFI_ROW_H) {  // the V2 rows: narrower
+        int r = (y - WIFI_ROW_Y) / WIFI_ROW_H, idx = wifiListPage * WIFI_ROWS + r;
+        return idx < n && pressSet(t, 98, WIFI_ROW_Y + r * WIFI_ROW_H, 270, WIFI_ROW_H - 6, wifiSetupNet(idx));
+      }
+      if (y >= 334 && y <= 376) return x >= 170 && x <= 296 && pressSet(t, 179, 337, 109, 35, "SCAN");
+      return closeHit(x, y) && pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+#endif
       if (y >= WIFI_ROW_Y && y < WIFI_ROW_Y + WIFI_ROWS * WIFI_ROW_H) {
         int r = (y - WIFI_ROW_Y) / WIFI_ROW_H, idx = wifiListPage * WIFI_ROWS + r;
         if (idx >= n) return false;
