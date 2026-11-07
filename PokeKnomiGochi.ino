@@ -2331,7 +2331,8 @@ bool render() {
   // before the banner does (onTap): over it, the banner would hide the question while a tap pressed the
   // button beneath, so while one is open the banner waits, whole (as found for 1.52's fix)
   if (pet.evolving()) {  // the evolution, over everything
-    char en[28], el[12];
+    char en[28];
+    char el[12];
     snprintf(en, sizeof(en), "%s%s", pet.shiny ? "*" : "", pet.nick[0] ? pet.nick : dexName(pet.speciesId));
     snprintf(el, sizeof(el), T(S_LVL_FMT), pet.level());
     v2EvolveFX(evoPmd, pet.evolveT(), en, el);
@@ -4439,7 +4440,8 @@ void renderGame() {
     }
 #if UI_V2
     {  // V2: the result in a panel over the dimmed clearing
-      char big[24], rec[24];
+      char big[24];
+      char rec[24];
       snprintf(big, sizeof(big), T(S_SCORE_FMT), gameScore);
       snprintf(rec, sizeof(rec), T(S_RECORD_FMT), pet.gameHi);
       v2GameResult(gameLabel(0), nullptr, big, gameNewHi && gameScore > 0, rec, gameScore >= 10 ? T(S_GREAT_JOY) : T(S_PLUS_JOY));
@@ -4735,7 +4737,9 @@ void renderDungeon() {
 
   if (dnOverT) {
 #if UI_V2
-    char top[44], big[12], rec[24];  // V2: the result in a panel over the dimmed dungeon
+    char top[44];  // V2: the result in a panel over the dimmed dungeon
+    char big[12];
+    char rec[24];
     snprintf(top, sizeof(top), T(S_BTL_LOST), dexName(dn.me.dex));
     snprintf(big, sizeof(big), "B%uF", dn.floor);
     snprintf(rec, sizeof(rec), T(S_RECORD_FMT), pet.dungeonHi);
