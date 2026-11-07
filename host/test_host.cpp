@@ -615,6 +615,29 @@ static void testGame() {
     pet.speciesId = 94;  // Gengar: the Mansion
     runTicks(300);
     CHECK(fb[4 * 466 + 233] == 0x1065);  // its night sky, #140f2c
+    // the walk (walk_v2.h): once a walk starts the world's clock runs; the food picker stops it, and the
+    // world holds still until it closes
+    extern void v2HostStartWalk();
+    extern uint32_t v2HostWalkMs();
+    extern bool v2HostWalking();
+    extern uint32_t feedMenuUntil;
+    pet.fullness = pet.joy = pet.energy = pet.hygiene = 100;
+    pet.sleeping = false;
+    v2HostStartWalk();
+    runTicks(300);
+    CHECK(v2HostWalking());
+    uint32_t walked = v2HostWalkMs();
+    runTicks(300);
+    CHECK(v2HostWalkMs() > walked);
+    feedMenuUntil = millis() + 5000;
+    runTicks(100);
+    CHECK(!v2HostWalking());
+    walked = v2HostWalkMs();
+    runTicks(300);
+    CHECK(v2HostWalkMs() == walked);
+    feedMenuUntil = 0;
+    runTicks(200);
+    CHECK(v2HostWalking());
   }
   // V2's game backgrounds, by day, as their mockups have them (games_px.py) where the game stands things
   {

@@ -312,7 +312,8 @@ static void v2DrawFoodPicker(int count) {
 // All on a 4 px grid (one 8-bit pixel = 2 Knomi pixels), drawn the way the V2 mockups' scripts draw them
 // (pixelhills.py, zones_px.py, mansion2.py; dusk and night as batch3.py's render_tod). Colours are
 // 0xRRGGBB and mixed in 8-bit RGB, as there. Nothing in a scene moves yet, so it is drawn once into a
-// buffer and copied in every frame; it's drawn again only when the zone or the time of day changes.
+// buffer and copied in every frame; it's drawn again only when the zone or the time of day changes. While
+// the Pokemon walks (step 4, walk_v2.h) the layers are drawn into strips of their own instead.
 
 typedef uint32_t Rgb;
 #define V2_W 466
@@ -329,7 +330,16 @@ static inline Rgb scMix(Rgb a, Rgb b, double t) {  // the mockups' lerp()
   return scRgb((int)(ar + (br - ar) * t), (int)(ag + (bg - ag) * t), (int)(ab + (bb - ab) * t));
 }
 
-static uint16_t *scFb;      // where the scene is drawn
+static uint16_t *scFb;      // where the scene is drawn: the screen, or a walk layer's strip (walk_v2.h)
+static int scW = V2_W, scH = V2_W, scDX = 0, scDY = 0;  // scFb is scW x scH; a screen point lands at x + scDX, y + scDY
+static bool scKeyed = false;  // drawing a strip: never its "nothing here" colour (V2_STRIP_KEY)
+#define V2_STRIP_KEY 0xF81F   // magenta, which no scene uses
+static void scScreen() {      // draw on the screen
+  scFb = (uint16_t *)gfx->getFramebuffer();
+  scW = scH = V2_W;
+  scDX = scDY = 0;
+  scKeyed = false;
+}
 static uint8_t scGradeTod;  // 0: colours as given; 1, 2: a day scene's land at dusk or at night
 static Rgb scGrade(Rgb c) {
   if (!scGradeTod) return c;
@@ -339,14 +349,16 @@ static Rgb scGrade(Rgb c) {
 }
 // a rectangle with both corners inside it, as PIL draws them
 static void scRect(int x0, int y0, int x1, int y1, Rgb c) {
+  x0 += scDX, x1 += scDX, y0 += scDY, y1 += scDY;
   if (x0 < 0) x0 = 0;
   if (y0 < 0) y0 = 0;
-  if (x1 > V2_W - 1) x1 = V2_W - 1;
-  if (y1 > V2_W - 1) y1 = V2_W - 1;
+  if (x1 > scW - 1) x1 = scW - 1;
+  if (y1 > scH - 1) y1 = scH - 1;
   if (x0 > x1 || y0 > y1) return;
   uint16_t v = sc565(scGrade(c));
+  if (scKeyed && v == V2_STRIP_KEY) v ^= 0x20;
   for (int y = y0; y <= y1; y++) {
-    uint16_t *p = scFb + y * V2_W + x0;
+    uint16_t *p = scFb + y * scW + x0;
     for (int x = x0; x <= x1; x++) *p++ = v;
   }
 }
@@ -460,13 +472,14 @@ static void scHills(const ScLayer *L, int nl, double lit, int from) {
     litc[i] = scMix(L[i].col, 0xFFFFFF, lit);
     half[i] = scMix(L[i].col, 0xFFFFFF, lit / 2);
   }
-  for (int cy = 192; cy < V2_W; cy += 4)  // the hills all start below y 200
-    for (int cx = 0; cx < V2_W; cx += 4) {
+  int y0 = -scDY > 192 ? -scDY / 4 * 4 : 192, y1 = scH - scDY;  // the hills all start below y 200
+  for (int cy = y0; cy < y1; cy += 4)
+    for (int cx = -scDX; cx < scW - scDX; cx += 4) {  // a strip's margins are whole cells
       int l = scLay(L, nl, cx + 2, cy + 2);
       if (l < from) continue;
       Rgb c = L[l - 1].col;
       if (scLay(L, nl, cx + 2, cy + 2 - 4) != l) c = litc[l - 1];
-      else if (scLay(L, nl, cx + 2, cy + 2 - 8) != l && (cx / 4 + cy / 4) % 2 == 0) c = half[l - 1];
+      else if (scLay(L, nl, cx + 2, cy + 2 - 8) != l && (((cx >> 2) + (cy >> 2)) & 1) == 0) c = half[l - 1];
       scCell(cx, cy, c);
     }
 }
@@ -545,14 +558,14 @@ static void scLandMeadow(const ScPal &p) {
   scFlowers(SC_FLOWERS5, 5, p.fl, 3);
 }
 
+static const int16_t SC_FIELD_TREES[3][2] = { {326, 194}, {362, 186}, {398, 200} };
 static void scLandField(const ScPal &p, bool night) {
-  static const int16_t trees[3][2] = { {326, 194}, {362, 186}, {398, 200} };
   const ScKey bird[1] = { { 'k', 0x18181F } };
   scSprite(SPR_V2_BIRD_UP, 3, 196, 150, 3, bird, 1);
   scSprite(SPR_V2_BIRD_UP, 3, 226, 140, 3, bird, 1);
   scStdHills(p, 1);
   scHouse(50, 186, night);
-  for (auto &t : trees) scRole(SPR_V2_TREE, 10, t[0], t[1], 3, p, p.mid);
+  for (auto &t : SC_FIELD_TREES) scRole(SPR_V2_TREE, 10, t[0], t[1], 3, p, p.mid);
   scStdHills(p, 2);
   scFence(262, 0, 160, 0x9A6F43, 0xB38A58, 24);  // the Field tile's wooden fence
   scFence(266, 312, 466, 0x9A6F43, 0xB38A58, 24);
@@ -560,35 +573,42 @@ static void scLandField(const ScPal &p, bool night) {
   scFlowers(SC_FLOWERS5, 5, p.fl, 3);
 }
 
-static void scLandForest(const ScPal &p) {
-  static const int16_t big[4][2] = { {14, 246}, {52, 258}, {384, 254}, {418, 244} };
-  static const int16_t grass[4][2] = { {112, 300}, {330, 300}, {40, 344}, {414, 342} };
-  static const int16_t flowers[3][2] = { {150, 330}, {300, 336}, {180, 352} };
-  const Rgb pink = 0xE9587A;
-  scStdHills(p, 1);
-  for (int tx = 0; tx < V2_W; tx += 26) {  // a wall of pines on the far hills, open behind the pet
+static const int16_t SC_FOREST_BIG[4][2] = { {14, 246}, {52, 258}, {384, 254}, {418, 244} };
+#define SC_FOREST_PINK 0xE9587A
+static void scPineWall(const ScPal &p) {  // a wall of pines on the far hills, open behind the pet
+  for (int tx = 0; tx < V2_W; tx += 26) {
     if (tx > 150 && tx < 300) continue;
     scRole(SPR_V2_PINE, 12, tx - 10, 178 + (tx * 37 % 18), 3, p, p.far);
   }
+}
+static void scLandForest(const ScPal &p) {
+  static const int16_t grass[4][2] = { {112, 300}, {330, 300}, {40, 344}, {414, 342} };
+  static const int16_t flowers[3][2] = { {150, 330}, {300, 336}, {180, 352} };
+  const Rgb pink = SC_FOREST_PINK;
+  scStdHills(p, 1);
+  scPineWall(p);
   scStdHills(p, 2);
-  for (auto &t : big) scRole(SPR_V2_PINE, 12, t[0], t[1], 4, p, p.mid);
+  for (auto &t : SC_FOREST_BIG) scRole(SPR_V2_PINE, 12, t[0], t[1], 4, p, p.mid);
   scGrass(p, grass, 4);
   scFlowers(flowers, 3, &pink, 1);
 }
 
+#define SC_SEA 0x4F96C4
+#define SC_SEA_HI 0xBFE6F5
+static void scPalmKeys(ScKey *k, const ScPal &p) { scTreeKeys(k, p, 0x58B868, 0x2F6A3A); }
 static void scLandBeach(const ScPal &p) {
   static const int16_t glint[25][2] = {  // where the mockup's waves glint (its random.Random(3))
     {120, 236}, {300, 236}, {276, 236}, {64, 236}, {188, 236}, {308, 248}, {240, 248}, {320, 248}, {296, 248},
     {32, 248}, {308, 260}, {4, 260}, {464, 260}, {428, 260}, {240, 260}, {132, 272}, {280, 272}, {116, 272},
     {96, 272}, {364, 272}, {240, 284}, {276, 284}, {428, 284}, {280, 284}, {240, 284} };
-  const Rgb sea = 0x4F96C4, seaHi = 0xBFE6F5;
+  const Rgb sea = SC_SEA, seaHi = SC_SEA_HI;
   scRect(0, 224, V2_W, 300, sea);
   scRect(0, 224, V2_W, 227, scMix(sea, 0xFFFFFF, .35));  // the horizon
   for (auto &g : glint) scRect(g[0], g[1], g[0] + 11, g[1] + 3, g[1] < 260 ? seaHi : scMix(seaHi, sea, .4));
   ScLayer L[2] = { { p.mid, SC_DUNES, 2 }, { p.near, SC_SHORE, 1 } };
   scHills(L, 2, p.lit, 1);
   ScKey palm[5];  // palms on the dunes, a size up so they read at the Knomi's size
-  scTreeKeys(palm, p, 0x58B868, 0x2F6A3A);
+  scPalmKeys(palm, p);
   scSprite(SPR_V2_PALM, 12, 34, 224, 4, palm, 5);
   scSprite(SPR_V2_PALM, 12, 368, 236, 4, palm, 5);
   scHills(L, 2, p.lit, 2);
@@ -601,8 +621,8 @@ static void scLandBeach(const ScPal &p) {
   scSprite(SPR_V2_CRAB, 6, 300, 332, 3, crab, 3);
 }
 
-static void scCave() {
-  const ScPal p = scCavePal();
+static const ScKey SC_CRYSTAL_KEYS[2] = { { 't', 0x8FF0E0 }, { 'T', 0x3FB8A8 } };
+static void scCaveWall(const ScPal &p) {  // the back wall and the stalactites
   scRect(0, 0, V2_W, V2_W, p.top);
   for (int cy = 0; cy < 300; cy += 4)  // the back wall: a lighter hollow in the middle
     for (int cx = 0; cx < V2_W; cx += 4) {
@@ -616,17 +636,26 @@ static void scCave() {
       for (int cx = (int)(s[0] - half) / 4 * 4; cx <= (int)(s[0] + half); cx += 4)
         scCell(cx, cy, cx < s[0] - half + 4 ? 0x5A5270 : 0x494258);
     }
-  scStdHills(p, 1);
-  const ScKey cr[2] = { { 't', 0x8FF0E0 }, { 'T', 0x3FB8A8 } };
+}
+static void scCaveBack() {  // crystals on the far floor
   static const int16_t back[4][3] = { {70, 196, 3}, {96, 206, 2}, {350, 192, 3}, {378, 204, 2} };
-  static const int16_t front[4][3] = { {60, 300, 4}, {90, 316, 3}, {374, 304, 4}, {404, 324, 3} };
-  for (auto &c : back) scSprite(SPR_V2_CRYSTAL, 6, c[0], c[1], c[2], cr, 2);
-  scStdHills(p, 2);
-  for (auto &c : front) scSprite(SPR_V2_CRYSTAL, 6, c[0], c[1], c[2], cr, 2);
-  scRole(SPR_V2_ROCK, 5, 150, 330, 3, p, p.near);
-  scRole(SPR_V2_ROCK, 5, 300, 336, 3, p, p.near);
+  for (auto &c : back) scSprite(SPR_V2_CRYSTAL, 6, c[0], c[1], c[2], SC_CRYSTAL_KEYS, 2);
+}
+static void scCaveGlints() {  // glints in the dark
   static const int16_t glint[6][2] = { {120, 150}, {340, 140}, {200, 230}, {260, 210}, {150, 260}, {320, 250} };
   for (int k = 0; k < 6; k++) scCell(glint[k][0] / 4 * 4, glint[k][1] / 4 * 4, k % 2 ? 0x8FF0E0 : 0x3FB8A8);
+}
+static void scCave() {
+  const ScPal p = scCavePal();
+  scCaveWall(p);
+  scStdHills(p, 1);
+  static const int16_t front[4][3] = { {60, 300, 4}, {90, 316, 3}, {374, 304, 4}, {404, 324, 3} };
+  scCaveBack();
+  scStdHills(p, 2);
+  for (auto &c : front) scSprite(SPR_V2_CRYSTAL, 6, c[0], c[1], c[2], SC_CRYSTAL_KEYS, 2);
+  scRole(SPR_V2_ROCK, 5, 150, 330, 3, p, p.near);
+  scRole(SPR_V2_ROCK, 5, 300, 336, 3, p, p.near);
+  scCaveGlints();
 }
 
 // MANSION_PAL in sprites_v2.h has no I, J or O: a letter isn't its index
@@ -659,35 +688,45 @@ static void scMansion(int x, int y) {
     }
 }
 
+static void scMansionFar(const ScPal &p) {  // on the rise: the mansion and a bare tree
+  scMansion(233 - 58 * 2, 230 - 34 * 4);  // centred behind the pet, its walls standing on the rise
+  const ScKey bare[1] = { { '1', p.dark } };
+  scSprite(SPR_V2_BARE, 11, 28, 170, 4, bare, 1);
+}
+static void scGraveyard(int dx, int dy) {  // down the right slope, behind an iron fence
+  static const int16_t stones[7][3] = { {352, 258, 3}, {378, 252, 3}, {404, 262, 3}, {428, 256, 3}, {364, 286, 4}, {402, 290, 4}, {436, 284, 3} };
+  const ScKey stone[2] = { { 'o', 0x0D0B20 }, { 's', 0x5A5F7C } };
+  for (int i = 0; i < 7; i++)
+    if (i % 3 == 1) scSprite(SPR_V2_CROSS, 7, stones[i][0] + dx, stones[i][1] + dy, stones[i][2], stone, 2);
+    else scSprite(SPR_V2_TOMB, 7, stones[i][0] + dx, stones[i][1] + dy, stones[i][2], stone, 2);
+  scFence(312 + dy, 340 + dx, 466 + dx, 0x0D0B20, 0x0D0B20, 18);
+  for (int x = 340; x < 466; x += 18) scRect(x + 1 + dx, 292 + dy, x + 2 + dx, 295 + dy, 0x0D0B20);
+}
 static void scMansionZone() {
   const ScPal p = scMansionPal();
   scSky(p.top, p.bot);
   scSun(p, true, 372, 128);
   scCloud(p, 60, 150, 3);
   scStdHills(p, 1, true);
-  scMansion(233 - 58 * 2, 230 - 34 * 4);  // centred behind the pet, its walls standing on the rise
-  const ScKey bare[1] = { { '1', p.dark } };
-  scSprite(SPR_V2_BARE, 11, 28, 170, 4, bare, 1);
+  scMansionFar(p);
   scStdHills(p, 2);
-  static const int16_t stones[7][3] = { {352, 258, 3}, {378, 252, 3}, {404, 262, 3}, {428, 256, 3}, {364, 286, 4}, {402, 290, 4}, {436, 284, 3} };
-  const ScKey stone[2] = { { 'o', 0x0D0B20 }, { 's', 0x5A5F7C } };
-  for (int i = 0; i < 7; i++)  // the graveyard down the right slope
-    if (i % 3 == 1) scSprite(SPR_V2_CROSS, 7, stones[i][0], stones[i][1], stones[i][2], stone, 2);
-    else scSprite(SPR_V2_TOMB, 7, stones[i][0], stones[i][1], stones[i][2], stone, 2);
-  scFence(312, 340, 466, 0x0D0B20, 0x0D0B20, 18);  // behind an iron fence
-  for (int x = 340; x < 466; x += 18) scRect(x + 1, 292, x + 2, 295, 0x0D0B20);
+  scGraveyard(0, 0);
   static const int16_t grass[2][2] = { {40, 330}, {120, 304} };
   scGrass(p, grass, 2);
 }
 
 // Draws a whole scene on the canvas. tod: 0 day, 1 dusk, 2 night. The Cave and the Mansion look the same at
 // every hour; the others are drawn by day with their land graded, under a dusk or a night sky.
+static ScPal scZonePal(uint8_t zone) {
+  return zone == Z_FIELD ? scFieldPal() : zone == Z_FOREST ? scForestPal() : zone == Z_BEACH ? scBeachPal()
+       : zone == Z_CAVE ? scCavePal() : zone == Z_MANSION ? scMansionPal() : SC_DAY;
+}
 static void scPaint(uint8_t zone, uint8_t tod) {
-  scFb = (uint16_t *)gfx->getFramebuffer();
+  scScreen();
   scGradeTod = 0;
   if (zone == Z_CAVE) { scCave(); return; }
   if (zone == Z_MANSION) { scMansionZone(); return; }
-  ScPal p = zone == Z_FIELD ? scFieldPal() : zone == Z_FOREST ? scForestPal() : zone == Z_BEACH ? scBeachPal() : SC_DAY;
+  ScPal p = scZonePal(zone);
   if (tod == 0) {  // the zone's own sky
     scSky(p.top, p.bot);
     if (zone == Z_FIELD) {
@@ -722,14 +761,14 @@ static void scPaint(uint8_t zone, uint8_t tod) {
 // Without the buffer (no memory) it's painted every frame.
 static uint16_t *v2SceneBuf = nullptr;
 static int v2SceneKey = -1;
-static void v2Cached(int key, void (*paint)(int), int arg) {
+static void v2Cached(int key, void (*paint)(int), int arg, int rows = V2_W) {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   if (!v2SceneBuf) v2SceneBuf = (uint16_t *)ps_malloc(V2_W * V2_W * sizeof(uint16_t));
   if (key == v2SceneKey && v2SceneBuf) {
-    memcpy(fb, v2SceneBuf, V2_W * V2_W * sizeof(uint16_t));
+    memcpy(fb, v2SceneBuf, rows * V2_W * sizeof(uint16_t));
     return;
   }
-  scFb = fb;
+  scScreen();
   scGradeTod = 0;
   paint(arg);
   scGradeTod = 0;
@@ -937,7 +976,7 @@ static void scRunLand(float dist, uint8_t tod) {
 static void v2RunScene(float dist) {
   uint8_t tod = v2HourTod();
   v2Cached(104 + tod, scRunSky, tod);
-  scFb = (uint16_t *)gfx->getFramebuffer();
+  scScreen();
   scRunLand(dist, tod);
 }
 
@@ -951,7 +990,7 @@ static const int16_t V2_SPECKS[30][2] = {
   {124,88},{124,240},{140,44},{416,440},{280,428},{152,0},{464,148},{292,360},{448,156},{432,388},{260,96},{208,216},{304,144},{220,228},{80,116},
   {156,132},{416,408},{20,40},{20,236},{320,140},{264,272},{328,240},{356,172},{72,344},{100,32},{208,100},{324,320},{224,140},{92,180},{220,380} };
 static void v2SurfWater(float dist, uint8_t tod) {
-  scFb = (uint16_t *)gfx->getFramebuffer();
+  scScreen();
   scGradeTod = tod;
   const Rgb band[2] = { 0x2F78C8, 0x3F8AD8 };  // deep, shallow: each 116 px
   int ob = SNAP2((int)(dist / 2)), oc = SNAP2((int)dist);
@@ -1091,7 +1130,7 @@ static void v2BurstScene(bool pink) { v2Cached(pink ? 113 : 112, scBurst, pink ?
 // bottom and right, now and then a crack or moss; walls dark on top with specks and, where floor lies under
 // them, a face of bricks lit along its top, a few with a flickering torch; the stairs as four steps down.
 static void v2DnTile(uint8_t t, bool face, int tx, int ty, int sx, int sy) {
-  scFb = (uint16_t *)gfx->getFramebuffer();
+  scScreen();
   auto rr = [](int x0, int y0, int x1, int y1, Rgb c) { scRect(x0, y0, x1 - 1, y1 - 1, c); };  // x1 and y1 outside it
   const int T = DN_TILE;
   if (t == DN_WALL) {
@@ -1171,6 +1210,26 @@ static void v2Button(int x, int y, int w, int h, uint16_t col) {
   gfx->fillRect(x + 6, y + 3, w - 12, 4, v2Blend(col, UI_WHITE, 90));  // 35% lighter
 }
 
+// Berry Drop's lives: a small heart on the 2 px grid (18 x 16, centred on cx, cy), red while the life is
+// left, grey once it's gone
+static const char *const V2_LIFE_HEART[8] = {
+  "..kk.kk..", ".krrkrrk.", "krwrrrrrk", "krrrrrrRk", ".krrrrRk.", "..krrRk..", "...krk...", "....k....",
+};
+static void v2LifeHeart(int cx, int cy, bool full) {
+  int x0 = SNAP2(cx - 9), y0 = SNAP2(cy - 8);
+  for (int r = 0; r < 8; r++)
+    for (int c = 0; V2_LIFE_HEART[r][c]; c++) {
+      char ch = V2_LIFE_HEART[r][c];
+      if (ch == '.') continue;
+      uint16_t col = ch == 'k'   ? UI_INK
+                     : !full     ? C565(0xa9, 0xb2, 0xbe)
+                     : ch == 'w' ? UI_WHITE
+                     : ch == 'R' ? C565(0xb5, 0x32, 0x24)
+                                 : UI_BAR_BAD;
+      gfx->fillRect(x0 + c * 2, y0 + r * 2, 2, 2, col);
+    }
+}
+
 // a line of text over a scene (the battle has no band under it now): in its own text box
 static bool gV2LineBox = false;  // battleCenterLine boxes its lines while this is on
 static void v2LineBox(const char *s, int y) {
@@ -1183,7 +1242,7 @@ static void v2LineBox(const char *s, int y) {
 // its mockup. 0 Berry Drop, 1 PokeRun, 2 PikaSurf, 3 Volley, 4 Who's That?, 5 Showdown, 6 the wild battle,
 // 7 the Forest battle, 8 the Field's catch, 9 a dungeon room.
 void v2HostBackdrop(int which, int tod) {
-  scFb = (uint16_t *)gfx->getFramebuffer();
+  scScreen();
   v2SceneKey = -1;
   scGradeTod = 0;
   switch (which) {
@@ -1212,3 +1271,5 @@ void v2HostBackdrop(int which, int tod) {
   scGradeTod = 0;
 }
 #endif
+
+#include "walk_v2.h"  // step 4: the walk

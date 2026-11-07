@@ -51,11 +51,7 @@
 #include "ota_update.h"
 #include "buddy_net.h"
 
-// V2, the new look (built on the v2 branch until it launches): 1 draws it, 0 draws 1.51's screens. Build with
-// -DUI_V2=0 to compare the two. Nothing in the save depends on it.
-#ifndef UI_V2
-#define UI_V2 1
-#endif
+#include "ui_v2.h"  // UI_V2: 1 draws V2, the new look; 0 draws 1.51's screens
 #if UI_V2
 #include "layout_v2.h"
 #include "palettes_v2.h"
@@ -1012,6 +1008,13 @@ void handleSerial() {
   } else if (line == "RUNBOT" && pet.noSave) {  // plays by itself, to see high speeds
     runBot = !runBot;
     Serial.println("DONE");
+#if UI_V2
+  } else if (line == "WALK" && pet.noSave) {  // V2: a walk toward you starts now (testing)
+    beh.mode = 1;
+    beh.t0 = millis();
+    beh.until = millis() + 20000;
+    Serial.println("DONE");
+#endif
   } else if (line == "GAMES") {
     openGamesMenu();
     Serial.println("DONE");
@@ -2104,10 +2107,11 @@ bool render() {
   // drawScene covers the full 466x466: no prior fillScreen(BLACK) so
   // an overlapping DMA flush never captures half-black (anti-flicker)
 #if UI_V2
-  {  // V2: the pixel scene of the Pokemon's Travel zone, from its buffer
+  {  // V2: the pixel scene of the Pokemon's Travel zone; while it walks the world slides by (walk_v2.h)
     uint8_t zone = v2HomeZone();
     gV2Dark = zone == Z_CAVE || zone == Z_MANSION;
-    v2DrawScene(zone, v2HomeTod());
+    v2WalkUpdate();
+    if (zone == Z_MEADOW || !v2DrawWalkScene(zone, v2HomeTod())) v2DrawScene(zone, v2HomeTod());
   }
 #else
   drawScene(pet.isEgg() ? 0 : DEX_TBL[pet.speciesId].biome, millis(), gNight);
@@ -2162,6 +2166,7 @@ bool render() {
     v2DrawBars();
     v2DrawBand();
     v2DrawIcons();
+    drawBuddyTop();  // under the dialogs, and dimmed with the rest behind a medal or the evolve button
 #else
     drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg(), lv);
     drawStreakBadge();
@@ -2174,7 +2179,11 @@ bool render() {
     drawButtons();
 #endif
     if (homeModal()) dimFrame();  // what's behind a medal, the evolve button or the goodbye
+#if UI_V2
+    // V2: a medal's banner is drawn last, in front of everything (at the end of the frame)
+#else
     drawCelebration();
+#endif
     if (pet.wantEvolveButton()) drawEvolveButton();        // red CTA: evolve
     else if (pet.canRunawayNow()) drawRunawayButton();     // grim CTA: runaway (neglect)
     else if (pet.wantFarewellButton()) drawFarewellButton();  // gold CTA: farewell
@@ -2227,7 +2236,11 @@ bool render() {
     }
   }
 
+#if UI_V2
+  if (pet.isEgg()) drawBuddyTop();  // (with a Pokemon it's drawn before the dimming, above)
+#else
   drawBuddyTop();
+#endif
 
   // decision dialog (evolve/keep, say goodbye/stay together)
   if (choiceKind) {
@@ -2247,6 +2260,9 @@ bool render() {
     printT(T(S_FAREWELL_HINT2));
   }
 
+#if UI_V2
+  if (!pet.isEgg()) drawCelebration();  // V2: a medal's banner, in front of everything on the screen
+#endif
   gfx->flush();
   return true;
 }
@@ -3138,7 +3154,14 @@ void drawVisitor(uint32_t now) {
   } else if ((t / 6000) % 2 && visitPmd.has(PMD_HOP)) {
     act = PMD_HOP;
   }
+#if UI_V2
+  bool walk = visitPhase == VP_HANG && v2Walking && visitPmd.has(PMD_WALKD);  // V2: it walks beside yours
+  if (walk) act = PMD_WALKD;
+  v2PetShadow(x, PET_GROUND - 4 + v2Bob, 30);
+  drawPmdActM(visitPmd, act, x, PET_GROUND + v2Bob, walk ? v2WalkT() : now - visitT, true, false, partyOthersScale(n));
+#else
   drawPmdActM(visitPmd, act, x, PET_GROUND, now - visitT, true, false, partyOthersScale(n));
+#endif
   if (visitPhase == VP_HANG && n == 1 && (t / 900) % 4 == 0) drawMap(SPR_HEART, 32, 286, PET_GROUND - 150, 1, false);
   if (visitPhase == VP_LEAVE) {
     char b[40];
@@ -4346,10 +4369,14 @@ void renderGame() {
   setSize(2);
   setCur(centerX(rec, 2), 76);
   printT(rec);
+#if UI_V2
+  for (int i = 0; i < 3; i++) v2LifeHeart(CX + (i - 1) * 28, 104, i < 3 - gameMisses);  // V2: three hearts, centred
+#else
   for (int i = 0; i < 3; i++) {
     if (i < 3 - gameMisses) gfx->fillCircle(180 + i * 28, 104, 6, UI_BAR_BAD);
     else gfx->drawCircle(180 + i * 28, 104, 6, UI_TRACK);
   }
+#endif
 
   if (pmd.loaded) {
     uint8_t act = gamePetVX > 0.1f ? PMD_WALKR : gamePetVX < -0.1f ? PMD_WALKL : PMD_IDLE;
@@ -7328,7 +7355,15 @@ void drawBuddyPet(uint32_t now) {
     k++;  // party slot: in arrival-slot order, after yours
     if (!buddyPmd[i].loaded) continue;
     uint8_t act = ((now + i * 1300) / 5000) % 2 && buddyPmd[i].has(PMD_HOP) ? PMD_HOP : PMD_IDLE;
+#if UI_V2
+    bool walk = v2Walking && buddyPmd[i].has(PMD_WALKD);  // V2: buddies walk beside yours, a little out of step
+    if (walk) act = PMD_WALKD;
+    v2PetShadow(partyBuddyX(n, k), PET_GROUND - 4 + v2Bob, 30);
+    drawPmdActM(buddyPmd[i], act, partyBuddyX(n, k), PET_GROUND + v2Bob, walk ? v2WalkT() + i * 300 : now, true, false,
+                partyOthersScale(n));
+#else
     drawPmdActM(buddyPmd[i], act, partyBuddyX(n, k), PET_GROUND, now, true, false, partyOthersScale(n));
+#endif
   }
   if (n == 1 && (now / 900) % 4 == 0) drawMap(SPR_HEART, 32, 286, PET_GROUND - 150, 1, false);  // they get along
 }
@@ -9180,6 +9215,17 @@ void behNext() {
   uint32_t now = millis();
   beh.t0 = now;
   int r = random(100);
+#if UI_V2
+  // V2: it doesn't wander off to the sides. It walks toward you, the world sliding by behind it (walk_v2.h),
+  // for 10 to 20 s, then rests at least 8 to 16 s before the next walk
+  if (beh.mode == 1) v2RestUntil = now + 8000 + random(8000);
+  if (r < 40 && (int32_t)(now - v2RestUntil) >= 0 && pmd.has(PMD_WALKD)) {
+    beh.mode = 1;
+    beh.until = now + 10000 + random(10000);
+    return;
+  }
+  if (r < 35) r = 35 + random(65);  // not the walk to the side below
+#endif
   if (r < 35 && (pmd.has(PMD_WALKL) || pmd.has(PMD_WALKR))) {
     beh.mode = 1;  // walk
     beh.targetX = 150 + random(176);
@@ -9228,6 +9274,15 @@ void drawPetPMD() {
   } else {
     // happy: the planner decides (idle / walk / gesture); in a row of buddies it stays put
     if (now > beh.until) behNext();
+#if UI_V2
+    // V2: a walk is toward you (it stands while something stops it), buddies and visitors walking beside it
+    if (beh.mode == 1) {
+      act = v2Walking ? PMD_WALKD : PMD_IDLE;
+    } else {
+      act = (beh.mode == 2) ? beh.act : PMD_IDLE;
+      loop = false;
+    }
+#else
     if (partyOthers() && beh.mode == 1) beh.mode = 0;
     if (beh.mode != 1) walkLast = 0;  // when walking again, the time stopped isn't counted
     if (beh.mode == 1) {
@@ -9251,6 +9306,7 @@ void drawPetPMD() {
       act = (beh.mode == 2) ? beh.act : PMD_IDLE;
       loop = false;
     }
+#endif
     if (!pmd.has(act)) act = PMD_IDLE;
   }
 
@@ -9258,9 +9314,13 @@ void drawPetPMD() {
   int px = n ? PARTY_MINE_X : (int)beh.x;
   if (n) gPmdForceScale = partyMineScale(n);
 #if UI_V2
-  v2PetShadow(px, PET_GROUND - 4, n ? 30 : 42);  // V2: a soft shadow on the grass under it
-#endif
+  v2PetShadow(px, PET_GROUND - 4 + v2Bob, n ? 30 : 42);  // V2: a soft shadow on the grass under it
+  bool walkD = act == PMD_WALKD;  // walking toward you: in step with the world (walk_v2.h)
+  drawPmdAct(act, px, PET_GROUND + v2Bob, walkD ? v2WalkT() : now - beh.t0, loop || act == PMD_IDLE || walkD, false,
+             partyScale(n, true));
+#else
   drawPmdAct(act, px, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, partyScale(n, true));
+#endif
   gPmdForceScale = 0;
 
   if (pet.showHeart()) drawMap(SPR_HEART, 32, px + (n > 2 ? 20 : 50), PET_GROUND - (n > 2 ? 140 : 190), n > 2 ? 1 : 2, false);

@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "ui_v2.h"
 
 // Animated TPK1 sprite (legacy format, fallback path). The project uses
 // PMD/TPK2 (PmdMon) for everything; this path stays inactive if there is no NNN.bin on the SD.
@@ -20,6 +21,9 @@ struct SdMon {
 enum : uint8_t {
   PMD_IDLE = 0, PMD_WALKL, PMD_WALKR, PMD_SLEEP, PMD_EAT, PMD_HURT,
   PMD_ATTACK, PMD_POSE, PMD_HOP, PMD_NOD, PMD_BREATH, PMD_SIT,
+#if UI_V2
+  PMD_WALKD, PMD_WALKU,  // V2: walking toward you and away (Walk rows 0 and 4), from the pack's tail
+#endif
   PMD_NACTS
 };
 

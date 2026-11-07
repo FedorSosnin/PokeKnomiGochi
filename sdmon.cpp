@@ -44,6 +44,16 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
 
   const uint8_t *p = blob + 7 + palCount * 2;
   const uint8_t *end = blob + size;
+#if UI_V2
+  // V2's walk rows come after the counted actions, in a tail that 1.51's loader never reads ("TPKX", u8 n,
+  // then n more actions laid out the same): the loop below runs a second time, over them
+  for (int part = 0; part < 2; part++) {
+    if (part == 1) {
+      if (p + 5 > end || memcmp(p, "TPKX", 4) != 0) break;
+      nActs = p[4];
+      p += 5;
+    }
+#endif
   for (uint8_t i = 0; i < nActs && p + 4 <= end; i++) {
     uint8_t id = p[0], w = p[1], h = p[2], nf = p[3];
     p += 4;
@@ -75,6 +85,9 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
     }
     a.base = base;
   }
+#if UI_V2
+  }
+#endif
   loaded = true;
   this->shiny = shinyFile;
   Serial.printf("loaded %s (%u KB)\n", path, size / 1024);

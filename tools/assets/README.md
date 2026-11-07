@@ -31,7 +31,11 @@ Defined in the headers of each packer and parsed in `sdmon.cpp`:
   `u16 pal[]` (RGB565), `u8 data[frames*w*h]` (palette index, `0xFF`
   transparent).
 - **TPK2** (`PmdMon`): `"TPK2"`, `u8 nActs`, `u16 palCount`, `u16 pal[]`, and per
-  action `u8 id,w,h,nFrames` + `u16 ms[nFrames]` + `u8 data[w*h*nFrames]`.
+  action `u8 id,w,h,nFrames` + `u16 ms[nFrames]` + `u8 data[w*h*nFrames]`. Then a
+  tail for V2: `"TPKX"`, `u8 n`, and `n` more actions laid out the same: 12 (Walk
+  row 0, toward you) and 13 (Walk row 4, away from you). 1.51 stops reading after
+  `nActs`, so packs with the tail still work there. `pack_pmd.py walk` adds the tail
+  to the packs already in `tools/sdcard/mons/`, keeping every byte before it.
 - **TPTH** (`SdThumbs`): `"TPTH"`, `u16 count`, `u32 offset[count]`, and per
   thumbnail `u8 w,h,palCount` + `u16 pal[]` + `u8 data[w*h]`.
 
