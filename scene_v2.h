@@ -671,8 +671,8 @@ static Rgb scMansionCol(char c) {
   return 0;
 }
 // the big mansion at 4x: outlined (every empty cell touching it is ink), then moonlight on its left edges
-static void scMansion(int x, int y) {
-  const int MW = 58, MH = 34, s = 4;
+static void scMansion(int x, int y, int s = 4) {
+  const int MW = 58, MH = 34;
   auto at = [&](int cx, int cy) -> char {
     if (cx < 0 || cy < 0 || cx >= MW || cy >= MH) return '.';
     return SPR_V2_MANSION[cy][cx];

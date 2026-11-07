@@ -914,3 +914,167 @@ static void v2MedalCard(int m) {
   v2Dots(5, group, 390);
   v2CloseX();
 }
+
+// ----- Travel: the round island (v2g.py travel_d()) and a zone's screen -----
+// Five wedges round a Wild patch: the Field at the top, then the Cave, the Beach, the Mansion and the Forest
+// clockwise, each in its zone's ground with its landmark and a name tag with how many you've caught there,
+// dashed borders between them and the sea round the coast. One tap on a wedge opens that zone (as V1's tile
+// did); Wild starts a wild battle. Fedor: "D is super cool!"
+static const uint8_t V2_WEDGE_ZONE[5] = { Z_FIELD, Z_CAVE, Z_BEACH, Z_MANSION, Z_FOREST };
+static const StrId V2_ZONE_NAMES[ZONE_COUNT] = { S_ZONE_FOREST, S_ZONE_BEACH, S_ZONE_CAVE, S_ZONE_MANSION, S_ZONE_FIELD };  // V1's ZONE_NAME, defined further down
+static bool v2IsleLand(int x, int y) {  // single precision: the Knomi has hardware for it
+  float a = atan2f(y - 233.f, x - 233.f), r = hypotf(x - 233.f, y - 233.f);
+  return r < 198 + 8 * sinf(5 * a) + 5 * sinf(11 * a + 1);
+}
+static int v2IsleRegion(int x, int y) {  // 0..4: a wedge (V2_WEDGE_ZONE), 5: the Wild patch
+  if (hypotf(x - 233.f, y - 233.f) < 60) return 5;
+  float a = fmodf(atan2f(y - 233.f, x - 233.f) * 57.29578f + 90 + 36 + 720, 360);
+  int w = (int)(a / 72);
+  return w > 4 ? 4 : w;
+}
+static void v2PaintIsle(int) {
+  static const Rgb FILL[6] = { 0x8FCE7A, 0x6C7190, 0xECDCAC, 0x2E2758, 0x3F8A4C, 0x5F9E3E };
+  static const Rgb LIT[6] = { 0xA6DC90, 0x8A8FA6, 0xF8ECC4, 0x3E3470, 0x58B868, 0x79BD4F };
+  const Rgb SEA = 0x4F93C4, SEA_L = 0x7CC4EA;
+  const int N = V2_W / 4 + 1;  // each cell's land and region worked out once
+  uint8_t *g = (uint8_t *)ps_malloc(N * N);
+  if (!g) return;
+  for (int j = 0; j < N; j++)
+    for (int i = 0; i < N; i++) {
+      int x = i * 4 + 2, y = j * 4 + 2;
+      g[j * N + i] = v2IsleLand(x, y) ? 0x80 | v2IsleRegion(x, y) : 0;
+    }
+  auto at = [&](int i, int j) -> uint8_t { return i < 0 || j < 0 || i >= N || j >= N ? 0 : g[j * N + i]; };
+  for (int j = 0; j * 4 < V2_W; j++)
+    for (int i = 0; i * 4 < V2_W; i++) {
+      int cx = i * 4, cy = j * 4;
+      uint8_t c0 = at(i, j);
+      if (!c0) {  // the sea, a lighter checker along the coast
+        bool near = at(i, j - 1) || at(i, j + 1) || at(i - 1, j) || at(i + 1, j);
+        scCell(cx, cy, near && (i + j) % 2 ? SEA_L : SEA);
+        continue;
+      }
+      int z = c0 & 7;
+      uint8_t r = at(i + 1, j), d = at(i, j + 1);
+      bool edge = (r && (r & 7) != z) || (d && (d & 7) != z);
+      bool coast = !(at(i, j - 1) && at(i, j + 1) && at(i - 1, j) && at(i + 1, j));
+      Rgb c;
+      if (coast) c = z != 2 ? 0xE2CF98 : 0xF8ECC4;  // a sandy coast (the Beach's paler)
+      else if (edge) c = (i + j) % 2 == 0 ? 0x1B1B25 : scMix(FILL[z], 0x1B1B25, .4);  // dashed borders
+      else if (!at(i, j - 2) || (at(i, j - 1) & 7) != z) c = LIT[z];  // lit along its top edge
+      else c = FILL[z];
+      scCell(cx, cy, c);
+    }
+  free(g);
+  static const int16_t WAVE[10][2] = { {20, 40}, {328, 12}, {96, 456}, {424, 204}, {8, 356}, {460, 192}, {368, 56}, {48, 416}, {32, 196}, {316, 424} };
+  for (auto &w : WAVE) {  // a few waves out at sea (the mockup's Random(8))
+    scCell(w[0], w[1], SEA_L);
+    scCell(w[0] + 4, w[1] - 4, SEA_L);
+    scCell(w[0] + 8, w[1], SEA_L);
+  }
+  // each wedge's landmark, 140 out from the middle, and the Wild patch's grass
+  for (int k = 0; k < 5; k++) {
+    float a = (-90 + k * 72) * 0.0174533f;
+    int x = (int)(233 + 140 * cosf(a)), y = (int)(233 + 140 * sinf(a)) - 4;
+    switch (V2_WEDGE_ZONE[k]) {
+      case Z_FOREST: {
+        static const int8_t PINE[7][2] = { {-30, -6}, {-8, -14}, {14, -4}, {36, -12}, {-18, 10}, {6, 8}, {28, 12} };
+        for (auto &t : PINE) scRole(SPR_V2_PINE, 12, x + t[0] - 15, y + t[1] - 30, 3, SC_DAY, 0x2F7A3C);
+        break;
+      }
+      case Z_FIELD: {
+        scHouse(x - 24, y - 34, false);
+        scFence(y + 2, x + 28, x + 70, 0x9A6F43, 0xB38A58, 12);
+        static const int8_t FL[3][2] = { {-40, 4}, {-30, -6}, {40, -20} };
+        for (int f = 0; f < 3; f++) scGridRect(x + FL[f][0], y + FL[f][1], x + FL[f][0] + 4, y + FL[f][1] + 4, SC_DAY.fl[f]);
+        break;
+      }
+      case Z_CAVE: {
+        static const int8_t PEAK[2][2] = { {-22, 44}, {20, 34} };
+        for (auto &pk : PEAK) {
+          int px = x + pk[0], h = pk[1];
+          for (int cy = y - h; cy < y + 4; cy += 4) {
+            float half = (cy - (y - h)) * .85f;
+            for (int cx = scFl4((int)floorf(px - half)) * 4; cx <= (int)(px + half); cx += 4)
+              scCell(cx, cy, cy < y - h + 12 ? 0xE8EEF5 : cx > px ? 0x4A4F68 : 0x5A5F7C);
+          }
+        }
+        scOval(scE(x - 30, y - 14, x - 14, y + 4), 0x1B1B25);  // the cave's mouth
+        scSprite(SPR_V2_CRYSTAL, 6, x + 4, y - 10, 2, SC_CRYSTAL_KEYS, 2);
+        break;
+      }
+      case Z_MANSION: {
+        scMansion(x - 58, y - 62, 2);
+        static const int8_t ST[3][2] = { {50, -10}, {64, -4}, {-64, -6} };
+        const ScKey stone[2] = { { 'o', 0x0D0B20 }, { 's', 0x5A5F7C } };
+        for (int t = 0; t < 3; t++) scSprite(t % 3 == 1 ? SPR_V2_CROSS : SPR_V2_TOMB, 7, x + ST[t][0], y + ST[t][1], 2, stone, 2);
+        break;
+      }
+      default: {  // the Beach
+        ScKey palm[5];
+        scPalmKeys(palm, SC_DAY);
+        scSprite(SPR_V2_PALM, 12, x - 40, y - 46, 3, palm, 5);
+        scSprite(SPR_V2_PALM, 12, x + 6, y - 40, 3, palm, 5);
+        const ScKey crab[3] = { { 'r', 0xE86F5F }, { 'w', 0xFFFFFF }, { 'k', 0x1B1B25 } };
+        scSprite(SPR_V2_CRAB, 6, x - 6, y + 2, 2, crab, 3);
+      }
+    }
+  }
+  static const int8_t TUFT[4][2] = { {-24, -10}, {0, -14}, {-12, 4}, {14, 0} };
+  const ScKey wild[2] = { { 'G', 0x2F6A3A }, { 'g', 0x4F9A55 } };
+  for (auto &t : TUFT) scSprite(SPR_V2_TALLGRASS, 5, 233 + t[0] - 12, 222 + t[1], 2, wild, 2);
+}
+// a wedge's name tag: its name and the count, in a panel rimmed in the zone's colour
+static void v2IsleTag(const char *name, const char *line2, int x, int y, Rgb col) {
+  setSize(2);
+  int w = textW(name, 2);
+  if (textW(line2, 2) > w) w = textW(line2, 2);
+  w += 16;
+  uint16_t rim = sc565(col);
+  gfx->fillRoundRect(x - w / 2 - 3, y - 3, w + 6, 50, 10, rim);
+  gfx->fillRoundRect(x - w / 2, y, w, 44, 8, UI_WHITE);
+  gfx->setTextColor(UI_INK);
+  setCur(x - textW(name, 2) / 2, y + 6);
+  printT(name);
+  gfx->setTextColor(sc565(scMix(col, 0x1B1B25, .35)));
+  setCur(x - textW(line2, 2) / 2, y + 26);
+  printT(line2);
+}
+static void v2Travel() {
+  static const Rgb TAG[6] = { 0xF0C04A, 0x9A86D8, 0x4F93C4, 0xB070F0, 0x58B868, 0xE8503A };
+  v2Cached(0x3D000000, v2PaintIsle, 0);
+  char b[16];
+  for (int k = 0; k < 5; k++) {
+    float a = (-90 + k * 72) * 0.0174533f;
+    uint8_t z = V2_WEDGE_ZONE[k];
+    snprintf(b, sizeof(b), "%d/%d", pet.zoneCaught(z), zoneSize(z));
+    v2IsleTag(T(V2_ZONE_NAMES[z]), b, (int)(233 + 120 * cosf(a)), (int)(233 + 120 * sinf(a)) + 4, TAG[k]);
+  }
+  // the Wild patch: "Wild Encounter" on two lines (one in Japanese and Korean)
+  const char *p = T(S_RANDOM_BATTLE);
+  char l1[32], l2[32] = "";
+  int skip, n = gCjkFont ? (int)strlen(p) : wrapNext(p, 12, skip);
+  if (gCjkFont) skip = n;
+  snprintf(l1, sizeof(l1), "%.*s", n, p);
+  if (p[skip]) snprintf(l2, sizeof(l2), "%s", p + skip);
+  v2IsleTag(l1, l2, 233, 240, TAG[5]);
+  v2SignIn(T(S_TRAVEL), 18, C565(0xc0, 0x84, 0x10), C565(0xf0, 0xc0, 0x4a));
+  v2CloseX();
+}
+// which pick a tap on the island is: a zone, the Wild patch (ZONE_COUNT), or the sea (-1)
+static int v2IsleAt(int16_t x, int16_t y) {
+  if (!v2IsleLand(x, y)) return -1;
+  int r = v2IsleRegion(x, y);
+  return r == 5 ? ZONE_COUNT : V2_WEDGE_ZONE[r];
+}
+// behind a zone's grid: its scene, dimmed half way, so the Pokemon stand out (from the scene buffer)
+static void v2PaintZoneBack(int key) {
+  scPaint(key / 4, key % 4);
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  const uint16_t tint = sc565(0x120E22);
+  for (int i = 0; i < V2_W * V2_W; i++) fb[i] = v2Blend(fb[i], tint, 128);
+}
+static void v2ZoneBack(uint8_t zone) {
+  uint8_t tod = zone == Z_CAVE || zone == Z_MANSION ? 0 : v2HourTod();
+  v2Cached(0x3C000000 | (zone * 4 + tod), v2PaintZoneBack, zone * 4 + tod);
+}

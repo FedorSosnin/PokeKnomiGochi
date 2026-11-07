@@ -8569,15 +8569,23 @@ void tradeTap(int16_t x, int16_t y) {
 #define ZONE_ICON_R 50
 // a zone: the count and its name, its Pokedex as a 3 x 3 grid (as the Pokedex), Search, the page and X
 #define ZONE_GRID_X 107
-#define ZONE_GRID_Y 76
 #define ZONE_CELL 84
 #define ZONE_PAGE DEXG_PAGE
 #define ZONE_BTN_X 123
-#define ZONE_BTN_Y 334
 #define ZONE_BTN_W 220
+#if UI_V2  // V2: the grid in a panel under the board, Search under it, the page as dots above the X at 422
+#define ZONE_GRID_Y 72
+#define ZONE_BTN_Y 336
+#define ZONE_BTN_H 38
+#define ZONE_PAGE_Y 386
+#define ZONE_CLOSE_Y V2_CLOSE_Y
+#else
+#define ZONE_GRID_Y 76
+#define ZONE_BTN_Y 334
 #define ZONE_BTN_H 44
 #define ZONE_PAGE_Y 384
 #define ZONE_CLOSE_Y 430  // a little lower than elsewhere, to make room for the page
+#endif
 
 // two rows of three: the five zones, then Wild Encounter (a wild Pokemon from anywhere, like the
 // Knomi's button; the apps and the web have none), met at home: its window is your Pokemon's own
@@ -8726,6 +8734,9 @@ void zoneHomeDraw(uint16_t *art) {
 
 // the pick under a tap (its window or its name): a zone, ZONE_RANDOM, or -1
 int zonePickAt(int16_t x, int16_t y) {
+#if UI_V2
+  return v2IsleAt(x, y);  // V2: a wedge of the round island, or the Wild patch in the middle
+#endif
   for (int z = 0; z < ZONE_PICKS; z++) {
     int dx = x - ZONE_XY[z][0], dy = y - ZONE_XY[z][1];
     if ((abs(dx) < ZONE_ICON_R + 8 && abs(dy) < ZONE_ICON_R + 8) || (abs(dx) < 62 && dy > 0 && dy < ZONE_ICON_R + 44)) return z;
@@ -8740,7 +8751,16 @@ void renderZones() {
     return;
   }
   char b[32];
+#if UI_V2
+  if (zoneScreen == ZS_PICK) {  // V2: the round island
+    v2Travel();
+    gfx->flush();
+    return;
+  }
+  v2ZoneBack(zoneCur);  // a zone: its scene dimmed behind its grid
+#else
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
+#endif
   gfx->setTextColor(UI_INK);
   setSize(3);
   if (zoneScreen == ZS_PICK) {
@@ -8782,7 +8802,11 @@ void renderZones() {
   for (int i = 0; i < DEXG_PAGE; i++) dex[i] = zoneMember(zoneCur, zonePage * ZONE_PAGE + i);
   dexGridSync(dex);
   snprintf(b, sizeof(b), "%d/%d", pet.zoneCaught(zoneCur), zoneSize(zoneCur));
+#if UI_V2
+  v2GridHead(T(ZONE_NAME[zoneCur]), b, ZONE_GRID_X, ZONE_GRID_Y, ZONE_CELL, 3);  // V2: the board, a white panel
+#else
   drawDexGridHead(b, T(ZONE_NAME[zoneCur]), 26);
+#endif
   for (int i = 0; i < DEXG_PAGE && dex[i]; i++) {
     int x = ZONE_GRID_X + (i % DEXG_COLS) * ZONE_CELL, y = ZONE_GRID_Y + (i / DEXG_COLS) * ZONE_CELL;
     drawDexCell(dex[i], i, x, y, ZONE_CELL);
@@ -8793,6 +8817,12 @@ void renderZones() {
       printT("*");
     }
   }
+#if UI_V2
+  v2LabelButton(ZONE_BTN_X + 3, ZONE_BTN_Y + 3, ZONE_BTN_X + ZONE_BTN_W - 3, ZONE_BTN_Y + ZONE_BTN_H - 3, T(S_ZONE_SEARCH),
+                ZONE_COLOR[zoneCur]);  // V2: Search as a V2 button; the page as dots
+  int zpages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
+  v2Dots(zpages, zonePage, ZONE_PAGE_Y);
+#else
   gfx->fillRoundRect(ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, 14, ZONE_COLOR[zoneCur]);
   gfx->setTextColor(UI_WHITE);
   setSize(2);
@@ -8800,6 +8830,7 @@ void renderZones() {
   printT(T(S_ZONE_SEARCH));
   int zpages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
   drawDexGridPage(zonePage, zpages, ZONE_PAGE_Y);
+#endif
   drawPageArrows(zonePage, zpages, PAGE_ARROW_Y);
   drawCloseButtonAt(ZONE_CLOSE_Y);  // how to leave, as on the zone picker
   gfx->flush();
