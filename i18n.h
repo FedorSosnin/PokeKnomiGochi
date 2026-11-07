@@ -105,6 +105,7 @@ enum StrId : uint8_t {
   S_AUTO_UPDATE,  // settings: the switch that lets a new version go in by itself
 #if UI_V2
   S_RESET_BTN, S_RESET_WARN,  // V2: the clock page's START OVER, and what "Start over?" erases
+  S_CART_VOLLEY, S_CART_SHOWDOWN, S_PLAY_WITH_FMT,  // V2: Play together's cartridge titles ("\n" breaks a line), "with %s"
 #endif
   STR_COUNT
 };

@@ -2544,6 +2544,10 @@ void fillRing(int cx, int cy, int r0, int r1, uint16_t col) {
 
 // paints a moment of each game on the canvas (not shown) and keeps the piece for its window
 void gameGlimpsesPaint() {
+#if UI_V2
+  v2PaintGameLabels();  // V2: the cartridges' labels, each its game's background at half size with yours at 1x
+  return;
+#endif
   if (!gameArt) gameArt = (uint16_t *)ps_malloc(GAMES_COUNT * GAME_ART * GAME_ART * sizeof(uint16_t));
   if (!gameArt) return;
   uint32_t now = millis();
@@ -2651,6 +2655,9 @@ void openGamesMenu() {
 
 // the game under a tap: its window or its name under it, or -1
 int gameAt(int16_t x, int16_t y) {
+#if UI_V2
+  return v2GameAt(x, y);  // V2: a cartridge on the TV
+#endif
   for (int i = 0; i < GAMES_COUNT; i++) {
     int dx = x - GAME_XY[i][0], dy = y - GAME_XY[i][1];
     if ((abs(dx) < GAME_ICON_R + 8 && abs(dy) < GAME_ICON_R + 8) || (abs(dx) < 60 && dy > 0 && dy < GAME_ICON_R + 48)) return i;
@@ -2966,6 +2973,11 @@ void drawGameIcon(int i) {
 
 void renderGamesMenu() {
   if (pet.sleeping || pet.ceremony) { gamesMenuOpen = false; return; }  // left alone it stays open
+#if UI_V2
+  v2GamesTv();  // V2: the old TV with its five cartridges
+  gfx->flush();
+  return;
+#endif
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
@@ -7836,6 +7848,10 @@ uint16_t playColor(int i) {
 // each game's window: Volley's court (the game's, deep green), Who's That? Showdown's burst, PikaSurf
 // with the buddy alongside
 void playGlimpsesPaint() {
+#if UI_V2
+  v2PaintPlayLabels();  // V2: the three cartridges' labels
+  return;
+#endif
   if (!playArt) playArt = (uint16_t *)ps_malloc(PLAY_GAME_COUNT * GAME_ART * GAME_ART * sizeof(uint16_t));
   if (!playArt) return;
   uint32_t now = millis();
@@ -7889,6 +7905,9 @@ void openPlayMenu() {
 }
 
 int playGameAt(int16_t x, int16_t y) {
+#if UI_V2
+  return v2CartAt(x, y, V2_PLAY_XY, PLAY_GAME_COUNT);  // V2: a cartridge on the TV
+#endif
   for (int i = 0; i < PLAY_GAME_COUNT; i++) {
     int dx = x - PLAY_X[i], dy = y - PLAY_TILE_Y;
     if ((abs(dx) < GAME_ICON_R + 8 && abs(dy) < GAME_ICON_R + 8) || (abs(dx) < 60 && dy > 0 && dy < GAME_ICON_R + 48)) return i;
@@ -7898,6 +7917,11 @@ int playGameAt(int16_t x, int16_t y) {
 
 void renderPlayMenu() {
   if (!bPeers[bCur].on) { playMenuOpen = false; return; }
+#if UI_V2
+  v2PlayTv();  // V2: the old TV with three cartridges
+  gfx->flush();
+  return;
+#endif
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   gfx->setTextColor(UI_INK);
   setSize(3);
@@ -9739,6 +9763,10 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   if (gamesMenuOpen) {
     int g = gameAt(x, y);
     if (g < 0) return false;
+#if UI_V2
+    int k = v2CartOfGame(g);  // V2: round the cartridge
+    return pressSet(t, V2_CART_XY[k][0] - 5, V2_CART_XY[k][1] - 5, 125, 145, gameLabel(g));
+#endif
     return pressSet(t, GAME_XY[g][0] - GAME_ICON_R, GAME_XY[g][1] - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, gameLabel(g));
   }
   if (zoneScreen == ZS_PICK) {
@@ -9789,6 +9817,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   }
   if (playMenuOpen) {
     int i = playGameAt(x, y);
+#if UI_V2
+    if (i >= 0) return pressSet(t, V2_PLAY_XY[i][0] - 5, V2_PLAY_XY[i][1] - 5, 125, 145, T(PLAY_GAMES[i]));  // V2: round the cartridge
+#endif
     if (i >= 0)
       return pressSet(t, PLAY_X[i] - GAME_ICON_R, PLAY_TILE_Y - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, T(PLAY_GAMES[i]));
     if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");

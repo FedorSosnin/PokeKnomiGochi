@@ -58,6 +58,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Inclina o arrastra a tu Pokemon para pasar la pelota sobre la red. Si se te escapa, punto para tu amigo!", "Inclina, usa las flechas o arrastra a tu Pokemon para pasar la pelota sobre la red. Si se te escapa, punto para tu amigo!", "Toca el nombre del Pokemon de la sombra antes que tu amigo. 10 rondas!", "Inclina o arrastra a tu Pokemon para esquivar las rocas. Gana quien aguante m\240s!", "Inclina, usa las flechas o arrastra a tu Pokemon para esquivar las rocas. Gana quien aguante m\240s!", "Auto-actualizar",
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "EMPEZAR DE NUEVO", "Se borrar\240 todo tu progreso, la POKEDEX y las medallas.",
+    "Voley\nPoke", "Duelo", "con %s",
 #endif
   },
   // ---------------- EN ----------------
@@ -111,6 +112,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Tilt or drag your Pokemon to hit the ball over the net. Miss it and your buddy scores!", "Tilt, use the arrow keys, or drag your Pokemon to hit the ball over the net. Miss it and your buddy scores!", "Tap the name of the Pokemon in the shadow before your buddy does. 10 rounds!", "Tilt or drag your Pokemon to dodge the rocks. Whoever lasts longer wins!", "Tilt, use the arrow keys, or drag your Pokemon to dodge the rocks. Whoever lasts longer wins!", "Auto-update",
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "START OVER", "All your progress, the POKEDEX and the medals will be erased.",
+    "Poke\nVolley", "Show\ndown", "with %s",
 #endif
   },
   // ---------------- FR ----------------
@@ -164,6 +166,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Penche ou fais glisser ton Pokemon pour renvoyer la balle par-dessus le filet. Rat\202e, et ton copain marque!", "Penche, utilise les fl\212ches ou fais glisser ton Pokemon pour renvoyer la balle. Rat\202e, et ton copain marque!", "Touche le nom du Pokemon dans l'ombre avant ton copain. 10 manches!", "Penche ou fais glisser ton Pokemon pour \202viter les rochers. Le dernier en piste gagne!", "Penche, utilise les fl\212ches ou fais glisser ton Pokemon pour \202viter les rochers. Le dernier en piste gagne!", "Mise \205 jour auto",
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "RECOMMENCER", "Ta progression, le POKEDEX et les m\202dailles seront effac\202s.",
+    "Volley\nPoke", "Duel", "avec %s",
 #endif
   },
   // ---------------- DE ----------------
@@ -222,6 +225,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Neige oder zieh dein Pokemon, um den Ball \201bers Netz zu spielen. Verpasst du ihn, punktet dein Kumpel!", "Neigen, Pfeiltasten oder dein Pokemon ziehen: Spiel den Ball \201bers Netz. Verpasst du ihn, punktet dein Kumpel!", "Tippe vor deinem Kumpel auf den Namen des Pokemon im Schatten. 10 Runden!", "Neige oder zieh dein Pokemon, um den Felsen auszuweichen. Wer l\204nger durchh\204lt, gewinnt!", "Neigen, Pfeiltasten oder dein Pokemon ziehen: Weich den Felsen aus. Wer l\204nger durchh\204lt, gewinnt!", "Auto-Update",
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "NEU ANFANGEN", "Fortschritt, POKEDEX und Medaillen werden gel\224scht.",
+    "Poke\nVolley", "Duell", "mit %s",
 #endif
   },
   // ---------------- IT ----------------
@@ -275,6 +279,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Inclina o trascina il tuo Pokemon per mandare la palla oltre la rete. Se la manchi, il tuo amico segna!", "Inclina, usa le frecce o trascina il tuo Pokemon per mandare la palla oltre la rete. Se la manchi, il tuo amico segna!", "Tocca il nome del Pokemon nell'ombra prima del tuo amico. 10 round!", "Inclina o trascina il tuo Pokemon per schivare gli scogli. Vince chi resiste di pi\227!", "Inclina, usa le frecce o trascina il tuo Pokemon per schivare gli scogli. Vince chi resiste di pi\227!", "Auto-aggiorna",
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "RICOMINCIA", "Progressi, POKEDEX e medaglie verranno cancellati.",
+    "Palla\nvolo", "Sfida", "con %s",
 #endif
   },
   // ---------------- PT ----------------
@@ -328,6 +333,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Inclina ou arrasta o teu Pokemon para passar a bola por cima da rede. Se falhares, o teu amigo marca!", "Inclina, usa as setas ou arrasta o teu Pokemon para passar a bola por cima da rede. Se falhares, o teu amigo marca!", "Toca no nome do Pokemon da sombra antes do teu amigo. 10 rondas!", "Inclina ou arrasta o teu Pokemon para te desviares das rochas. Ganha quem aguentar mais!", "Inclina, usa as setas ou arrasta o teu Pokemon para te desviares das rochas. Ganha quem aguentar mais!", "Auto-atualizar",
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "RECOME\207AR", "Isto apaga todo o progresso, a POKEDEX e as medalhas.",
+    "Volei\nPoke", "Duelo", "com %s",
 #endif
   },
   // ---------------- JA ----------------
@@ -404,6 +410,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "かたむけるか ポケモンを ドラッグして ボールを ネットの むこうへ! とりのがすと ともだちの ポイント!", "かたむけるか やじるしキー または ポケモンを ドラッグして ボールを かえそう! とりのがすと ともだちの ポイント!", "ともだちより はやく かげの ポケモンの なまえを タッチ! 10もん!", "かたむけるか ポケモンを ドラッグして いわを よけよう! ながく のこった ほうの かち!", "かたむけるか やじるしキー または ポケモンを ドラッグして いわを よけよう! ながく のこった ほうの かち!", "じどう こうしん",
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "さいしょから", "しんこう、ずかん、メダルが ぜんぶ きえます。",
+    "ボール\nバレー", "たいけつ", "%sと",
 #endif
   },
   // ---------------- KO ----------------
@@ -462,6 +469,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "기울이거나 포켓몬을 끌어서 공을 네트 너머로 넘겨요! 놓치면 친구가 점수를 얻어요!", "기울이거나 화살표 키, 또는 포켓몬을 끌어서 공을 네트 너머로 넘겨요! 놓치면 친구가 점수를 얻어요!", "친구보다 먼저 그림자 속 포켓몬의 이름을 눌러요. 10라운드!", "기울이거나 포켓몬을 끌어서 바위를 피해요! 더 오래 버티는 쪽이 이겨요!", "기울이거나 화살표 키, 또는 포켓몬을 끌어서 바위를 피해요! 더 오래 버티는 쪽이 이겨요!", "자동 업데이트",
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "처음부터", "진행, 도감, 메달이 모두 지워져요.",
+    "몬스터볼\n배구", "대결", "함께: %s",
 #endif
   },
 };

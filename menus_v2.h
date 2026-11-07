@@ -1078,3 +1078,390 @@ static void v2ZoneBack(uint8_t zone) {
   uint8_t tod = zone == Z_CAVE || zone == Z_MANSION ? 0 : v2HourTod();
   v2Cached(0x3C000000 | (zone * 4 + tod), v2PaintZoneBack, zone * 4 + tod);
 }
+
+// ----- capitals -----
+// The mockups write boards and cartridge titles in capitals. Latin letters only (Japanese and Korean have
+// none); an accented small letter becomes its capital where the font has a clear one (Ñ, Ç, Ä, Ö, Ü, Å, Æ),
+// otherwise the plain capital, as V1's capitals already do ("EVOLUCION").
+static const char *v2Caps(const char *s, char *buf, int n) {
+  int i = 0;
+  for (; s[i] && i < n - 1; i++) {
+    uint8_t c = (uint8_t)s[i];
+    if (!gCjkFont) {
+      if (c >= 'a' && c <= 'z') c -= 32;
+      else if (c >= 0x80) switch (c) {  // the font's code page (CP437)
+          case 0x81: c = 0x9A; break;
+          case 0x84: c = 0x8E; break;
+          case 0x86: c = 0x8F; break;
+          case 0x87: c = 0x80; break;
+          case 0x91: c = 0x92; break;
+          case 0x94: c = 0x99; break;
+          case 0xA4: c = 0xA5; break;
+          case 0x83: case 0x85: case 0xA0: c = 'A'; break;
+          case 0x82: case 0x88: case 0x89: case 0x8A: c = 'E'; break;
+          case 0x8B: case 0x8C: case 0x8D: case 0xA1: c = 'I'; break;
+          case 0x93: case 0x95: case 0xA2: c = 'O'; break;
+          case 0x96: case 0x97: case 0xA3: c = 'U'; break;
+          case 0x98: c = 'Y'; break;
+        }
+    }
+    buf[i] = (char)c;
+  }
+  buf[i] = 0;
+  return buf;
+}
+
+// ----- the games TV: Games and Play together (labels.py games_tv4(), batch3.py play_together()) -----
+// An old CRT TV, dimmed half way (v2g.py tv_round()): a rounded wooden cabinet, the tube's glass with a soft
+// glare and scanlines, rabbit ears. Grey snow on the glass with a brighter band rolling down, new every
+// 200 ms (static2()). The board on top, then Game Boy style cartridges at 5 px cells, each label a little
+// scene from its game: the game's own V2 background at exactly half size (its 4 px cells become 2 px) with
+// your Pokemon in it at 1x (the mockups have a fixed cast: Bulbasaur, Pikachu, Charmander, Gengar; V1's
+// windows showed your own). One tap on a cartridge starts its game, as V1's windows did.
+#define V2_TV_X0 34  // the glass (SCREEN2)
+#define V2_TV_Y0 54
+#define V2_TV_X1 432
+#define V2_TV_Y1 398
+#define V2_TV_R 48
+#define V2_LBL_W 79  // a label's picture (AW x AH)
+#define V2_LBL_H 42
+#define V2_TV_KEY 0x3A000000
+static inline uint16_t v2TvC(Rgb c) { return sc565(scMix(c, 0x120E22, .5)); }  // everything on it dimmed half way (QUIET)
+static bool v2InGlass(int x, int y) {  // inside the tube's rounded glass
+  if (x < V2_TV_X0 || x > V2_TV_X1 || y < V2_TV_Y0 || y > V2_TV_Y1) return false;
+  int cx = x < V2_TV_X0 + V2_TV_R ? V2_TV_X0 + V2_TV_R : x > V2_TV_X1 - V2_TV_R ? V2_TV_X1 - V2_TV_R : x;
+  int cy = y < V2_TV_Y0 + V2_TV_R ? V2_TV_Y0 + V2_TV_R : y > V2_TV_Y1 - V2_TV_R ? V2_TV_Y1 - V2_TV_R : y;
+  return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= V2_TV_R * V2_TV_R;
+}
+static void v2PaintTv(int) {
+  gfx->fillScreen(v2TvC(0x1A100A));
+  static const int16_t EAR[2][4] = { { 206, 26, 168, -10 }, { 260, 26, 298, -10 } };  // the rabbit ears
+  for (auto &e : EAR)
+    for (int i = 0; i < 12; i++) {
+      int x = (int)(e[0] + (e[2] - e[0]) * i / 12.0), y = (int)(e[1] + (e[3] - e[1]) * i / 12.0);
+      gfx->fillRect(scFl4(x) * 4, scFl4(y) * 4, 4, 4, v2TvC(0xAAB0BC));
+    }
+  gfx->fillRoundRect(8, 22, 451, 399, 64, v2TvC(0x3A2414));  // the cabinet, well rounded
+  gfx->fillRoundRect(12, 26, 443, 391, 60, v2TvC(0x8A5A30));
+  for (int x = 16; x < 452; x += 12) gfx->fillRect(x, 30, 4, 383, v2TvC(0x7A4C28));  // its grain
+  for (int i = 0; i < 4; i++) gfx->drawRoundRect(12 + i, 26 + i, 443 - 2 * i, 391 - 2 * i, 60 - i, v2TvC(0x3A2414));
+  gfx->fillRoundRect(V2_TV_X0 - 6, V2_TV_Y0 - 6, V2_TV_X1 - V2_TV_X0 + 13, V2_TV_Y1 - V2_TV_Y0 + 13, 54, v2TvC(0x0D0B20));  // the bezel
+  // the glass: lighter in the middle, scanlines on every other pair of rows, a curved glare of faint dots
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  for (int y = V2_TV_Y0; y <= V2_TV_Y1; y++)
+    for (int x = V2_TV_X0; x <= V2_TV_X1; x++) {
+      if (!v2InGlass(x, y)) continue;
+      float dx = (x - 233) / 200.0f, dy = (y - 226) / 175.0f, r = sqrtf(dx * dx + dy * dy);
+      Rgb c = scMix(0x2A4C70, 0x14223A, r < 1 ? r : 1);
+      if ((y / 2) % 2) c = scMix(c, 0x0D0B20, .2);
+      bool glare = (y >= 70 && y < 76 && x >= 70 && x < 150) || (y >= 80 && y < 130 && x >= 62 && x < 70);
+      if (glare && (x - 62) % 4 == 0 && (y - 70) % 4 == 0) c = scMix(c, 0xFFFFFF, .10);
+      fb[y * V2_W + x] = v2TvC(c);
+    }
+}
+// the snow: a 4 px cell here and there lit grey, more of them in the band rolling down the glass
+static void v2TvStatic(uint32_t now) {
+  uint32_t f = now / 200, r = 500 + f * 2654435761u;
+  int band = V2_TV_Y0 + (int)(f % 10) * (V2_TV_Y1 - V2_TV_Y0) / 10;
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  static const uint8_t G[3] = { 200, 230, 255 }, A[3] = { 41, 61, 87 };  // .16, .24, .34 of 256
+  for (int cy = V2_TV_Y0; cy < V2_TV_Y1; cy += 4) {
+    bool roll = abs(cy - band) < 16;
+    for (int cx = V2_TV_X0; cx < V2_TV_X1; cx += 4) {
+      if (!v2InGlass(cx + 2, cy + 2)) continue;
+      r = r * 1664525u + 1013904223u;
+      if ((r >> 16) % 100 >= (roll ? 24u : 12u)) continue;
+      int g = G[(r >> 8) % 3];
+      uint16_t col = sc565(scRgb(g, g, g + 8));
+      int a = A[(r >> 4) % 3];
+      for (int y = cy; y < cy + 4; y++)
+        for (int x = cx; x < cx + 4; x++) fb[y * V2_W + x] = v2Blend(fb[y * V2_W + x], col, a);
+    }
+  }
+}
+
+// a cartridge's title in capitals on up to three lines, each no wider than its label: broken at a line break
+// in the title ("\n"), or at the space nearest the middle, or where two joined words meet ("Poke" "Dungeon"),
+// or in Japanese where the kana change (hiragana to katakana); a part still too wide is broken again, and a
+// word too wide on its own is cut in half
+#define V2_CART_TXT_W 84  // 7 letters at size 2 (their ink is 82 px)
+static int v2CartCut(const char *s, int n, bool joinedOnly) {  // where to break s[0..n), or -1
+  int best = -1;
+  for (int i = 1; i < n; i++) {
+    uint8_t c = (uint8_t)s[i], p = (uint8_t)s[i - 1];
+    bool cut = !gCjkFont && c >= 'A' && c <= 'Z' && p >= 'a' && p <= 'z';  // two joined words
+    if (!joinedOnly && !cut) {
+      cut = c == ' ';
+      if (gCjkFont && c == 0xE3 && i >= 3 && i + 2 < n && (uint8_t)s[i - 3] == 0xE3) {  // two kana in a row
+        int a = (((uint8_t)s[i - 2] & 0x3F) << 6) | ((uint8_t)s[i - 1] & 0x3F), b = (((uint8_t)s[i + 1] & 0x3F) << 6) | ((uint8_t)s[i + 2] & 0x3F);
+        cut = a >= 0x040 && b >= 0x040 && a < 0x100 && b < 0x100 && (a < 0x0A0) != (b < 0x0A0);  // hiragana, katakana
+      }
+    }
+    if (cut && (best < 0 || abs(2 * i - n) < abs(2 * best - n))) best = i;
+  }
+  return best;
+}
+static int v2CartLines(const char *title, char out[3][32]) {
+  char part[4][32];
+  int np = 0;
+  setSize(2);  // (Japanese and Korean are measured in the font as it's set)
+  const char *nl = strchr(title, '\n');
+  if (nl) {
+    snprintf(part[np++], 32, "%.*s", (int)(nl - title), title);
+    snprintf(part[np++], 32, "%s", nl + 1);
+  } else {
+    snprintf(part[np++], 32, "%s", title);
+  }
+  for (int i = 0; i < np && np < 3; i++) {
+    int n = (int)strlen(part[i]), cut, skip = 0;
+    if (textW(part[i], 2) <= V2_CART_TXT_W) {  // it fits: only a one-line name of two joined words breaks ("PokeRun")
+      if (np > 1 || (cut = v2CartCut(part[i], n, true)) < 0) continue;
+    } else if ((cut = v2CartCut(part[i], n, false)) >= 0) {
+      skip = part[i][cut] == ' ';
+    } else {  // one word too wide: cut in half
+      cut = (n + 1) / 2;
+      if (gCjkFont)
+        while (cut < n && ((uint8_t)part[i][cut] & 0xC0) == 0x80) cut++;  // on a character's first byte
+    }
+    for (int k = np; k > i + 1; k--) memcpy(part[k], part[k - 1], 32);
+    snprintf(part[i + 1], 32, "%s", part[i] + cut + skip);
+    part[i][cut] = 0;
+    np++;
+    i--;  // the first half again
+  }
+  for (int i = 0; i < np; i++) v2Caps(part[i], out[i], 32);
+  return np;
+}
+
+// the same for a title in Latin letters only (PokeRun, PikaSurf, PokeDungeon): the classic font in every
+// language, so they look the same in Japanese and Korean. Returns whether to put the language's font back.
+static bool v2CartFont(const char *title) {
+  for (const char *p = title; *p; p++)
+    if ((uint8_t)*p >= 0x80) return false;
+  return classicFontBegin();
+}
+
+// a cartridge (cart_label()), its top left at (x, y): the grey shell in 5 px cells with its notched corner, the
+// grooves, a label well; the label in the game's colour with the title and the picture in a dark frame
+static void v2CartRun(int x, int y, int cy, int cx0, int cx1, uint16_t c) {
+  if (cx1 >= cx0) gfx->fillRect(x + cx0 * 5, y + cy * 5, (cx1 - cx0 + 1) * 5, 5, c);
+}
+static bool v2CartIn(int cx, int cy) { return cx >= 0 && cx < 23 && cy >= 0 && cy < 27 && cx - 19 <= cy; }
+static void v2Cart(int x, int y, const uint16_t *pic, const char *title, Rgb col) {
+  const uint16_t body = sc565(0xB9B9C2), shade = sc565(0x8E8E9A), lite = sc565(0xDCDCE4), groove = sc565(0x9A9AA6), ink = sc565(0x1B1B25);
+  for (int cy = -1; cy <= 27; cy++) {  // the shell and its dark outline, row by row in runs
+    int run = 0;
+    uint16_t runC = 0;
+    bool on = false;
+    for (int cx = -1; cx <= 24; cx++) {
+      bool have = false;
+      uint16_t c = 0;
+      if (cx <= 23) {
+        if (v2CartIn(cx, cy)) have = true, c = (cx == 0 || cy == 0) ? lite : (cx == 22 || cy == 26) ? shade : body;
+        else if (v2CartIn(cx + 1, cy) || v2CartIn(cx - 1, cy) || v2CartIn(cx, cy + 1) || v2CartIn(cx, cy - 1)) have = true, c = ink;
+      }
+      if (on && (!have || c != runC)) v2CartRun(x, y, cy, run, cx - 1, runC), on = false;
+      if (have && !on) on = true, run = cx, runC = c;
+    }
+  }
+  v2CartRun(x, y, 1, 2, 14, groove);  // the grooves across the top
+  v2CartRun(x, y, 4, 2, 14, lite);
+  for (int cy = 2; cy <= 3; cy++) v2CartRun(x, y, cy, 1, 1, groove), v2CartRun(x, y, cy, 15, 15, lite);
+  for (int cy = 1; cy <= 3; cy++) v2CartRun(x, y, cy, 16, 18, cy % 2 ? groove : lite);
+  v2CartRun(x, y, 6, 2, 20, shade);  // the label's well: its edges (the label covers the rest)
+  for (int cy = 7; cy <= 24; cy++) v2CartRun(x, y, cy, 2, 2, shade), v2CartRun(x, y, cy, 20, 20, lite);
+  v2CartRun(x, y, 24, 3, 20, lite);
+  v2CartRun(x, y, 25, 10, 12, shade);  // the arrow
+  v2CartRun(x, y, 26, 11, 11, shade);
+  const int lx0 = x + 15, ly0 = y + 35;
+  gfx->fillRect(lx0, ly0, 85, 85, sc565(col));
+  char lines[3][32];
+  bool cjk = v2CartFont(title);
+  int n = v2CartLines(title, lines);
+  static const int8_t LY[3][3] = { { 12 }, { 4, 21 }, { 2, 18, 34 } };
+  gfx->setTextColor(UI_WHITE);
+  setSize(2);
+  for (int i = 0; i < n; i++) {
+    setCur(x + (gCjkFont ? 57 : 58) - textW(lines[i], 2) / 2, ly0 + LY[n - 1][i]);  // the ink centred on the label
+    printT(lines[i]);
+  }
+  classicFontEnd(cjk);
+  int py = ly0 + (n == 3 ? 51 : 38), h = n == 3 ? 29 : V2_LBL_H;  // three lines leave room for less picture
+  gfx->fillRect(lx0 + 2, py - 1, V2_LBL_W + 2, h + 2, sc565(scMix(col, 0x1B1B25, .35)));
+  if (pic) gfx->draw16bitRGBBitmap(lx0 + 3, py, (uint16_t *)pic + (V2_LBL_H - h) * V2_LBL_W, V2_LBL_W, h);
+}
+
+// ----- the labels' pictures, painted each time the menu opens (the hour's light, your Pokemon) -----
+// Eight: the five games in the cartridges' order, then Play together's three. Each is painted at the canvas's
+// top left (not shown): the game's background at half size, then what stands in it at 1x.
+static uint16_t *v2LblArt = nullptr;
+static uint16_t *v2Lbl(int i) { return v2LblArt ? v2LblArt + i * V2_LBL_W * V2_LBL_H : nullptr; }
+static bool v2LblStart() {
+  if (!v2LblArt) v2LblArt = (uint16_t *)ps_malloc(8 * V2_LBL_W * V2_LBL_H * sizeof(uint16_t));
+  return v2LblArt != nullptr;
+}
+// the background's piece at exactly half size, the 158 x 84 box from (x0, y0): every other pixel, as PIL's
+// NEAREST picks them, so its 4 px cells become crisp 2 px ones
+static void v2LblBack(int x0, int y0) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  for (int j = 0; j < V2_LBL_H; j++)
+    for (int i = 0; i < V2_LBL_W; i++) fb[j * V2_W + i] = fb[(y0 + 2 * j + 1) * V2_W + x0 + 2 * i + 1];
+}
+static void v2LblKeep(int i) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer(), *a = v2Lbl(i);
+  for (int j = 0; j < V2_LBL_H; j++) memcpy(a + j * V2_LBL_W, fb + j * V2_W, V2_LBL_W * sizeof(uint16_t));
+}
+// your Pokemon at 1x, its feet at (cx, feet): a shiny keeps its colours, but its sparkles would fill a label
+static void v2LblMon(uint8_t act, int cx, int feet) {
+  if (!pmd.loaded) return;
+  bool shiny = pmd.shiny;
+  pmd.shiny = false;
+  gPmdForceScale = 1;
+  drawPmdAct(pmd.has(act) ? act : PMD_IDLE, cx, feet, 0, true, false, 1);
+  gPmdForceScale = 0;
+  pmd.shiny = shiny;
+}
+// another Pokemon at 1x from its Pokedex thumbnail, its feet at (cx, feet); sil: its silhouette
+static void v2LblThumb(int16_t dex, int cx, int feet, bool sil) {
+  const uint8_t *b = dex > 0 && dex <= 151 ? thumbs.get(dex) : nullptr;
+  if (!b) return;
+  int w = b[0], h = b[1], top = h, bot = -1;
+  const uint8_t *d = b + 3 + b[2] * 2;
+  for (int i = 0; i < w * h; i++)
+    if (d[i] != 0xFF) {
+      if (i / w < top) top = i / w;
+      bot = i / w;
+    }
+  if (bot < 0) return;
+  int bh = bot - top + 1;
+  drawThumbFit(b, cx, feet - bh + bh / 2, 400, 400, 1, sil, 0, nullptr);
+}
+static void v2LblOval(int x0, int y0, int x1, int y1, Rgb col) {  // PIL's ellipse() in its box, near enough
+  float cx = (x0 + x1 + 1) / 2.0f, cy = (y0 + y1 + 1) / 2.0f, rx = (x1 - x0 + 1) / 2.0f, ry = (y1 - y0 + 1) / 2.0f;
+  for (int y = y0; y <= y1; y++)
+    for (int x = x0; x <= x1; x++) {
+      float dx = (x + 0.5f - cx) / rx, dy = (y + 0.5f - cy) / ry;
+      if (dx * dx + dy * dy <= 1.0f && x >= 0 && y >= 0) ((uint16_t *)gfx->getFramebuffer())[y * V2_W + x] = sc565(col);
+    }
+}
+// PikaSurf's: the water, your Pokemon on its board, a wake behind (label_surf())
+static void v2LblSurf() {
+  v2SurfWater(0, v2HourTod());
+  v2LblBack(152, 188);
+  v2LblOval(22, 33, 56, 40, 0xF5863D);  // the board
+  v2LblOval(24, 33, 54, 36, 0xFFB070);
+  v2LblMon(PMD_IDLE, 39, 36);
+  for (int k = 0; k < 4; k++) gfx->fillRect(6 + k * 3, 38 - k, 5, 2, UI_WHITE);
+}
+static void v2PaintGameLabels() {
+  if (!v2LblStart()) return;
+  // Berry Drop: the clearing, your Pokemon under three falling berries. A title on three lines leaves room
+  // for the picture's bottom 30 rows only: two berries, lower down
+  char l[3][32];
+  bool cjk = v2CartFont(gameLabel(0));
+  int lo = v2CartLines(gameLabel(0), l) == 3 ? 13 : 0;
+  classicFontEnd(cjk);
+  v2TiltScene();
+  v2LblBack(152, 288);
+  v2LblMon(PMD_IDLE, 40, 41);
+  static const char *const *const BERRY[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
+  static const int8_t BXY[3][2] = { { 14, 2 }, { 58, 8 }, { 30, -4 } };
+  for (int k = 0; k < (lo ? 2 : 3); k++) drawMap(BERRY[k], HOME_ICON_N, BXY[k][0], BXY[k][1] + lo, 1, false);
+  v2LblKeep(0);
+  // Who's That?: Pikachu's silhouette and a "?" on the blue burst
+  v2BurstScene(false);
+  v2LblBack(152, 156);
+  v2LblThumb(25, 36, 40, true);
+  cjk = classicFontBegin();
+  gfx->setTextColor(UI_WHITE);
+  setSize(3);
+  setCur(58, 10);
+  printT("?");
+  classicFontEnd(cjk);
+  v2LblKeep(1);
+  // PokeRun: the forest run, your Pokemon leaping a log, speed lines behind it (its land is 18 px lower)
+  v2RunScene(0);
+  v2LblBack(120, 256 + V2_RUN_DY);
+  gfx->fillRect(50, 30, 19, 7, sc565(0x8A5A34));
+  gfx->fillRect(50, 30, 19, 2, sc565(0xA87048));
+  gfx->fillRect(66, 30, 3, 7, sc565(0x6E4428));
+  v2LblMon(PMD_WALKR, 34, 26);
+  for (int k = 0; k < 3; k++) gfx->fillRect(8 + k * 4, 14 + k * 4, 11, 2, UI_WHITE);
+  v2LblKeep(2);
+  // PikaSurf
+  v2LblSurf();
+  v2LblKeep(3);
+  // PokeDungeon: a room's wall and its flagstones, your Pokemon by a berry
+  static const uint8_t ROOM[3][4] = { { DN_WALL, DN_WALL, DN_WALL, DN_WALL }, { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR }, { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR } };
+  for (int ty = 0; ty < 3; ty++)
+    for (int tx = 0; tx < 4; tx++) dnDrawTileKind(ROOM[ty][tx], ty == 0, tx + 3, ty + 5, 137 + tx * DN_TILE, 73 + ty * DN_TILE);
+  v2LblBack(152, 108);
+  v2LblMon(PMD_IDLE, 40, 40);
+  drawMap(SPR_BERRY_ORAN, HOME_ICON_N, 60, 24, 1, false);
+  v2LblKeep(4);
+}
+static void v2PaintPlayLabels() {
+  if (!v2LblStart()) return;
+  int16_t theirs = buddyDexOk(bPeers[bCur].dex) ? bPeers[bCur].dex : 0;
+  // Poke Ball Volley: the court, the ball over your Pokemon
+  v2CourtScene();
+  v2LblBack(152, 208);
+  drawMap(SPR_HOME_BALL, HOME_ICON_N, 30, 12, 1, false);
+  v2LblMon(PMD_IDLE, 60, 40);
+  v2LblKeep(5);
+  // Who's That? Showdown: yours and theirs face to face on the pink burst
+  v2BurstScene(true);
+  v2LblBack(152, 156);
+  v2LblMon(PMD_IDLE, 22, 40);
+  v2LblThumb(theirs, 60, 40, false);
+  v2LblKeep(6);
+  // PikaSurf together: theirs alongside
+  v2LblSurf();
+  v2LblThumb(theirs, 62, 38, false);
+  v2LblKeep(7);
+}
+
+// ----- the two TVs -----
+static const int16_t V2_CART_XY[5][2] = { { 52, 100 }, { 176, 100 }, { 300, 100 }, { 114, 246 }, { 238, 246 } };
+static const uint8_t V2_CART_GAME[5] = { 0, 1, 2, 4, 3 };  // V1's games in the cartridges' order (Berry Drop, Who's That?, PokeRun, PikaSurf, PokeDungeon)
+static const Rgb V2_CART_COL[5] = { 0x3C8A4C, 0xC75F80, 0xD65F28, 0x2A7AD8, 0x6F5AA8 };
+static const int16_t V2_PLAY_XY[3][2] = { { 52, 150 }, { 176, 150 }, { 300, 150 } };
+static const Rgb V2_PLAY_COL[3] = { 0x3C8A4C, 0xC75F80, 0x2A7AD8 };
+static void v2TvBack(const char *title) {
+  char b[40];
+  v2Cached(V2_TV_KEY, v2PaintTv, 0);
+  v2TvStatic(millis());
+  v2Sign(v2Caps(title, b, sizeof(b)), 62);
+}
+static void v2GamesTv() {
+  v2TvBack(T(S_GAMES));
+  for (int k = 0; k < 5; k++) v2Cart(V2_CART_XY[k][0], V2_CART_XY[k][1], v2Lbl(k), gameLabel(V2_CART_GAME[k]), V2_CART_COL[k]);
+  v2CloseX();
+}
+static void v2PlayTv() {
+  v2TvBack(T(S_PLAY_TOGETHER));
+  char w[48];
+  snprintf(w, sizeof(w), T(S_PLAY_WITH_FMT), buddyName());
+  gfx->setTextColor(sc565(0x9FD6F0));
+  setSize(2);
+  setCur(centerX(w, 2), 96);
+  printT(w);
+  static const StrId TITLE[3] = { S_CART_VOLLEY, S_CART_SHOWDOWN, S_GAME_SURF };
+  for (int k = 0; k < 3; k++) v2Cart(V2_PLAY_XY[k][0], V2_PLAY_XY[k][1], v2Lbl(5 + k), T(TITLE[k]), V2_PLAY_COL[k]);
+  v2CloseX();
+}
+// the cartridge under a tap (its outline counts), or -1
+static int v2CartAt(int16_t x, int16_t y, const int16_t (*xy)[2], int n) {
+  for (int k = 0; k < n; k++)
+    if (x >= xy[k][0] - 5 && x < xy[k][0] + 120 && y >= xy[k][1] - 5 && y < xy[k][1] + 140) return k;
+  return -1;
+}
+static int v2GameAt(int16_t x, int16_t y) {  // V1's game number
+  int k = v2CartAt(x, y, V2_CART_XY, 5);
+  return k < 0 ? -1 : V2_CART_GAME[k];
+}
+static int v2CartOfGame(int g) {
+  for (int k = 0; k < 5; k++)
+    if (V2_CART_GAME[k] == g) return k;
+  return 0;
+}
