@@ -2337,7 +2337,7 @@ bool render() {
     snprintf(el, sizeof(el), T(S_LVL_FMT), pet.level());
     v2EvolveFX(evoPmd, pet.evolveT(), en, el);
   }
-  if (!pet.isEgg() && !choiceKind && !confirmUntil) drawCelebration();
+  if (!pet.isEgg() && !choiceKind && !confirmUntil && !buddyMenuOpen) drawCelebration();  // (under the buddy's panel it waits)
   if (buddyMenuOpen) {  // a buddy's Battle/Trade/Play over all of it, dimmed (its stats page is a screen of its own)
     if (bPeers[bCur].on) v2BuddyActions(buddyTradeOk());
     else buddyMenuOpen = false;

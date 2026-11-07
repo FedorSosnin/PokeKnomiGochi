@@ -1761,9 +1761,13 @@ static void v2TradePick(int page, int pages, const uint8_t *buddyReg) {
   if (pages > 1) v2Dots(pages, page);
   v2CloseX();
 }
-// a tap in a V2 square, moved to the middle of V1's (73 + 80 c, 72 + 80 r)
+// a tap in a V2 square, moved to the middle of V1's (73 + 80 c, 72 + 80 r); one off the squares but where V1's
+// reach (they're bigger), moved where V1 finds none. The board over them and the X keep theirs
 static void v2TradeTap(int16_t &x, int16_t &y) {
-  if (x < V2_TRADE_X || y < V2_TRADE_Y || x >= V2_TRADE_X + 4 * V2_TRADE_CELL || y >= V2_TRADE_Y + 4 * V2_TRADE_CELL) return;
+  if (x < V2_TRADE_X || y < V2_TRADE_Y || x >= V2_TRADE_X + 4 * V2_TRADE_CELL || y >= V2_TRADE_Y + 4 * V2_TRADE_CELL) {
+    if (y >= 66 && y < 396) x = 0;
+    return;
+  }
   x = 73 + (x - V2_TRADE_X) / V2_TRADE_CELL * 80 + 40;
   y = 72 + (y - V2_TRADE_Y) / V2_TRADE_CELL * 80 + 40;
 }
