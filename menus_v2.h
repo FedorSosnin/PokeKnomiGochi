@@ -546,3 +546,51 @@ static void v2TzPicker() {
   v2CloseX();
 }
 #endif
+
+// ----- the Pokedex -----
+// a grid's board (its title and count) and a white panel round its squares: the Pokemon stand straight on
+// the white, no box each, which shows a shiny's sparkles best (Fedor)
+static void v2GridHead(const char *title, const char *count, int x0, int y0, int cell, int rows) {
+  char b[48];
+  snprintf(b, sizeof(b), "%s  %s", title, count);
+  v2Sign(b);
+  v2Panel(x0 - 6, y0 - 6, x0 + 3 * cell + 6, y0 + rows * cell + 6, 10);
+}
+// an entry's board: its number and name ("???" until it's caught)
+static void v2DexBoard(int16_t dex, bool reg) {
+  char b[40];
+  snprintf(b, sizeof(b), "N.%03d  %s", dex, reg ? dexName(dex) : "???");
+  v2Sign(b);
+}
+// under the art: the type chip on the room, then the next form and the fact in a panel (dex_entry())
+static void v2DexInfo(int16_t dex, bool withFact) {
+  const DexEntry &d = DEX_TBL[dex];
+  setSize(2);
+  const char *ty = TYPE_NAME[d.type];
+  int w = textW(ty, 2) + 24;
+  gfx->fillRoundRect(CX - w / 2, 250, w, 24, 8, d.accent);
+  gfx->setTextColor(UI_WHITE);
+  setCur(centerX(ty, 2), 255);
+  printT(ty);
+  v2Panel(60, 280, 406, withFact ? 386 : 306, 10);
+  char line[40];
+  gfx->setTextColor(V2_INK_MUTED);
+  if (d.evolvesTo) {  // the next form isn't shown until it's found
+    snprintf(line, sizeof(line), "Lv.%u > %s", d.evolveLevel, pet.isRegistered(d.evolvesTo) ? dexName(d.evolvesTo) : "???");
+    setCur(centerX(line, 2), 286);
+    printT(line);
+  } else {
+    setCur(centerX(T(S_FINAL_FORM), 2), 286);
+    printT(T(S_FINAL_FORM));
+  }
+  if (!withFact) return;
+  gfx->setTextColor(UI_INK);
+  const char *p = DEX_FACT[dex];
+  for (int y = 308; *p && y <= 368; y += 20) {
+    int skip, n = wrapNext(p, 28, skip);
+    snprintf(line, sizeof(line), "%.*s", n, p);
+    setCur(centerX(line, 2), y);
+    printT(line);
+    p += skip;
+  }
+}

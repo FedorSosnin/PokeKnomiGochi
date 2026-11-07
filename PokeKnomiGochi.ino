@@ -136,11 +136,19 @@ int16_t galleryDetail = 0;  // dex in detail view, 0 = grid
 #define DEXG_SPRITE_S 3    // the largest scale in a square
 #define DEXG_STARS_H 12    // room under the sprite for a 3-star entry's stars (they tuck under its feet)
 #define DEXG_STAR_R 5
+#if UI_V2  // V2: 3 squares of 92 in a panel under the board, "Page 1 of 17" under it, clear of the X (dex_grid())
+#define DEXG_X 95
+#define DEXG_Y 74
+#define DEXG_CELL 92
+#define DEXG_PAGE_Y 362
+#define PAGE_ARROW_Y V2_PAGE_ARROW_Y  // the page buttons: at the sides half way down, on every grid
+#else
 #define DEXG_X 86          // the Pokedex: 3 squares of 98 under the count and the title
 #define DEXG_Y 84
 #define DEXG_CELL 98
 #define DEXG_PAGE_Y 386    // "Page 1 of 17"
 #define PAGE_ARROW_Y (DEXG_Y + 3 * DEXG_CELL / 2)  // the page arrows: level with the Pokedex grid's middle, on every grid
+#endif
 #define PAGE_ARROW_INSET 32  // the page arrows sit as far in from the round edge as the X does from the bottom (464 - 432)
 PmdMon dexGridPmd[DEXG_PAGE];       // the page's shinies, animated
 int16_t dexGridPmdDex[DEXG_PAGE];   // which one each holds (0: none)
@@ -6461,6 +6469,10 @@ void drawThumb(const uint8_t *b, int x, int y, int s, bool sil) {
 
 // type, evolution and fun fact of an already-found species
 void drawDexInfo(int16_t dex, bool withFact = true) {
+#if UI_V2
+  v2DexInfo(dex, withFact);  // V2: the type chip, then the next form and the fact in a panel
+  return;
+#endif
   const DexEntry &d = DEX_TBL[dex];
   setSize(2);
   const char *ty = TYPE_NAME[d.type];
@@ -6580,9 +6592,17 @@ void drawDexArt(PmdMon &a, uint8_t starsA, PmdMon *b, uint8_t starsB) {
 
 // a Pokedex entry, full screen (the Pokedex and the zones' grids); galleryPmd holds its sprite
 void renderDexDetail(int16_t dex) {
+#if UI_V2
+    v2MenuBackdrop();  // V2: the dimmed room, the number and the name on the board
+#else
     gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
+#endif
     const DexEntry &d = DEX_TBL[dex];
     bool reg = pet.isRegistered(dex);
+#if UI_V2
+    (void)d;
+    v2DexBoard(dex, reg);
+#else
     char num[8];
     snprintf(num, sizeof(num), "N.%03d", dex);  // the number, small, over the name
     gfx->setTextColor(UI_INK);
@@ -6602,6 +6622,7 @@ void renderDexDetail(int16_t dex) {
       setCur(nx + 1, ny);
       printT(name);
     }
+#endif
     if (reg && galleryPmd.loaded && galleryShinyPmd.loaded) {  // both forms, side by side
       drawDexArt(galleryPmd, pet.starsOf(dex, false), &galleryShinyPmd, pet.starsOf(dex, true));  // each form its own stars
       drawDexInfo(dex);
@@ -6744,7 +6765,11 @@ void drawDexGridHead(const char *count, const char *title, int countY) {
 void drawDexGridPage(int page, int pages, int y) {
   char b[32];
   snprintf(b, sizeof(b), T(S_PAGE_OF_FMT), page + 1, pages);
+#if UI_V2
+  gfx->setTextColor(V2_ON_DARK);  // V2: on the dimmed room
+#else
   gfx->setTextColor(C565(0x6b, 0x6a, 0x60));
+#endif
   setSize(2);  // before measuring (CJK)
   setCur(centerX(b, 2), y);
   printT(b);
@@ -6806,10 +6831,18 @@ void renderGallery() {
   }
   dexGridSync(dex);
 
+#if UI_V2
+  v2MenuBackdrop();  // V2: the dimmed room, the board, the squares in a light panel
+#else
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
+#endif
   char count[12];
   snprintf(count, sizeof(count), "%u/151", pet.registeredCount());
+#if UI_V2
+  v2GridHead(T(S_DEX_TITLE), count, DEXG_X, DEXG_Y, DEXG_CELL, 3);
+#else
   drawDexGridHead(count, T(S_DEX_TITLE), 30);
+#endif
 
   galleryAnim = false;
   for (int i = 0; i < DEXG_PAGE && dex[i]; i++)
