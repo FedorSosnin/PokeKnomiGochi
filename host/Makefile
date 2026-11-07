@@ -9,6 +9,10 @@ LIB      := $(BUILD)/libpokehost.a
 
 # It is a Knomi with different hardware underneath: the game, the menus and the button are the Knomi's
 DEFS     := -DBOARD_HOST -DBOARD_KNOMI_V2
+# UI_V2=0 or 1 (from the command line or the environment) picks the look; unset, the sketch's default
+ifdef UI_V2
+DEFS     += -DUI_V2=$(UI_V2)
+endif
 INCLUDES := -I. -I shim -I $(ROOT)
 CXXFLAGS ?= -std=c++17 -O2 -g -Wall -Wextra -Wno-unused-parameter
 ALLFLAGS := $(CXXFLAGS) $(DEFS) $(INCLUDES)

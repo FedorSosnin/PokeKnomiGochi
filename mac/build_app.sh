@@ -8,11 +8,12 @@ cd "${0:A:h}/.."
 # The oldest macOS it runs on, the same as LSMinimumSystemVersion in mac/Info.plist. Without it, clang
 # targets the Mac it builds on, and older ones refuse to open the app.
 export MACOSX_DEPLOYMENT_TARGET=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' mac/Info.plist)
-# The host library must be built for the same target: rebuild it if it was built for another one.
+# The host library must be built for the same target (and look: UI_V2=0 or 1 in the environment picks it,
+# unset is the sketch's default): rebuild it if it was built for another one.
 STAMP=build/host/.macos-target
-if [[ "$(cat $STAMP 2>/dev/null)" != "$MACOSX_DEPLOYMENT_TARGET" ]]; then
+if [[ "$(cat $STAMP 2>/dev/null)" != "$MACOSX_DEPLOYMENT_TARGET${UI_V2:+ ui$UI_V2}" ]]; then
   make -C host clean >/dev/null
-  mkdir -p build/host && echo "$MACOSX_DEPLOYMENT_TARGET" > $STAMP
+  mkdir -p build/host && echo "$MACOSX_DEPLOYMENT_TARGET${UI_V2:+ ui$UI_V2}" > $STAMP
 fi
 make -C host -j8 >/dev/null
 

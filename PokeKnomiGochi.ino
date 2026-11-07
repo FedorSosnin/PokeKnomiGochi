@@ -51,6 +51,17 @@
 #include "ota_update.h"
 #include "buddy_net.h"
 
+// V2, the new look (built on the v2 branch until it launches): 1 draws it, 0 draws 1.51's screens. Build with
+// -DUI_V2=0 to compare the two. Nothing in the save depends on it.
+#ifndef UI_V2
+#define UI_V2 1
+#endif
+#if UI_V2
+#include "layout_v2.h"
+#include "palettes_v2.h"
+#include "sprites_v2.h"
+#endif
+
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
 #define FW_VERSION "1.51"
@@ -395,6 +406,17 @@ struct Btn {
 #define BTN_COUNT 5
 #define HOME_PANEL_Y 296  // the bottom panel: the bars, then the icons
 #define FEED_Y 272        // the food picker, just over the bars
+#if UI_V2
+// V2: on a circle round the screen's own centre (layout_v2.h), so each is as far from the edge; the moon's
+// zZ are orange
+Btn buttons[BTN_COUNT] = {
+  { V2_BTN[0][0], V2_BTN[0][1], SPR_HOME_BAG },
+  { V2_BTN[1][0], V2_BTN[1][1], SPR_HOME_GAMES },
+  { V2_BTN[2][0], V2_BTN[2][1], SPR_HOME_MAP },
+  { V2_BTN[3][0], V2_BTN[3][1], SPR_HOME_MOON_V2 },
+  { V2_BTN[4][0], V2_BTN[4][1], SPR_HOME_DROP },
+};
+#else
 Btn buttons[BTN_COUNT] = {
   { 116, 382, SPR_HOME_BAG },     // the bag: berries and candy (more items later)
   { 174, 403, SPR_HOME_GAMES },   // the mini games
@@ -402,6 +424,7 @@ Btn buttons[BTN_COUNT] = {
   { 298, 402, SPR_HOME_MOON },    // light (sleep): a moon and zZ
   { 352, 381, SPR_HOME_DROP },    // bath: a drop of water
 };
+#endif
 #define BTN_LIGHT 3  // the one that still works while it sleeps
 #define BTN_HALF 27  // the 54x54 icon (HOME_ICON_N at 3x)
 #define BTN_HIT 36   // touch radius (a bit more generous; neighbours overlap, so the closest wins)
@@ -1956,6 +1979,10 @@ static uint32_t screenKey() {
 bool screenKeyValid = false;  // (the host renderer invalidates it between scenes)
 uint32_t lastScreenKey = 0;
 
+#if UI_V2
+#include "scene_v2.h"  // V2's home: header, bars, band, icons (uses the helpers above)
+#endif
+
 // Draws a frame and returns true if it flushed it to the panel.
 bool render() {
   if (!galleryOpen && zoneScreen != ZS_ZONE) dexGridUnload();  // off the grids: their shinies go
@@ -2094,6 +2121,15 @@ bool render() {
     snprintf(name, sizeof(name), "%s%s", pet.shiny ? "*" : "", base);
     snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
     drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg(), lv);
+#if UI_V2
+    // V2: the scene runs to the rim; the bars ride on it and the icons sit on their band
+    drawPet();
+    drawBath();
+    drawPoops();
+    v2DrawBars();
+    v2DrawBand();
+    v2DrawIcons();
+#else
     drawStreakBadge();
     drawPet();
     drawBath();
@@ -2102,6 +2138,7 @@ bool render() {
     gfx->fillRect(0, HOME_PANEL_Y, 466, 466 - HOME_PANEL_Y, gNight ? UI_BG_NIGHT : UI_BG_DAY);
     drawBars();
     drawButtons();
+#endif
     if (homeModal()) dimFrame();  // what's behind a medal, the evolve button or the goodbye
     drawCelebration();
     if (pet.wantEvolveButton()) drawEvolveButton();        // red CTA: evolve
@@ -8493,6 +8530,10 @@ void drawBattery() {
 // the name, big and bold, with the level (if any) small over it, like a Pokedex entry's number; the
 // status under it
 void drawHeader(const char *name, uint16_t nameColor, const char *msg, const char *level) {
+#if UI_V2
+  v2Header(name, nameColor, msg, level);
+  return;
+#endif
   drawBattery();
   if (level) {
     gfx->setTextColor(inkColor());
@@ -9127,7 +9168,11 @@ void overlayMouth(const Species &sp, int x, int y, int s, bool open) {
 
 void drawPoops() {
   for (int i = 0; i < pet.poops; i++) {
+#if UI_V2
+    drawMap(SPR_POOP, 32, 70 + i * 46, 250, 2, false);  // on the grass, in from the bars
+#else
     drawMap(SPR_POOP, 32, 36 + i * 46, HOME_PANEL_Y - 68, 2, false);  // just over the panel
+#endif
   }
 }
 

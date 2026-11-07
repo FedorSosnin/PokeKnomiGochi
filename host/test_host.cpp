@@ -594,6 +594,23 @@ static void testGame() {
   CHECK(std::string(opts.begin(), opts.end()).find("aupd 00") != std::string::npos);
   hostSetAutoUpdate(true);
 
+#if !defined(UI_V2) || UI_V2
+  // V2's home: each icon answers at its new centre on the circle round the screen's middle, and the
+  // hygiene bar on the rim is painted in its status colour from its lower end (layout_v2.h)
+  {
+    extern int buttonAt(int16_t x, int16_t y);
+    extern Pet pet;
+    extern ScaledCanvas *gfx;
+    static const int16_t icon[5][2] = { {121, 374}, {173, 403}, {233, 413}, {293, 403}, {345, 374} };
+    for (int i = 0; i < 5; i++) CHECK(buttonAt(icon[i][0], icon[i][1]) == i);
+    CHECK(buttonAt(233, 300) == -1);  // between the pet and the band: no icon
+    pet.hygiene = 100;
+    runTicks(300);
+    const uint16_t *fb = gfx->getFramebuffer();
+    CHECK(fb[329 * 466 + 429] == 0x5DCD);  // r 218 at 26 degrees: near the bar's lower end, clear of its label
+  }
+#endif
+
   hostSerialPush("WIPE");
   runTicks(50);
   CHECK(hostRestartRequested());

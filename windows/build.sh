@@ -23,7 +23,7 @@ fi
 python3 -I tools/pack_flash.py $B/res/sprites.tpkz >/dev/null
 python3 -I host/gen_sketch_unit.py PokeKnomiGochi.ino $B/sketch_unit.cpp
 
-FLAGS=(-O2 -DBOARD_HOST -DBOARD_KNOMI_V2 -I host -I host/shim -I . -I $ZLIB_DIR)
+FLAGS=(-O2 -DBOARD_HOST -DBOARD_KNOMI_V2 ${UI_V2:+-DUI_V2=$UI_V2} -I host -I host/shim -I . -I $ZLIB_DIR)  # UI_V2=0/1: the look
 SRC=(host/host_canvas.cpp host/host_prefs.cpp host/host_runtime.cpp host/host_board.cpp host/host_buddy.cpp
      host/host_audio.cpp pet.cpp i18n.cpp sdmon.cpp ota_update.cpp $B/sketch_unit.cpp windows/main.cpp)
 OBJ=()

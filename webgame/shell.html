@@ -310,8 +310,11 @@ function onTilt(e) {
 // ---- buddies: browsers can't use the Knomi's local Wi-Fi messages, so they meet through the relay ----
 let relay = null, relayIn = 0, relayTries = 0;
 Module.relaySend = (bytes) => { if (relay && relay.readyState === 1) relay.send(bytes); };
+// a copy served from this computer (a test build) only joins when asked (?relay=1), as the Mac and Windows
+// test copies do: otherwise a test pet turns up as a buddy on everyone's devices at home
+const relayAllowed = !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /[?&]relay=1\b/.test(location.search);
 async function connectRelay() {
-  if (!running || relay) return;
+  if (!running || relay || !relayAllowed) return;
   let v4 = '';  // the home's shared address: a Knomi on the same Wi-Fi shows the relay that one
   try { v4 = (await (await fetch(UTF8ToString(Module._webRelayV4Url()), { cache: 'no-store' })).text()).trim(); } catch (e) {}
   if (!running) return;
