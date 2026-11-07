@@ -1403,6 +1403,11 @@ void onSwipe(int dir) {
   if (gameOpen || kbOpen || clockOpen) return;
   if (cardOpen) {  // inside the card or the achievements: switch pages
     if (achDetail >= 0) {  // a medal's card: back to the medals
+#if UI_V2
+      int p = v2TrophyPos(achDetail) + (dir > 0 ? -1 : 1);  // V2: a swipe steps through them, as the side buttons do
+      if (p >= 0 && p < MED_COUNT) achDetail = V2_TROPHY_ORDER[p];
+      return;
+#endif
       achDetail = -1;
       return;
     }
@@ -1516,6 +1521,14 @@ void onTap(int16_t x, int16_t y) {
   if (pet.ceremony) return;  // no buttons during the farewell
   if (cardOpen) {
     if (cardAch && achDetail >= 0) {  // a medal's card: the X goes back to the medals
+#if UI_V2
+      int pos = v2TrophyPos(achDetail), a = pageArrowAt(x, y, pos, MED_COUNT, V2_PAGE_ARROW_Y);
+      if (a) {  // V2: the side buttons step through all 25, in the room's order
+        sfxPlay(SFX_TAP);
+        achDetail = V2_TROPHY_ORDER[pos + a];
+        return;
+      }
+#endif
       if (closeHit(x, y)) {
         sfxPlay(SFX_TAP);
         achDetail = -1;
@@ -5955,6 +5968,10 @@ bool celebrationTap(int16_t x, int16_t y) {
         cardOpen = cardAch = true;
         cardPage = achPageOf(i);
         achDetail = -1;
+#if UI_V2
+        cardPage = 0;
+        achDetail = i;  // V2: straight to the new medal's card in the trophy room
+#endif
         break;
       }
   }
@@ -6193,6 +6210,9 @@ int achMedalAtBox(int16_t x, int16_t y, int &bx, int &by) {
   return -1;
 }
 int achMedalAt(int16_t x, int16_t y) {
+#if UI_V2
+  return v2TrophyAt(x, y);  // V2: the medals' things in the trophy room
+#endif
   int bx, by;
   return achMedalAtBox(x, y, bx, by);
 }
@@ -6349,11 +6369,14 @@ void renderCardProgress() {
 
 void renderCard() {
 #if UI_V2
-  if (!cardAch) {  // V2: the card's pages on the dimmed room (the medals' pages: step 5b)
-    v2Card();
-    gfx->flush();
-    return;
+  if (!cardAch) v2Card();  // V2: the card's pages on the dimmed room
+  else if (achDetail >= 0) v2MedalCard(achDetail);  // a medal's card
+  else {
+    cardPage = 0;  // the medals are all in one room
+    v2TrophyRoom();
   }
+  gfx->flush();
+  return;
 #endif
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   if (cardAch && achDetail >= 0) {  // a medal's card: no page dots, just the X back
