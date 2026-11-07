@@ -2261,7 +2261,10 @@ bool render() {
   }
 
 #if UI_V2
-  if (!pet.isEgg()) drawCelebration();  // V2: a medal's banner, in front of everything on the screen
+  // V2: a medal's banner, in front of everything on the screen. A dialog asking something answers taps
+  // before the banner does (onTap): over it, the banner would hide the question while a tap pressed the
+  // button beneath, so while one is open the banner waits, whole (as found for 1.52's fix)
+  if (!pet.isEgg() && !choiceKind && !confirmUntil) drawCelebration();
 #endif
   gfx->flush();
   return true;
@@ -5268,6 +5271,11 @@ void tzPickerOpen() {
 }
 
 void renderTzPicker() {
+#if UI_V2
+  v2TzPicker();
+  gfx->flush();
+  return;
+#endif
   gfx->fillScreen(UI_BG_DAY);
   gfx->setTextColor(UI_INK);
   setSize(3);
@@ -5589,6 +5597,11 @@ void renderSettings() {
     return;
   }
 
+#if UI_V2
+  v2Settings();  // V2: a panel on the dimmed room
+  gfx->flush();
+  return;
+#endif
   drawClockDots();
   setSize(3);
   setCur(centerX(T(S_SETTINGS), 3), 56);
@@ -5649,6 +5662,11 @@ void renderClock() {
     renderTzPicker();
     return;
   }
+#endif
+#if UI_V2
+  v2Clock(LANG_CODES[gLang]);  // V2: the time in a panel on the dimmed room
+  gfx->flush();
+  return;
 #endif
   bool locked = clockLocked();
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
@@ -6294,6 +6312,13 @@ void renderCardProgress() {
 }
 
 void renderCard() {
+#if UI_V2
+  if (!cardAch) {  // V2: the card's pages on the dimmed room (the medals' pages: step 5b)
+    v2Card();
+    gfx->flush();
+    return;
+  }
+#endif
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   if (cardAch && achDetail >= 0) {  // a medal's card: no page dots, just the X back
     renderMedalDetail(achDetail);
@@ -6699,6 +6724,10 @@ void drawDexGridPage(int page, int pages, int y) {
 
 // a page arrow: a round grey button like the X, a white triangle pointing left (dir -1) or right (1)
 void drawPageArrow(int cx, int cy, int dir) {
+#if UI_V2
+  v2PageArrow(cx, cy, dir);  // V2: a blue pixel button
+  return;
+#endif
   gfx->fillCircle(cx, cy, CLOSE_R, C565(0x8e, 0x8c, 0x96));
   gfx->fillTriangle(cx + dir * 10, cy, cx - dir * 7, cy - 11, cx - dir * 7, cy + 11, UI_WHITE);
 }
@@ -7458,6 +7487,10 @@ void drawFriendStats(PmdMon &mon, const char *name, uint8_t level, const char *e
 }
 
 void drawPageDots(int pages, int cur) {  // as on the card
+#if UI_V2
+  v2Dots(pages, cur);  // V2: above the X
+  return;
+#endif
   for (int i = 0; i < pages; i++) {
     int dx = CX + (2 * i - (pages - 1)) * 13;
     if (i == cur) gfx->fillCircle(dx, 374, 5, UI_INK);
@@ -9460,6 +9493,11 @@ const char *statusMsg() {
 // One round X, at the bottom in the middle, closes whatever it's on: the menus, the card, the
 // Pokedex, the zones, the clock. (Swipes still work too; games in play keep swiping up to quit.)
 void drawCloseButtonAt(int cy) {  // a gray disc with a white X
+#if UI_V2
+  (void)cy;
+  v2CloseX();  // V2: the red pixel X, always at (233, 422)
+  return;
+#endif
   gfx->fillCircle(CX, cy, CLOSE_R, C565(0x8e, 0x8c, 0x96));
   const int a = 9;
   for (int o = -1; o <= 1; o++) {

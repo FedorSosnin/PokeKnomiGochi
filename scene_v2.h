@@ -340,9 +340,10 @@ static void scScreen() {      // draw on the screen
   scDX = scDY = 0;
   scKeyed = false;
 }
-static uint8_t scGradeTod;  // 0: colours as given; 1, 2: a day scene's land at dusk or at night
+static uint8_t scGradeTod;  // 0: colours as given; 1, 2: a day scene's land at dusk or at night; 3: a menu's room, dimmed
 static Rgb scGrade(Rgb c) {
   if (!scGradeTod) return c;
+  if (scGradeTod == 3) return scMix(c, 0x120E22, .58);  // the lights down (rooms2_px.py dim())
   int r = c >> 16, g = (c >> 8) & 255, b = c & 255;
   if (scGradeTod == 2) return scRgb((int)(r * .30 + 8), (int)(g * .36 + 12), (int)(b * .55 + 30));  // about a third of the light, toward blue
   return scMix(scRgb((int)(r * .94), (int)(g * .90), (int)(b * .84)), 0xFFAA6E, .16);                 // a warm wash
@@ -1272,4 +1273,5 @@ void v2HostBackdrop(int which, int tod) {
 }
 #endif
 
-#include "walk_v2.h"  // step 4: the walk
+#include "walk_v2.h"   // step 4: the walk
+#include "menus_v2.h"  // step 5: the menus
