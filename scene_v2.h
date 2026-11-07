@@ -434,12 +434,19 @@ static const ScEll SC_MID[2] = { { -200, 246, 300, 600 }, { 240, 256, 700, 620 }
 static const ScEll SC_NEAR[1] = { { -400, 276, 866, 1100 } };
 static const ScEll SC_DUNES[2] = { { -200, 262, 300, 600 }, { 240, 270, 700, 620 } };
 static const ScEll SC_SHORE[1] = { { -400, 284, 866, 1100 } };
-static bool scInEll(float x, float y, const ScEll &e) {
-  float rx = (e.x1 - e.x0) / 2.0f, ry = (e.y1 - e.y0) / 2.0f;
-  float a = (x - (e.x0 + rx)) / rx, b = (y - (e.y0 + ry)) / ry;
-  return a * a + b * b <= 1;
+// Is (x, y) inside the oval in box e: ((x - cx) / rx)^2 + ((y - cy) / ry)^2 <= 1, as the mockups test it.
+// Worked in whole numbers (everything doubled, so the centre is whole), which is exact; only a point exactly
+// on the edge is left to floating point, rounded as Python rounds it there.
+static bool scInEll(int x, int y, const ScEll &e) {
+  int32_t X = 2 * x - (e.x0 + e.x1), Y = 2 * y - (e.y0 + e.y1), RX = e.x1 - e.x0, RY = e.y1 - e.y0;
+  int64_t l = (int64_t)(X * X) * (RY * RY) + (int64_t)(Y * Y) * (RX * RX), r = (int64_t)(RX * RX) * (RY * RY);
+  if (l != r) return l < r;
+  volatile double a = (double)X / RX, b = (double)Y / RY;  // volatile: each step rounded on its own, as there
+  volatile double a2 = a * a, b2 = b * b;
+  volatile double s = a2 + b2;
+  return s <= 1.0;
 }
-static int scLay(const ScLayer *L, int nl, float x, float y) {
+static int scLay(const ScLayer *L, int nl, int x, int y) {
   for (int i = nl - 1; i >= 0; i--)
     for (int k = 0; k < L[i].n; k++)
       if (scInEll(x, y, L[i].e[k])) return i + 1;
@@ -710,33 +717,45 @@ static void scPaint(uint8_t zone, uint8_t tod) {
   scGradeTod = 0;
 }
 
-// the home's scene: from the buffer, drawn again only when the zone or the time of day changes
+// A whole-screen backdrop from the buffer: painted again only when its key changes. The home's scene is
+// one (its key is zone * 4 + tod) and the games' backgrounds are others, so one buffer serves them all.
+// Without the buffer (no memory) it's painted every frame.
 static uint16_t *v2SceneBuf = nullptr;
 static int v2SceneKey = -1;
-static void v2DrawScene(uint8_t zone, uint8_t tod) {
-  if (zone == Z_CAVE || zone == Z_MANSION) tod = 0;
-  int key = zone * 4 + tod;
+static void v2Cached(int key, void (*paint)(int), int arg) {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   if (!v2SceneBuf) v2SceneBuf = (uint16_t *)ps_malloc(V2_W * V2_W * sizeof(uint16_t));
   if (key == v2SceneKey && v2SceneBuf) {
     memcpy(fb, v2SceneBuf, V2_W * V2_W * sizeof(uint16_t));
     return;
   }
-  scPaint(zone, tod);  // without the buffer (no memory) it's drawn every frame
+  scFb = fb;
+  scGradeTod = 0;
+  paint(arg);
+  scGradeTod = 0;
   if (v2SceneBuf) {
     memcpy(v2SceneBuf, fb, V2_W * V2_W * sizeof(uint16_t));
     v2SceneKey = key;
   }
 }
 
-// the home's zone (an egg's is the meadow) and its time of day: night while it sleeps or after 8 pm,
-// dusk in the hours either side of the day
-static uint8_t v2HomeZone() { return pet.isEgg() ? Z_MEADOW : zoneOf(pet.speciesId); }
-static uint8_t v2HomeTod() {
+// the home's scene
+static void scPaintKey(int key) { scPaint(key / 4, key % 4); }
+static void v2DrawScene(uint8_t zone, uint8_t tod) {
+  if (zone == Z_CAVE || zone == Z_MANSION) tod = 0;
+  v2Cached(zone * 4 + tod, scPaintKey, zone * 4 + tod);
+}
+
+// the time of day by the clock: night after 8 pm and before 6 am, dusk in the two hours either side of
+// the day (0 day, 1 dusk, 2 night)
+static uint8_t v2HourTod() {
   int h = sceneHour();
-  if (pet.sleeping || h < 6 || h >= 20) return 2;
+  if (h < 6 || h >= 20) return 2;
   return (h < 8 || h >= 18) ? 1 : 0;
 }
+// the home's zone (an egg's is the meadow) and its time of day: night too while it sleeps
+static uint8_t v2HomeZone() { return pet.isEgg() ? Z_MEADOW : zoneOf(pet.speciesId); }
+static uint8_t v2HomeTod() { return pet.sleeping ? 2 : v2HourTod(); }
 
 // a soft shadow under the pet, on the 4 px grid, wherever it stands
 static void v2PetShadow(int cx, int cy, int rx) {
@@ -759,3 +778,437 @@ static uint16_t v2LightAccent(uint16_t c) {
   Rgb s = scMix(scRgb(r * 255 / m, g * 255 / m, b * 255 / m), 0xFFFFFF, .25);
   return sc565(s);
 }
+
+// ---------- step 3: the games' backgrounds ----------
+// The home scenes' style (the 4 px grid, dithered bands, lit edges), drawn as the mockups' games_px.py
+// draws them; PokeDungeon's tiles are rooms_px.py's and the battle's bases rooms2_px.py's (battle_hud).
+// The game layouts don't move: where a mockup and the game differ (PokeRun's ground, Volley's court, where
+// the fighters stand), the picture is moved to fit the game.
+
+#define SC_NONE 0xFF000000u  // no colour: an oval without a lit top row or without an underside
+
+// the mockups' floor division by 4 and modulo, which round down for negative numbers too
+static inline int scFl4(int v) { return v >= 0 ? v / 4 : -((3 - v) / 4); }
+static inline int scMod(int a, int m) {
+  int r = a % m;
+  return r < 0 ? r + m : r;
+}
+static inline ScEll scE(int x0, int y0, int x1, int y1) { return { (int16_t)x0, (int16_t)y0, (int16_t)x1, (int16_t)y1 }; }
+
+// flat bands from x0 to x1, with two rows of checker each side of where two meet (dither_bands)
+static void scBands(const Rgb *cols, const int16_t *edges, int n, int x0, int x1) {
+  for (int i = 0; i < n; i++) scRect(x0, edges[i], x1, edges[i + 1], cols[i]);
+  for (int i = 1; i < n; i++)
+    for (int y = edges[i] - 8; y < edges[i] + 8; y += 4)
+      for (int x = scFl4(x0) * 4; x < x1; x += 4)
+        if ((scFl4(x) + scFl4(y)) % 2 == 0) scCell(x, y, y < edges[i] ? cols[i] : cols[i - 1]);
+}
+
+// an oval on the grid (e is its box), with a lit top row and a darker underside when given (ell_cells)
+static void scOval(const ScEll &e, Rgb col, Rgb lit = SC_NONE, Rgb under = SC_NONE) {
+  int y0 = scFl4(e.y0) * 4, x0 = scFl4(e.x0) * 4;  // cells off the screen are skipped: the grid stays the same
+  int y1 = e.y1 + 4 < V2_W ? e.y1 + 4 : V2_W, x1 = e.x1 + 4 < V2_W ? e.x1 + 4 : V2_W;
+  for (int cy = y0 < 0 ? 0 : y0; cy < y1; cy += 4)
+    for (int cx = x0 < 0 ? 0 : x0; cx < x1; cx += 4) {
+      if (!scInEll(cx + 2, cy + 2, e)) continue;
+      Rgb c = col;
+      if (lit != SC_NONE && !scInEll(cx + 2, cy - 2, e)) c = lit;
+      else if (under != SC_NONE && !scInEll(cx + 2, cy + 10, e)) c = under;
+      scCell(cx, cy, c);
+    }
+}
+
+// a patch of tall grass growing out of ground of colour base
+static void scTall(int x, int y, Rgb base) {
+  const ScKey k[2] = { { 'G', SC_DAY.dark }, { 'g', scMix(base, SC_DAY.dark, .35) } };
+  scSprite(SPR_V2_TALLGRASS, 5, x, y, 3, k, 2);
+}
+
+// a game's sky in three bands: its own colours by day, the dusk or the night sky's otherwise, with stars at
+// night (they and the sky are never graded)
+static void scGameSky(const Rgb *day, const int16_t *edges, uint8_t tod) {
+  Rgb c[3] = { day[0], day[1], day[2] };
+  if (tod) {
+    const ScPal &s = tod == 2 ? SC_NIGHT : SC_DUSK_SKY;
+    c[0] = s.top;
+    c[1] = scMix(s.top, s.bot, .5);
+    c[2] = s.bot;
+  }
+  scBands(c, edges, 3, 0, V2_W);
+  if (tod == 2)
+    for (auto &s : SC_STARS) scCell(s[0] / 4 * 4, s[1] / 4 * 4, 0xFFFFFF);
+}
+static ScPal scSkyPal(uint8_t tod) {  // the day palette with the clouds of the hour
+  ScPal p = SC_DAY;
+  if (tod) {
+    const ScPal &s = tod == 2 ? SC_NIGHT : SC_DUSK_SKY;
+    p.cloud = s.cloud;
+    p.cloudSh = s.cloudSh;
+  }
+  return p;
+}
+
+// Berry Drop: a forest clearing framed by two big trees, a leafy canopy along the top with vines hanging
+// from it, pale pines far off, a grassy floor (g_tilt). At dusk and at night it's graded like the home
+// scenes, under that hour's sky.
+static void scTilt(int tod) {
+  static const Rgb sky[3] = { 0x9FD6F0, 0xC6E8EC, 0xE2F2EA };
+  static const int16_t edge[4] = { 0, 150, 250, 466 };
+  scGameSky(sky, edge, tod);
+  scGradeTod = tod;
+  const ScKey pale[5] = { { '1', 0x8CC49A }, { '2', 0xB6DCBC }, { '3', 0xA2D2AC }, { '4', 0x8CC49A }, { '5', 0x8CC49A } };
+  for (int tx = -10; tx < V2_W; tx += 30) scSprite(SPR_V2_PINE, 12, tx, 250 + scMod(tx * 13, 20), 4, pale, 5);
+  scOval(scE(-200, 330, 666, 700), 0x6DB673, 0x9AD69C);  // the clearing's floor
+  const Rgb bark = 0x7E5530, barkD = 0x5A3A20, barkL = 0xA07040;
+  static const int16_t trunk[2][2] = { { 20, 84 }, { 382, 446 } };
+  for (auto &t : trunk)  // two trunks, lit on the left, with grooves in the bark
+    for (int cy = 60; cy < 420; cy += 4)
+      for (int cx = t[0]; cx < t[1]; cx += 4)
+        scCell(cx, cy, cx < t[0] + 8 ? barkL : (cx / 4 % 4 == 0 || cx > t[1] - 8) ? barkD : bark);
+  static const ScEll canopy[7] = { { -40, -60, 140, 120 }, { 60, -80, 220, 70 }, { 180, -90, 300, 50 }, { 250, -80, 410, 70 },
+                                   { 330, -60, 510, 120 }, { -30, 40, 120, 150 }, { 350, 40, 500, 150 } };
+  for (auto &e : canopy) scOval(e, 0x3F8A4C, SC_NONE, 0x2F6A3A);
+  for (int i = 0; i < 5; i++) scOval(scE(canopy[i].x0 + 20, canopy[i].y0 + 10, canopy[i].x1 - 30, canopy[i].y1 - 30), 0x58B868);
+  static const int16_t vine[4][2] = { { 120, 150 }, { 150, 100 }, { 316, 130 }, { 346, 170 } };
+  for (auto &v : vine) {  // vines with their leaves
+    for (int cy = 40; cy < 40 + v[1]; cy += 4) scCell(v[0], cy, 0x2F6A3A);
+    for (int cy = 52; cy < 40 + v[1]; cy += 16) {
+      scCell(v[0] + 4, cy, 0x58B868);
+      scCell(v[0] - 4, cy + 8, 0x58B868);
+    }
+  }
+  static const int16_t grass[4][2] = { { 96, 380 }, { 140, 400 }, { 300, 392 }, { 344, 376 } };
+  for (auto &g : grass) scTall(g[0], g[1], 0x6DB673);
+  scGradeTod = 0;
+}
+
+// PokeRun: a dithered sky, two rows of pines (a pale far row, a big near row), a dirt track with a lit grass
+// edge, pebbles (g_run). The game's ground line is RUN_GROUND_Y, 18 px under the mockup's track, so the land
+// moves down with it. The sky, its clouds and the hills behind come from the buffer; the pines and the track
+// are drawn every frame, each sliding at its own speed as the run goes on (as V1's two rows of pines did).
+#define V2_RUN_DY (RUN_GROUND_Y - 322)
+static void scRunSky(int tod) {
+  static const Rgb sky[3] = { 0x8FCBE8, 0xB8E0EA, 0xDCF0E8 };
+  static const int16_t edge[4] = { 0, 120, 210, 466 };
+  scGameSky(sky, edge, tod);
+  ScPal p = scSkyPal(tod);
+  scCloud(p, 80, 120, 4);
+  scCloud(p, 320, 96, 3);
+  scGradeTod = tod;
+  scOval(scE(-100, 236 + V2_RUN_DY, 260, 420 + V2_RUN_DY), 0xA7D7B0, 0xC4E6C8);
+  scOval(scE(200, 226 + V2_RUN_DY, 600, 420 + V2_RUN_DY), 0xA7D7B0, 0xC4E6C8);
+  scGradeTod = 0;
+}
+static const int16_t V2_PEBBLES[40][3] = {  // where the mockup's random.Random(2) put them; 1: a dark one
+  {440,460,0},{432,348,1},{44,352,0},{184,448,1},{84,436,0},{412,424,1},{436,380,0},{128,416,1},{108,416,0},{16,416,1},
+  {348,360,0},{220,420,1},{200,444,0},{368,452,1},{260,460,0},{188,408,1},{224,404,0},{136,456,1},{16,452,0},{12,388,1},
+  {236,460,0},{160,456,1},{192,396,0},{456,452,1},{268,360,0},{284,364,1},{120,368,0},{12,364,1},{164,364,0},{68,404,1},
+  {260,388,0},{260,428,1},{284,364,0},{456,396,1},{404,392,0},{376,408,1},{464,456,0},{388,388,1},{404,416,0},{180,388,1} };
+static void scRunLand(float dist, uint8_t tod) {
+  scGradeTod = tod;
+  ScKey farK[5], nearK[5];
+  scTreeKeys(farK, SC_DAY, 0x86C58E, SC_DAY.dark);
+  scTreeKeys(nearK, SC_DAY, 0x5F9E68, SC_DAY.dark);
+  int of = SNAP2((int)(dist * 0.2f)), on = SNAP2((int)(dist * 0.45f)), og = SNAP2((int)dist);  // on even pixels
+  for (int k = (of + 10) / 34 - 2;; k++) {  // the far row: a pine every 34 px, its height by where it stands
+    int wx = -10 + 34 * k, x = wx - of;
+    if (x >= V2_W) break;
+    if (x > -40) scSprite(SPR_V2_PINE, 12, x, 222 + V2_RUN_DY + scMod(wx * 7, 16), 4, farK, 5);
+  }
+  for (int k = (on + 30) / 70 - 2;; k++) {  // the near row, every 70 px and half as big again
+    int wx = -30 + 70 * k, x = wx - on;
+    if (x >= V2_W) break;
+    if (x > -60) scSprite(SPR_V2_PINE, 12, x, 248 + V2_RUN_DY + scMod(wx * 11, 12), 6, nearK, 5);
+  }
+  const int gy = 322 + V2_RUN_DY;
+  scRect(0, gy, V2_W, V2_W, 0x8A5A34);        // the track,
+  scRect(0, gy, V2_W, gy + 3, 0x79BD4F);      // its grass edge: a lit row,
+  scRect(0, gy + 4, V2_W, gy + 7, 0x5F9E3E);  // a darker one,
+  for (int c = scFl4(og) - 1; c * 4 - og < V2_W; c++)  // and a row of checker into the dirt (the mockup's at y 330)
+    if ((c + 330 / 4) % 2) scCell(c * 4 - og, gy + 8, 0x5F9E3E);
+  for (auto &b : V2_PEBBLES) {  // pebbles, coming round again every 468 px
+    int x = scMod(b[0] - og, 468);
+    Rgb c = b[2] ? 0x6E4428 : 0xA87048;
+    scCell(x, b[1] + V2_RUN_DY, c);
+    if (x > 462) scCell(x - 468, b[1] + V2_RUN_DY, c);
+  }
+  scGradeTod = 0;
+}
+static void v2RunScene(float dist) {
+  uint8_t tod = v2HourTod();
+  v2Cached(104 + tod, scRunSky, tod);
+  scFb = (uint16_t *)gfx->getFramebuffer();
+  scRunLand(dist, tod);
+}
+
+// PikaSurf: open water from above, in deep and shallow bands with checker seams, stepped wave crests and
+// specks (g_surf). It rushes up the screen: the bands at half the water's speed and the crests at its speed,
+// as V1's swells and streaks did. Drawn every frame, graded at dusk and at night.
+static const int16_t V2_CRESTS[26][2] = {  // the mockup's random.Random(4): 26 crests, then 30 specks
+  {120,152},{52,368},{200,244},{76,44},{32,8},{204,280},{148,408},{388,28},{112,264},{272,184},{140,396},{88,420},{52,132},
+  {108,12},{424,328},{412,132},{408,136},{96,84},{156,148},{320,444},{372,436},{432,448},{188,44},{432,308},{172,340},{196,256} };
+static const int16_t V2_SPECKS[30][2] = {
+  {124,88},{124,240},{140,44},{416,440},{280,428},{152,0},{464,148},{292,360},{448,156},{432,388},{260,96},{208,216},{304,144},{220,228},{80,116},
+  {156,132},{416,408},{20,40},{20,236},{320,140},{264,272},{328,240},{356,172},{72,344},{100,32},{208,100},{324,320},{224,140},{92,180},{220,380} };
+static void v2SurfWater(float dist, uint8_t tod) {
+  scFb = (uint16_t *)gfx->getFramebuffer();
+  scGradeTod = tod;
+  const Rgb band[2] = { 0x2F78C8, 0x3F8AD8 };  // deep, shallow: each 116 px
+  int ob = SNAP2((int)(dist / 2)), oc = SNAP2((int)dist);
+  for (int b = ob / 116; b * 116 - ob < V2_W; b++) scRect(0, b * 116 - ob, V2_W, b * 116 - ob + 115, band[b & 1]);
+  for (int b = ob / 116; b * 116 - 8 - ob < V2_W; b++)  // the seams, the checker moving with the water
+    for (int wy = b * 116 - 8; wy < b * 116 + 8; wy += 4)
+      for (int x = 0; x < V2_W; x += 4)
+        if ((x / 4 + scFl4(wy)) % 2 == 0) scCell(x, wy - ob, wy < b * 116 ? band[b & 1] : band[(b - 1) & 1]);
+  static const int8_t crest[5][3] = { { 0, 4, 0 }, { 4, 0, 1 }, { 8, 0, 1 }, { 12, 0, 1 }, { 16, 4, 0 } };  // a stepped arc
+  for (auto &c : V2_CRESTS)
+    for (int y = scMod(c[1] - oc, 468), k = 0; k < 2; k++, y -= 468)  // coming round again every 468 px
+      for (auto &d : crest) scCell(c[0] + d[0], y + d[1], d[2] ? 0xBFE6F5 : 0x8FCBEF);
+  for (auto &s : V2_SPECKS)
+    for (int y = scMod(s[1] - oc, 468), k = 0; k < 2; k++, y -= 468) scCell(s[0], y, 0x6FB2EC);
+  scGradeTod = 0;
+}
+
+// Volley: a mown court from above in striped greens, chalk lines, a net with a checker mesh, packed clay
+// either side with grit in it (g_volley). Moved onto the game's court: the side lines on its walls (VB_LEFT
+// and VB_RIGHT), the net's tape on VB_TOP, where the ball crosses (44 px under the mockup's), the attack line
+// where the game has it.
+static const int16_t V2_GRIT[160][3] = {  // the mockup's random.Random(9); 1: a light one
+  {236,312,1},{188,136,0},{68,92,0},{440,344,1},{0,172,0},{256,236,0},{456,308,1},{40,168,0},{280,312,0},{356,20,1},
+  {372,192,0},{84,360,0},{228,368,1},{216,80,0},{84,120,0},{24,56,1},{64,256,0},{444,300,0},{32,396,1},{352,196,0},
+  {404,380,0},{452,52,1},{148,104,0},{344,112,0},{368,404,1},{212,452,0},{44,392,0},{136,104,1},{200,140,0},{172,412,0},
+  {20,100,1},{360,452,0},{0,448,0},{208,28,1},{456,192,0},{432,248,0},{68,12,1},{120,216,0},{376,464,0},{432,56,1},
+  {304,0,0},{60,388,0},{296,100,1},{456,436,0},{100,168,0},{4,456,1},{40,68,0},{276,8,0},{256,40,1},{292,252,0},
+  {272,100,0},{212,32,1},{200,96,0},{324,388,0},{44,356,1},{296,72,0},{88,308,0},{368,20,1},{24,136,0},{284,348,0},
+  {308,436,1},{76,380,0},{136,376,0},{292,16,1},{60,444,0},{360,204,0},{460,120,1},{80,312,0},{256,20,0},{376,184,1},
+  {432,344,0},{264,300,0},{288,396,1},{352,44,0},{444,176,0},{56,440,1},{448,296,0},{184,228,0},{104,204,1},{100,292,0},
+  {380,8,0},{192,408,1},{308,168,0},{0,220,0},{56,108,1},{112,224,0},{136,164,0},{416,44,1},{156,320,0},{144,52,0},
+  {264,400,1},{28,12,0},{192,396,0},{284,412,1},{216,252,0},{176,360,0},{396,124,1},{288,376,0},{32,216,0},{328,116,1},
+  {48,388,0},{204,260,0},{188,440,1},{284,188,0},{68,340,0},{148,84,1},{352,428,0},{448,132,0},{12,24,1},{412,88,0},
+  {132,84,0},{60,308,1},{72,4,0},{24,28,0},{228,104,1},{400,196,0},{148,312,0},{4,408,1},{180,144,0},{72,244,0},
+  {284,140,1},{68,44,0},{380,284,0},{148,356,1},{60,32,0},{212,228,0},{72,360,1},{284,388,0},{404,196,0},{300,452,1},
+  {408,84,0},{336,364,0},{140,392,1},{304,448,0},{308,252,0},{176,48,1},{24,140,0},{268,64,0},{88,408,1},{320,420,0},
+  {40,80,0},{396,404,1},{112,436,0},{4,100,0},{88,240,1},{232,300,0},{284,276,0},{196,40,1},{88,280,0},{244,300,0},
+  {132,272,1},{32,332,0},{12,296,0},{296,452,1},{220,276,0},{156,268,0},{268,272,1},{328,464,0},{404,32,0},{448,328,1} };
+static void scCourt(int tod) {
+  scGradeTod = tod;
+  scRect(0, 0, V2_W, V2_W, 0xC8643C);
+  for (auto &g : V2_GRIT) scCell(g[0], g[1], g[2] ? 0xD87A50 : 0xA84E30);
+  const int L = VB_LEFT - 2, R = VB_RIGHT + 2, dy = 44;  // the court's outer edges; the mockup's net, moved down
+  static const Rgb stripe[6] = { 0x3C8A4C, 0x4A9A58, 0x3C8A4C, 0x4A9A58, 0x3C8A4C, 0x4A9A58 };
+  static const int16_t edge[7] = { 52 + 44, 120 + 44, 188 + 44, 256 + 44, 324 + 44, 392 + 44, 466 };
+  scBands(stripe, edge, 6, L, R);
+  scRect(L, edge[0], L + 4, V2_W, 0xFFFFFF);  // the side lines,
+  scRect(R - 4, edge[0], R, V2_W, 0xFFFFFF);
+  scRect(L, edge[0], R, edge[0] + 4, 0xFFFFFF);  // the line under the net
+  scRect(L, 196, R, 200, 0xFFFFFF);              // and the attack line
+  for (int cy = 28 + dy; cy < 52 + dy; cy += 4)  // the net
+    for (int cx = L - 12; cx < R + 14; cx += 4) scCell(cx, cy, (cx / 4 + cy / 4) % 2 ? 0x1B1B25 : 0xE8E8F0);
+  scRect(L - 12, 24 + dy, R + 14, 27 + dy, 0xFFFFFF);
+  scRect(L - 16, 20 + dy, L - 9, 60 + dy, 0x8A8FA6);
+  scRect(R + 10, 20 + dy, R + 17, 60 + dy, 0x8A8FA6);
+  scGradeTod = 0;
+}
+
+// Who's That?: the classic burst of rays in two blues, stepped on the grid, with a lighter middle and a
+// checker edge round it (g_quiz). Showdown has the same burst in pinks. It doesn't change with the hour.
+static void scBurst(int pink) {
+  const Rgb a = pink ? 0xC84874 : 0x3F8FD8, b = pink ? 0xD8608A : 0x5AA8EC, glow = pink ? 0xEE9AB4 : 0x8CC8F4;
+  for (int cy = 0; cy < V2_W; cy += 4)
+    for (int cx = 0; cx < V2_W; cx += 4) {
+      int dx = cx + 2 - 233, dy = cy + 2 - 200, r2 = dx * dx + dy * dy;
+      double ang = atan2((double)dy, (double)dx) * 57.29577951308232;  // in degrees, as math.degrees
+      if (ang < 0) ang += 360;
+      Rgb c = (int)(ang / 15) % 2 ? a : b;
+      if (r2 < 110 * 110 || (r2 < 126 * 126 && (cx / 4 + cy / 4) % 2)) c = glow;
+      scCell(cx, cy, c);
+    }
+}
+
+// The battle's backdrop: its zone's scene (a wild battle's is the meadow, as g_battle draws it), and two
+// grassy bases where the game stands the two fighters, lit along the top with a dark underside under them
+// (battle_hud, which has them in the Forest). The catch has the scene alone: there it runs about.
+static int16_t v2BtlFoe[2], v2BtlMe[2];  // where the fighters' feet are: set by the battle
+static void scMeadowBattle(uint8_t tod) {
+  const ScPal &p = SC_DAY;
+  const ScPal &s = tod == 2 ? SC_NIGHT : tod == 1 ? SC_DUSK_SKY : SC_DAY;
+  scSky(s.top, s.bot);
+  scSun(s, tod == 2, 110, 120);
+  scCloud(s, 300, 90, 3);
+  scGradeTod = tod;
+  static const ScEll nearB[1] = { { -400, 250, 866, 1100 } };  // the near hill comes up higher than at home
+  ScLayer L[3] = { { p.far, SC_FAR, 2 }, { p.mid, SC_MID, 2 }, { p.near, nearB, 1 } };
+  scHills(L, 3, p.lit, 1);
+  static const int16_t trees[2][2] = { { 40, 196 }, { 76, 206 } };  // off to the left, clear of the foe's base
+  for (auto &t : trees) scRole(SPR_V2_TREE, 10, t[0], t[1], 3, p, p.mid);
+  scHills(L, 3, p.lit, 2);
+  scGradeTod = 0;
+}
+// a base under feet at (x, y): hw either side, up above them and down below (as battle_hud has them), in the
+// zone's colours (the Forest's and the meadow's are the mockups'; the others have their ground's colour, lit
+// and shaded the same way)
+static void scBase(int8_t zone, uint8_t tod, int x, int y, int hw, int up, int down, bool mine) {
+  Rgb fill = 0x74BF74, lit = 0x8CD08A, under = 0x3F7E52;  // the meadow's
+  if (zone == Z_FOREST) fill = 0x4F9A55, lit = 0x74BF74, under = 0x234A30;
+  else if (zone >= 0) {
+    ScPal p = zone == Z_FIELD ? scFieldPal() : zone == Z_BEACH ? scBeachPal() : zone == Z_CAVE ? scCavePal() : scMansionPal();
+    fill = p.near;
+    lit = scMix(p.near, 0xFFFFFF, .25);
+    under = scMix(p.near, p.dark, .85);
+  }
+  scGradeTod = zone == Z_CAVE || zone == Z_MANSION ? 0 : tod;
+  ScEll e = scE(x - hw, y - up, x + hw, y + down);
+  scOval(scE(e.x0, e.y0 + 8, e.x1, e.y1 + 8), under);
+  scOval(e, fill, lit);
+  if (zone < 0) {  // the meadow's: a lighter middle and grass at its foot (where g_battle has them)
+    scOval(scE(e.x0 + 18, e.y0 + 8, e.x1 - 18, e.y1 - 6), 0x86C98A);
+    scTall(e.x0 + (mine ? 14 : 12), e.y1 - (mine ? 16 : 10), fill);
+    scTall(e.x1 - (mine ? 22 : 20), e.y1 - (mine ? 22 : 14), fill);
+  }
+  scGradeTod = 0;
+}
+static void scBattle(int key) {  // key: (zone + 1) * 8 + tod * 2 + bases
+  int8_t zone = key / 8 - 1;
+  uint8_t tod = key / 2 % 4;
+  if (zone < 0) scMeadowBattle(tod);
+  else scPaint(zone, zone == Z_CAVE || zone == Z_MANSION ? 0 : tod);
+  if (!(key & 1)) return;
+  scBase(zone, tod, v2BtlFoe[0], v2BtlFoe[1], 80, 24, 16, false);
+  scBase(zone, tod, v2BtlMe[0], v2BtlMe[1], 100, 28, 22, true);
+}
+// zone: the battle's Travel zone, or -1 for a wild battle (the meadow); bases: false for the catch
+static void v2BattleScene(int zone, bool bases, int foeX, int foeY, int meX, int meY) {
+  v2BtlFoe[0] = foeX, v2BtlFoe[1] = foeY, v2BtlMe[0] = meX, v2BtlMe[1] = meY;
+  int key = (zone + 1) * 8 + v2HourTod() * 2 + (bases ? 1 : 0);
+  v2Cached(200 + key, scBattle, key);
+}
+
+static void v2TiltScene() { uint8_t t = v2HourTod(); v2Cached(100 + t, scTilt, t); }
+static void v2CourtScene() { uint8_t t = v2HourTod(); v2Cached(108 + t, scCourt, t); }
+static void v2BurstScene(bool pink) { v2Cached(pink ? 113 : 112, scBurst, pink ? 1 : 0); }
+
+// PokeDungeon's tiles (dn_tile in rooms_px.py): flagstones lit along the top and left and shaded on the
+// bottom and right, now and then a crack or moss; walls dark on top with specks and, where floor lies under
+// them, a face of bricks lit along its top, a few with a flickering torch; the stairs as four steps down.
+static void v2DnTile(uint8_t t, bool face, int tx, int ty, int sx, int sy) {
+  scFb = (uint16_t *)gfx->getFramebuffer();
+  auto rr = [](int x0, int y0, int x1, int y1, Rgb c) { scRect(x0, y0, x1 - 1, y1 - 1, c); };  // x1 and y1 outside it
+  const int T = DN_TILE;
+  if (t == DN_WALL) {
+    rr(sx, sy, sx + T, sy + T, 0x24202C);
+    for (int k = 0; k < 3; k++) {
+      int x = sx + (tx * 17 + k * 23) % 56 / 4 * 4, y = sy + (ty * 13 + k * 19) % 40 / 4 * 4;
+      rr(x, y, x + 4, y + 4, 0x2E2A38);
+    }
+    if (!face) return;
+    rr(sx, sy + 40, sx + T, sy + T, 0x4A4252);
+    rr(sx, sy + 40, sx + T, sy + 44, 0x5E5468);
+    static const int8_t course[2][3] = { { 48, 0, 8 }, { 56, 12, 6 } };  // the mortar: y, where the joints start, their height
+    for (auto &c : course) {
+      rr(sx, sy + c[0], sx + T, sy + c[0] + 2, 0x3A3442);
+      for (int bx = c[1]; bx < T; bx += 24) rr(sx + bx, sy + c[0] - c[2], sx + bx + 2, sy + c[0], 0x3A3442);
+    }
+    if ((tx * 3 + ty * 5) % 7 == 0) {  // a torch on this face, its flame a little shorter every other beat
+      int x = sx + 28, y = sy + 44, low = ((millis() + (tx * 7 + ty) * 97) / 170) % 2 ? 4 : 0;
+      rr(x, y, x + 8, y + 16, 0x6A4428);
+      rr(x - 4, y - 12 + low, x + 12, y, 0xF5863D);
+      rr(x, y - 16 + low, x + 8, y - 4, 0xFFD95E);
+    }
+    return;
+  }
+  rr(sx, sy, sx + T, sy + T, 0x62584C);
+  rr(sx, sy, sx + T, sy + 4, 0x7A6E60);
+  rr(sx, sy, sx + 4, sy + T, 0x7A6E60);
+  rr(sx + T - 4, sy, sx + T, sy + T, 0x4E463C);
+  rr(sx, sy + T - 4, sx + T, sy + T, 0x4E463C);
+  int h = (tx * 7 + ty * 13) % 5;
+  if (h == 0) {  // a crack
+    rr(sx + 20, sy + 28, sx + 36, sy + 32, 0x4E463C);
+    rr(sx + 32, sy + 32, sx + 36, sy + 40, 0x4E463C);
+  }
+  if (h == 2) {  // moss
+    rr(sx + 40, sy + 16, sx + 48, sy + 20, 0x6E8A4A);
+    rr(sx + 44, sy + 12, sx + 48, sy + 16, 0x8AA860);
+  }
+  if (t == DN_STAIRS) {
+    static const Rgb step[4] = { 0x8A7E70, 0x6E6458, 0x524A40, 0x2E2A24 };
+    for (int i = 0; i < 4; i++) rr(sx + 8 + i * 6, sy + 12 + i * 10, sx + 56 - i * 6, sy + 20 + i * 10, step[i]);
+  }
+}
+
+// the dungeon's floor and HP in one dark panel at the top (the approved mockup, with its numbers at size 2)
+static void v2DnHud(uint8_t floor, int hp, int maxHp) {
+  gfx->fillRoundRect(131, 15, 205, 59, 10, C565(0x0d, 0x0b, 0x20));
+  gfx->fillRoundRect(134, 18, 199, 53, 8, C565(0x1e, 0x20, 0x34));
+  gfx->drawRoundRect(137, 21, 193, 47, 5, C565(0x5a, 0x5f, 0x7c));
+  gfx->drawRoundRect(138, 22, 191, 45, 4, C565(0x5a, 0x5f, 0x7c));
+  char b[16];
+  snprintf(b, sizeof(b), "B%uF", floor);
+  setSize(2);
+  gfx->setTextColor(C565(0xf0, 0xc0, 0x4a));
+  setCur(148, 26);
+  printT(b);
+  int hx = 148 + textW(b, 2) + 12;
+  if (hx < 200) hx = 200;
+  gfx->setTextColor(UI_WHITE);
+  setCur(hx, 26);
+  printT("HP");
+  int bx = hx + 28, bw = 318 - bx;  // the bar, to the panel's right
+  gfx->fillRect(bx, 28, bw, 12, C565(0x0d, 0x0b, 0x20));
+  float pct = maxHp ? (float)hp / maxHp : 0;
+  int w = (int)((bw - 4) * pct);
+  if (w > 0) gfx->fillRect(bx + 2, 30, w, 8, pct > 0.5f ? UI_BAR_OK : (pct > 0.2f ? UI_BAR_WARN : UI_BAR_BAD));
+  snprintf(b, sizeof(b), "%d/%d", hp, maxHp);
+  gfx->setTextColor(C565(0xd8, 0xdc, 0xf0));
+  setCur(bx + bw / 2 - textW(b, 2) / 2, 48);
+  printT(b);
+}
+
+// a V2 button: a dark rim, its colour, a lit stripe along the top (button() in the mockups)
+static void v2Button(int x, int y, int w, int h, uint16_t col) {
+  gfx->fillRoundRect(x - 3, y - 3, w + 6, h + 6, 10, V2_RIM);
+  gfx->fillRoundRect(x, y, w, h, 8, col);
+  gfx->fillRect(x + 6, y + 3, w - 12, 4, v2Blend(col, UI_WHITE, 90));  // 35% lighter
+}
+
+// a line of text over a scene (the battle has no band under it now): in its own text box
+static bool gV2LineBox = false;  // battleCenterLine boxes its lines while this is on
+static void v2LineBox(const char *s, int y) {
+  int w = textW(s, 2) + 28;
+  v2Panel(CX - w / 2, y - 7, CX + w / 2, y + 20, 8);
+}
+
+#ifdef BOARD_HOST
+// For the screenshot tool: one background on its own at an hour (0 day, 1 dusk, 2 night), to set beside
+// its mockup. 0 Berry Drop, 1 PokeRun, 2 PikaSurf, 3 Volley, 4 Who's That?, 5 Showdown, 6 the wild battle,
+// 7 the Forest battle, 8 the Field's catch, 9 a dungeon room.
+void v2HostBackdrop(int which, int tod) {
+  scFb = (uint16_t *)gfx->getFramebuffer();
+  v2SceneKey = -1;
+  scGradeTod = 0;
+  switch (which) {
+    case 0: scTilt(tod); break;
+    case 1: scRunSky(tod); scRunLand(0, tod); break;
+    case 2: v2SurfWater(0, tod); break;
+    case 3: scCourt(tod); break;
+    case 4: scBurst(0); break;
+    case 5: scBurst(1); break;
+    case 6: v2BtlFoe[0] = 330, v2BtlFoe[1] = 186, v2BtlMe[0] = 128, v2BtlMe[1] = 322; scBattle(0 * 8 + tod * 2 + 1); break;
+    case 7: v2BtlFoe[0] = 330, v2BtlFoe[1] = 186, v2BtlMe[0] = 128, v2BtlMe[1] = 322; scBattle(1 * 8 + tod * 2 + 1); break;
+    case 8: scBattle((Z_FIELD + 1) * 8 + tod * 2); break;
+    case 9: {
+      static const char *const ROOM[8] = { "#########", "#...#...#", "#.......#", "#..##...#", "#.....>.#", "##.#....#", "#...#...#", "#########" };
+      scRect(0, 0, V2_W, V2_W, 0x24202C);
+      int ox = 233 - 32 - 3 * 64, oy = 233 - 32 - 3 * 64 + 16;
+      for (int ty = 0; ty < 8; ty++)
+        for (int tx = 0; tx < 9; tx++) {
+          char c = ROOM[ty][tx];
+          bool face = c == '#' && ty + 1 < 8 && ROOM[ty + 1][tx] != '#';
+          v2DnTile(c == '#' ? DN_WALL : c == '>' ? DN_STAIRS : DN_FLOOR, face, tx, ty, ox + tx * 64, oy + ty * 64);
+        }
+      break;
+    }
+  }
+  scGradeTod = 0;
+}
+#endif

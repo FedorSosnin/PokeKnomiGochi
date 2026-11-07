@@ -616,6 +616,25 @@ static void testGame() {
     runTicks(300);
     CHECK(fb[4 * 466 + 233] == 0x1065);  // its night sky, #140f2c
   }
+  // V2's game backgrounds, by day, as their mockups have them (games_px.py) where the game stands things
+  {
+    extern void v2HostBackdrop(int which, int tod);
+    extern ScaledCanvas *gfx;
+    const uint16_t *fb = gfx->getFramebuffer();
+    v2HostBackdrop(0, 0);
+    CHECK(fb[200 * 466 + 20] == 0xA388);   // Berry Drop: the left trunk's lit edge, #a07040
+    v2HostBackdrop(1, 0);
+    CHECK(fb[340 * 466 + 100] == 0x7DE9);  // PokeRun: the track's lit grass on the game's ground line, #79bd4f
+    v2HostBackdrop(2, 0);
+    CHECK(fb[60 * 466 + 100] == 0x2BD9);   // PikaSurf: the deep water, #2f78c8
+    v2HostBackdrop(3, 0);
+    CHECK(fb[300 * 466 + 66] == 0xFFFF);   // Volley: the side line on the court's left wall
+    v2HostBackdrop(4, 0);
+    CHECK(fb[200 * 466 + 233] == 0x8E5E);  // Who's That?: the burst's light middle, #8cc8f4
+    v2HostBackdrop(6, 0);
+    CHECK(fb[182 * 466 + 330] == 0x8651);  // a wild battle: the foe's base under its feet, #86c98a
+    runTicks(100);
+  }
 #endif
 
   hostSerialPush("WIPE");

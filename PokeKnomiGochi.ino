@@ -2986,11 +2986,18 @@ void renderQuiz() {
   if (quizPhase == QP_END && t > 5000) { closeQuiz(); gameEndToMenu(); return; }
   if (!quizOpen) return;
 
+#if UI_V2
+  v2BurstScene(false);  // V2: the burst of rays in two blues
+#else
   gfx->fillScreen(TYPE_ACCENT[TY_WATER]);  // to the edge: no black ring
+#endif
   gfx->setTextColor(UI_WHITE);
   setSize(2);
   char b[32];
   if (quizPhase == QP_END) {
+#if UI_V2
+    gfx->setTextColor(UI_INK);  // on the burst's light middle
+#endif
     snprintf(b, sizeof(b), "%u/%u", quizScore, QUIZ_ROUNDS);
     setSize(6);
     setCur(centerX(b, 6), 170);
@@ -3553,8 +3560,12 @@ void battleStep() {
 }
 
 void drawBattlePanel(int x, int y, const BtlFighter &f, float shown, bool numbers) {
+#if UI_V2
+  v2Panel(x, y, x + 177, y + 61, 10);  // V2: the text box
+#else
   gfx->fillRoundRect(x, y, 178, 62, 10, UI_WHITE);
   gfx->drawRoundRect(x, y, 178, 62, 10, UI_INK);
+#endif
   gfx->setTextColor(UI_INK);
   setSize(2);
   setCur(x + 10, y + 6);
@@ -3590,6 +3601,9 @@ void drawBattleFighter(PmdMon &m, bool mine, int cx, int ground, uint8_t maxS) {
 }
 
 void battleCenterLine(const char *s, int y) {
+#if UI_V2
+  if (gV2LineBox) v2LineBox(s, y);  // V2: over the scene, in a text box
+#endif
   setCur(centerX(s, 2), y);
   printT(s);
 }
@@ -3691,7 +3705,11 @@ void drawCatchShine(int cx, int cy, uint32_t t) {
 
 void renderCatch() {
   uint32_t now = millis();
+#if UI_V2
+  v2BattleScene(bZone, false, BTL_FOE_X, BTL_FOE_GROUND, BTL_ME_X, BTL_ME_GROUND);  // V2: the scene, no bases
+#else
   drawGameScene();
+#endif
   bool held = bPhase == BP_SHAKE || bPhase == BP_CAUGHT;  // in the ball, where it landed
   float foeX = held ? bCatchX : battleFoeSway(now);
   bFoeX = foeX;
@@ -3708,7 +3726,11 @@ void renderCatch() {
     uint8_t act = dir > 0 ? PMD_WALKR : PMD_WALKL;
     if (!wildPmd.has(act)) act = PMD_IDLE;
     int fx = (int)foeX;
+#if UI_V2
+    v2PetShadow(fx, CATCH_GROUND_Y, 28);
+#else
     gfx->fillRoundRect(fx - 26, CATCH_GROUND_Y - 4, 52, 9, 4, lerp565(soil, RGB565_BLACK, 5, 16));
+#endif
     float speed = battleFoeSpeed(now);  // slows to turn at each end
     if (speed > 0.35f) {
       uint16_t dust = lerp565(soil, UI_WHITE, 9, 16);
@@ -3746,8 +3768,12 @@ void renderCatch() {
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, ballGround, 3, false);
   }
 
+#if UI_V2
+  gV2LineBox = true;  // V2: no band; the lines go in text boxes
+#else
   gfx->fillRect(0, BTL_BAND_Y, 466, 466 - BTL_BAND_Y, UI_BG_DAY);
   gfx->fillRect(0, BTL_BAND_Y, 466, 3, UI_INK);
+#endif
   gfx->setTextColor(UI_INK);
   setSize(2);
   char b[48];
@@ -3772,6 +3798,12 @@ void renderCatch() {
       char c[8];
       snprintf(c, sizeof(c), n == 1 ? "1" : n == 2 ? "1  2" : "1  2  3");
       setSize(5);
+#if UI_V2
+      {
+        int w = textW(c, 5) + 36;
+        v2Panel(CX - w / 2, 352, CX + w / 2, 410, 10);
+      }
+#endif
       setCur(centerX(c, 5), 362);
       printT(c);
       setSize(2);
@@ -3787,6 +3819,9 @@ void renderCatch() {
       break;
     default: break;
   }
+#if UI_V2
+  gV2LineBox = false;
+#endif
   gfx->flush();
 }
 
@@ -4001,11 +4036,17 @@ void renderBattle() {
     renderCatch();
     return;
   }
+#if UI_V2
+  v2BattleScene(bZone, bPhase != BP_TIRED, BTL_FOE_X, BTL_FOE_GROUND, BTL_ME_X, BTL_ME_GROUND);  // V2: with the two bases
+#else
   drawGameScene();
+#endif
   bool tired = bPhase == BP_TIRED;
   if (!tired) {
+#if !UI_V2
     uint16_t soil = battleSoil();
     gfx->fillRoundRect(BTL_FOE_X - 70, BTL_FOE_GROUND - 10, 140, 24, 12, soil);
+#endif
     // the on-screen HP chases the real one
     bShownMe += (bMe.hp - bShownMe) * 0.28f;
     bShownFoe += (bFoe.hp - bShownFoe) * 0.28f;
@@ -4019,8 +4060,12 @@ void renderBattle() {
     drawPmdAct(pet.sleeping && pmd.has(PMD_SLEEP) ? PMD_SLEEP : PMD_IDLE, CX, 300, millis(), true, false, 4);
   }
 
+#if UI_V2
+  gV2LineBox = bPhase != BP_CHOOSE;  // V2: no band; the lines go in text boxes (not RUN's, on its button)
+#else
   gfx->fillRect(0, BTL_BAND_Y, 466, 466 - BTL_BAND_Y, UI_BG_DAY);
   gfx->fillRect(0, BTL_BAND_Y, 466, 3, UI_INK);
+#endif
   gfx->setTextColor(UI_INK);
   setSize(2);
   char b[48];
@@ -4040,7 +4085,11 @@ void renderBattle() {
         BtlMove m = MOVE_TBL[bMeMoves.ids[i]];
         int x0, x1;
         battleMoveRect(i, x0, x1);
+#if UI_V2
+        v2Button(x0, 346, x1 - x0, 40, TYPE_ACCENT[m.type]);
+#else
         gfx->fillRoundRect(x0, 346, x1 - x0, 40, 10, TYPE_ACCENT[m.type]);
+#endif
         gfx->setTextColor(UI_WHITE);
         setCur((x0 + x1) / 2 - (int)strlen(m.name) * 6, 359);
         printT(m.name);
@@ -4048,12 +4097,21 @@ void renderBattle() {
       if (bRunFailed) {  // stays for the rest of the fight, in place of RUN
         const char *s = T(S_BTL_NO_ESCAPE);
         int w = textW(s, 2) + 24;
+#if UI_V2
+        v2Button(CX - w / 2, 394, w, 38, UI_BAR_BAD);
+#else
         gfx->fillRoundRect(CX - w / 2, 394, w, 38, 10, UI_BAR_BAD);
+#endif
         gfx->setTextColor(UI_WHITE);
         battleCenterLine(s, 406);
       } else {
+#if UI_V2
+        v2Button(160, 394, 146, 38, C565(0x8e, 0x8c, 0x96));  // grey, as a way out
+        gfx->setTextColor(UI_WHITE);
+#else
         gfx->fillRoundRect(160, 394, 146, 38, 10, UI_TRACK);
         gfx->setTextColor(UI_INK);
+#endif
         battleCenterLine(T(S_BTL_RUN), 406);
       }
       break;
@@ -4093,6 +4151,9 @@ void renderBattle() {
       break;
     }
   }
+#if UI_V2
+  gV2LineBox = false;
+#endif
   gfx->flush();
 }
 
@@ -4144,6 +4205,9 @@ uint16_t battleSoil() {
 // berries growing in them and vines hanging down, and a treeline behind. The middle of the sky stays
 // open for the score, and the falling berry has plain sky behind it most of the way.
 void drawCatchScene() {
+#if UI_V2
+  v2TiltScene();  // V2: the clearing between two big trees, in the 8-bit style
+#else
   int hor = 376;
   bool night = drawSky(hor);
   uint16_t far = sceneShade(C565(0x8c, 0xc4, 0x8e), night), farDk = sceneShade(C565(0x6c, 0xa8, 0x72), night);
@@ -4189,11 +4253,15 @@ void drawCatchScene() {
       gfx->fillCircle(lx + (k & 1 ? 7 : -5), y, 5, leafHi);
     }
   }
+#endif
 }
 
 // Poke Ball Volley's court, from above: your half, the net along the top where the ball crosses to
 // your buddy's screen, the side lines where it bounces and the attack line.
 void drawCourtScene() {
+#if UI_V2
+  v2CourtScene();  // V2: the mown court, the net's tape on VB_TOP
+#else
   int hh = sceneHour();
   bool night = hh < 6 || hh >= 20;
   uint16_t out = sceneShade(C565(0xc0, 0x6a, 0x48), night), court = sceneShade(C565(0x2c, 0x76, 0x3c), night);  // a deep green court
@@ -4212,6 +4280,7 @@ void drawCourtScene() {
   for (int x = VB_LEFT - 18; x < VB_RIGHT + 18; x += 8) gfx->fillRect(x, VB_TOP + 2, 1, 22, lerp565(mesh, line, 5, 16));
   for (int y = VB_TOP + 8; y < VB_TOP + 24; y += 7) gfx->fillRect(VB_LEFT - 18, y, VB_RIGHT - VB_LEFT + 36, 1, lerp565(mesh, line, 5, 16));
   gfx->fillRect(VB_LEFT - 18, VB_TOP - 3, VB_RIGHT - VB_LEFT + 36, 6, line);
+#endif
 }
 
 void renderGame() {
@@ -4260,10 +4329,15 @@ void renderGame() {
   // score, record and lives
   char buf[8];
   snprintf(buf, sizeof(buf), "%u", gameScore);
+#if UI_V2
+  surfText(buf, 4, 30, UI_WHITE);  // V2: white with a shadow, over the leaves and the sky
+  gfx->setTextColor(ink);
+#else
   gfx->setTextColor(ink);
   setSize(4);
   setCur(centerX(buf, 4), 30);
   printT(buf);
+#endif
   // 24 and not 12: in Japanese "きろく %u" is 10 bytes before the number and the
   // record was cut to its first digit ("きろく 2" with 219). The sizes of
   // the text buffers are watched by TestBuffersDeTexto in test/test_tools.py.
@@ -4381,6 +4455,9 @@ void dnDrawTile(int tx, int ty, int sx, int sy) {
 // a tile of a kind (the games menu draws a room of its own); faceBelow: a wall with floor under it
 // shows its face
 void dnDrawTileKind(uint8_t t, bool faceBelow, int tx, int ty, int sx, int sy) {
+#if UI_V2
+  v2DnTile(t, faceBelow, tx, ty, sx, sy);  // V2: flagstones, brick faces, torches
+#else
   const uint16_t floorC = C565(0x62, 0x58, 0x4c), floorD = C565(0x56, 0x4d, 0x43);
   const uint16_t wallTop = C565(0x24, 0x20, 0x2c), wallFace = C565(0x3e, 0x37, 0x42);
   if (t == DN_WALL) {
@@ -4396,6 +4473,7 @@ void dnDrawTileKind(uint8_t t, bool faceBelow, int tx, int ty, int sx, int sy) {
     for (int i = 0; i < 4; i++)
       gfx->fillRect(sx + 6 + i * 6, sy + 8 + i * 12, DN_TILE - 12 - i * 12, 10, lerp565(C565(0xd8, 0xd0, 0xb8), C565(0x20, 0x1c, 0x24), i, 4));
   }
+#endif
 }
 
 void renderDungeon() {
@@ -4466,6 +4544,9 @@ void renderDungeon() {
   gPmdForceScale = 0;
 
   char b[48];
+#if UI_V2
+  v2DnHud(dn.floor, dn.me.hp, dn.me.maxHp);  // V2: the floor and the HP in one panel at the top
+#else
   snprintf(b, sizeof(b), "B%uF", dn.floor);
   setSize(3);
   int fw = textW(b, 3) + 24;
@@ -4478,6 +4559,7 @@ void renderDungeon() {
   gfx->fillRoundRect(CX - 104, 432, 208, 16, 6, UI_INK);
   int hw = (int)(200 * pct);
   if (hw > 2) gfx->fillRoundRect(CX - 100, 436, hw, 8, 4, pct > 0.5f ? UI_BAR_OK : (pct > 0.2f ? UI_BAR_WARN : UI_BAR_BAD));
+#endif
 
   // the latest thing that happened, while it can be read
   b[0] = 0;
@@ -4552,6 +4634,10 @@ void runTap() {
 
 // forest with two layers of pines that move slower than the ground
 void drawForest(float dist, bool night) {
+#if UI_V2
+  (void)night;  // V2 grades it by the hour itself, dusk too
+  v2RunScene(dist);
+#else
   uint16_t dark = C565(0x0c, 0x12, 0x24);
   uint16_t top = C565(0xa8, 0xdc, 0xd8), bot = C565(0xe2, 0xf2, 0xc8);
   uint16_t farC = C565(0x6f, 0xa8, 0x7c), nearC = C565(0x35, 0x7a, 0x52), trunk = C565(0x5a, 0x40, 0x30);
@@ -4581,6 +4667,7 @@ void drawForest(float dist, bool night) {
     gfx->fillRect(x, RUN_GROUND_Y - 5, 5, 8, tuft);
     gfx->fillRect(x + 28, RUN_GROUND_Y + 6, 12, 4, tuft);
   }
+#endif
 }
 
 // one obstacle's pixel art (sprites.py), with the art's left edge at x and its outline on the grass:
@@ -4848,6 +4935,10 @@ void drawSurfDuelText(uint32_t now) {
 
 // the water, rushing up: deep blue, broad swells, and streaks of foam at the water's speed
 void drawSurfWater(float dist, bool night) {
+#if UI_V2
+  (void)night;
+  v2SurfWater(dist, v2HourTod());  // V2: bands, crests and specks, graded by the hour
+#else
   uint16_t deep = night ? C565(0x12, 0x2c, 0x5c) : C565(0x2a, 0x86, 0xd2);
   uint16_t swell = night ? C565(0x18, 0x38, 0x6c) : C565(0x38, 0x96, 0xdc);
   uint16_t streak = night ? C565(0x5a, 0x86, 0xb8) : C565(0xa8, 0xe0, 0xf8);
@@ -4863,6 +4954,7 @@ void drawSurfWater(float dist, bool night) {
     gfx->fillRect(SNAP2(x), SNAP2(y), w, 4, streak);
     if (k % 3 == 0) gfx->fillRect(SNAP2(x + w + 8), SNAP2(y + 2), 6, 4, streak);
   }
+#endif
 }
 
 // the foam a board leaves behind it, up the screen: a V opening from its tail
@@ -7868,7 +7960,11 @@ void sdTap(int16_t x, int16_t y) {
 void renderShowdown() {
   if (!sdOpen) return;
   introPaused();  // finishes the card's exit
+#if UI_V2
+  v2BurstScene(true);  // V2: the burst in pinks
+#else
   gfx->fillScreen(TYPE_ACCENT[TY_PSYCHIC]);  // to the edge: no black ring
+#endif
   gfx->setTextColor(UI_WHITE);
   char b[48];
   // the score: you on the left, the buddy on the right
@@ -7877,6 +7973,9 @@ void renderShowdown() {
   setCur(centerX(b, 2), 44);
   printT(b);
   if (sdPhase == SD_DONE) {
+#if UI_V2
+    gfx->setTextColor(UI_INK);  // on the burst's light middle
+#endif
     snprintf(b, sizeof(b), "%u : %u", sdMine(), sdTheirs());
     setSize(6);
     setCur(centerX(b, 6), 150);
@@ -7891,6 +7990,9 @@ void renderShowdown() {
     return;
   }
   if (sdPhase == SD_READY) {
+#if UI_V2
+    gfx->setTextColor(UI_INK);
+#endif
     const char *w = buddyGameReady() ? T(S_SD_READY) : T(S_BUDDY_WAITING);  // waiting for their Ready, GO!
     setCur(centerX(w, 2), 220);
     printT(w);
@@ -8139,8 +8241,12 @@ void renderVolley() {
   printT(b);
   // your Pokemon is the paddle
   gPmdForceScale = 2;
+#if UI_V2
+  v2PetShadow((int)vbPadX, VB_GROUND_Y, 26);  // V2: its soft shadow on the court
+#else
   int vbH = sceneHour();
   gfx->fillRoundRect((int)vbPadX - 26, VB_GROUND_Y - 5, 52, 10, 5, sceneShade(C565(0x1c, 0x50, 0x28), vbH < 6 || vbH >= 20));  // its shadow on the court
+#endif
   uint8_t act = vbPadVX > 40 ? PMD_WALKR : vbPadVX < -40 ? PMD_WALKL : PMD_IDLE;
   if (!pmd.has(act)) act = PMD_IDLE;
   drawPmdAct(act, (int)vbPadX, VB_GROUND_Y, millis(), true, false, 2);
