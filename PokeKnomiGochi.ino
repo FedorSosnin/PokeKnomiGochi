@@ -3095,7 +3095,7 @@ void renderQuiz() {
     }
     t = 0;
   }
-  if (quizPhase == QP_END && t > 5000) { closeQuiz(); gameEndToMenu(); return; }
+  if (quizPhase == QP_END && t > 5000 V2_AND(false)) { closeQuiz(); gameEndToMenu(); return; }  // (V2: it waits)
   if (!quizOpen) return;
 
 #if UI_V2
@@ -4433,7 +4433,7 @@ void renderGame() {
 
   if (gameOverUntil) {
     drawCatchScene();
-    if (!timeLeft(gameOverUntil)) {
+    if (!timeLeft(gameOverUntil) V2_AND(false)) {  // (V2: the end waits for PLAY AGAIN! or the X)
       gameOpen = false;
       gameEndToMenu();
       return;
@@ -4635,7 +4635,7 @@ void dnDrawTileKind(uint8_t t, bool faceBelow, int tx, int ty, int sx, int sy) {
 void renderDungeon() {
   if (pet.ceremony || !pmd.loaded) { closeDungeon(); return; }
   uint32_t now = millis();
-  if (dnOverT && now - dnOverT > 6000) { closeDungeon(); gameEndToMenu(); return; }
+  if (dnOverT && now - dnOverT > 6000 V2_AND(false)) { closeDungeon(); gameEndToMenu(); return; }  // (V2: it waits)
 
   bool paused = introPaused();  // under its card nobody moves
   if (dnBot && !paused && !dn.dead && now - dnStepT > 200) {
@@ -4862,7 +4862,7 @@ void drawRunObstacle(const RunObstacle &o, bool night) {  // the art is the same
 void renderRun() {
   if (pet.ceremony || !pmd.loaded) { closeRun(); return; }
   uint32_t now = millis();
-  if (runOverT && now - runOverT > 4000) { closeRun(); gameEndToMenu(); return; }
+  if (runOverT && now - runOverT > 4000 V2_AND(false)) { closeRun(); gameEndToMenu(); return; }  // (V2: it waits)
 
   if (introPaused()) {
     runLast = now;  // under its card the run waits
@@ -5035,7 +5035,7 @@ void surfDuelHandle(const BuddyMsg &m) {
 // sends where you are; false when they've been silent too long (they've gone: the duel closes)
 bool surfDuelTick(uint32_t now) {
   if (!buddyGameReady()) surfDuelT = now;  // "get ready" counts from when both have pressed Ready, GO!
-  if (now - surfSendT >= SURF_DUEL_SEND_MS) {
+  if (now - surfSendT >= SURF_DUEL_SEND_MS V2_AND(!surfDuelDoneT || now - surfDuelDoneT < 3000)) {  // (V2: its end waits, quiet)
     surfSendT = now;
     surfDuelSend();
   }
@@ -5184,8 +5184,8 @@ void renderSurf() {
   uint32_t now = millis();
   if (surfDuel) {
     if (!surfDuelTick(now)) return;  // they've gone
-    if (surfDuelDoneT && now - surfDuelDoneT > SURF_DUEL_DONE_MS) { surfDuelEnd(); return; }
-  } else if (surfOverT && now - surfOverT > 4000) {
+    if (surfDuelDoneT && now - surfDuelDoneT > SURF_DUEL_DONE_MS V2_AND(false)) { surfDuelEnd(); return; }  // (V2: the ends wait)
+  } else if (surfOverT && now - surfOverT > 4000 V2_AND(false)) {
     closeSurf();
     gameEndToMenu();
     return;
@@ -5224,7 +5224,7 @@ void renderSurf() {
     if (r.on)
       for (int i = 0; i < 3; i++)
         if (r.lanes >> i & 1) drawSurfRock(surfRockX(r, i), (int)r.y, night);
-  if (surfDuel) {  // the buddy: level with yours while you both surf, falling behind once they've crashed
+  if (surfDuel V2_AND(!surfDuelDoneT)) {  // the buddy: level with yours while you both surf, falling behind once they've crashed
     float want = surfTheirX;  // where they are, but never hidden right behind yours: alongside, as Pikachu rides
     if (fabsf(want - surf.x) < 70) want = surf.x + (surf.x < SURF_CX ? 70 : -70);
     float step = 600.0f * 0.04f, d = want - surfTheirShownX;
@@ -5235,10 +5235,17 @@ void renderSurf() {
   } else if (surf.pikaY < SURF_PIKA_GONE_Y) {
     drawSurfRider(surfPika, SPR_SURF_BOARD_P, 3, (int)surf.pikaX, (int)surf.pikaY, PMD_IDLE, 2, now, night);
   }
+#if UI_V2
+  if (!surfDuel || !surfDuelDoneT)  // V2: at a duel's end the two stand face to face instead (v2SurfDuelResult())
+#endif
   drawSurfRider(pmd, SPR_SURF_BOARD, 4, (int)surf.x, SURF_PET_Y, surf.dead ? PMD_HURT : PMD_IDLE, surfScale, now, night);
 
   char b[24];
   if (surfDuel) {
+#if UI_V2
+    if (surfDuelDoneT) v2SurfDuelResult();  // V2: as the other games with a buddy end, PLAY AGAIN! and the X
+    else
+#endif
     drawSurfDuelText(now);
     drawIntroCard();
     gfx->flush();
@@ -7369,6 +7376,11 @@ void buddyHandle(const BuddyMsg &m, uint32_t now) {
     }
   }
 
+#if UI_V2
+  // V2: the buddy's PLAY AGAIN! (a new invitation) while our end of that game is on show: it goes, and they're
+  // asked as any invitation asks (an older version, its end gone by itself, gets the same one resent)
+  if (m.type == BM_INVITE && m.session != bsId && v2GameEnd() == V2_AGAIN_YB) v2BuddyGameClose(false);
+#endif
   if (m.type == BM_INVITE) {
     if (bsState == BS_IDLE) {
       bool free = onMainScreen() && !pet.isEgg() && !pet.sleeping && !pet.ceremony && !choiceKind &&
@@ -8267,7 +8279,7 @@ void sdTick(uint32_t now) {
         sdSendT = now;
         sdSend(BM_RESULT, sdWho, 0);
       }
-      if (t > SD_DONE_MS) sdClose();
+      if (t > SD_DONE_MS V2_AND(false)) sdClose();  // (V2: it waits for PLAY AGAIN! or the X)
       break;
   }
 }
@@ -8581,7 +8593,7 @@ void vbTick(uint32_t now) {
     case VB_AWAY:
       break;
     case VB_DONE:
-      if (t > VB_DONE_MS) vbClose();
+      if (t > VB_DONE_MS V2_AND(false)) vbClose();  // (V2: it waits for PLAY AGAIN! or the X)
       break;
   }
   vbStepT = now;
@@ -8604,13 +8616,16 @@ void renderVolley() {
   // your Pokemon is the paddle
   gPmdForceScale = 2;
 #if UI_V2
-  v2PetShadow((int)vbPadX, VB_GROUND_Y, 26);  // V2: its soft shadow on the court
+  if (vbPhase != VB_DONE) v2PetShadow((int)vbPadX, VB_GROUND_Y, 26);  // V2: its soft shadow on the court (none at its end)
 #else
   int vbH = sceneHour();
   gfx->fillRoundRect((int)vbPadX - 26, VB_GROUND_Y - 5, 52, 10, 5, sceneShade(C565(0x1c, 0x50, 0x28), vbH < 6 || vbH >= 20));  // its shadow on the court
 #endif
   uint8_t act = vbPadVX > 40 ? PMD_WALKR : vbPadVX < -40 ? PMD_WALKL : PMD_IDLE;
   if (!pmd.has(act)) act = PMD_IDLE;
+#if UI_V2
+  if (vbPhase != VB_DONE)  // V2: at its end the two stand face to face instead (v2BuddyResult())
+#endif
   drawPmdAct(act, (int)vbPadX, VB_GROUND_Y, millis(), true, false, 2);
   gPmdForceScale = 0;
   // the home screen's Poke Ball: 18 px drawn x4 (a little over the 64 px it hits with), and x2 on the paddle
@@ -9950,6 +9965,12 @@ void drawMapTurned(const char *const *map, int n, int s, float deg, float px, fl
 
 // the game screens' tap, by whichever is open (same order as handleTouch checks them)
 void gameTap(int16_t x, int16_t y) {
+#if UI_V2
+  if (v2GameEnd()) {  // V2: any game's end: PLAY AGAIN! or the X
+    if (int k = v2GameEndTap(x, y)) v2GameEndDo(k);
+    return;
+  }
+#endif
   if (sdOpen) sdTap(x, y);
   else if (vbOpen) vbTap();
   else if (battleOpen) battleTap(x, y);
@@ -9980,6 +10001,13 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   // --- game screens (handleTouch's first branch) ---
+#if UI_V2
+  if (int by = v2GameEnd()) {  // V2: a game's end: PLAY AGAIN! and the X
+    int k = v2GameEndTap(x, y);
+    if (k == 1) return pressSet(t, V2_AGAIN_X0, by, V2_AGAIN_X1 - V2_AGAIN_X0, V2_AGAIN_H, T(S_PLAY_AGAIN));
+    return k == 2 && pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+  }
+#endif
   if (battleOpen) {
     if (bPhase == BP_RESULT && closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     if (bPhase != BP_CHOOSE) return false;

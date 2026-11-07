@@ -59,6 +59,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "EMPEZAR DE NUEVO", "Se borrar\240 todo tu progreso, la POKEDEX y las medallas.",
     "Voley\nPoke", "Duelo", "con %s",
+    "Jugar otra vez!",
 #endif
   },
   // ---------------- EN ----------------
@@ -113,6 +114,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "START OVER", "All your progress, the POKEDEX and the medals will be erased.",
     "Poke\nVolley", "Show\ndown", "with %s",
+    "Play Again!",
 #endif
   },
   // ---------------- FR ----------------
@@ -167,6 +169,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "RECOMMENCER", "Ta progression, le POKEDEX et les m\202dailles seront effac\202s.",
     "Volley\nPoke", "Duel", "avec %s",
+    "Rejouer!",
 #endif
   },
   // ---------------- DE ----------------
@@ -226,6 +229,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "NEU ANFANGEN", "Fortschritt, POKEDEX und Medaillen werden gel\224scht.",
     "Poke\nVolley", "Duell", "mit %s",
+    "Nochmal spielen!",
 #endif
   },
   // ---------------- IT ----------------
@@ -280,6 +284,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "RICOMINCIA", "Progressi, POKEDEX e medaglie verranno cancellati.",
     "Palla\nvolo", "Sfida", "con %s",
+    "Gioca ancora!",
 #endif
   },
   // ---------------- PT ----------------
@@ -334,6 +339,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "RECOME\207AR", "Isto apaga todo o progresso, a POKEDEX e as medalhas.",
     "Volei\nPoke", "Duelo", "com %s",
+    "Jogar de novo!",
 #endif
   },
   // ---------------- JA ----------------
@@ -411,6 +417,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "さいしょから", "しんこう、ずかん、メダルが ぜんぶ きえます。",
     "ボール\nバレー", "たいけつ", "%sと",
+    "もういっかい!",
 #endif
   },
   // ---------------- KO ----------------
@@ -470,6 +477,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 #if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
     "처음부터", "진행, 도감, 메달이 모두 지워져요.",
     "몬스터볼\n배구", "대결", "함께: %s",
+    "다시 하기!",
 #endif
   },
 };

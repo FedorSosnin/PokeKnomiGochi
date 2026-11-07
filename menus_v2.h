@@ -2111,16 +2111,28 @@ static void v2DimFrame(int a256) {  // everything a256/256 of the way to the nig
   const uint16_t tint = sc565(0x120E22);
   for (int i = 0; i < V2_W * V2_W; i++) fb[i] = v2Blend(fb[i], tint, a256);
 }
+// a game's end (Fedor: "a Play Again! button to play again and our X to close"): PLAY AGAIN! in green, the
+// red X under it; the end waits for one of them. Its place is fixed, so a finger finds it at every game's end
+#define V2_AGAIN_X0 116
+#define V2_AGAIN_X1 350
+#define V2_AGAIN_H 46
+#define V2_AGAIN_Y 264   // on a game of yours (v2GameResult())
+#define V2_AGAIN_YB 312  // after a game with a buddy (v2BuddyResult())
+static void v2AgainButton(int y) {
+  char b[32];
+  v2LabelButton(V2_AGAIN_X0, y, V2_AGAIN_X1, y + V2_AGAIN_H, v2Caps(T(S_PLAY_AGAIN), b, sizeof(b)), C565(0x58, 0xb8, 0x68));
+  v2CloseX();
+}
 // a game's result (rooms2_px.py game_over()): the game behind, dimmed 45%, its name on a board; in a panel a
 // line on what happened (the dungeon's faint), the score big, the record (or NEW RECORD! in gold) and the
-// happiness it brought, in green. As in V1 it goes back to the games by itself
+// happiness it brought, in green, all of it in the room over PLAY AGAIN!, which is at the panel's foot
 static void v2GameResult(const char *title, const char *top, const char *big, bool newHi, const char *record, const char *joy) {
   v2DimFrame(115);
   char b[40];
   v2Sign(v2Caps(title, b, sizeof(b)), 70);
-  int bs = textW(big, 4) <= 250 ? 4 : 3, h = 18 + (top ? 28 : 0) + 8 * bs + 12 + (record ? 26 : 0) + 16 + 16;
-  v2Panel(96, 112, 370, 112 + h, 12);
-  int y = 130;
+  int bs = textW(big, 4) <= 250 ? 4 : 3, h = (top ? 28 : 0) + 8 * bs + 12 + (record ? 26 : 0) + 16;
+  v2Panel(96, 112, 370, V2_AGAIN_Y + V2_AGAIN_H + 16, 12);
+  int y = 112 + (V2_AGAIN_Y - 112 - h) / 2;
   setSize(2);
   if (top) {
     gfx->setTextColor(UI_INK);
@@ -2144,6 +2156,7 @@ static void v2GameResult(const char *title, const char *top, const char *big, bo
   gfx->setTextColor(C565(0x3c, 0x8a, 0x4c));
   setCur(centerX(joy, 2), y);
   printT(joy);
+  v2AgainButton(V2_AGAIN_Y);
 }
 
 // a game's how-to card (rooms2_px.py howto()): its name on a board, how to play in a panel, READY, GO! where
@@ -2266,8 +2279,9 @@ static void v2SmallPanel(const char *s, int y) {
   printT(s);
 }
 // how a buddy game ended (showdown_win()): the news on the ribbon, yours and theirs face to face with VS
-// between, the score in a panel with who's who under it; it closes by itself, as in V1. dim: over the court
-static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, bool dim) {
+// between, the score in a panel with who's who under it (unit: PikaSurf's "s"), then PLAY AGAIN! and the X.
+// dim: over the court or the water
+static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, bool dim, const char *unit = "") {
   if (dim) v2DimFrame(115);
   char c[48];
   v2Ribbon(v2Caps(news, c, sizeof(c)));
@@ -2276,36 +2290,126 @@ static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, 
     PmdMon &m = *two[k];
     if (!m.loaded) continue;
     int x = k ? 330 : 140;
-    uint8_t s = pmdFitScale(m, PMD_IDLE, 150, 140);
+    uint8_t s = pmdFitScale(m, PMD_IDLE, 150, 120);
     gPmdForceScale = s < 4 ? s : 4;
-    v2PetShadow(x, 240, 40);
+    v2PetShadow(x, 218, 40);
     bool shiny = m.shiny;
     m.shiny = false;  // (no sparkles over the ribbon)
-    drawPmdActM(m, PMD_IDLE, x, 244, millis(), true, false, 4);
+    drawPmdActM(m, PMD_IDLE, x, 222, millis(), true, false, 4);
     m.shiny = shiny;
     gPmdForceScale = 0;
   }
+  v2Panel(104, 230, 362, 300, 12);
+  char l[12];
+  char r[12];
+  char b[28];
+  snprintf(l, sizeof(l), "%u%s", mine, unit);
+  snprintf(r, sizeof(r), "%u%s", theirs, unit);
+  snprintf(b, sizeof(b), "%s : %s", l, r);
+  bool cjk = classicFontBegin();  // VS and the numbers in the pixel font in every language
   gfx->setTextColor(UI_WHITE);
   setSize(3);
-  v2Bold("VS", centerX("VS", 3), 160);
-  v2Panel(120, 252, 346, 322, 12);
-  char b[24];
-  snprintf(b, sizeof(b), "%u : %u", mine, theirs);
+  v2Bold("VS", centerX("VS", 3), 140);
+  int ss = textW(b, 4) <= 230 ? 4 : 3;  // a long time a size down
   gfx->setTextColor(UI_INK);
-  setSize(4);
-  int sx = centerX(b, 4);
-  setCur(sx, 262);
+  setSize(ss);
+  int sx = centerX(b, ss), lx = sx + textW(l, ss) / 2, rx = sx + textW(b, ss) - textW(r, ss) / 2;
+  setCur(sx, 240 + (4 - ss) * 4);
   printT(b);
-  const char *ln = strchr(b, ':');  // who's who, under each number
-  int lx = sx + (int)(ln - b - 1) * 12, rx = sx + (int)(ln - b + 2) * 24 + (int)strlen(ln + 2) * 12;
-  v2Caps(T(S_SD_YOU_LBL), c, sizeof(c));
+  classicFontEnd(cjk);
+  v2Caps(T(S_SD_YOU_LBL), c, sizeof(c));  // who's who, under each number, kept inside the panel
+  const char *nm = buddyName();
   setSize(2);
   gfx->setTextColor(V2_INK_MUTED);
-  setCur(lx - textW(c, 2) / 2, 300);
+  int cw = textW(c, 2), nw = textW(nm, 2), cx0 = lx - cw / 2, nx0 = rx - nw / 2;
+  if (cx0 < 116) cx0 = 116;
+  if (nx0 + nw > 350) nx0 = 350 - nw;
+  setCur(cx0, 278);
   printT(c);
-  const char *nm = buddyName();
-  setCur(rx - textW(nm, 2) / 2, 300);
+  setCur(nx0, 278);
   printT(nm);
+  v2AgainButton(V2_AGAIN_YB);
+}
+// PikaSurf with a buddy, both out (V1's words over the water): as the other games with a buddy, the times
+// for the score
+static void v2SurfDuelResult() {
+  int out = surfDuelOutcome((uint16_t)(surf.t * 10), surfTheir10);
+  char b[48];
+  if (out > 0) strlcpy(b, T(S_SD_WIN), sizeof(b));
+  else if (out < 0) snprintf(b, sizeof(b), T(S_SD_LOSE_FMT), buddyName());
+  else strlcpy(b, T(S_SD_DRAW), sizeof(b));
+  v2BuddyResult(b, (int)surf.t, surfTheir10 / 10, surfPika, true, "s");
+}
+
+// The end on show, if any: where its PLAY AGAIN! is (0: no end on show), and since when it's been up
+static int v2GameEnd(uint32_t *since = nullptr) {
+  uint32_t t = 0;
+  int y = V2_AGAIN_Y;
+  if (gameOpen && gameOverUntil) t = gameOverUntil - 3500;  // (Berry Drop's end lasted 3.5 s in V1)
+  else if (quizOpen && quizPhase == QP_END) t = quizT;
+  else if (runOpen && runOverT) t = runOverT;
+  else if (dungeonOpen && dnOverT) t = dnOverT;
+  else if (surfOpen && !surfDuel && surfOverT) t = surfOverT;
+  else {
+    y = V2_AGAIN_YB;
+    if (sdOpen && sdPhase == SD_DONE) t = sdT;
+    else if (vbOpen && vbPhase == VB_DONE) t = vbT;
+    else if (surfOpen && surfDuel && surfDuelDoneT) t = surfDuelDoneT;
+    else return 0;
+  }
+  if (since) *since = t;
+  return y;
+}
+// What a tap on it means: 1 PLAY AGAIN!, 2 the X, 0 nothing. Not in its first 800 ms, and only for a finger put
+// down after it came up: one steering or jumping as the game ended lifts on nothing
+static int v2GameEndTap(int16_t x, int16_t y) {
+  uint32_t since;
+  int by = v2GameEnd(&since);
+  if (!by || millis() - since < 800 || (int32_t)(tStart - since) < 0) return 0;
+  if (x >= V2_AGAIN_X0 - 8 && x <= V2_AGAIN_X1 + 8 && y >= by - 8 && y <= by + V2_AGAIN_H + 8) return 1;
+  return closeHit(x, y) ? 2 : 0;
+}
+// A game with a buddy closes as its end did by itself: home, or Play together after PikaSurf (with back)
+static void v2BuddyGameClose(bool back) {
+  if (sdOpen) sdClose();
+  if (vbOpen) vbClose();
+  if (surfOpen && surfDuel) {
+    if (back) {
+      surfDuelEnd();
+    } else {
+      closeSurf();
+      buddyEndSession();
+    }
+  }
+}
+// What they do. PLAY AGAIN! starts a game of yours again at once (no card: you've just played it); after a game
+// with a buddy it asks them again, from home, as an invitation does. The X goes where the end went by itself:
+// back to the games, home after a game with a buddy, Play together after PikaSurf with one
+static void v2GameEndDo(int k) {
+  sfxPlay(SFX_TAP);
+  bool again = k == 1;
+  if (sdOpen || vbOpen || surfDuel) {
+    uint8_t kind = sdOpen ? BK_SHOWDOWN : vbOpen ? BK_VOLLEY : BK_SURF;
+    v2BuddyGameClose(!again);
+    if (!again) return;
+    if (!bPeers[bCur].on) buddySetNote(S_BUDDY_LEFT_FMT);  // they've gone
+    else if (!pet.isEgg() && !pet.sleeping && !pet.ceremony) buddyInvite(kind);
+    return;
+  }
+  int g = gameOpen ? 0 : quizOpen ? 1 : runOpen ? 2 : dungeonOpen ? 3 : 4;
+  gameOpen = false;
+  if (quizOpen) closeQuiz();
+  if (runOpen) closeRun();
+  if (dungeonOpen) closeDungeon();
+  if (surfOpen) closeSurf();
+  if (again) {
+    if (g == 0) startGame();
+    else if (g == 1) startQuiz();
+    else if (g == 2) startRun();
+    else if (g == 3) startDungeon();
+    else startSurf();
+  }
+  if (!gameOpen && !quizOpen && !runOpen && !dungeonOpen && !surfOpen) gameEndToMenu();  // (it may not start: asleep)
 }
 
 // ----- the home's dialogs and moments (rooms2_px.py release_dialog(), batch3.py medal_banner(), bath(), evolving()) -----

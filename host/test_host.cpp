@@ -565,7 +565,7 @@ static void testGame() {
   CHECK(gameOpen && introCard == -1);
 
   // a game that ends goes back to the games menu, not home: PokeRun, with no jumps, ends on the first
-  // obstacle; a tap on the result closes it
+  // obstacle; a tap on the result closes it (V2: its X; PLAY AGAIN! runs it again)
   gameOpen = false;
   hostSerialPush("GAMES");
   runTicks(300);
@@ -575,7 +575,18 @@ static void testGame() {
   for (int i = 0; i < 40 && !runOverT; i++) runTicks(200);  // until it has ended
   runTicks(1000);
   CHECK(runOpen && runOverT);  // the result, waiting for a tap
+#if !defined(UI_V2) || UI_V2
+  tapAt(233, 200);  // V2: a tap on its panel does nothing
+  CHECK(runOpen && runOverT);
+  tapAt(233, 287);  // PLAY AGAIN!: a new run at once
+  CHECK(runOpen && !runOverT && introCard == -1);
+  for (int i = 0; i < 40 && !runOverT; i++) runTicks(200);
+  runTicks(1000);
+  CHECK(runOpen && runOverT);
+  tapAt(233, 422);  // the X
+#else
   tapAt(233, 200);
+#endif
   CHECK(!runOpen && gamesMenuOpen);
 
   // auto-update: on unless turned off, and kept apart from the pet's save; an update found waits for the
