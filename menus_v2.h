@@ -177,13 +177,63 @@ static void v2Bold(const char *s, int x, int y) {
   }
 }
 
+// which version this is, quietly, in a panel
+static void v2Version(int y) {
+  char ver[28];
+  snprintf(ver, sizeof(ver), "PokeKnomiGochi v%s", FW_VERSION);
+  gfx->setTextColor(V2_INK_MUTED);
+  setSize(2);
+  setCur(centerX(ver, 2), y);
+  printT(ver);
+}
+
+// ----- start over -----
+// The time page's START OVER (every build that has the question, its box in layout_v2.h): it asks
+// "Start over?" on the home screen, with what it erases, before anything goes.
+// "Start over?" and what it erases, in a panel over the dimmed home; ERASE EVERYTHING (red) and KEEP
+// PLAYING (green) fill V1's two buttons exactly, so their taps are V1's
+static void v2ResetDialog() {
+  dimFrame();
+  v2Panel(73, 92, 393, 340, 12);
+  const char *q = T(S_RESET_Q);
+  int qs = textW(q, 3) <= 300 ? 3 : 2;
+  gfx->setTextColor(UI_INK);
+  setSize(qs);
+  setCur(centerX(q, qs), 108);
+  printT(q);
+  // the warning, wrapped by its width at the spaces, up to three lines
+  const char *w = T(S_RESET_WARN);
+  char line[96];
+  setSize(2);
+  gfx->setTextColor(UI_BAR_BAD);
+  for (int ln = 0, y = qs == 3 ? 142 : 134; *w && ln < 3; ln++, y += 20) {
+    int n = 0, fit = 0;
+    for (;;) {  // the longest run of whole words that fits
+      int e = n;
+      while (w[e] == ' ') e++;
+      while (w[e] && w[e] != ' ') e++;
+      snprintf(line, sizeof(line), "%.*s", e, w);
+      if (fit && textW(line, 2) > 290) break;
+      fit = n = e;
+      if (!w[e]) break;
+    }
+    snprintf(line, sizeof(line), "%.*s", fit, w);
+    setCur(centerX(line, 2), y);
+    printT(line);
+    w += fit;
+    while (*w == ' ') w++;
+  }
+  v2LabelButton(96, 209, 370, 255, T(S_RESET_GO), UI_BAR_BAD);
+  v2LabelButton(96, 271, 370, 317, T(S_RESET_KEEP), C565(0x58, 0xb8, 0x68));
+}
+
 // ----- settings -----
 #ifdef BOARD_KNOMI_V2  // as V1's: the Knomi's own (its Wi-Fi and updates)
 // the Knomi's settings page: Wi-Fi, updates and the auto-update switch in a panel (settings_dim())
 static void v2Settings() {
   v2MenuBackdrop();
   v2Sign(T(S_SETTINGS));
-  v2Panel(80, 84, 386, 356, 10);  // the buttons fill V1's boxes exactly (96..370), so a press's ring hugs them
+  v2Panel(80, 84, 386, 372, 10);  // the buttons fill V1's boxes exactly (96..370), so a press's ring hugs them
   setSize(2);
   gfx->setTextColor(UI_INK);
   setCur(centerX("Wi-Fi", 2), 100);
@@ -215,6 +265,8 @@ static void v2Settings() {
     setCur(centerX(m, 2), AUTO_ROW_Y + AUTO_ROW_H + 8);
     printT(m);
   }
+  if (clockTzUi) v2Version(AUTO_ROW_Y + AUTO_ROW_H + 30);  // which version this is (the time page has no room)
+  drawPageArrows(1, 2, V2_PAGE_ARROW_Y);  // back to the time
   v2Dots(2, 1);
   v2CloseX();
 }
@@ -396,6 +448,7 @@ static void v2Card() {
   else if (cardPage == 1) v2CardStats();
   else if (cardPage == 2) v2CardTraining();
   else v2CardProgress();
+  drawPageArrows(cardPage, cardPageCount(), V2_PAGE_ARROW_Y);
   v2Dots(cardPageCount(), cardPage);
   v2CloseX();
 }
@@ -422,6 +475,7 @@ static void v2Clock(const char *langCode) {
     setSize(2);
     setCur(centerX(st, 2), clockTzUi ? TIME_STATUS_Y : TIME_STATUS_Y + 16);
     printT(st);
+    if (!clockTzUi) v2Version(240);  // in the panel (with the time zone there, it's on the settings page)
 #ifdef BOARD_KNOMI_V2
     if (clockTzUi) {
       gfx->setTextColor(V2_INK_MUTED);
@@ -455,16 +509,16 @@ static void v2Clock(const char *langCode) {
   if (!locked) {
     v2LabelButton(136, 343, 330, 385, "OK", C565(0x58, 0xb8, 0x68), UI_WHITE, 3);
   } else {
-    char ver[28];  // which version this is, quietly
-    snprintf(ver, sizeof(ver), "PokeKnomiGochi v%s", FW_VERSION);
-    gfx->setTextColor(V2_ON_DARK);
-    setSize(2);
-    setCur(centerX(ver, 2), 346);
-    printT(ver);
+#ifdef BOARD_KNOMI_V2
+    v2LabelButton(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1, V2_RESET_Y1, T(S_RESET_BTN), UI_BAR_BAD);  // asks first
+#endif
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
     v2Dots(2, 0);  // the settings are the next page (the Knomi's own)
 #endif
   }
+#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
+  drawPageArrows(0, 2, V2_PAGE_ARROW_Y);  // on to the settings
+#endif
   v2CloseX();
 }
 #ifdef BOARD_KNOMI_V2  // as V1's

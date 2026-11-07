@@ -125,6 +125,8 @@ def count_enumerators(header_path, enum_name, terminator):
     # strip line comments first: they sit between enumerators, not just
     # at line ends, so a plain comma-split would swallow them into names
     body = re.sub(r'//[^\n]*', '', m.group(1))
+    # and preprocessor lines (V2's ids sit in an #if UI_V2 block): counted as the V2 build has them
+    body = re.sub(r'^[ \t]*#[^\n]*', '', body, flags=re.M)
     names = [
         n.strip().split('=')[0].strip()
         for n in body.split(',') if n.strip()

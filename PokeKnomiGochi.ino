@@ -1484,6 +1484,24 @@ void onTap(int16_t x, int16_t y) {
     return;
   }
   if (clockOpen) {
+#if UI_V2 && defined(BOARD_KNOMI_V2)
+    if (!tzPickOpen && clockPage == 0 && clockLocked() && x >= V2_RESET_X0 - 3 && x <= V2_RESET_X1 + 3 &&
+        y >= V2_RESET_Y0 - 3 && y <= V2_RESET_Y1 + 3) {  // V2: START OVER asks first, on the home screen
+      sfxPlay(SFX_TAP);
+      knomiAskReset();
+      return;
+    }
+#endif
+#if UI_V2 && defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
+    if (!tzPickOpen && wifiSetupState() == WS_OFF) {  // V2: the side buttons turn the time and settings pages
+      int a = pageArrowAt(x, y, clockPage, 2, V2_PAGE_ARROW_Y);
+      if (a) {
+        sfxPlay(SFX_TAP);
+        onSwipe(a < 0 ? 1 : -1);  // as a swipe would
+        return;
+      }
+    }
+#endif
     clockTap(x, y);
     return;
   }
@@ -1496,6 +1514,16 @@ void onTap(int16_t x, int16_t y) {
       }
       return;
     }
+#if UI_V2
+    if (!cardAch) {  // V2: the side buttons turn the card's pages, as a swipe would
+      int a = pageArrowAt(x, y, cardPage, cardPageCount(), V2_PAGE_ARROW_Y);
+      if (a) {
+        sfxPlay(SFX_TAP);
+        onSwipe(a < 0 ? 1 : -1);
+        return;
+      }
+    }
+#endif
     if (!cardAch && cardPage == 0 && y < cardNameBottom + 12) openKeyboard();  // tap the name (or its pencil) = rename
 #ifndef BOARD_KNOMI_V2  // on the Knomi, battle opens with the physical button
     else if (!cardAch && cardPage == 1 && y >= 300 && y <= 340 && x >= 96 && x <= 370) {
@@ -8837,6 +8865,12 @@ void drawCeremony() {
 
 // decision dialog (2 stacked buttons): evolve/keep or say goodbye/stay together
 void drawChoiceDialog() {
+#if UI_V2
+  if (choiceKind == 3) {  // V2: "Start over?" says what it erases
+    v2ResetDialog();
+    return;
+  }
+#endif
   const char *q, *o1, *o2;
   uint16_t c1, c2, t1, t2;
   if (choiceKind == 1) {  // evolution

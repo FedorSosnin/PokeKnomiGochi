@@ -56,6 +56,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Inclina o arrastra a tu Pokemon para atrapar las bayas que caen. Si fallas 3, se acaba!", "Inclina, usa las flechas o arrastra a tu Pokemon para atrapar las bayas que caen. Si fallas 3, se acaba!", "Toca el nombre del Pokemon de la sombra. Cu\240ntos de los 10 aciertas?", "Toca donde sea para saltar los obst\240culos. Corre todo lo que puedas!", "Toca los bordes de la pantalla para andar. Come bayas, choca con Pokemon salvajes para luchar y busca la escalera!", "Toca los bordes de la pantalla o usa las flechas para andar. Come bayas, choca con Pokemon salvajes para luchar y busca la escalera!", "Inclina o arrastra a tu Pokemon para surfear. Esquiva las rocas y sigue el ritmo de Pikachu!", "Inclina, usa las flechas o arrastra a tu Pokemon para surfear. Esquiva las rocas y sigue a Pikachu!", "PikaSurf",
     "Conseguida!", "A\243n no", "Listos, YA!", "Perdiste!", "Esperando a que %s termine...", "%s se estrell\242!",
     "Inclina o arrastra a tu Pokemon para pasar la pelota sobre la red. Si se te escapa, punto para tu amigo!", "Inclina, usa las flechas o arrastra a tu Pokemon para pasar la pelota sobre la red. Si se te escapa, punto para tu amigo!", "Toca el nombre del Pokemon de la sombra antes que tu amigo. 10 rondas!", "Inclina o arrastra a tu Pokemon para esquivar las rocas. Gana quien aguante m\240s!", "Inclina, usa las flechas o arrastra a tu Pokemon para esquivar las rocas. Gana quien aguante m\240s!", "Auto-actualizar",
+#if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
+    "EMPEZAR DE NUEVO", "Se borrar\240 todo tu progreso, la POKEDEX y las medallas.",
+#endif
   },
   // ---------------- EN ----------------
   {
@@ -106,6 +109,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Tilt or drag your Pokemon to catch the falling berries. Miss 3 and it's over!", "Tilt, use the arrow keys, or drag your Pokemon to catch the falling berries. Miss 3 and it's over!", "Tap the name of the Pokemon in the shadow. How many of the 10 can you get right?", "Tap anywhere to jump over obstacles. Run as far as you can!", "Tap the edges of the screen to walk. Eat berries, walk into wild Pokemon to battle, and find the stairs!", "Tap the edges of the screen or use the arrow keys to walk. Eat berries, walk into wild Pokemon to battle, and find the stairs!", "Tilt or drag your Pokemon to surf left and right. Dodge the rocks and keep up with Pikachu!", "Tilt, use the arrow keys, or drag your Pokemon to surf. Dodge the rocks and keep up with Pikachu!", "PikaSurf",
     "Earned!", "Not yet", "Ready, GO!", "You lose!", "Waiting for %s to finish...", "%s crashed!",
     "Tilt or drag your Pokemon to hit the ball over the net. Miss it and your buddy scores!", "Tilt, use the arrow keys, or drag your Pokemon to hit the ball over the net. Miss it and your buddy scores!", "Tap the name of the Pokemon in the shadow before your buddy does. 10 rounds!", "Tilt or drag your Pokemon to dodge the rocks. Whoever lasts longer wins!", "Tilt, use the arrow keys, or drag your Pokemon to dodge the rocks. Whoever lasts longer wins!", "Auto-update",
+#if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
+    "START OVER", "All your progress, the POKEDEX and the medals will be erased.",
+#endif
   },
   // ---------------- FR ----------------
   {
@@ -156,6 +162,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Penche ou fais glisser ton Pokemon pour attraper les baies qui tombent. 3 rat\202es et c'est fini!", "Penche, utilise les fl\212ches ou fais glisser ton Pokemon pour attraper les baies. 3 rat\202es et c'est fini!", "Touche le nom du Pokemon dans l'ombre. Combien en trouveras-tu sur 10?", "Touche l'\202cran pour sauter les obstacles. Cours le plus loin possible!", "Touche les bords de l'\202cran pour avancer. Mange des baies, fonce sur les Pokemon sauvages et trouve l'escalier!", "Touche les bords de l'\202cran ou les fl\212ches pour avancer. Mange des baies, fonce sur les Pokemon sauvages et trouve l'escalier!", "Penche ou fais glisser ton Pokemon pour surfer. Esquive les rochers et suis Pikachu!", "Penche, utilise les fl\212ches ou fais glisser ton Pokemon pour surfer. Esquive les rochers et suis Pikachu!", "PikaSurf",
     "Obtenue!", "Pas encore", "C'est parti!", "Perdu!", "On attend que %s finisse...", "%s s'est \202cras\202!",
     "Penche ou fais glisser ton Pokemon pour renvoyer la balle par-dessus le filet. Rat\202e, et ton copain marque!", "Penche, utilise les fl\212ches ou fais glisser ton Pokemon pour renvoyer la balle. Rat\202e, et ton copain marque!", "Touche le nom du Pokemon dans l'ombre avant ton copain. 10 manches!", "Penche ou fais glisser ton Pokemon pour \202viter les rochers. Le dernier en piste gagne!", "Penche, utilise les fl\212ches ou fais glisser ton Pokemon pour \202viter les rochers. Le dernier en piste gagne!", "Mise \205 jour auto",
+#if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
+    "RECOMMENCER", "Ta progression, le POKEDEX et les m\202dailles seront effac\202s.",
+#endif
   },
   // ---------------- DE ----------------
   // German does take umlauts: the firmware's 5x7 font is a full CP437 table
@@ -211,6 +220,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Neige oder zieh dein Pokemon, um die fallenden Beeren zu fangen. 3 verpasst und es ist vorbei!", "Neigen, Pfeiltasten oder dein Pokemon ziehen: Fang die fallenden Beeren. 3 verpasst und es ist vorbei!", "Tippe auf den Namen des Pokemon im Schatten. Wie viele von 10 schaffst du?", "Tippe irgendwo, um \201ber Hindernisse zu springen. Lauf, so weit du kannst!", "Tippe an den Bildschirmrand, um zu laufen. Iss Beeren, lauf in wilde Pokemon zum K\204mpfen und finde die Treppe!", "Tippe an den Bildschirmrand oder nimm die Pfeiltasten. Iss Beeren, lauf in wilde Pokemon zum K\204mpfen und finde die Treppe!", "Neige oder zieh dein Pokemon zum Surfen. Weich den Felsen aus und bleib an Pikachu dran!", "Neigen, Pfeiltasten oder dein Pokemon ziehen zum Surfen. Weich den Felsen aus und bleib an Pikachu dran!", "PikaSurf",
     "Geschafft!", "Noch nicht", "Bereit, LOS!", "Verloren!", "Warte, bis %s fertig ist...", "%s ist gecrasht!",
     "Neige oder zieh dein Pokemon, um den Ball \201bers Netz zu spielen. Verpasst du ihn, punktet dein Kumpel!", "Neigen, Pfeiltasten oder dein Pokemon ziehen: Spiel den Ball \201bers Netz. Verpasst du ihn, punktet dein Kumpel!", "Tippe vor deinem Kumpel auf den Namen des Pokemon im Schatten. 10 Runden!", "Neige oder zieh dein Pokemon, um den Felsen auszuweichen. Wer l\204nger durchh\204lt, gewinnt!", "Neigen, Pfeiltasten oder dein Pokemon ziehen: Weich den Felsen aus. Wer l\204nger durchh\204lt, gewinnt!", "Auto-Update",
+#if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
+    "NEU ANFANGEN", "Fortschritt, POKEDEX und Medaillen werden gel\224scht.",
+#endif
   },
   // ---------------- IT ----------------
   {
@@ -261,6 +273,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Inclina o trascina il tuo Pokemon per prendere le bacche che cadono. 3 mancate ed \212 finita!", "Inclina, usa le frecce o trascina il tuo Pokemon per prendere le bacche che cadono. 3 mancate ed \212 finita!", "Tocca il nome del Pokemon nell'ombra. Quanti ne indovini su 10?", "Tocca dove vuoi per saltare gli ostacoli. Corri pi\227 lontano che puoi!", "Tocca i bordi dello schermo per muoverti. Mangia bacche, vai contro i Pokemon selvatici per lottare e trova le scale!", "Tocca i bordi dello schermo o usa le frecce per muoverti. Mangia bacche, vai contro i Pokemon selvatici per lottare e trova le scale!", "Inclina o trascina il tuo Pokemon per surfare. Schiva gli scogli e stai dietro a Pikachu!", "Inclina, usa le frecce o trascina il tuo Pokemon per surfare. Schiva gli scogli e stai dietro a Pikachu!", "PikaSurf",
     "Ottenuta!", "Non ancora", "Pronti, VIA!", "Hai perso!", "Aspetta che %s finisca...", "%s si \212 schiantato!",
     "Inclina o trascina il tuo Pokemon per mandare la palla oltre la rete. Se la manchi, il tuo amico segna!", "Inclina, usa le frecce o trascina il tuo Pokemon per mandare la palla oltre la rete. Se la manchi, il tuo amico segna!", "Tocca il nome del Pokemon nell'ombra prima del tuo amico. 10 round!", "Inclina o trascina il tuo Pokemon per schivare gli scogli. Vince chi resiste di pi\227!", "Inclina, usa le frecce o trascina il tuo Pokemon per schivare gli scogli. Vince chi resiste di pi\227!", "Auto-aggiorna",
+#if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
+    "RICOMINCIA", "Progressi, POKEDEX e medaglie verranno cancellati.",
+#endif
   },
   // ---------------- PT ----------------
   {
@@ -311,6 +326,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Inclina ou arrasta o teu Pokemon para apanhar as bagas que caem. Falhas 3 e acaba!", "Inclina, usa as setas ou arrasta o teu Pokemon para apanhar as bagas que caem. Falhas 3 e acaba!", "Toca no nome do Pokemon da sombra. Quantos acertas em 10?", "Toca em qualquer lado para saltar os obst\240culos. Corre o mais longe que puderes!", "Toca nos lados para andar. Come bagas, vai contra Pokemon selvagens para lutar e encontra as escadas!", "Toca nos lados ou usa as setas para andar. Come bagas, vai contra Pokemon selvagens para lutar e encontra as escadas!", "Inclina ou arrasta o teu Pokemon para surfar. Desvia-te das rochas e acompanha o Pikachu!", "Inclina, usa as setas ou arrasta o teu Pokemon para surfar. Desvia-te das rochas e acompanha o Pikachu!", "PikaSurf",
     "Conseguida!", "Ainda falta", "Prontos, J\240!", "Perdeste!", "A esperar que %s acabe...", "%s bateu!",
     "Inclina ou arrasta o teu Pokemon para passar a bola por cima da rede. Se falhares, o teu amigo marca!", "Inclina, usa as setas ou arrasta o teu Pokemon para passar a bola por cima da rede. Se falhares, o teu amigo marca!", "Toca no nome do Pokemon da sombra antes do teu amigo. 10 rondas!", "Inclina ou arrasta o teu Pokemon para te desviares das rochas. Ganha quem aguentar mais!", "Inclina, usa as setas ou arrasta o teu Pokemon para te desviares das rochas. Ganha quem aguentar mais!", "Auto-atualizar",
+#if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
+    "RECOME\207AR", "Isto apaga todo o progresso, a POKEDEX e as medalhas.",
+#endif
   },
   // ---------------- JA ----------------
   {
@@ -384,6 +402,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "かたむけるか ポケモンを ドラッグして おちてくる きのみを キャッチ! 3かい おとすと おわり!", "かたむけるか やじるしキー または ポケモンを ドラッグして おちてくる きのみを キャッチ! 3かい おとすと おわり!", "かげの ポケモンの なまえを タッチ! 10もんで なんもん あてられるかな?", "どこでも タッチで ジャンプ! しょうがいぶつを とびこえて どこまでも はしろう!", "がめんの はしを タッチして あるこう! きのみを たべて やせいの ポケモンに ぶつかって たたかい かいだんを さがそう!", "がめんの はしか やじるしキーで あるこう! きのみを たべて やせいの ポケモンに ぶつかって たたかい かいだんを さがそう!", "かたむけるか ポケモンを ドラッグして なみのりしよう! いわを よけて ピカチュウに ついていこう!", "かたむけるか やじるしキー または ポケモンを ドラッグして なみのり! いわを よけて ピカチュウに ついていこう!", "PikaSurf",
     "ゲット!", "まだだよ", "よーい ドン!", "まけ!", "%sが おわるのを まってるよ...", "%sが ぶつかった!",
     "かたむけるか ポケモンを ドラッグして ボールを ネットの むこうへ! とりのがすと ともだちの ポイント!", "かたむけるか やじるしキー または ポケモンを ドラッグして ボールを かえそう! とりのがすと ともだちの ポイント!", "ともだちより はやく かげの ポケモンの なまえを タッチ! 10もん!", "かたむけるか ポケモンを ドラッグして いわを よけよう! ながく のこった ほうの かち!", "かたむけるか やじるしキー または ポケモンを ドラッグして いわを よけよう! ながく のこった ほうの かち!", "じどう こうしん",
+#if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
+    "さいしょから", "しんこう、ずかん、メダルが ぜんぶ きえます。",
+#endif
   },
   // ---------------- KO ----------------
   // The specifiers go in the SAME ORDER as in the English row even though
@@ -439,6 +460,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "기울이거나 포켓몬을 끌어서 떨어지는 나무열매를 받아요! 3번 놓치면 끝!", "기울이거나 화살표 키, 또는 포켓몬을 끌어서 떨어지는 나무열매를 받아요! 3번 놓치면 끝!", "그림자 속 포켓몬의 이름을 눌러요. 10문제 중 몇 개나 맞힐까?", "아무 데나 눌러서 장애물을 뛰어넘어요. 최대한 멀리 달려요!", "화면 가장자리를 눌러서 걸어요. 나무열매를 먹고, 야생 포켓몬에 부딪혀 싸우고, 계단을 찾아요!", "화면 가장자리나 화살표 키로 걸어요. 나무열매를 먹고, 야생 포켓몬에 부딪혀 싸우고, 계단을 찾아요!", "기울이거나 포켓몬을 끌어서 파도를 타요! 바위를 피하고 피카츄를 따라가요!", "기울이거나 화살표 키, 또는 포켓몬을 끌어서 파도를 타요! 바위를 피하고 피카츄를 따라가요!", "PikaSurf",
     "획득!", "아직이에요", "준비, 시작!", "졌어요!", "%s 끝나길 기다리는 중...", "%s 부딪혔어요!",
     "기울이거나 포켓몬을 끌어서 공을 네트 너머로 넘겨요! 놓치면 친구가 점수를 얻어요!", "기울이거나 화살표 키, 또는 포켓몬을 끌어서 공을 네트 너머로 넘겨요! 놓치면 친구가 점수를 얻어요!", "친구보다 먼저 그림자 속 포켓몬의 이름을 눌러요. 10라운드!", "기울이거나 포켓몬을 끌어서 바위를 피해요! 더 오래 버티는 쪽이 이겨요!", "기울이거나 화살표 키, 또는 포켓몬을 끌어서 바위를 피해요! 더 오래 버티는 쪽이 이겨요!", "자동 업데이트",
+#if UI_V2  // V2: the menus' START OVER button, and the warning under Start over?
+    "처음부터", "진행, 도감, 메달이 모두 지워져요.",
+#endif
   },
 };
 

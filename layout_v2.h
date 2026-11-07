@@ -70,3 +70,9 @@ static const int16_t V2_MANSION_RISE[4] = { 20, 226, 446, 330 };   // added to t
 #define V2_FEED_H 72
 #define V2_FEED_CELL 66
 #define V2_FEED_SEAT_R 30
+
+// the time page's START OVER (menus_v2.h): its box, which is also its tap
+#define V2_RESET_X0 113
+#define V2_RESET_Y0 337
+#define V2_RESET_X1 353
+#define V2_RESET_Y1 373

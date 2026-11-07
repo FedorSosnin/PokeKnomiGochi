@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "ui_v2.h"
 
 // Supported languages. Arduino_GFX's 5x7 font is a full CP437 table
 // (256 glyphs), so accents, umlauts and enyes DO exist: they go as a single byte in
@@ -102,6 +103,9 @@ enum StrId : uint8_t {
   S_DUEL_LOSE, S_DUEL_WAIT_FMT, S_DUEL_CRASHED_FMT,  // PikaSurf with a buddy: out first; waiting; they're out
   S_HOW_VB, S_HOW_VB_KEYS, S_HOW_SD, S_HOW_DUEL, S_HOW_DUEL_KEYS,  // Play together's cards, like the games' ones
   S_AUTO_UPDATE,  // settings: the switch that lets a new version go in by itself
+#if UI_V2
+  S_RESET_BTN, S_RESET_WARN,  // V2: the clock page's START OVER, and what "Start over?" erases
+#endif
   STR_COUNT
 };
 
