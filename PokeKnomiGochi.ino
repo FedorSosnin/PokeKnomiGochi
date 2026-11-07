@@ -1388,7 +1388,11 @@ void onSwipe(int dir) {
     return;
   }
   if (pet.awaitingEggPick()) {
+#if UI_V2
+    int pages = (pet.eggChoiceCount() + DEXG_PAGE - 1) / DEXG_PAGE;  // V2: nine a page, as the Pokedex
+#else
     int pages = (pet.eggChoiceCount() + 15) / 16;
+#endif
     int np = eggPickPage - dir;  // swiping left advances a page
     if (!eggPickDetail && np >= 0 && np < pages) {
       eggPickPage = np;
@@ -7079,6 +7083,11 @@ void galleryTap(int16_t x, int16_t y) {
 #define PICK_BTN_H 56
 
 void renderEggPick() {
+#if UI_V2
+  v2PickScreen();  // V2: the Pokedex's look, only the forms you can raise; the entry, CHOOSE, the question (starter_v2.h)
+  gfx->flush();
+  return;
+#endif
   if (eggPickDetail) {  // animated: always redrawn
     const DexEntry &d = DEX_TBL[eggPickDetail];
     gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
@@ -7145,6 +7154,10 @@ int16_t ownedGridAt(int16_t x, int16_t y, int page, bool &shiny) {
 }
 
 void eggPickTap(int16_t x, int16_t y) {
+#if UI_V2
+  v2PickTap(x, y);  // V2 (starter_v2.h)
+  return;
+#endif
   if (eggPickDetail) {
     if (y >= PICK_BTN_Y && y < PICK_BTN_Y + PICK_BTN_H && abs(x - CX) <= 110) {
       pet.chooseEgg(eggPickDetail, eggPickShiny);
@@ -10094,6 +10107,18 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (pet.awaitingEggPick()) {
+#if UI_V2
+    if (int b = v2PickBtnAt(x, y)) {  // V2: the question's YES and BACK, CHOOSE, the X
+      if (b <= 2) return pressSet(t, V2_SQ_BTN_X[b - 1][0], V2_SQ_BTN_Y, V2_SQ_BTN_X[b - 1][1] - V2_SQ_BTN_X[b - 1][0], V2_SQ_BTN_H, T(b == 1 ? S_YES : S_BACK_BTN));
+      if (b == 3) return pressSet(t, CX - 97, V2_PICK_BTN_Y, 194, V2_PICK_BTN_H, T(S_CHOOSE_BTN));
+      return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+    }
+    if (!eggPickDetail) {
+      if (int d = pageArrowAt(x, y, eggPickPage, (pet.eggChoiceCount() + DEXG_PAGE - 1) / DEXG_PAGE, PAGE_ARROW_Y))
+        return pressSet(t, CX + d * pageArrowDx(PAGE_ARROW_Y) - CLOSE_R, PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+    }
+    return false;
+#endif
     if (eggPickDetail) {
       if (y >= PICK_BTN_Y && y < PICK_BTN_Y + PICK_BTN_H && abs(x - CX) <= 110)
         return pressSet(t, CX - 110, PICK_BTN_Y, 220, PICK_BTN_H, T(S_CHOOSE_BTN));
