@@ -279,7 +279,7 @@ static void v2Settings() {
 // ----- the card: profile, battle stats, training, progress -----
 static const uint16_t V2_STAT_COL[4] = { C565(0xe8, 0x50, 0x3a), C565(0x4f, 0x93, 0xc4), C565(0xf0, 0xc0, 0x4a), C565(0x8e, 0x8c, 0x96) };
 // a stat in a panel: its name, a bar, the number on the right (stat_row()); a boosted number is green
-static void v2StatRow(int y, const char *lab, int v, int maxv, uint16_t col, bool boosted = false, bool maxed = false) {
+static void v2StatRow(int y, const char *lab, int v, int maxv, uint16_t col, bool boosted = false, bool maxed = false, bool unknown = false) {
   setSize(2);
   gfx->setTextColor(UI_INK);
   setCur(108, y);
@@ -289,8 +289,9 @@ static void v2StatRow(int y, const char *lab, int v, int maxv, uint16_t col, boo
   if (fw > 2) gfx->fillRoundRect(164, y + 3, fw, 9, 3, col);
   char num[8];
   if (maxed) strlcpy(num, "MAX", sizeof(num));
+  else if (unknown) strlcpy(num, "?", sizeof(num));  // a friend on an older version doesn't send it
   else snprintf(num, sizeof(num), "%d", v);
-  gfx->setTextColor(maxed ? col : boosted ? C565(0x1e, 0x7d, 0x3c) : UI_INK);
+  gfx->setTextColor(maxed ? col : unknown ? V2_INK_MUTED : boosted ? C565(0x1e, 0x7d, 0x3c) : UI_INK);
   setCur(358 - textW(num, 2), y);
   printT(num);
 }
@@ -1595,4 +1596,249 @@ static int v2CartOfGame(int g) {
   for (int k = 0; k < 5; k++)
     if (V2_CART_GAME[k] == g) return k;
   return 0;
+}
+
+// ----- friends: a buddy's view, Party Boost, the visitor, trade (batch3.py friend_stats(), buddy_menu(),
+// party_boost(), trade()) -----
+static const uint16_t V2_HP_COL = C565(0x58, 0xb8, 0x68);
+// another's Pokemon standing on the rug, its feet at y, as big as fits under the board (at most 3x)
+static void v2FriendMon(PmdMon &mon, int feet) {
+  if (!mon.loaded) return;
+  uint8_t s = pmdFitScale(mon, PMD_IDLE, 220, feet - V2_BOARD_Y - 34);
+  gPmdForceScale = s < 3 ? s : 3;
+  v2PetShadow(CX, feet - 4, 44);
+  drawPmdActM(mon, PMD_IDLE, CX, feet, millis(), true, false, 3);
+  gPmdForceScale = 0;
+}
+// a friend's stats (friend_stats()): its name and level on the board, it on the rug, its four stats in a
+// panel (one an older version doesn't send shows "?"); the caller adds the panel's last line at 342
+static void v2FriendStats(PmdMon &mon, const char *name, bool shiny, uint8_t level, uint16_t hp, uint16_t atk, uint16_t def,
+                          uint16_t spe) {
+  v2MenuBackdrop();
+  char head[40];
+  snprintf(head, sizeof(head), T(S_NAME_FMT), shiny ? "*" : "", name, level);
+  v2Sign(head);
+  v2FriendMon(mon, 196);
+  v2Panel(92, 202, 374, 372, 10);
+  v2StatRow(214, T(S_STAT_HP), hp, 260, V2_HP_COL, false, false, !hp);
+  v2StatRow(244, T(S_STAT_ATK), atk, 260, V2_STAT_COL[0], false, false, !atk);
+  v2StatRow(274, T(S_STAT_DEF), def, 260, V2_STAT_COL[1], false, false, !def);
+  v2StatRow(304, T(S_STAT_SPE), spe, 260, V2_STAT_COL[2], false, false, !spe);
+}
+static void v2FriendLine(const char *s, int x = -1) {
+  gfx->setTextColor(V2_INK_MUTED);
+  setSize(2);
+  setCur(x < 0 ? centerX(s, 2) : x, 342);
+  printT(s);
+}
+// a buddy's first page: its stats and how much of the Pokedex it has
+static void v2BuddyStats(int caught) {
+  const BuddyPeer &p = bPeers[bCur];
+  v2FriendStats(buddyPmd[bCur], buddyName(), p.shiny, p.level, p.hp, p.atk, p.def, p.spe);
+  char b[32];
+  snprintf(b, sizeof(b), T(S_POKEDEX_FMT), caught);
+  v2FriendLine(b);
+  drawPageArrows(0, 2, V2_PAGE_ARROW_Y);
+  v2Dots(2, 0);
+  v2CloseX();
+}
+// its second page: Battle, Trade and Play in a panel over the home, dimmed (buddy_menu()). The buttons fill
+// V1's rows, where its taps are; Trade is grey while there's nothing to trade
+#define V2_BUDDY_ROW_Y 172  // V1's BUDDY_ROW_Y, _STEP and _H, defined further down
+#define V2_BUDDY_ROW_STEP 58
+#define V2_BUDDY_ROW_H 48
+static void v2BuddyActions(bool tradeOk) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  const uint16_t tint = sc565(0x120E22);
+  for (int i = 0; i < V2_W * V2_W; i++) fb[i] = v2Blend(fb[i], tint, 159);  // 62% toward the night tint
+  v2Panel(90, 104, 376, 350, 12);
+  char b[48];
+  snprintf(b, sizeof(b), T(S_BUDDY_HERE_FMT), buddyName());
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(b, 2), 126);
+  printT(b);
+  static const StrId LAB[3] = { S_BUDDY_BATTLE, S_BUDDY_TRADE, S_PLAY_BTN };
+  static const uint16_t COL[3] = { C565(0xe8, 0x50, 0x3a), C565(0x4f, 0x93, 0xc4), C565(0xc7, 0x5f, 0x80) };
+  for (int i = 0; i < 3; i++) {
+    int y = V2_BUDDY_ROW_Y + i * V2_BUDDY_ROW_STEP;
+    bool off = i == 1 && !tradeOk;
+    char cap[32];
+    v2LabelButton(CX - 127, y + 3, CX + 127, y + V2_BUDDY_ROW_H - 3, v2Caps(T(LAB[i]), cap, sizeof(cap)),
+                  off ? C565(0x8e, 0x8c, 0x96) : COL[i], off ? C565(0xd8, 0xd2, 0xbd) : UI_WHITE);
+  }
+  drawPageArrows(1, 2, V2_PAGE_ARROW_Y);
+  v2Dots(2, 1);
+  v2CloseX();
+}
+// Party Boost (party_boost()): who's here, each a row that opens its stats, then what the boost gives. The rows
+// are V1's, where its taps are (300 wide, as tall as V1 makes them for the party's size)
+static void v2Party(const int8_t *who, int n, int y0, int step) {
+  v2MenuBackdrop();
+  char b[40];
+  v2Sign(v2Caps(T(S_PARTY_BOOST), b, sizeof(b)));
+  const int x0 = CX - 150, h = step - 6, by = y0 + n * step + 14;
+  v2Panel(x0 - 12, y0 - 12, x0 + 312, by + 54, 10);
+  setSize(2);
+  for (int r = 0; r < n; r++) {
+    int y = y0 + r * step;
+    bool visitor = who[r] < 0;
+    gfx->fillRoundRect(x0, y, 300, h, 8, C565(0xee, 0xf2, 0xf8));
+    gfx->fillRect(x0 + 6, y, 288, 4, UI_WHITE);
+    v2LblThumb(visitor ? visitDex : bPeers[who[r]].dex, x0 + 30, y + h - 5, false);
+    char l2[24];  // its level, or how long the visitor stays
+    if (visitor) snprintf(l2, sizeof(l2), T(S_VISIT_MIN_FMT), (unsigned)(pet.visitMin ? pet.visitMin : 1));
+    else snprintf(l2, sizeof(l2), T(S_LVL_FMT), bPeers[who[r]].level);
+    gfx->setTextColor(UI_INK);
+    if (h >= 50) {  // two lines
+      setCur(x0 + 58, y + 9);
+      printT(partyRowName(r));
+      gfx->setTextColor(V2_INK_MUTED);
+      setCur(x0 + 58, y + 29);
+      printT(l2);
+    } else {  // a full party's shorter rows: the second on the right
+      setCur(x0 + 58, y + h / 2 - 7);
+      printT(partyRowName(r));
+      gfx->setTextColor(V2_INK_MUTED);
+      setCur(x0 + 268 - textW(l2, 2), y + h / 2 - 7);
+      printT(l2);
+    }
+    gfx->fillTriangle(x0 + 278, y + h / 2 - 9, x0 + 288, y + h / 2, x0 + 278, y + h / 2 + 9, C565(0x3a, 0x4a, 0x5a));
+  }
+  const uint16_t green = C565(0x3c, 0x8a, 0x4c);
+  char v[24];
+  gfx->setTextColor(UI_INK);
+  setCur(x0 + 12, by);
+  printT(T(S_BOOST_ENERGY));
+  snprintf(v, sizeof(v), "-%d%%", PARTY_ENERGY_SAVE_PCT);
+  gfx->setTextColor(green);
+  setCur(x0 + 288 - textW(v, 2), by);
+  printT(v);
+  snprintf(b, sizeof(b), "%s %s %s", T(S_STAT_ATK), T(S_STAT_DEF), T(S_STAT_SPE));
+  gfx->setTextColor(UI_INK);
+  setCur(x0 + 12, by + 28);
+  printT(b);
+  snprintf(v, sizeof(v), "+%d", PARTY_STAT_BONUS);
+  gfx->setTextColor(green);
+  setCur(x0 + 288 - textW(v, 2), by + 28);
+  printT(v);
+  v2CloseX();
+}
+// the visitor's stats: a wild one of its level; the last line, the candy it brought and how long it stays
+static void v2VisitorStats(uint8_t lvl, uint16_t hp, uint16_t atk, uint16_t def, uint16_t spe) {
+  v2FriendStats(visitPmd, dexName(visitDex), visitPmd.shiny, lvl, hp, atk, def, spe);
+  char m[24], line[40];
+  snprintf(m, sizeof(m), T(S_VISIT_MIN_FMT), (unsigned)(pet.visitMin ? pet.visitMin : 1));
+  snprintf(line, sizeof(line), "x1   %s", m);
+  setSize(2);
+  int x = CX - (24 + textW(line, 2)) / 2;
+  drawMap(SPR_CANDY, HOME_ICON_N, x, 336, 1, false);
+  v2FriendLine(line, x + 24);
+  v2CloseX();
+}
+
+// ----- trade -----
+// picking what to give: your forms on white in a panel, 4 x 4 squares of 76 (V1's are 80, under the X: a tap
+// in a V2 square is moved into V1's, v2TradeTap()); the page as dots and the side buttons
+#define V2_TRADE_X 81
+#define V2_TRADE_Y 70
+#define V2_TRADE_CELL 76
+static void v2TradePick(int page, int pages, const uint8_t *buddyReg) {
+  v2MenuBackdrop();
+  char b[48];
+  v2Sign(v2Caps(T(S_TRADE_PICK), b, sizeof(b)));
+  v2Panel(V2_TRADE_X - 6, V2_TRADE_Y - 6, V2_TRADE_X + 4 * V2_TRADE_CELL + 6, V2_TRADE_Y + 4 * V2_TRADE_CELL + 6, 10);
+  for (int i = 0; i < 16; i++) {
+    bool shiny;
+    int16_t dex = pet.formAt(page * 16 + i, shiny);
+    if (!dex) break;
+    int x = V2_TRADE_X + (i % 4) * V2_TRADE_CELL, y = V2_TRADE_Y + (i / 4) * V2_TRADE_CELL;
+    if (const uint8_t *t = thumbs.getForm(dex, shiny)) drawThumb(t, x - 2, y - 2, 2, !pet.canTrade(dex, shiny));  // (centred in 80)
+    if (shiny) drawShinyMark(x, y, V2_TRADE_CELL);
+    if (!buddyRegHas(buddyReg, dex)) gfx->fillCircle(x + 62, y + 62, 7, UI_BAR_OK);  // the buddy hasn't got it
+  }
+  drawPageArrows(page, pages, V2_PAGE_ARROW_Y);
+  if (pages > 1) v2Dots(pages, page);
+  v2CloseX();
+}
+// a tap in a V2 square, moved to the middle of V1's (73 + 80 c, 72 + 80 r)
+static void v2TradeTap(int16_t &x, int16_t &y) {
+  if (x < V2_TRADE_X || y < V2_TRADE_Y || x >= V2_TRADE_X + 4 * V2_TRADE_CELL || y >= V2_TRADE_Y + 4 * V2_TRADE_CELL) return;
+  x = 73 + (x - V2_TRADE_X) / V2_TRADE_CELL * 80 + 40;
+  y = 72 + (y - V2_TRADE_Y) / V2_TRADE_CELL * 80 + 40;
+}
+// another Pokemon from its thumbnail at scale s, standing with its feet at (cx, feet), with a shadow
+static void v2ThumbStand(const uint8_t *b, int cx, int feet, int s) {
+  if (!b) return;
+  int w = b[0], h = b[1], top = h, bot = -1;
+  const uint8_t *d = b + 3 + b[2] * 2;
+  for (int i = 0; i < w * h; i++)
+    if (d[i] != 0xFF) {
+      if (i / w < top) top = i / w;
+      bot = i / w;
+    }
+  if (bot < 0) return;
+  int bh = (bot - top + 1) * s;
+  v2PetShadow(cx, feet - 4, 14 * s);
+  drawThumbFit(b, cx, feet - bh + bh / 2, 400, 400, s, false, 0, nullptr);
+}
+// one side of the trade: what it is over it, it standing, its name on a tag, its stars
+static void v2TradeSide(int cx, const char *label, int16_t dex, bool shiny, uint8_t stars) {
+  gfx->setTextColor(V2_ON_DARK);
+  setSize(2);
+  setCur(cx - textW(label, 2) / 2, 68);
+  printT(label);
+  if (!dex) {  // not known yet
+    setSize(5);
+    gfx->setTextColor(UI_WHITE);
+    setCur(cx - textW("?", 5) / 2, 118);
+    printT("?");
+    return;
+  }
+  v2ThumbStand(thumbs.getForm(dex, shiny), cx, 204, 3);
+  if (shiny) drawShinyMark(cx - 62, 84, 124);
+  const char *nm = dexName(dex);
+  setSize(2);
+  int w = textW(nm, 2) + 16;
+  gfx->fillRoundRect(cx - w / 2 - 3, 207, w + 6, 30, 8, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(cx - w / 2, 210, w, 24, 6, UI_WHITE);
+  gfx->setTextColor(UI_INK);
+  setCur(cx - textW(nm, 2) / 2, 214);
+  printT(nm);
+  drawStars(cx, 252, 7, stars);
+}
+// what you give on the left, what you get on the right, swap arrows between; TRADE in V1's box (or the wait)
+static void v2TradeReview(int16_t mine, bool mineShiny, uint8_t mineStars, int16_t theirs, bool theirsShiny, uint8_t theirsStars,
+                          bool review) {
+  v2MenuBackdrop();
+  char b[40];
+  v2Sign(v2Caps(T(S_BUDDY_TRADE), b, sizeof(b)));
+  v2TradeSide(136, T(S_TRADE_GIVE), mine, mineShiny, mineStars);
+  v2TradeSide(330, T(S_TRADE_GET), theirs, theirsShiny, theirsStars);
+  for (int k = 0; k < 2; k++) {  // the swap arrows
+    int yy = 132 + k * 22, s = k ? -1 : 1, tip = s > 0 ? 262 : 204;
+    gfx->fillRect(206, yy - 2, 54, 5, UI_WHITE);
+    gfx->fillTriangle(tip + 8 * s, yy, tip - 2 * s, yy - 8, tip - 2 * s, yy + 8, UI_WHITE);
+  }
+  if (review) {
+    v2LabelButton(CX - 107, 279, CX + 107, 329, b, C565(0x58, 0xb8, 0x68));  // (the board's TRADE)
+  } else {
+    v2Panel(CX - 110, 296, CX + 110, 336, 8);
+    gfx->setTextColor(V2_INK_MUTED);
+    setSize(2);
+    setCur(centerX(T(S_BUDDY_WAITING), 2), 308);
+    printT(T(S_BUDDY_WAITING));
+  }
+  v2CloseX();
+}
+// done: what came, big on the rug, and "Got EEVEE!" on a green banner
+static void v2TradeDone(int16_t dex, bool shiny) {
+  v2MenuBackdrop();
+  v2ThumbStand(thumbs.getForm(dex, shiny), CX, 330, 4);
+  if (shiny) drawShinyMark(CX - 84, 150, 168);
+  char b[44];
+  snprintf(b, sizeof(b), T(S_TRADE_GOT_FMT), dexName(dex));
+  setSize(2);
+  int w = textW(b, 2) + 40;
+  v2LabelButton(CX - w / 2, 352, CX + w / 2, 392, b, C565(0x58, 0xb8, 0x68));
 }

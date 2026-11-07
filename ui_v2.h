@@ -5,3 +5,10 @@
 #ifndef UI_V2
 #define UI_V2 1
 #endif
+// a condition only V2 adds: `if (a V2_AND(b))` is `if (a && (b))` with V2 and plain `if (a)` with V1. (An `if`
+// line split by #if would break the sketch's prototype generator, which counts braces without reading #if.)
+#if UI_V2
+#define V2_AND(c) && (c)
+#else
+#define V2_AND(c)
+#endif

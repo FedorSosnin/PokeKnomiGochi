@@ -2079,7 +2079,7 @@ bool render() {
     renderEggPick();
     return true;
   }
-  if (buddyMenuOpen) {
+  if (buddyMenuOpen V2_AND(buddyPage == 0)) {  // V2: Battle/Trade/Play is a panel over the home, drawn at its end
     renderBuddyMenu();
     return true;
   }
@@ -2314,6 +2314,10 @@ bool render() {
   // before the banner does (onTap): over it, the banner would hide the question while a tap pressed the
   // button beneath, so while one is open the banner waits, whole (as found for 1.52's fix)
   if (!pet.isEgg() && !choiceKind && !confirmUntil) drawCelebration();
+  if (buddyMenuOpen) {  // a buddy's Battle/Trade/Play over all of it, dimmed (its stats page is a screen of its own)
+    if (bPeers[bCur].on) v2BuddyActions(buddyTradeOk());
+    else buddyMenuOpen = false;
+  }
 #endif
   gfx->flush();
   return true;
@@ -7602,6 +7606,15 @@ void drawPageDots(int pages, int cur) {  // as on the card
 // a buddy: page 0 its stats and Pokedex, page 1 Battle/Trade/Play
 void renderBuddyMenu() {
   if (!bPeers[bCur].on) { buddyMenuOpen = false; return; }
+#if UI_V2
+  if (buddyPage == 0) {  // V2: its stats on the dimmed bedroom (Battle/Trade/Play is drawn over the home)
+    int caught = 0;
+    for (int d = 1; d <= 151; d++) caught += buddyRegHas(bPeers[bCur].reg, d);
+    v2BuddyStats(caught);
+    gfx->flush();
+    return;
+  }
+#endif
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   char b[44];
   if (buddyPage == 0) {
@@ -7714,6 +7727,11 @@ void renderParty() {
     BtlFighter f = btlMakeWild(visitDex, lvl, btlWildGene(8));
     char m[24];
     snprintf(m, sizeof(m), T(S_VISIT_MIN_FMT), (unsigned)(pet.visitMin ? pet.visitMin : 1));
+#if UI_V2
+    v2VisitorStats(lvl, f.maxHp, f.atk, f.def, f.spe);  // V2: as a buddy's stats page
+    gfx->flush();
+    return;
+#endif
     drawFriendStats(visitPmd, dexName(visitDex), lvl, m, f.maxHp, f.atk, f.def, f.spe);
     drawMap(SPR_CANDY, HOME_ICON_N, CX - 44, 322, 2, false);  // it brought a candy
     gfx->setTextColor(UI_INK);
@@ -7723,6 +7741,11 @@ void renderParty() {
     gfx->flush();
     return;
   }
+#if UI_V2
+  v2Party(who, n, partyRowY(), partyRowStep());  // V2: the rows in a panel on the dimmed bedroom
+  gfx->flush();
+  return;
+#endif
   gfx->setTextColor(UI_INK);
   setSize(3);
   setCur(centerX(T(S_PARTY_BOOST), 3), 48);
@@ -7812,6 +7835,13 @@ void partyTap(int16_t x, int16_t y) {
 bool buddyTradeOk() { return pet.tradeableCount() > 0 && buddyTradeable(bPeers[bCur]) > 0; }
 
 void buddyMenuTap(int16_t x, int16_t y) {
+#if UI_V2
+  if (int a = pageArrowAt(x, y, buddyPage, 2, V2_PAGE_ARROW_Y)) {  // V2: the side buttons turn its pages, as a swipe would
+    sfxPlay(SFX_TAP);
+    onSwipe(a < 0 ? 1 : -1);
+    return;
+  }
+#endif
   if (closeHit(x, y)) {
     sfxPlay(SFX_TAP);
     buddyMenuClose();
@@ -8475,6 +8505,13 @@ void renderVolley() {
 }
 
 void renderTrade() {
+#if UI_V2  // V2: on the dimmed bedroom
+  if (trPhase == TR_PICK) v2TradePick(trPage, (pet.formCount() + 15) / 16, bPeers[bCur].reg);
+  else if (trPhase == TR_DONE) v2TradeDone(trTheirs, trTheirsShiny);
+  else v2TradeReview(trMine, trMineShiny, pet.starsOf(trMine, trMineShiny), trTheirs, trTheirsShiny, trTheirsStars, trPhase == TR_REVIEW);
+  gfx->flush();
+  return;
+#endif
   gfx->fillScreen(UI_BG_DAY);  // to the edge: no black ring
   if (trPhase == TR_PICK) {
     // every form you have, a shiny one glowing; yours can't be traded. Green dot: the buddy
@@ -8550,6 +8587,16 @@ void renderTrade() {
 }
 
 void tradeTap(int16_t x, int16_t y) {
+#if UI_V2
+  if (trPhase == TR_PICK) {
+    if (int a = pageArrowAt(x, y, trPage, (pet.formCount() + 15) / 16, V2_PAGE_ARROW_Y)) {  // V2: the side buttons turn the page
+      sfxPlay(SFX_TAP);
+      onSwipe(a < 0 ? 1 : -1);
+      return;
+    }
+    v2TradeTap(x, y);  // V2's squares are smaller: a tap in one lands in V1's
+  }
+#endif
   if (trPhase == TR_PICK) {
     if (y < 66 || closeHitAt(x, y, GAL_CLOSE_Y)) {  // the close button (or the header) = exit, as in the Pokedex
       sfxPlay(SFX_TAP);
