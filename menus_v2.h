@@ -154,9 +154,19 @@ static void v2PageArrow(int x, int y, int dir) {
   scOval(scE(x - 20, y - 20, x + 20, y + 20), 0x4F93C4, 0x7CC4EA, 0x3A78A8);
   scSprite(dir < 0 ? L : R, 5, x - 8 + (dir > 0 ? 2 : -2), y - 10, 4, K, 1);
 }
-// page dots above the X: white for the page on show
-static void v2Dots(int n, int cur, int y = 386) {
-  for (int i = 0; i < n; i++) gfx->fillCircle(CX - (n - 1) * 9 + i * 18, y, 4, i == cur ? UI_WHITE : V2_INK_MUTED);
+// which page this is, in words above the X (Fedor: dots didn't say how many there are): "Page 2 of 5", white with
+// a dark shadow so it reads on whatever is behind, its top no lower than y 380 so it clears the X
+static void v2PageOf(int n, int cur, int y = 386) {
+  char b[32];
+  snprintf(b, sizeof(b), T(S_PAGE_OF_FMT), cur + 1, n);
+  setSize(2);
+  int x = centerX(b, 2), ty = (y < 386 ? y : 386) - 6;  // (its top at 380 at most: clear of a panel to 372 and the X)
+  gfx->setTextColor(C565(0x1b, 0x1b, 0x25));
+  setCur(x + 2, ty + 2);
+  printT(b);
+  gfx->setTextColor(UI_WHITE);
+  setCur(x, ty);
+  printT(b);
 }
 // a V2 button with its label centred (button())
 static void v2LabelButton(int x0, int y0, int x1, int y1, const char *lab, uint16_t col, uint16_t ink = UI_WHITE, int size = 2) {
@@ -195,18 +205,20 @@ static void v2Version(int y) {
 // The time page's START OVER (every build that has the question, its box in layout_v2.h): it asks
 // "Start over?" on the home screen, with what it erases, before anything goes.
 // "Start over?" and what it erases, in a panel over the dimmed home; ERASE EVERYTHING (red) and KEEP
-// PLAYING (green) fill V1's two buttons exactly, so their taps are V1's
+// PLAYING (green) fill V1's two buttons exactly, so their taps are V1's. ERASE EVERYTHING asks once more
+// (Fedor): "Are you sure?" and "There's no going back.", with KEEP PLAYING on top this time, so a quick second
+// tap where ERASE was keeps the game
 static void v2ResetDialog() {
   dimFrame();
   v2Panel(73, 92, 393, 340, 12);
-  const char *q = T(S_RESET_Q);
+  const char *q = T(v2ResetSure ? S_RESET_SURE : S_RESET_Q);
   int qs = textW(q, 3) <= 300 ? 3 : 2;
   gfx->setTextColor(UI_INK);
   setSize(qs);
   setCur(centerX(q, qs), 108);
   printT(q);
   // the warning, wrapped by its width at the spaces, up to three lines
-  const char *w = T(S_RESET_WARN);
+  const char *w = T(v2ResetSure ? S_RESET_NOUNDO : S_RESET_WARN);
   char line[96];
   setSize(2);
   gfx->setTextColor(UI_BAR_BAD);
@@ -227,8 +239,9 @@ static void v2ResetDialog() {
     w += fit;
     while (*w == ' ') w++;
   }
-  v2LabelButton(96, 209, 370, 255, T(S_RESET_GO), UI_BAR_BAD);
-  v2LabelButton(96, 271, 370, 317, T(S_RESET_KEEP), C565(0x58, 0xb8, 0x68));
+  int erase = v2ResetSure ? 271 : 209, keep = v2ResetSure ? 209 : 271;
+  v2LabelButton(96, erase, 370, erase + 46, T(S_RESET_GO), UI_BAR_BAD);
+  v2LabelButton(96, keep, 370, keep + 46, T(S_RESET_KEEP), C565(0x58, 0xb8, 0x68));
 }
 
 // ----- settings -----
@@ -271,7 +284,7 @@ static void v2Settings() {
   }
   if (clockTzUi) v2Version(AUTO_ROW_Y + AUTO_ROW_H + 30);  // which version this is (the time page has no room)
   drawPageArrows(1, 2, V2_PAGE_ARROW_Y);  // back to the time
-  v2Dots(2, 1);
+  v2PageOf(2, 1);
   v2CloseX();
 }
 #endif
@@ -400,7 +413,7 @@ static void v2CardTraining() {
   }
 }
 static void v2MasterBar(int x, int y, int w, bool full);  // (master_v2.h: the Master Ball's bar)
-static void v2CardItems();                                // (repel_v2.h: the card's Items page)
+static void v2CardItem(int which);                         // (repel_v2.h: an item's own page: 0 the Master Ball, 1 the Repel)
 static void v2CardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
   v2Sign(T(S_PROGRESS));
@@ -454,10 +467,10 @@ static void v2Card() {
   if (cardPage == 0) v2CardProfile();
   else if (cardPage == 1) v2CardStats();
   else if (cardPage == 2) v2CardTraining();
-  else if (cardPage == 3) v2CardItems();  // the Master Ball and the Repel (Fedor)
-  else v2CardProgress();
+  else if (cardPage == 3) v2CardProgress();
+  else v2CardItem(cardPage - 4);  // the Master Ball, then the Repel: a page each, after Progress (Fedor)
   drawPageArrows(cardPage, cardPageCount(), V2_PAGE_ARROW_Y);
-  v2Dots(cardPageCount(), cardPage);
+  v2PageOf(cardPageCount(), cardPage);
   v2CloseX();
 }
 
@@ -521,7 +534,7 @@ static void v2Clock(const char *langCode) {
     v2LabelButton(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1, V2_RESET_Y1, T(S_RESET_BTN), UI_BAR_BAD);  // asks first
 #endif
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
-    v2Dots(2, 0);  // the settings are the next page (the Knomi's own)
+    v2PageOf(2, 0);  // the settings are the next page (the Knomi's own)
 #endif
   }
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
@@ -772,27 +785,9 @@ static void trRoom(bool bare) {
   for (int i = 0; i < 3; i++) trFrame(FRAME[i][0], FRAME[i][1], i, v2Won(14 + i, bare), 1);
   for (int i = 0; i < 8; i++) trRosette(296 + (i % 4) * 34, 270 + (i / 4) * 40, TR_ROSETTE[i], v2Won(i, bare), 1);
 }
-// each medal's place in the room, for a tap: a box round its thing, at least as big as the spacing allows
-static bool trBox(int medal, int &x0, int &y0, int &x1, int &y1) {
-  if (medal >= 17 && medal <= 21) { int x = 150 + (medal - 17) * 40; x0 = x - 6, y0 = 56, x1 = x + 34, y1 = 104; return true; }
-  if (medal >= 9 && medal <= 12) { int x = 112 + (medal - 9) * 56; x0 = x - 26, y0 = 118, x1 = x + 26, y1 = 178; return true; }
-  if (medal == 8) { x0 = 318, y0 = 118, x1 = 370, y1 = 178; return true; }
-  if (medal == 13 || (medal >= 22 && medal <= 24)) { int x = 126 + trCupIndex(medal) * 72; x0 = x - 34, y0 = 186, x1 = x + 34, y1 = 254; return true; }
-  if (medal >= 14 && medal <= 16) {
-    static const int16_t FRAME[3][2] = { {56, 262}, {114, 262}, {56, 308} };
-    x0 = FRAME[medal - 14][0], y0 = FRAME[medal - 14][1], x1 = x0 + 52, y1 = y0 + 44;
-    return true;
-  }
-  if (medal >= 0 && medal <= 7) { int x = 296 + (medal % 4) * 34, y = 270 + (medal / 4) * 40; x0 = x - 17, y0 = y - 16, x1 = x + 17, y1 = y + 24; return true; }
-  return false;
-}
-static int v2TrophyAt(int16_t x, int16_t y) {
-  for (int m = 0; m < MED_COUNT; m++) {
-    int x0, y0, x1, y1;
-    if (trBox(m, x0, y0, x1, y1) && x >= x0 && x <= x1 && y >= y0 && y <= y1) return m;
-  }
-  return -1;
-}
+// a tap in the room: anywhere but the X opens the first medal's card, page 1 of them (Fedor: tapping the things
+// themselves was odd; the side buttons and swipes step on from there)
+static int v2TrophyAt(int16_t x, int16_t y) { return closeHit(x, y) ? -1 : V2_TROPHY_ORDER[0]; }
 
 // the room, from the scene buffer (painted again when the medals change); the count on a board on the carpet
 static void v2PaintTrophyRoom(int) { trRoom(false); }
@@ -873,55 +868,59 @@ static void v2MedalCard(int m) {
   }
   if (won) v2SignIn(medalName(m), V2_BOARD_Y, C565(0xc0, 0x84, 0x10), C565(0xf0, 0xc0, 0x4a));
   else v2SignIn(medalName(m), V2_BOARD_Y, C565(0x5a, 0x3a, 0x22), C565(0x7a, 0x5a, 0x3a));
-  v2Panel(72, 296, 394, 384, 10);
-  // how to win it, wrapped by its width: three lines, or two over a progress bar
+  v2Panel(72, 286, 394, 374, 10);  // (10 px over the mockup's, for its page line under it)
+  // how to win it, wrapped by its width (three lines, or two over a progress bar), and under it whether it's won or
+  // how far along: the lot together in the middle of the panel (Fedor: not stuck to its top and bottom edges)
   int cur, goal;
   bool prog = !won && v2MedalProgress(m, cur, goal);
   const char *w = medalHow(m);
-  char line[64];
-  gfx->setTextColor(UI_INK);
+  char lines[3][64];
+  int nl = 0;
   setSize(2);
-  int y = 302;
-  for (int ln = 0; *w && ln < (prog ? 2 : 3); ln++, y += 18) {
+  while (*w && nl < (prog ? 2 : 3)) {
     int n = 0, fit = 0;
     for (;;) {
       int e = n;
       while (w[e] == ' ') e++;
       while (w[e] && w[e] != ' ') e++;
-      snprintf(line, sizeof(line), "%.*s", e, w);
-      if (fit && textW(line, 2) > 306) break;
+      snprintf(lines[nl], sizeof(lines[nl]), "%.*s", e, w);
+      if (fit && textW(lines[nl], 2) > 306) break;
       fit = n = e;
       if (!w[e]) break;
     }
-    snprintf(line, sizeof(line), "%.*s", fit, w);
-    setCur(centerX(line, 2), y);
-    printT(line);
+    snprintf(lines[nl++], sizeof(lines[0]), "%.*s", fit, w);
     w += fit;
     while (*w == ' ') w++;
   }
+  int statusH = prog ? 34 : 16, total = (nl ? nl * 18 + 8 : 0) + statusH;  // (18 px a line, 10 between)
+  int y = 286 + (89 - total) / 2;
+  gfx->setTextColor(UI_INK);
+  for (int i = 0; i < nl; i++, y += 18) {
+    setCur(centerX(lines[i], 2), y);
+    printT(lines[i]);
+  }
+  if (nl) y += 8;
   if (won) {
     gfx->setTextColor(C565(0x3c, 0x8a, 0x4c));
-    setCur(centerX(T(S_MEDAL_GOT), 2), 362);
+    setCur(centerX(T(S_MEDAL_GOT), 2), y);
     printT(T(S_MEDAL_GOT));
   } else if (prog) {
     if (cur > goal) cur = goal;
-    gfx->fillRect(126, 342, 214, 12, C565(0xd8, 0xd2, 0xbd));
-    if (cur > 0) gfx->fillRect(128, 344, 210 * cur / goal, 8, C565(0x58, 0xb8, 0x68));
+    gfx->fillRect(126, y, 214, 12, C565(0xd8, 0xd2, 0xbd));
+    if (cur > 0) gfx->fillRect(128, y + 2, 210 * cur / goal, 8, C565(0x58, 0xb8, 0x68));
     char b[16];
     snprintf(b, sizeof(b), "%d / %d", cur, goal);
     gfx->setTextColor(V2_INK_MUTED);
-    setCur(centerX(b, 2), 362);
+    setCur(centerX(b, 2), y + 18);
     printT(b);
   } else {
     gfx->setTextColor(V2_INK_MUTED);
-    setCur(centerX(T(S_MEDAL_TODO), 2), 362);
+    setCur(centerX(T(S_MEDAL_TODO), 2), y);
     printT(T(S_MEDAL_TODO));
   }
-  int pos = v2TrophyPos(m), group = 0;
-  for (int g = 0; g < 5; g++)
-    if (pos >= V2_TROPHY_GROUP[g]) group = g;
+  int pos = v2TrophyPos(m);
   drawPageArrows(pos, MED_COUNT, V2_PAGE_ARROW_Y);
-  v2Dots(5, group, 390);
+  v2PageOf(MED_COUNT, pos, 390);  // "Page 7 of 25": the medal's place among them all
   v2CloseX();
 }
 
@@ -1663,7 +1662,7 @@ static void v2BuddyStats(int caught) {
   snprintf(b, sizeof(b), T(S_POKEDEX_FMT), caught);
   v2FriendLine(b);
   drawPageArrows(0, 2, V2_PAGE_ARROW_Y);
-  v2Dots(2, 0);
+  v2PageOf(2, 0);
   v2CloseX();
 }
 // its second page: Battle, Trade and Play in a panel over the home, dimmed (buddy_menu()). The buttons fill
@@ -1692,7 +1691,7 @@ static void v2BuddyActions(bool tradeOk) {
                   off ? C565(0x8e, 0x8c, 0x96) : COL[i], off ? C565(0xd8, 0xd2, 0xbd) : UI_WHITE);
   }
   drawPageArrows(1, 2, V2_PAGE_ARROW_Y);
-  v2Dots(2, 1);
+  v2PageOf(2, 1);
   v2CloseX();
 }
 // Party Boost (party_boost()): who's here, each a row that opens its stats, then what the boost gives. The rows
@@ -1782,7 +1781,7 @@ static void v2TradePick(int page, int pages, const uint8_t *buddyReg) {
     if (!buddyRegHas(buddyReg, dex)) gfx->fillCircle(x + 62, y + 62, 7, UI_BAR_OK);  // the buddy hasn't got it
   }
   drawPageArrows(page, pages, V2_PAGE_ARROW_Y);
-  if (pages > 1) v2Dots(pages, page);
+  if (pages > 1) v2PageOf(pages, page);
   v2CloseX();
 }
 // a tap in a V2 square, moved to the middle of V1's (73 + 80 c, 72 + 80 r); one off the squares but where V1's
@@ -2054,7 +2053,7 @@ static void v2WifiList(int page, int n, const char *(*net)(int), const char *cur
   v2Sign("WI-FI");
   int pages = (n + 4) / 5;
   if (pages < 1) pages = 1;
-  v2Panel(86, 76, 380, 378, 10);
+  v2Panel(86, 76, 380, 374, 10);  // (its page line under it)
   setSize(2);
   for (int r = 0; r < 5; r++) {
     int idx = page * 5 + r;
@@ -2070,9 +2069,9 @@ static void v2WifiList(int page, int n, const char *(*net)(int), const char *cur
     printT(line);
     classicFontEnd(cjk);
   }
-  v2LabelButton(179, 337, 287, 371, "SCAN", C565(0x8e, 0x8c, 0x96));  // V1's middle box (its sides turn pages too)
+  v2LabelButton(179, 333, 287, 367, "SCAN", C565(0x8e, 0x8c, 0x96));  // V1's middle box (its sides turn pages too)
   drawPageArrows(page, pages, V2_PAGE_ARROW_Y);
-  if (pages > 1) v2Dots(pages, page, 388);
+  if (pages > 1) v2PageOf(pages, page, 388);
   v2CloseX();
 }
 // the password's keyboard: "< network" over it goes back to the list, as the X does

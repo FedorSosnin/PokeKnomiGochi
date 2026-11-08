@@ -123,6 +123,7 @@ static void v2MasterEnd(uint32_t t) {
 // a ball that hits falls from there to the ground where the Pokemon stood, turning upright as it lands with a little
 // bounce, and only then the count starts (Fedor): the shake's time runs from its landing
 #define V2_CATCH_DROP_MS 700
+#define V2_BALL_LOWER 14  // and lands this much below the Pokemon's feet, in front of where it stood, on its shadow
 // the hint over the band, higher than V1's so it clears the balls (Fedor); a computer or the web aims with the arrow
 // keys too, and says so, on two lines
 #define V2_HINT_Y 318

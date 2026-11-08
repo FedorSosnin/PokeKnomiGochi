@@ -166,7 +166,7 @@ uint8_t nameLen = 0;
 int cardNameBottom = 84;      // where the card's name (and the species under a nickname) ends: tapping above renames
 uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 training, 3 progress; the achievements: their pages
 #if UI_V2
-#define CARD_PAGES 5  // V2: the items (the Master Ball and the Repel) before Progress, which is now 4
+#define CARD_PAGES 6  // V2: after Progress, a page for each item: the Master Ball (4), the Repel (5)
 #else
 #define CARD_PAGES 4
 #endif
@@ -488,12 +488,19 @@ uint32_t lastRender = 0;
 uint32_t sdEpoch = 0;  // +1 every time the SD is reloaded (thumbnails change)
 // AMOLED protection: dimmed on inactivity
 uint32_t lastInteract = 0;
+#if UI_V2
+uint32_t v2PlayInputAt = 0;  // V2: the last touch, tilt or key held (only time played earns a Repel: repel_v2.h)
+#endif
 uint8_t dimStage = 0;        // 0 awake, 1 dimmed (90s), 2 nearly off (5min)
 bool swallowGesture = false; // the touch that wakes it does nothing
 uint32_t holdStart = 0;     // long press on the pet
 uint32_t confirmUntil = 0;  // "release?" dialog active until this millis
 #ifdef BOARD_KNOMI_V2
 uint32_t gBtnSimUntil = 0;  // simulated press of the physical button (serial console)
+#endif
+#if UI_V2
+bool v2ResetSure = false;    // V2: ERASE EVERYTHING was tapped once; the question now asks "Are you sure?"
+uint32_t v2ResetSureT = 0;
 #endif
 uint8_t choiceKind = 0;     // decision dialog: 0 none, 1 evolution, 2 farewell, 3 delete save, 4 runaway
 uint32_t choiceUntil = 0;   // closes by itself at this millis
@@ -1244,6 +1251,9 @@ void handleTouch() {
   if (Wire.endTransmission() != 0) return;  // no response: retry in 20 ms
   int16_t x, y;
   bool pressed = touch.getPoint(&x, &y, 1) > 0;
+#if UI_V2
+  if (pressed) v2PlayInputAt = millis();  // V2: a finger on it
+#endif
 
 #ifdef BOARD_KNOMI_V2
   // wifi password: the key lights up under the finger and is pressed on release, so you can
@@ -1621,7 +1631,17 @@ void onTap(int16_t x, int16_t y) {
     } else if (choiceKind == 5) {          // the buddy invites
       if (b1) buddyAcceptInvite();
       else buddyDeclineInvite();
+#if UI_V2
+    } else if (choiceKind == 3 && !v2ResetSure && b1) {  // V2: ERASE EVERYTHING asks once more (Fedor)
+      v2ResetSure = true;
+      v2ResetSureT = millis();
+      choiceUntil = millis() + 12000;
+      sfxPlay(SFX_DENY);
+      return;
+    } else if (choiceKind == 3 && v2ResetSure && b2 && millis() - v2ResetSureT > 500) {  // the second time it's below
+#else
     } else if (choiceKind == 3 && b1) {    // delete the game (Knomi button)
+#endif
       pet.factoryReset();
       delay(100);
       ESP.restart();
@@ -2514,6 +2534,9 @@ float playerTilt() {
 #endif
     t = wasPressed ? (tXl - CX) / 150.0f : 0;
   if (t > -0.06f && t < 0.06f) t = 0;  // dead zone: a shaky hand moves nothing
+#if UI_V2
+  if (t != 0) v2PlayInputAt = millis();  // V2: steering
+#endif
   t = t > 1 ? 1 : (t < -1 ? -1 : t);
   tiltSmooth += (t - tiltSmooth) * 0.5f;
   return tiltSmooth;
@@ -3387,6 +3410,9 @@ void knomiAskReset() {
   sfxPlay(SFX_DENY);
   choiceKind = 3;
   choiceUntil = millis() + 12000;
+#if UI_V2
+  v2ResetSure = false;  // V2: it asks twice
+#endif
 }
 
 void handleKnomiButton(uint32_t now) {
@@ -3963,7 +3989,11 @@ void renderCatch() {
     drawPmdActM(wildPmd, act, fx, CATCH_GROUND_Y, (uint32_t)((now - bPhaseT) * CATCH_RUN_MS / bRunMs), true, false, 3);  // quicker steps for the quick ones
     if (bPhase == BP_AIM || bPhase == BP_THROW) drawCatchRings(fx);
   }
+#if UI_V2
+  int ballGround = CATCH_GROUND_Y - 51 + V2_BALL_LOWER;  // V2: it lands lower, in front of where it stood (master_v2.h)
+#else
   int ballGround = CATCH_GROUND_Y - 51;  // a ball at 3x resting on the ground
+#endif
   if (bPhase == BP_THROW) {
     float k = (now - bBallT) / 1500.0f;
     if (k > 1) k = 1;
@@ -3989,17 +4019,19 @@ void renderCatch() {
     uint32_t t = now - bPhaseT;
 #if UI_V2
     if (t < V2_CATCH_DROP_MS) {  // V2: first it falls from where it hit to the ground where the Pokemon stood (Fedor)
-      float k = t / (float)V2_CATCH_DROP_MS, top = catchRingY() + 16, yb;  // its bottom: where it hit, then
-      if (k < 0.25f) yb = top - 28 * sinf(k * 2 * 3.14159f);  // up off the Pokemon a little,
-      else if (k < 0.8f) yb = top - 28 + (CATCH_GROUND_Y - top + 28) * ((k - 0.25f) / 0.55f) * ((k - 0.25f) / 0.55f);  // down,
-      else yb = CATCH_GROUND_Y - 8 * sinf((k - 0.8f) * 5 * 3.14159f);  // and a little bounce on the ground
+      float k = t / (float)V2_CATCH_DROP_MS, top = catchRingY() + 16, yb, gy = ballGround + 51;  // its bottom: where it hit,
+      if (k < 0.25f) yb = top - 28 * sinf(k * 2 * 3.14159f);  // then up off the Pokemon a little,
+      else if (k < 0.8f) yb = top - 28 + (gy - top + 28) * ((k - 0.25f) / 0.55f) * ((k - 0.25f) / 0.55f);  // down,
+      else yb = gy - 8 * sinf((k - 0.8f) * 5 * 3.14159f);  // and a little bounce on the ground
       float m = k < 0.8f ? k / 0.8f : 1, a0 = fmodf(1500 * CATCH_SPIN_DEG_MS, 360), a = a0 + (360 - a0) * m;  // upright on landing
       int s = k < 0.5f ? 2 : 3;
       float x = bBallX + (bCatchX - bBallX) * m, cy = yb - 8 * s;
+      v2PetShadow((int)bCatchX, (int)gy, 8 + (int)(12 * m));  // its shadow on the ground, growing as it comes down
       if (v2MasterThrow) v2MasterBallTurned(s, a, x, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
       else drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, s, a, x, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
     } else {
     t -= V2_CATCH_DROP_MS;
+    v2PetShadow((int)bCatchX, ballGround + 51, 20);  // V2: on the ground, its shadow
 #endif
     uint32_t in = t % CATCH_SHAKE_MS;
     float k = in < 420 ? sinf(in * 3.14159f / 420) : 0;  // a tip, then still until the next count
@@ -4016,6 +4048,9 @@ void renderCatch() {
     }
 #endif
   } else if (bPhase == BP_CAUGHT) {
+#if UI_V2
+    v2PetShadow((int)bFoeX, ballGround + 51, 20);  // V2: its shadow
+#endif
     drawCatchShine((int)bFoeX, ballGround + 27, now - bPhaseT);
 #if UI_V2
     if (v2MasterThrow) v2MasterBall((int)bFoeX - 27, ballGround, 3);  // V2
@@ -7882,7 +7917,7 @@ void drawFriendStats(PmdMon &mon, const char *name, uint8_t level, const char *e
 
 void drawPageDots(int pages, int cur) {  // as on the card
 #if UI_V2
-  v2Dots(pages, cur);  // V2: above the X
+  v2PageOf(pages, cur);  // V2: above the X
   return;
 #endif
   for (int i = 0; i < pages; i++) {
@@ -9227,7 +9262,7 @@ void renderZones() {
   v2LabelButton(ZONE_BTN_X + 3, ZONE_BTN_Y + 3, ZONE_BTN_X + ZONE_BTN_W - 3, ZONE_BTN_Y + ZONE_BTN_H - 3,
                 v2Caps(T(S_ZONE_SEARCH), zb, sizeof(zb)), ZONE_COLOR[zoneCur]);  // V2: SEARCH as a V2 button; the page as dots
   int zpages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
-  v2Dots(zpages, zonePage, ZONE_PAGE_Y);
+  v2PageOf(zpages, zonePage, ZONE_PAGE_Y);
 #else
   gfx->fillRoundRect(ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, 14, ZONE_COLOR[zoneCur]);
   gfx->setTextColor(UI_WHITE);
@@ -10418,7 +10453,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
       return false;
     }
-    if (cardAch) {  // a medal
+    if (cardAch V2_AND(false)) {  // a medal (V2: the trophy room has no boxes to light up: a tap anywhere opens page 1)
       int bx, by, i = achMedalAtBox(x, y, bx, by);
       if (i >= 0) return pressSet(t, bx, by, ACH_BOX_W, ACH_BOX_H, medalDesc(i));
     }
@@ -10431,7 +10466,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     const StrId *o;
     static const StrId EVO[2] = { S_EVO_TAP, S_EVO_KEEP }, RESET[2] = { S_RESET_GO, S_RESET_KEEP },
                        YESNO[2] = { S_YES, S_NO }, RUN[2] = { S_RUNAWAY_CARE, S_RUNAWAY_GO }, FAR[2] = { S_FAR_GO, S_FAR_STAY };
+#if UI_V2
+    static const StrId RESET2[2] = { S_RESET_KEEP, S_RESET_GO };  // V2: asking once more, KEEP comes first
+    o = choiceKind == 1 ? EVO : choiceKind == 3 ? (v2ResetSure ? RESET2 : RESET) : choiceKind == 5 ? YESNO : choiceKind == 4 ? RUN : FAR;
+#else
     o = choiceKind == 1 ? EVO : choiceKind == 3 ? RESET : choiceKind == 5 ? YESNO : choiceKind == 4 ? RUN : FAR;
+#endif
     if (pressIn(x, y, 93, 206, 280, 52)) return pressSet(t, 93, 206, 280, 52, T(o[0]));
     if (pressIn(x, y, 93, 268, 280, 52)) return pressSet(t, 93, 268, 280, 52, T(o[1]));
     return false;

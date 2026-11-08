@@ -40,6 +40,9 @@ static void v2RepelIcon(int x, int y, int s) {
 }
 
 // ----- earning: every second of a minigame played -----
+// Played means someone's playing: a touch, a tilt past the dead zone or a key held in the last V2_PLAY_IDLE_MS
+// (Fedor: sitting in the dungeon without moving doesn't count)
+#define V2_PLAY_IDLE_MS 5000
 static uint32_t v2RepelNewT = 0;  // when one was last earned (its moment on that game's end)
 // a minigame being played right now: open, its card gone, not ended, not waiting for a buddy's READY
 static bool v2PlayingGame() {
@@ -58,7 +61,12 @@ static void v2RepelTick(uint32_t now) {  // once a loop
   uint32_t dt = last ? now - last : 0;
   last = now;
   if (dt > 250) dt = 250;  // (a stall isn't play)
-  if (dt && v2PlayingGame() && pet.repelPlay(dt)) v2RepelNewT = now ? now : 1;
+#ifdef BOARD_HOST
+  int8_t kx, ky;
+  if (hostArrowDir(&kx, &ky)) v2PlayInputAt = now;  // an arrow key held (walking in the dungeon)
+#endif
+  bool playing = v2PlayInputAt && now - v2PlayInputAt < V2_PLAY_IDLE_MS;
+  if (dt && playing && v2PlayingGame() && pet.repelPlay(dt)) v2RepelNewT = now ? now : 1;
 }
 static bool v2RepelFresh() { return v2RepelNewT && millis() - v2RepelNewT < 60000; }  // earned in this game
 
@@ -101,7 +109,7 @@ static void v2RepelRow(int y, int x0, int x1) {
   classicFontEnd(cjk);
 }
 
-// ----- the card's Items page (Fedor): the Master Ball and the Repel, each with how it's earned and its bar -----
+// ----- the card's item pages (Fedor): the Master Ball and the Repel, each with what it does, how it's earned, its bar -----
 // a bar across the panel, k of it filled in col, its words (a count, or a time) at its right
 static void v2ItemBar(int y, float k, const char *txt, uint16_t col) {
   bool cjk = classicFontBegin();
@@ -115,40 +123,58 @@ static void v2ItemBar(int y, float k, const char *txt, uint16_t col) {
   printT(txt);
   classicFontEnd(cjk);
 }
-static void v2ItemHead(const char *name, const char *how, int y) {  // its name, then how to earn it (muted)
-  gfx->setTextColor(UI_INK);
+// a text, wrapped at its spaces to w px, each line centred, from y down (pitch px apart), up to n lines
+static void v2Wrapped(const char *s, int y, int w, int pitch, int n) {
+  char line[96];
   setSize(2);
-  setCur(centerX(name, 2), y);
-  printT(name);
-  gfx->setTextColor(V2_INK_MUTED);
-  setCur(centerX(how, 2), y + 22);
-  printT(how);
+  for (int ln = 0; *s && ln < n; ln++, y += pitch) {
+    int e = 0, fit = 0;
+    for (;;) {  // the longest run of whole words that fits
+      int k = e;
+      while (s[k] == ' ') k++;
+      while (s[k] && s[k] != ' ') k++;
+      snprintf(line, sizeof(line), "%.*s", k, s);
+      if (fit && textW(line, 2) > w) break;
+      fit = e = k;
+      if (!s[k]) break;
+    }
+    snprintf(line, sizeof(line), "%.*s", fit, s);
+    setCur(centerX(line, 2), y);
+    printT(line);
+    s += fit;
+    while (*s == ' ') s++;
+  }
 }
-static void v2CardItems() {
-  char b[40];
-  v2Sign(v2Caps(T(S_ITEMS), b, sizeof(b)));
-  v2Panel(92, 70, 374, 372, 10);
+// An item's own page of the card (Fedor: one each, so there's room to say what it does): the item big with how
+// many you hold, then in a panel what it does and how to use it, how to earn one, and how far along the next is
+// (the Repel's, while one runs: its minutes left)
+static void v2CardItem(int which) {
+  char b[160];
+  v2Sign(v2Caps(T(which ? S_REPEL : S_MASTER), b, sizeof(b)));
+  int held = which ? pet.repelHeld : pet.masterBalls;
+  if (which) v2RepelIcon(CX - 37, 80, 5);  // (the can in the middle)
+  else v2MasterBall(CX - 45, 76, 5);
+  if (held) drawCountBadge(CX + 44, 88, held);
+  v2Panel(84, 172, 382, 372, 10);
+  if (which) snprintf(b, sizeof(b), T(S_REPEL_DOES_FMT), (unsigned)REPEL_MIN);
+  else strlcpy(b, T(S_MASTER_DOES), sizeof(b));
+  gfx->setTextColor(UI_INK);
+  v2Wrapped(b, 184, 270, 20, 5);
+  if (which) snprintf(b, sizeof(b), T(S_REPEL_EARN_FMT), (unsigned)(REPEL_PLAY_S / 60));
+  else snprintf(b, sizeof(b), T(S_MASTER_EARN_FMT), (unsigned)MASTER_FIGHTS);
+  gfx->setTextColor(V2_INK_MUTED);
+  v2Wrapped(b, 300, 270, 20, 1);
   char t[16];
-  // the Master Ball: how many you hold, the fights to the next
-  v2MasterBall(CX - 27, 82, 3);
-  if (pet.masterBalls) drawCountBadge(CX + 26, 88, pet.masterBalls);
-  snprintf(b, sizeof(b), T(S_MASTER_EARN_FMT), (unsigned)MASTER_FIGHTS);
-  v2ItemHead(T(S_MASTER), b, 142);
-  snprintf(t, sizeof(t), "%u/%u", pet.masterBar, MASTER_FIGHTS);
-  v2ItemBar(188, pet.masterBar / (float)MASTER_FIGHTS, t, v2MasterInk('q'));
-  gfx->fillRect(112, 218, 242, 2, C565(0xe4, 0xea, 0xf2));
-  // the Repel: how many you hold, the play to the next; while one runs, its minutes left
-  v2RepelIcon(CX - 22, 228, 3);  // (the can in the middle, under the board)
-  if (pet.repelHeld) drawCountBadge(CX + 26, 234, pet.repelHeld);
-  snprintf(b, sizeof(b), T(S_REPEL_EARN_FMT), (unsigned)(REPEL_PLAY_S / 60));
-  v2ItemHead(T(S_REPEL), b, 288);
-  uint16_t sec = pet.repelPlaySec;
-  if (pet.repelOn()) {
+  if (!which) {
+    snprintf(t, sizeof(t), "%u/%u", pet.masterBar, MASTER_FIGHTS);
+    v2ItemBar(332, pet.masterBar / (float)MASTER_FIGHTS, t, v2MasterInk('q'));
+  } else if (pet.repelOn()) {
     snprintf(t, sizeof(t), "%um", pet.repelMinutesLeft());
-    v2ItemBar(334, pet.repelMinutesLeft() / (float)REPEL_MIN, t, C565(0x5a, 0x3a, 0x8c));
+    v2ItemBar(332, pet.repelMinutesLeft() / (float)REPEL_MIN, t, C565(0x5a, 0x3a, 0x8c));
   } else {
+    uint16_t sec = pet.repelPlaySec;
     snprintf(t, sizeof(t), "%u:%02u/%u:%02u", sec / 60, sec % 60, REPEL_PLAY_S / 60, REPEL_PLAY_S % 60);
-    v2ItemBar(334, sec / (float)REPEL_PLAY_S, t, C565(0x8a, 0x5c, 0xc8));
+    v2ItemBar(332, sec / (float)REPEL_PLAY_S, t, C565(0x8a, 0x5c, 0xc8));
   }
 }
 

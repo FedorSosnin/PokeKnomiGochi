@@ -1,12 +1,21 @@
 #pragma once
 #include <stdint.h>
 #include "audio.h"
+#include "ui_v2.h"
 
 // Sound effects as square-wave tone notes (Game Boy style); f == 0 is a rest.
 // The SFX order matches the Sfx enum.
 struct Note { uint16_t f, ms; };
 
+#if UI_V2
+// V2: the tap is Fedor's "confirm" blip, as measured: 2049 and 2731 Hz (a fourth apart), low, high, low in 16 ms
+// steps, then the high one held 83 ms and fading; its notes run into each other (sfxLegato())
+static const Note N_TAP[]    = {{2049, 17}, {2731, 16}, {2049, 16}, {2731, 83}};
+#define N_TAP_LEN 4
+#else
 static const Note N_TAP[]    = {{880, 35}};
+#define N_TAP_LEN 1
+#endif
 static const Note N_EAT[]    = {{660, 45}, {0, 12}, {660, 45}};
 static const Note N_PLAY[]   = {{784, 45}, {988, 60}};
 static const Note N_HEART[]  = {{1047, 55}, {1319, 90}};
@@ -22,7 +31,12 @@ static const Note N_SHAKE3[] = {{784, 110}};
 
 struct SfxDef { const Note *n; uint8_t len; };
 static const SfxDef SFX[SFX_COUNT] = {
-  {N_TAP, 1}, {N_EAT, 3}, {N_PLAY, 2}, {N_HEART, 2}, {N_HATCH, 4},
+  {N_TAP, N_TAP_LEN}, {N_EAT, 3}, {N_PLAY, 2}, {N_HEART, 2}, {N_HATCH, 4},
   {N_EVOLVE, 5}, {N_MEDAL, 5}, {N_DENY, 2}, {N_BYE, 3}, {N_LEVEL, 2},
   {N_SHAKE1, 1}, {N_SHAKE2, 1}, {N_SHAKE3, 1},
 };
+#if UI_V2
+// an effect whose notes run into each other: no fade between them, the wave carried on, and its last note fading
+// to about half by its end (the tap)
+static inline bool sfxLegato(uint8_t id) { return id == SFX_TAP; }
+#endif

@@ -4,6 +4,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
+#include "../ui_v2.h"  // (relative: the Mac app builds main.mm with only -I host)
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,8 +79,13 @@ bool hostAutoUpdate(void);
 void hostSetAutoUpdate(bool on);
 bool hostQuietForUpdate(void);
 
-// Audio: 16-bit mono PCM at HOST_AUDIO_RATE. Always fills frames samples (silence if nothing is playing).
+// Audio: 16-bit mono PCM at HOST_AUDIO_RATE. Always fills frames samples (silence if nothing is playing). V2 plays
+// at 48 kHz, so the high square waves keep their upper harmonics clean (the tap); the Waveshare stays at 16 kHz.
+#if UI_V2
+#define HOST_AUDIO_RATE 48000
+#else
 #define HOST_AUDIO_RATE 16000
+#endif
 void hostAudioRender(int16_t *out, int frames);
 
 #ifdef __cplusplus

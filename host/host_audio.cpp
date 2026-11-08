@@ -55,6 +55,14 @@ static const SfxDef *gDef = nullptr;
 static uint8_t gNote = 0;
 static int gDone = 0, gTotal = 0, gHalf = 0, gPhase = 0;
 static bool gHigh = true;
+#if UI_V2
+// V2: each tone's frequency is kept to a fraction of a sample (a 32-bit phase that wraps), so high notes stay in
+// tune; a legato effect's notes run into each other (sfxLegato(): the tap)
+static uint32_t gStep = 0, gAcc = 0;
+static bool gLegato = false;
+#define V2_ATTACK (SAMPLE_RATE * 4 / 1000)  // the ramps, as long as at 16 kHz
+#define V2_DECAY (SAMPLE_RATE * 6 / 1000)
+#endif
 
 static void startNote() {
   const Note &n = gDef->n[gNote];
@@ -62,6 +70,10 @@ static void startNote() {
   gHalf = n.f ? SAMPLE_RATE / (2 * n.f) : 0;
   gDone = gPhase = 0;
   gHigh = true;
+#if UI_V2
+  gStep = n.f ? (uint32_t)(((uint64_t)n.f << 32) / SAMPLE_RATE) : 0;
+  if (!gLegato || gNote == 0) gAcc = 0;
+#endif
 }
 
 extern "C" void hostAudioRender(int16_t *out, int frames) {
@@ -73,11 +85,25 @@ extern "C" void hostAudioRender(int16_t *out, int frames) {
         continue;
       }
       gDef = &SFX[gQueue[tail % QUEUE_LEN]];
+#if UI_V2
+      gLegato = sfxLegato(gQueue[tail % QUEUE_LEN]);
+#endif
       gTail.store(tail + 1, std::memory_order_release);
       gNote = 0;
       startNote();
     }
     int16_t s = 0;
+#if UI_V2
+    if (gStep) {
+      bool first = gNote == 0, last = gNote + 1 >= gDef->len;
+      int32_t amp = 5000;
+      if (gLegato && last) amp -= amp * 45 / 100 * gDone / (gTotal ? gTotal : 1);  // the held one fades to 55%
+      s = (int16_t)((gAcc & 0x80000000u) ? amp : -amp);
+      if ((!gLegato || first) && gDone < V2_ATTACK) s = (int16_t)(s * gDone / V2_ATTACK);  // only where it starts
+      else if ((!gLegato || last) && gDone > gTotal - V2_DECAY) s = (int16_t)(s * (gTotal - gDone) / V2_DECAY);  // ends
+      gAcc += gStep;
+    }
+#else
     if (gHalf) {
       const int16_t amp = 5000;
       s = gHigh ? amp : -amp;
@@ -85,6 +111,7 @@ extern "C" void hostAudioRender(int16_t *out, int frames) {
       else if (gDone > gTotal - 96) s = (int16_t)(s * (gTotal - gDone) / 96);       // decay
       if (++gPhase >= gHalf) { gPhase = 0; gHigh = !gHigh; }
     }
+#endif
     out[i] = s;
     if (++gDone >= gTotal) {
       if (++gNote >= gDef->len) gDef = nullptr;

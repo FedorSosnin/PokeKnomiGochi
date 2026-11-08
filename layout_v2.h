@@ -89,10 +89,8 @@ static const int16_t V2_MANSION_RISE[4] = { 20, 226, 446, 330 };   // added to t
 #define V2_RESET_Y1 373
 
 // the trophy room (menus_v2.h): its medals in the room's order, badges, the top shelf, the cups, the frames,
-// the rosettes (medal bits, pet.h), which the medal card's page buttons and swipes step through; and where
-// each of those five groups starts (the card's dots)
+// the rosettes (medal bits, pet.h), which the medal card's page buttons and swipes step through ("Page 7 of 25")
 static const uint8_t V2_TROPHY_ORDER[MED_COUNT] = { 17, 18, 19, 20, 21, 9, 10, 11, 12, 8, 13, 22, 23, 24, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7 };
-static const uint8_t V2_TROPHY_GROUP[5] = { 0, 5, 10, 14, 17 };
 static inline int v2TrophyPos(int medal) {
   for (int p = 0; p < MED_COUNT; p++)
     if (V2_TROPHY_ORDER[p] == medal) return p;

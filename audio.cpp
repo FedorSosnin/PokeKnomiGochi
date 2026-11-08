@@ -115,6 +115,36 @@ static bool es8311Init() {
 // ---- square-wave tone synthesizer ----
 static int16_t buf[256 * 2];  // interleaved stereo (L=R)
 
+#if UI_V2
+// V2: plays a tone (or silence if f==0), its frequency kept to a fraction of a sample (a 32-bit phase), so high notes
+// stay in tune; a legato effect's notes (the tap) run into each other, the wave carried on, the ramps only where it
+// starts and ends, and its last note fading to 55% (sfx_notes.h, sfxLegato())
+static uint32_t gAcc = 0;
+static void playTone(uint16_t f, uint16_t ms, bool legato, bool first, bool last) {
+  int total = SAMPLE_RATE * ms / 1000;
+  uint32_t step = f ? (uint32_t)(((uint64_t)f << 32) / SAMPLE_RATE) : 0;
+  if (!legato || first) gAcc = 0;
+  int done = 0;
+  while (done < total) {
+    int n = total - done; if (n > 256) n = 256;
+    for (int i = 0; i < n; i++) {
+      int16_t s = 0;
+      if (step) {
+        int idx = done + i;
+        int32_t amp = 5000;
+        if (legato && last) amp -= amp * 45 / 100 * idx / total;
+        s = (int16_t)((gAcc & 0x80000000u) ? amp : -amp);
+        if ((!legato || first) && idx < 64) s = (int16_t)(s * idx / 64);                     // attack
+        else if ((!legato || last) && idx > total - 96) s = (int16_t)(s * (total - idx) / 96);  // decay
+        gAcc += step;
+      }
+      buf[i * 2] = s; buf[i * 2 + 1] = s;
+    }
+    i2s.write((uint8_t *)buf, n * 4);
+    done += n;
+  }
+}
+#else
 // plays a tone (or silence if f==0) with an anti-click attack/decay ramp
 static void playTone(uint16_t f, uint16_t ms) {
   int total = SAMPLE_RATE * ms / 1000;
@@ -139,6 +169,7 @@ static void playTone(uint16_t f, uint16_t ms) {
     done += n;
   }
 }
+#endif
 
 static void audioTask(void *) {
   uint8_t id;
@@ -149,7 +180,11 @@ static void audioTask(void *) {
       // the NS4150B takes more than 8 ms to settle: if it was just turned on, the effect waits
       int32_t since = (int32_t)(millis() - gAmpOnAt);
       if (since >= 0 && since < 50) vTaskDelay(pdMS_TO_TICKS(50 - since));
+#if UI_V2
+      for (uint8_t i = 0; i < d.len; i++) playTone(d.n[i].f, d.n[i].ms, sfxLegato(id), i == 0, i + 1 == d.len);
+#else
       for (uint8_t i = 0; i < d.len; i++) playTone(d.n[i].f, d.n[i].ms);
+#endif
     }
   }
 }

@@ -13,6 +13,8 @@
 #include "buddy_net.h"
 #include "audio.h"
 #include "savename.h"
+#include "sfx_notes.h"
+#include <math.h>
 #include "glcdfont.h"
 #include "host.h"
 #include "host_hal.h"
@@ -455,8 +457,21 @@ static void testAudio() {
   audioSetEnabled(true);
   audioSetSleeping(false);
   CHECK(!anySound(256));
-  sfxPlay(SFX_TAP);          // 880 Hz, 35 ms
-  CHECK(anySound(HOST_AUDIO_RATE * 35 / 1000));
+  sfxPlay(SFX_TAP);          // V2: four notes (132 ms), each in tune: its pitch from its zero crossings
+  {
+    int ms = 0;
+    for (int i = 0; i < SFX[SFX_TAP].len; i++) ms += SFX[SFX_TAP].n[i].ms;
+    std::vector<int16_t> pcm((size_t)(HOST_AUDIO_RATE * ms / 1000));
+    hostAudioRender(pcm.data(), (int)pcm.size());
+    int at = 0;
+    for (int i = 0; i < SFX[SFX_TAP].len; i++) {
+      const Note &n = SFX[SFX_TAP].n[i];
+      int len = HOST_AUDIO_RATE * n.ms / 1000, z = 0;
+      for (int k = at + 1; k < at + len; k++) z += (pcm[k - 1] < 0) != (pcm[k] < 0);
+      CHECK(fabsf(z * (float)HOST_AUDIO_RATE / (2.0f * len) - n.f) < n.f * 0.04f);
+      at += len;
+    }
+  }
   CHECK(!anySound(256));     // and it ends
   sfxPlay(SFX_COUNT);        // out of range
   CHECK(!anySound(256));

@@ -96,6 +96,7 @@ static const ExpectedFmt EXPECTED[] = {
   { S_BROKE_FREE_FMT,  "%s" },  // V2: out of a Poke Ball, more to throw
   { S_MASTER_EARN_FMT, "%u" },  // V2: the card's Items page (repel_v2.h)
   { S_REPEL_EARN_FMT,  "%u" },
+  { S_REPEL_DOES_FMT,  "%u" },  // V2: the Repel's own page of the card
 #endif
 };
 static const int NUM_EXPECTED = (int)(sizeof(EXPECTED) / sizeof(EXPECTED[0]));

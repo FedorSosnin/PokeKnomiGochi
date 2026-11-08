@@ -224,7 +224,7 @@ function key(e, isDown) {
 addEventListener('keydown', (e) => key(e, true));
 addEventListener('keyup', (e) => key(e, false));
 
-// ---- sound: the game's 16 kHz mono, pulled by the browser ----
+// ---- sound: the game's mono (48 kHz), pulled by the browser ----
 let audio = null;
 function startAudio() {
   if (audio) { if (audio.state === 'suspended') audio.resume(); return; }

@@ -628,10 +628,28 @@ static void scLandField(const ScPal &p, bool night) {
 
 static const int16_t SC_FOREST_BIG[4][2] = { {14, 246}, {52, 258}, {384, 254}, {418, 244} };
 #define SC_FOREST_PINK 0xE9587A
-static void scPineWall(const ScPal &p) {  // a wall of pines on the far hills, open behind the pet
+// the far hills' top at x (the highest of their two ovals there), or 999 where neither reaches
+static int scFarTop(int x) {
+  int top = 999;
+  for (int k = 0; k < 2; k++) {
+    const ScEll &e = SC_FAR[k];
+    double cx = (e.x0 + e.x1) / 2.0, rx = (e.x1 - e.x0) / 2.0, cy = (e.y0 + e.y1) / 2.0, ry = (e.y1 - e.y0) / 2.0;
+    double d = (x - cx) / rx;
+    if (d * d < 1) {
+      int t = (int)(cy - ry * sqrt(1 - d * d));
+      if (t < top) top = t;
+    }
+  }
+  return top;
+}
+// a wall of pines on the far hills, open behind the pet; each stands at least 4 px into the hill under its trunk
+// (Fedor: one hung in the air where the hill dips, left of the pet)
+static void scPineWall(const ScPal &p) {
   for (int tx = 0; tx < V2_W; tx += 26) {
     if (tx > 150 && tx < 300) continue;
-    scRole(SPR_V2_PINE, 12, tx - 10, 178 + (tx * 37 % 18), 3, p, p.far);
+    int y = 178 + (tx * 37 % 18), top = scFarTop(tx + 8);  // (its trunk: the middle of its 36 px)
+    if (top < 999 && y + 36 < top + 4) y = top + 4 - 36;
+    scRole(SPR_V2_PINE, 12, tx - 10, y, 3, p, p.far);
   }
 }
 static void scLandForest(const ScPal &p) {
@@ -1182,7 +1200,8 @@ static void v2BurstScene(bool pink) { v2Cached(pink ? 113 : 112, scBurst, pink ?
 
 // PokeDungeon's tiles (dn_tile in rooms_px.py): flagstones lit along the top and left and shaded on the
 // bottom and right, now and then a crack or moss; walls dark on top with specks and, where floor lies under
-// them, a face of bricks lit along its top, a few with a flickering torch; the stairs as four steps down.
+// them, a face of bricks lit along its top, a few with a flickering torch; the stairs as a stairwell going down to
+// the warm, flickering light of the floor below (Fedor: in the dungeon's look, and standing out).
 static void v2DnTile(uint8_t t, bool face, int tx, int ty, int sx, int sy) {
   scScreen();
   auto rr = [](int x0, int y0, int x1, int y1, Rgb c) { scRect(x0, y0, x1 - 1, y1 - 1, c); };  // x1 and y1 outside it
@@ -1223,9 +1242,24 @@ static void v2DnTile(uint8_t t, bool face, int tx, int ty, int sx, int sy) {
     rr(sx + 40, sy + 16, sx + 48, sy + 20, 0x6E8A4A);
     rr(sx + 44, sy + 12, sx + 48, sy + 16, 0x8AA860);
   }
-  if (t == DN_STAIRS) {
-    static const Rgb step[4] = { 0x8A7E70, 0x6E6458, 0x524A40, 0x2E2A24 };
-    for (int i = 0; i < 4; i++) rr(sx + 8 + i * 6, sy + 12 + i * 10, sx + 56 - i * 6, sy + 20 + i * 10, step[i]);
+  if (t == DN_STAIRS) {  // the way down, in the dungeon's own look and standing out (Fedor): a stairwell with a lip
+                         // of the walls' stone, four steps going down into it, narrower and warmer as they go, and
+                         // the light of the floor below rising from it, flickering as the torches do
+    bool hi = ((millis() + (tx * 7 + ty * 3) * 61) / 170) % 2;
+    rr(sx + 4, sy + 4, sx + 60, sy + 60, 0x4A4252);   // the lip
+    rr(sx + 4, sy + 4, sx + 60, sy + 8, 0x5E5468);    // lit along its top
+    rr(sx + 56, sy + 8, sx + 60, sy + 60, 0x3A3442);  // its right side in shade
+    rr(sx + 8, sy + 56, sx + 56, sy + 60, hi ? 0x8A5A38 : 0x6E4A34);  // its near edge, lit from the stairwell
+    rr(sx + 8, sy + 8, sx + 56, sy + 56, 0x16121C);   // the stairwell
+    rr(sx + 12, sy + 40, sx + 52, sy + 56, hi ? 0xF5863D : 0xD66F2E);  // the light from below
+    rr(sx + 20, sy + 44, sx + 44, sy + 56, hi ? 0xFFD95E : 0xF5B04A);
+    rr(sx + 28, sy + 48, sx + 36, sy + 56, hi ? 0xFFF1B0 : 0xFFD95E);
+    static const Rgb TREAD[4] = { 0x9A8E7E, 0xA88C68, 0xBC8C52, 0xD49442 }, RISER[4] = { 0x5E5448, 0x6C5442, 0x80583A, 0x985E30 };
+    for (int i = 0; i < 4; i++) {  // each a tread and its riser
+      int x0 = sx + 8 + i * 4, x1 = sx + 56 - i * 4, y = sy + 8 + i * 8;
+      rr(x0, y, x1, y + 4, TREAD[i]);
+      rr(x0, y + 4, x1, y + 8, RISER[i]);
+    }
   }
 }
 

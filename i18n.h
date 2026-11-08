@@ -122,6 +122,8 @@ enum StrId : STRID_BASE {
   S_THROW_HINT_KEYS,  // V2: the catch's hint where the arrow keys aim too (a computer, the web)
   S_ST_GREAT, S_ST_HUM, S_ST_ROUND, S_ST_JOG, S_ST_RUMBLE, S_ST_SMELLY, S_ST_STINKS,  // V2: more lines under the name
   S_ST_NAP, S_ST_PLAY, S_ST_FULL, S_ST_CLEAN, S_ST_SLEEPY, S_ST_MORNING,             // (Fedor), taking turns
+  S_RESET_SURE, S_RESET_NOUNDO,  // V2: ERASE EVERYTHING asks once more: "Are you sure?" "There's no going back."
+  S_MASTER_DOES, S_REPEL_DOES_FMT,  // V2: what each does, on its own page of the card
 #endif
   STR_COUNT
 };

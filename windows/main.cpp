@@ -345,7 +345,11 @@ static void relayMessage(bool text, const std::string &m) {  // the game's threa
 
 // ---- sound: the game's 16 kHz mono, pulled on a thread of its own ----
 #define AUDIO_BUFFERS 3
+#if UI_V2
+#define AUDIO_FRAMES 1536  // ~32 ms per buffer at 48 kHz
+#else
 #define AUDIO_FRAMES 512  // ~32 ms per buffer at 16 kHz
+#endif
 
 static void audioThread() {
   HANDLE ev = CreateEventW(NULL, FALSE, FALSE, NULL);

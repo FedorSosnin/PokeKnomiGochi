@@ -71,6 +71,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Se siente genial!", "Tararea una canci\242n~", "Redondito y feliz!", "Necesita ejercicio...", "Le ruge la barriga!",
     "Huele un poco...", "Algo huele mal...", "Necesita una siesta...", "Quiere jugar...", "Est\240 lleno...",
     "Limpio y reluciente!", "Tiene sue\244o...", "Buenos d\241as!",
+    "Est\240s seguro?", "No se puede deshacer.",
+    "Atrapa a todo Pok\202mon salvaje que golpee. Al lanzar, es la de la izquierda.",
+    "Durante %u minutos, los Pok\202mon salvajes m\240s d\202biles no aparecen. Se usa desde la mochila.",
 #endif
   },
   // ---------------- EN ----------------
@@ -137,6 +140,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Feeling great!", "Humming a tune~", "Round and proud!", "Could use a jog...", "Tummy's rumbling!",
     "A bit smelly...", "Something stinks...", "Needs a nap...", "Wants to play...", "So full...",
     "Squeaky clean!", "Getting sleepy...", "Good morning!",
+    "Are you sure?", "There's no going back.",
+    "Catches any wild Pok\202mon it hits. On a catch, it\'s the ball on the left.",
+    "For %u minutes, weaker wild Pok\202mon stay away. Use it from the backpack.",
 #endif
   },
   // ---------------- FR ----------------
@@ -203,6 +209,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "En pleine forme!", "Fredonne un air~", "Rond et fier!", "Un footing s'impose...", "Son ventre gargouille!",
     "Sent un peu...", "\200a sent mauvais...", "Besoin d'une sieste...", "Veut jouer...", "Le ventre plein...",
     "Tout propre!", "Il a sommeil...", "Bonjour!",
+    "Tu es s\226r?", "Impossible de l\'annuler.",
+    "Attrape tout Pok\202mon sauvage qu\'elle touche. Lors d\'une capture, c\'est celle de gauche.",
+    "Pendant %u minutes, les Pok\202mon sauvages plus faibles restent loin. S\'utilise depuis le sac.",
 #endif
   },
   // ---------------- DE ----------------
@@ -274,6 +283,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Super drauf!", "Summt ein Lied~", "Rund und stolz!", "Braucht Bewegung...", "Der Magen knurrt!",
     "Riecht etwas...", "Hier stinkt's...", "Will ein Nickerchen", "Will spielen...", "Pappsatt...",
     "Blitzsauber!", "Wird m\201de...", "Guten Morgen!",
+    "Bist du sicher?", "Es gibt kein Zur\201ck.",
+    "F\204ngt jedes wilde Pok\202mon, das er trifft. Beim Fangen ist es der linke Ball.",
+    "%u Minuten lang bleiben schw\204chere wilde Pok\202mon fern. Im Rucksack einsetzen.",
 #endif
   },
   // ---------------- IT ----------------
@@ -340,6 +352,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "In gran forma!", "Canticchia~", "Tondo e fiero!", "Gli serve una corsa...", "Pancia che brontola!",
     "Puzza un po'...", "Qualcosa puzza...", "Vuole un pisolino...", "Vuole giocare...", "Pieno zeppo...",
     "Pulito e splendente!", "Ha sonno...", "Buongiorno!",
+    "Sei sicuro?", "Non si torna indietro.",
+    "Cattura ogni Pok\202mon selvatico che colpisce. Nella cattura, \212 quella a sinistra.",
+    "Per %u minuti, i Pok\202mon selvatici pi\227 deboli stanno lontani. Si usa dallo zaino.",
 #endif
   },
   // ---------------- PT ----------------
@@ -406,6 +421,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Est\240 \242timo!", "Cantarolando~", "Redondo e feliz!", "Precisa se mexer...", "A barriga ronca!",
     "Um pouco fedido...", "Algo est\240 fedendo...", "Precisa de um cochilo", "Quer brincar...", "Est\240 cheio...",
     "Limpinho!", "Com sono...", "Bom dia!",
+    "Tens a certeza?", "Nao d\240 para desfazer.",
+    "Captura qualquer Pok\202mon selvagem que atinja. Na captura, \202 a da esquerda.",
+    "Durante %u minutos, os Pok\202mon selvagens mais fracos ficam longe. Usa-se na mochila.",
 #endif
   },
   // ---------------- JA ----------------
@@ -495,6 +513,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ちょうしいい！", "はなうたを うたってる", "まるまるで しあわせ！", "うんどうしたいな...", "おなかが ぐうぐう！",
     "ちょっと におう...", "なにか におう...", "おひるね したい...", "あそびたいな...", "おなかいっぱい...",
     "ぴかぴか！", "ねむくなってきた...", "おはよう！",
+    "ほんとうに いいの?", "もとに もどせません。",
+    "あたった やせいの ポケモンを かならず つかまえる。 つかまえる ときの ひだりの ボール。",
+    "%u ふんの あいだ、 よわい やせいの ポケモンが でてこない。 リュックから つかう。",
 #endif
   },
   // ---------------- KO ----------------
@@ -566,6 +587,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "기분 최고예요!", "콧노래를 불러요", "동글동글 행복해요!", "운동이 필요해요...", "배에서 꼬르륵!",
     "냄새가 조금 나요...", "뭔가 냄새가 나요...", "낮잠이 필요해요...", "놀고 싶어요...", "배불러요...",
     "반짝반짝 깨끗해요!", "졸려요...", "좋은 아침!",
+    "정말 지울까요?", "되돌릴 수 없어요.",
+    "맞힌 야생 포켓몬을 무조건 잡아요. 포획할 때 왼쪽 볼이에요.",
+    "%u분 동안 약한 야생 포켓몬이 나오지 않아요. 가방에서 써요.",
 #endif
   },
 };
