@@ -3748,6 +3748,10 @@ void battleStep() {
       if (t > 3000) closeBattle();  // it broke out and ran off: no more throws
       break;
     case BP_SHAKE: {  // a rock and a tone per count; it may pop out halfway through one
+#if UI_V2
+      if (t < V2_CATCH_DROP_MS) break;  // V2: still falling to the ground (master_v2.h)
+      t -= V2_CATCH_DROP_MS;
+#endif
       uint8_t shake = t / CATCH_SHAKE_MS;  // 0..2 while counting
       if (shake < CATCH_SHAKES && bShakesHeard <= shake) {
         bShakesHeard = shake + 1;
@@ -3980,6 +3984,20 @@ void renderCatch() {
                   HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
   } else if (bPhase == BP_SHAKE) {  // on the ground, tipping over to one side on each count: it wants out
     uint32_t t = now - bPhaseT;
+#if UI_V2
+    if (t < V2_CATCH_DROP_MS) {  // V2: first it falls from where it hit to the ground where the Pokemon stood (Fedor)
+      float k = t / (float)V2_CATCH_DROP_MS, top = catchRingY() + 16, yb;  // its bottom: where it hit, then
+      if (k < 0.25f) yb = top - 28 * sinf(k * 2 * 3.14159f);  // up off the Pokemon a little,
+      else if (k < 0.8f) yb = top - 28 + (CATCH_GROUND_Y - top + 28) * ((k - 0.25f) / 0.55f) * ((k - 0.25f) / 0.55f);  // down,
+      else yb = CATCH_GROUND_Y - 8 * sinf((k - 0.8f) * 5 * 3.14159f);  // and a little bounce on the ground
+      float m = k < 0.8f ? k / 0.8f : 1, a0 = fmodf(1500 * CATCH_SPIN_DEG_MS, 360), a = a0 + (360 - a0) * m;  // upright on landing
+      int s = k < 0.5f ? 2 : 3;
+      float x = bBallX + (bCatchX - bBallX) * m, cy = yb - 8 * s;
+      if (v2MasterThrow) v2MasterBallTurned(s, a, x, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
+      else drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, s, a, x, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
+    } else {
+    t -= V2_CATCH_DROP_MS;
+#endif
     uint32_t in = t % CATCH_SHAKE_MS;
     float k = in < 420 ? sinf(in * 3.14159f / 420) : 0;  // a tip, then still until the next count
     int side = (t / CATCH_SHAKE_MS) % 2 ? 1 : -1;
@@ -3991,6 +4009,9 @@ void renderCatch() {
 #endif
     drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, 3, side * CATCH_TIP_DEG * k, pivotX, ballGround + 3 * HOME_ICON_N - 3,
                   HOME_ICON_N / 2.0f, HOME_ICON_N - 1);
+#if UI_V2
+    }
+#endif
   } else if (bPhase == BP_CAUGHT) {
     drawCatchShine((int)bFoeX, ballGround + 27, now - bPhaseT);
 #if UI_V2
@@ -4035,6 +4056,10 @@ void renderCatch() {
       break;
     case BP_SHAKE: {  // the count to three, big
       uint32_t t = millis() - bPhaseT;
+#if UI_V2
+      if (t < V2_CATCH_DROP_MS) break;  // V2: no count until the ball has landed
+      t -= V2_CATCH_DROP_MS;
+#endif
       uint8_t n = t / CATCH_SHAKE_MS + 1;
       if (n > CATCH_SHAKES) n = CATCH_SHAKES;
       char c[8];
@@ -8946,15 +8971,17 @@ void tradeTap(int16_t x, int16_t y) {
 #define ZONE_GRID_X 107
 #define ZONE_CELL 84
 #define ZONE_PAGE DEXG_PAGE
-#define ZONE_BTN_X 123
-#define ZONE_BTN_W 220
 #if UI_V2  // V2: the grid in a panel under the board, Search under it, the page as dots above the X at 422
+#define ZONE_BTN_X 98   // V2: Search as wide as the grid's white panel, rims and all (Fedor)
+#define ZONE_BTN_W 271
 #define ZONE_GRID_Y 72
 #define ZONE_BTN_Y 336
 #define ZONE_BTN_H 38
 #define ZONE_PAGE_Y 386
 #define ZONE_CLOSE_Y V2_CLOSE_Y
 #else
+#define ZONE_BTN_X 123
+#define ZONE_BTN_W 220
 #define ZONE_GRID_Y 76
 #define ZONE_BTN_Y 334
 #define ZONE_BTN_H 44
@@ -9955,7 +9982,7 @@ void overlayMouth(const Species &sp, int x, int y, int s, bool open) {
 void drawPoops() {
   for (int i = 0; i < pet.poops; i++) {
 #if UI_V2
-    drawMap(SPR_POOP, 32, 70 + i * 46, 250, 2, false);  // on the grass, in from the bars
+    v2PoopIcon(86 + i * 46, 274);  // V2: its own, on the grass, in from the bars (scene_v2.h)
 #else
     drawMap(SPR_POOP, 32, 36 + i * 46, HOME_PANEL_Y - 68, 2, false);  // just over the panel
 #endif
@@ -10021,6 +10048,32 @@ const char *eggMsg() {
 }
 
 const char *statusMsg() {
+#if UI_V2
+  // V2: more lines (Fedor). A state with more than one takes turns, 20 s each; when all is well, the happy ones take
+  // turns with whatever fits the moment: full, just washed, late at night, the morning
+  uint32_t turn = millis() / 20000;
+  if (pet.evolving()) return T(S_EVOLVING);
+  if (bathUntil) return "Splish splash!";  // universal onomatopoeia
+  if (pet.sleeping) return "Zzz...";
+  if (pet.eating()) return T(S_EATING);
+  if (pet.showHeart()) return T(S_LIKES);
+  if (pet.fullness < 25) return T(turn % 2 ? S_ST_RUMBLE : S_HUNGRY);
+  if (pet.hygiene < 25) return T(turn % 2 ? S_ST_SMELLY : S_NEEDS_BATH);
+  if (pet.energy < 25) return T(turn % 2 ? S_ST_NAP : S_EXHAUSTED);
+  if (pet.joy < 25) return T(turn % 2 ? S_ST_PLAY : S_SAD);
+  if (pet.poops) return T(S_ST_STINKS);
+  if (pet.weight > 60) return T(turn % 3 == 0 ? S_CHUBBY : turn % 3 == 1 ? S_ST_ROUND : S_ST_JOG);
+  if (pet.shiny && pet.ageMinutes < 15) return T(S_IS_SHINY);
+  StrId pool[7] = { S_HAPPY, S_ST_GREAT, S_ST_HUM };
+  int n = 3;
+  uint32_t e = rtcEpoch();
+  int h = e ? (int)((e / 3600) % 24) : -1;
+  if (pet.fullness >= 95) pool[n++] = S_ST_FULL;
+  if (pet.hygiene >= 95) pool[n++] = S_ST_CLEAN;
+  if (h >= 22 || (h >= 0 && h < 5)) pool[n++] = S_ST_SLEEPY;
+  if (h >= 6 && h < 9) pool[n++] = S_ST_MORNING;
+  return T(pool[turn % n]);
+#else
   if (pet.evolving()) return T(S_EVOLVING);
   if (bathUntil) return "Splish splash!";  // universal onomatopoeia
   if (pet.sleeping) return "Zzz...";
@@ -10033,6 +10086,7 @@ const char *statusMsg() {
   if (pet.weight > 60) return T(S_CHUBBY);
   if (pet.shiny && pet.ageMinutes < 15) return T(S_IS_SHINY);
   return T(S_HAPPY);
+#endif
 }
 
 // ---------- the close button ----------
@@ -10396,11 +10450,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     int count = pet.canHaveCandy() ? 4 : 3;
 #if UI_V2
     (void)count;
-    int item = v2FeedAt(x, y);  // V2: one row centred on the screen
+    int item = v2FeedAt(x, y);  // V2: the seats along their arc over the icons
     if (item < 0) return false;
-    int x0 = v2FeedX0() + item * V2_FEED_CELL, y0 = V2_FEED_Y0;
-    if (item >= v2FeedFoods()) return pressSet(t, x0, y0, V2_FEED_CELL, V2_FEED_H, T(S_REPEL));
-    return pressSet(t, x0, y0, V2_FEED_CELL, V2_FEED_H, nullptr, ICON[item]);
+    int cx, cy, h = V2_FEED_STEP / 2;
+    v2FeedSeat(item, cx, cy);
+    if (item >= v2FeedFoods()) return pressSet(t, cx - h, cy - h, 2 * h, 2 * h, T(S_REPEL));
+    return pressSet(t, cx - h, cy - h, 2 * h, 2 * h, nullptr, ICON[item]);
 #else
     int x0 = CX - count * 33;
     if (y < FEED_Y || y > FEED_Y + 64 || x < x0 || x > x0 + count * 66) return false;

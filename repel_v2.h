@@ -171,15 +171,32 @@ static void v2RepelSeatDraw(int cx, int cy) {
 }
 // ----- a food from the backpack (Fedor): it drops from the top onto your Pokemon, which hops for a second; the bag
 // stays open for another -----
-#define V2_DROP_MS 450
+#define V2_DROP_MS 560
 #define V2_HOP_MS 1000
+#define V2_DROP_TURN 170  // how far a food turns as it falls, in degrees (Fedor: a slight spin)
 static uint32_t v2DropT = 0;  // when the last one was tapped (0: none falling or hopping)
 static uint8_t v2DropItem = 0;
 static int v2DropX = CX;
+static int8_t v2DropSpin = 1;  // which way it turns: the other way each time
 static void v2FoodDropStart(int item) {
   v2DropItem = item;
   v2DropT = millis() ? millis() : 1;
   v2DropX = partyOthers() ? PARTY_MINE_X : (int)beh.x;
+  v2DropSpin = -v2DropSpin;
+}
+// where a food lands (Fedor): its middle on your Pokemon's, halfway from the top of what it draws to the ground
+static int v2DropMidY() {
+  const PmdAct &a = pmd.acts[PMD_IDLE];
+  int s = v2HomeScale(pmd), top = a.h;
+  for (int r = 0; r < a.h && top == a.h; r++)  // the first row its first frame draws in
+    for (int c = 0; c < a.w; c++)
+      if (a.data[r * a.w + c] != 0xFF) {
+        top = r;
+        break;
+      }
+  if (top == a.h) top = 0;
+  int y0 = PET_GROUND - (a.base ? a.base : a.h) * s;  // the frame's top, as drawPmdActM() places it
+  return (y0 + top * s + PET_GROUND) / 2;
 }
 static int v2FeedHop() {  // how high your Pokemon is, hopping once a food has landed on it
   if (!v2DropT) return 0;
@@ -197,9 +214,11 @@ static void v2FoodDropDraw() {  // over everything, the bag too
   if (e >= V2_DROP_MS || !pmd.loaded) return;  // landed: eaten (or sprayed)
   static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
   float k = e / (float)V2_DROP_MS;
-  int head = PET_GROUND - pmd.acts[PMD_IDLE].h * v2HomeScale(pmd) + 12, y = 30 + (int)((head - 84) * k * k);  // faster and faster
-  if (v2DropItem < 4) drawMap(FOOD[v2DropItem], HOME_ICON_N, v2DropX - 27, y, 3, false);
-  else v2RepelIcon(v2DropX - 27, y, 3);  // the Repel, dropping too (Fedor)
+  int mid = v2DropMidY(), cy = 57 + (int)((mid - 57) * k * k);  // its middle, from the top: faster and faster
+  if (v2DropItem < 4)  // turning a little as it falls
+    drawMapTurned(FOOD[v2DropItem], HOME_ICON_N, 3, v2DropSpin * V2_DROP_TURN * k, v2DropX, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
+  else
+    v2RepelIcon(v2DropX - 27, cy - 27, 3);  // the Repel, dropping too (Fedor)
 }
 
 // used from the backpack: it starts, and the home says for how long; one already running can't be doubled

@@ -296,40 +296,65 @@ static void v2CountBadge(int cx, int cy, int n) {
 }
 
 // The backpack's seats: the foods (the candy while there are any left today), then the Repel's while you hold one
-// or one runs, right of the candy, in one row centred on the screen (Fedor), so what you tap is seen dropping onto
-// your Pokemon
+// or one runs, right of the candy, along an arc over the icons, centred under your Pokemon (Fedor), so it stays in
+// view and what you tap is seen dropping onto it
 static int v2FeedFoods() { return pet.canHaveCandy() ? 4 : 3; }
 static int v2FeedCount() { return v2FeedFoods() + (v2RepelSeat() ? 1 : 0); }
-static int v2FeedX0() { return CX - v2FeedCount() * V2_FEED_CELL / 2; }
-static int v2FeedAt(int16_t x, int16_t y) {  // the seat under a tap, or -1
-  int x0 = v2FeedX0();
-  if (y < V2_FEED_Y0 || y > V2_FEED_Y0 + V2_FEED_H || x < x0 || x >= x0 + v2FeedCount() * V2_FEED_CELL) return -1;
-  return (x - x0) / V2_FEED_CELL;
+// seat i's direction from the seats' circle's centre (degrees, 0 right, 90 down): the first on the left
+static float v2FeedDeg(int i) { return 90 + (v2FeedCount() - 1 - 2 * i) * (V2_FEED_STEP * 28.64789f / V2_FEED_R); }
+static void v2FeedSeat(int i, int &cx, int &cy) {  // seat i's centre, on the 2 px grid
+  float a = v2FeedDeg(i) * 0.01745329f;
+  cx = SNAP2(CX + (int)lroundf(V2_FEED_R * cosf(a)));
+  cy = SNAP2(V2_FEED_CY + (int)lroundf(V2_FEED_R * sinf(a)));
 }
-// The food picker: a text-box bubble out of the bag, its tail pointing at it, each item on a round seat (the candy
-// with its count left today, the Repel with how many and its minutes while one runs)
+static int v2FeedAt(int16_t x, int16_t y) {  // the seat under a tap (within half a step of its centre), or -1
+  for (int i = 0, n = v2FeedCount(); i < n; i++) {
+    int cx, cy;
+    v2FeedSeat(i, cx, cy);
+    if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= (V2_FEED_STEP / 2) * (V2_FEED_STEP / 2)) return i;
+  }
+  return -1;
+}
+#ifdef BOARD_HOST
+void v2HostFeedSeat(int i, int *x, int *y) { v2FeedSeat(i, *x, *y); }  // (for the screenshot tool)
+#endif
+// The food picker: a band in the bag's own green over the icons' band, curved as it is (Fedor: the straight
+// bubble covered your Pokemon), with the panels' dark rim and a lighter green line inside; each item on a soft
+// green seat (the candy with its count left today, the Repel with how many and its minutes while one runs)
 static void v2DrawFoodPicker(int) {
   static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
   int foods = v2FeedFoods(), count = v2FeedCount();
-  int x0 = v2FeedX0(), y0 = V2_FEED_Y0, x1 = x0 + count * V2_FEED_CELL, y1 = y0 + V2_FEED_H;
-  int tx = x0 + 14 > 118 ? x0 + 14 : 118;  // the tail's base, along the box's bottom, its tip at the bag
-  gfx->fillTriangle(tx, y1, tx + 28, y1, 124, y1 + 16, V2_RIM);  // the tail's rim, under the box's
-  // the bubble in the bag's own green (Fedor), the panel's dark rim and a lighter green inner line; the seats a
-  // soft green, a little lighter than the bubble (Fedor: not white, then fainter still)
+  float a0 = v2FeedDeg(count - 1), a1 = v2FeedDeg(0);  // its round ends centred on the last seat and the first
   const uint16_t green = C565(0x58, 0xb8, 0x68), line = C565(0x8f, 0xd6, 0x9a), seat = C565(0xa6, 0xd9, 0xae);
-  int w = x1 - x0 + 1, h = y1 - y0 + 1;
-  gfx->fillRoundRect(x0 - 3, y0 - 3, w + 6, h + 6, 16, V2_RIM);
-  gfx->fillRoundRect(x0, y0, w, h, 14, green);
-  gfx->drawRoundRect(x0 + 3, y0 + 3, w - 6, h - 6, 11, line);
-  gfx->drawRoundRect(x0 + 4, y0 + 4, w - 8, h - 8, 10, line);
-  gfx->fillTriangle(tx + 3, y1 - 3, tx + 25, y1 - 3, 125, y1 + 10, green);  // its inside, over the rim
+  V2Seg rim = v2Seg(V2_FEED_RIN - 3, V2_FEED_ROUT + 3, a0, a1), band = v2Seg(V2_FEED_RIN, V2_FEED_ROUT, a0, a1);
+  V2Seg lineOut = v2Seg(V2_FEED_RIN + 3, V2_FEED_ROUT - 3, a0, a1), lineIn = v2Seg(V2_FEED_RIN + 6, V2_FEED_ROUT - 6, a0, a1);
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  int fx0, fy0, lx, ly;  // the box it fits in: the end seats and round them, down to the rim under the middle
+  v2FeedSeat(0, fx0, fy0);
+  v2FeedSeat(count - 1, lx, ly);
+  int x0 = (fx0 - 40) & ~1, y0 = ((fy0 < ly ? fy0 : ly) - 40) & ~1, x1 = lx + 40, y1 = V2_FEED_CY + V2_FEED_ROUT + 4;
+  if (x0 < 0) x0 = 0;
+  if (x1 > 464) x1 = 464;
+  if (y1 > 464) y1 = 464;
+  for (int y = y0; y <= y1; y += 2) {
+    float fy = y + 1 - V2_FEED_CY;
+    for (int x = x0; x <= x1; x += 2) {
+      float fx = x + 1 - CX, r2 = fx * fx + fy * fy;
+      if (!v2In(rim, fx, fy, r2)) continue;
+      uint16_t c = !v2In(band, fx, fy, r2) ? V2_RIM : v2In(lineOut, fx, fy, r2) && !v2In(lineIn, fx, fy, r2) ? line : green;
+      v2Cell(fb, x, y, c, 256);
+    }
+  }
+  int candyX = 0, candyY = 0;
   for (int i = 0; i < count; i++) {
-    int cx = x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * i, cy = y0 + 36;
+    int cx, cy;
+    v2FeedSeat(i, cx, cy);
     gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, seat);
     if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - 27, cy - 27, 3, false);
     else v2RepelSeatDraw(cx, cy);
+    if (i == 3) candyX = cx, candyY = cy;
   }
-  if (foods == 4) v2CountBadge(x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * 3 + 22, y0 + 8, pet.candiesLeft());
+  if (foods == 4) v2CountBadge(candyX + 22, candyY - 28, pet.candiesLeft());
 }
 
 // ---------- the scenes: the home's backdrop, in the Pokemon's Travel zone ----------
@@ -1298,6 +1323,35 @@ void v2HostBackdrop(int which, int tod) {
   scGradeTod = 0;
 }
 #endif
+
+// The poops on the grass (Fedor: V2's own, not V1's): three coils and a curled tip, outlined like the icons, lit
+// from the upper left, at 2x
+static const char *const SPR_V2_POOP[18] = {
+  "..................",
+  ".........kkk......",
+  "........khwCk.....",
+  ".......kkwcCk.....",
+  ".....kkwccCkk.....",
+  "....khwcccccCk....",
+  "....kcccccccCCk...",
+  "....kkCCCCCCCk....",
+  "...khwccccccCCk...",
+  "..kwwcccccccccCk..",
+  "..kcccccccccCCCk..",
+  ".kkCCCCCCCCCCCCkk.",
+  "khwwccccccccccCCCk",
+  "kwcccccccccccccCCk",
+  ".kcccccccccccCCCk.",
+  "..kkCCCCCCCCCCkk..",
+  "....kkkkkkkkkk....",
+  "..................",
+};
+static void v2PoopIcon(int x, int y) {  // its top left at (x, y)
+  static const ScKey K[5] = { { 'k', 0x1B1B25 }, { 'c', 0x9A6034 }, { 'C', 0x6B3F22 }, { 'w', 0xC88B52 }, { 'h', 0xE8C08A } };
+  scScreen();
+  scGradeTod = 0;
+  scSprite(SPR_V2_POOP, 18, x, y, 2, K, 5);
+}
 
 #include "walk_v2.h"   // step 4: the walk
 #include "menus_v2.h"  // step 5: the menus

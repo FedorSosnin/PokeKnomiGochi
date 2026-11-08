@@ -68,6 +68,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%s se solt\242!",
     "Objetos", "Master Ball", "Termina %u combates", "%u min de minijuegos",
     "Toca y apunta inclinando o con las flechas",
+    "Se siente genial!", "Tararea una canci\242n~", "Redondito y feliz!", "Necesita ejercicio...", "Le ruge la barriga!",
+    "Huele un poco...", "Algo huele mal...", "Necesita una siesta...", "Quiere jugar...", "Est\240 lleno...",
+    "Limpio y reluciente!", "Tiene sue\244o...", "Buenos d\241as!",
 #endif
   },
   // ---------------- EN ----------------
@@ -131,6 +134,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%s broke free!",
     "Items", "Master Ball", "Finish %u battles", "%u min of minigames",
     "Tap ball, lean or use arrow keys to aim",
+    "Feeling great!", "Humming a tune~", "Round and proud!", "Could use a jog...", "Tummy's rumbling!",
+    "A bit smelly...", "Something stinks...", "Needs a nap...", "Wants to play...", "So full...",
+    "Squeaky clean!", "Getting sleepy...", "Good morning!",
 #endif
   },
   // ---------------- FR ----------------
@@ -194,6 +200,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%s s'est lib\202r\202!",
     "Objets", "Master Ball", "Finis %u combats", "%u min de mini-jeux",
     "Touche, penche ou utilise les fl\212ches pour viser",
+    "En pleine forme!", "Fredonne un air~", "Rond et fier!", "Un footing s'impose...", "Son ventre gargouille!",
+    "Sent un peu...", "\200a sent mauvais...", "Besoin d'une sieste...", "Veut jouer...", "Le ventre plein...",
+    "Tout propre!", "Il a sommeil...", "Bonjour!",
 #endif
   },
   // ---------------- DE ----------------
@@ -262,6 +271,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%s hat sich befreit!",
     "Gegenst\204nde", "Meisterball", "Beende %u K\204mpfe", "%u Min. Minispiele",
     "Tippen, neigen oder Pfeiltasten zum Zielen",
+    "Super drauf!", "Summt ein Lied~", "Rund und stolz!", "Braucht Bewegung...", "Der Magen knurrt!",
+    "Riecht etwas...", "Hier stinkt's...", "Will ein Nickerchen", "Will spielen...", "Pappsatt...",
+    "Blitzsauber!", "Wird m\201de...", "Guten Morgen!",
 #endif
   },
   // ---------------- IT ----------------
@@ -325,6 +337,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%s si \212 liberato!",
     "Strumenti", "Master Ball", "Finisci %u lotte", "%u min di minigiochi",
     "Tocca, inclina o usa le frecce per mirare",
+    "In gran forma!", "Canticchia~", "Tondo e fiero!", "Gli serve una corsa...", "Pancia che brontola!",
+    "Puzza un po'...", "Qualcosa puzza...", "Vuole un pisolino...", "Vuole giocare...", "Pieno zeppo...",
+    "Pulito e splendente!", "Ha sonno...", "Buongiorno!",
 #endif
   },
   // ---------------- PT ----------------
@@ -388,6 +403,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%s se soltou!",
     "Itens", "Master Ball", "Termina %u combates", "%u min de minijogos",
     "Toca e inclina ou usa as setas para mirar",
+    "Est\240 \242timo!", "Cantarolando~", "Redondo e feliz!", "Precisa se mexer...", "A barriga ronca!",
+    "Um pouco fedido...", "Algo est\240 fedendo...", "Precisa de um cochilo", "Quer brincar...", "Est\240 cheio...",
+    "Limpinho!", "Com sono...", "Bom dia!",
 #endif
   },
   // ---------------- JA ----------------
@@ -474,6 +492,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%sが とびだした!",
     "どうぐ", "マスターボール", "バトルを %uかい さいごまで", "ミニゲーム %uふん",
     "タッチして かたむけるか やじるしキーで ねらう",
+    "ちょうしいい！", "はなうたを うたってる", "まるまるで しあわせ！", "うんどうしたいな...", "おなかが ぐうぐう！",
+    "ちょっと におう...", "なにか におう...", "おひるね したい...", "あそびたいな...", "おなかいっぱい...",
+    "ぴかぴか！", "ねむくなってきた...", "おはよう！",
 #endif
   },
   // ---------------- KO ----------------
@@ -542,6 +563,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%s 빠져나왔다!",
     "도구", "마스터볼", "배틀 %u번 끝내기", "미니게임 %u분",
     "눌러서 기울이거나 화살표 키로 조준",
+    "기분 최고예요!", "콧노래를 불러요", "동글동글 행복해요!", "운동이 필요해요...", "배에서 꼬르륵!",
+    "냄새가 조금 나요...", "뭔가 냄새가 나요...", "낮잠이 필요해요...", "놀고 싶어요...", "배불러요...",
+    "반짝반짝 깨끗해요!", "졸려요...", "좋은 아침!",
 #endif
   },
 };

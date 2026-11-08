@@ -16,7 +16,12 @@ enum Lang : uint8_t { LANG_ES = 0, LANG_EN, LANG_FR, LANG_DE, LANG_IT, LANG_PT,
 extern Lang gLang;  // active language (defined in i18n.cpp)
 
 // String IDs. The order must match the STRINGS table in i18n.cpp.
-enum StrId : uint8_t {
+#if UI_V2
+#define STRID_BASE uint16_t  // V2: more than 256 strings
+#else
+#define STRID_BASE uint8_t
+#endif
+enum StrId : STRID_BASE {
   // pet status (statusMsg)
   S_EVOLVING, S_EATING, S_LIKES, S_HUNGRY, S_NEEDS_BATH,
   S_EXHAUSTED, S_SAD, S_CHUBBY, S_IS_SHINY, S_HAPPY,
@@ -115,6 +120,8 @@ enum StrId : uint8_t {
   S_BROKE_FREE_FMT,  // V2: it broke out of a Poke Ball, and there are more to throw
   S_ITEMS, S_MASTER, S_MASTER_EARN_FMT, S_REPEL_EARN_FMT,  // V2: the card's Items page, and how to earn each
   S_THROW_HINT_KEYS,  // V2: the catch's hint where the arrow keys aim too (a computer, the web)
+  S_ST_GREAT, S_ST_HUM, S_ST_ROUND, S_ST_JOG, S_ST_RUMBLE, S_ST_SMELLY, S_ST_STINKS,  // V2: more lines under the name
+  S_ST_NAP, S_ST_PLAY, S_ST_FULL, S_ST_CLEAN, S_ST_SLEEPY, S_ST_MORNING,             // (Fedor), taking turns
 #endif
   STR_COUNT
 };

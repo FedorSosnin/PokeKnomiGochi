@@ -1255,7 +1255,7 @@ static void v2ZoneBack(uint8_t zone) {
 // ----- the games TV: Games and Play together (labels.py games_tv4(), batch3.py play_together()) -----
 // An old CRT TV, dimmed half way (v2g.py tv_round()): a rounded wooden cabinet, the tube's glass with a soft
 // glare and scanlines, rabbit ears. Grey snow on the glass with a brighter band rolling down, new every
-// 200 ms (static2()). The board on top, then Game Boy style cartridges at 5 px cells, each label a little
+// second (static2() had 200 ms: too busy behind the cartridges, Fedor). The board on top, then Game Boy style cartridges at 5 px cells, each label a little
 // scene from its game: the game's own V2 background at exactly half size (its 4 px cells become 2 px) with
 // your Pokemon in it at 1x (the mockups have a fixed cast: Bulbasaur, Pikachu, Charmander, Gengar; V1's
 // windows showed your own). One tap on a cartridge starts its game, as V1's windows did.
@@ -1302,7 +1302,7 @@ static void v2PaintTv(int) {
 }
 // the snow: a 4 px cell here and there lit grey, more of them in the band rolling down the glass
 static void v2TvStatic(uint32_t now) {
-  uint32_t f = now / 200, r = 500 + f * 2654435761u;
+  uint32_t f = now / 1000, r = 500 + f * 2654435761u;
   int band = V2_TV_Y0 + (int)(f % 10) * (V2_TV_Y1 - V2_TV_Y0) / 10;
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   static const uint8_t G[3] = { 200, 230, 255 }, A[3] = { 41, 61, 87 };  // .16, .24, .34 of 256

@@ -72,13 +72,15 @@ static const int16_t V2_MANSION_RISE[4] = { 20, 226, 446, 330 };   // added to t
 #define V2_WALK_PACE_X10 20
 #define V2_STREAM_LOOP_MS 8400    // a tuft takes this long from the bottom to the horizon
 
-// the food picker: a text-box bubble out of the bag (its tail points at it), the foods on round seats 66 px
-// apart; it grows to the right, so with the candy gone it's three seats from the same left edge
-#define V2_FEED_X0 101
-#define V2_FEED_Y0 264
-#define V2_FEED_H 72
-#define V2_FEED_CELL 66
-#define V2_FEED_SEAT_R 30
+// the food picker (Fedor): a green band just above the icons' band and curved as it is (the icons' circle raised
+// 72 px), its round ends on the first and last seats; the foods on round seats V2_FEED_STEP px apart along it, so
+// your Pokemon stays in view
+#define V2_FEED_CY (CY - 72)  // the seats' circle: its centre, and its radius, the icons' V2_ICON_R
+#define V2_FEED_R 180
+#define V2_FEED_RIN 147       // the band, from that centre (its rim reaches 377 under the middle: 6 px over the
+#define V2_FEED_ROUT 213      // icons' band's)
+#define V2_FEED_STEP 62       // from one seat to the next, along it
+#define V2_FEED_SEAT_R 28
 
 // the time page's START OVER (menus_v2.h): its box, which is also its tap
 #define V2_RESET_X0 113
