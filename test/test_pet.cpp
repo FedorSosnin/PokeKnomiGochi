@@ -1062,6 +1062,45 @@ TEST(v2pick, a_shiny_starter_only_if_you_own_its_shiny) {
   CHECK_EQ(p.petStars(), (uint8_t)3);
 }
 
+// ---------------------------------------------------------------- V2: fights pay, the Master Ball (Fedor)
+TEST(v2master, twenty_five_fights_earn_a_master_ball) {
+  Pet p;
+  makePet(p, 25);
+  CHECK_EQ(p.masterBalls, (uint8_t)0);
+  for (int i = 1; i < MASTER_FIGHTS; i++) CHECK_MSG(!p.masterFight(), "not yet");
+  CHECK_EQ(p.masterBar, (uint8_t)(MASTER_FIGHTS - 1));
+  CHECK_MSG(p.masterFight(), "the 25th earns one");
+  CHECK_EQ(p.masterBalls, (uint8_t)1);
+  CHECK_EQ(p.masterBar, (uint8_t)0);
+  p.masterFight();
+  p.flushSave();  // (the fight's own result would save it)
+  Pet again;
+  again.begin();
+  CHECK_MSG(again.masterBalls == 1 && again.masterBar == 1, "kept in the save");
+}
+
+TEST(v2master, a_ball_is_used_once_and_they_stay_through_a_goodbye) {
+  Pet p;
+  makePet(p, 25);
+  for (int i = 0; i < 2 * MASTER_FIGHTS; i++) p.masterFight();
+  CHECK_EQ(p.masterBalls, (uint8_t)2);
+  CHECK(p.useMasterBall());
+  CHECK_EQ(p.masterBalls, (uint8_t)1);
+  p.startFarewell();
+  p.newEgg();
+  CHECK(p.chooseEgg(25));
+  CHECK_MSG(p.masterBalls == 1, "the trainer's, not the Pokemon's");
+  CHECK(p.useMasterBall());
+  CHECK_MSG(!p.useMasterBall(), "none left");
+}
+
+TEST(v2master, they_stack_to_99) {
+  Pet p;
+  makePet(p, 25);
+  for (int i = 0; i < 101 * MASTER_FIGHTS; i++) p.masterFight();
+  CHECK_EQ(p.masterBalls, (uint8_t)MASTER_MAX);
+}
+
 TEST(v2pick, an_older_saves_goodbye_counts_and_its_egg_hatches) {
   mockNvsReset();
   mockSetMillis(0);

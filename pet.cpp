@@ -368,6 +368,22 @@ bool Pet::chooseEgg(int16_t dex, bool shinyForm) {
 }
 
 #if UI_V2
+bool Pet::masterFight() {
+  bool earned = ++masterBar >= MASTER_FIGHTS;
+  if (earned) {
+    masterBar = 0;
+    if (masterBalls < MASTER_MAX) masterBalls++;
+  }
+  pendingSave = true;  // (the fight's own result saves it at once)
+  return earned;
+}
+bool Pet::useMasterBall() {
+  if (!masterBalls) return false;
+  masterBalls--;
+  pendingSave = true;
+  return true;
+}
+
 void Pet::chooseStarter(int16_t dex, bool shinyForm) {
   eggTarget = dex;
   eggShiny = shinyForm && hasForm(dex, true);
@@ -1066,6 +1082,8 @@ void Pet::save() {
   prefs.putBool("fquiet", farewellQuiet);
 #if UI_V2
   prefs.putBool("pkok", pickOk);
+  prefs.putUChar("mbar", masterBar);
+  prefs.putUChar("mbls", masterBalls);
 #endif
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putUInt("life", lifeMin);
@@ -1148,6 +1166,9 @@ void Pet::load() {
   farewellQuiet = prefs.getBool("fquiet", false);
 #if UI_V2
   pickOk = prefs.getBool("pkok", false) || lastEnd == CER_FAREWELL || farewellQuiet;  // older saves: a goodbye said or put off
+  masterBar = prefs.getUChar("mbar", 0);
+  masterBalls = prefs.getUChar("mbls", 0);
+  if (masterBar >= MASTER_FIGHTS) masterBar = 0;
 #endif
   prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
   bool hadStars = prefs.isKey("dexstr");

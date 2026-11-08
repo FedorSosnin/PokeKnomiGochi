@@ -3473,11 +3473,14 @@ void battleTap(int16_t x, int16_t y) {
     return;
   }
   if (bPhase == BP_END) {
-    if (millis() - bPhaseT > 800) battleAfterEnd();  // time to read the result
+    if (millis() - bPhaseT > 800 V2_AND(!v2MasterNew || millis() - bPhaseT > V2_MASTER_SKIP_MS)) battleAfterEnd();  // time to read the result
     return;
   }
   if (bPhase == BP_AIM) {
     if (y < BTL_BAND_Y) return;
+#if UI_V2
+    v2MasterThrow = v2MasterAiming() && x >= CX;  // V2: the right half is the Master Ball's
+#endif
     sfxPlay(SFX_TAP);
     tiltZero();
     bBallX = CX;
@@ -3522,6 +3525,9 @@ void battleTap(int16_t x, int16_t y) {
 
 void battleFinish(bool won) {
   bWon = won;
+#if UI_V2
+  v2MasterNew = !bPvp && pet.masterFight();  // V2: a fight fought to the end fills the Master Ball's bar (master_v2.h)
+#endif
   if (bPvp) {
     pet.friendlyBattle(won);
     bGain = 0;
@@ -3621,6 +3627,9 @@ void battleThrowStep(uint32_t now) {
     bCatchX = battleFoeSway(now);
     uint8_t chance = catchChance(bBallX, bCatchX);  // which ring it landed in
     bBreakAt = catchBreakAt(random(100), random(CATCH_SHAKES), chance);
+#if UI_V2
+    if (v2MasterThrow && pet.useMasterBall()) bBreakAt = 0;  // V2: a Master Ball that hits always holds
+#endif
     bShakesHeard = 0;
     Serial.printf("catch: in the ball, %u%% ring (%s)\n", chance, bBreakAt ? "will break out" : "holds");
     battleSetPhase(BP_SHAKE);
@@ -3696,7 +3705,7 @@ void battleStep() {
       break;
     case BP_EFFECT: if (t > 1000) battleAfterHit(); break;
     case BP_RAN: if (t > (bPvpGone ? 2500UL : 1200UL)) closeBattle(); break;
-    case BP_END: if (t > 3500) battleAfterEnd(); break;
+    case BP_END: if (t > 3500 V2_AND(!v2MasterNew || t > V2_MASTER_END_MS)) battleAfterEnd(); break;  // (V2: a Master Ball's moment)
     case BP_AIM: break;  // it keeps running until you throw, however long you wait
     case BP_THROW: battleThrowStep(millis()); break;
     case BP_MISS:
@@ -3918,11 +3927,20 @@ void renderCatch() {
     if (k > 1) k = 1;
     int y = 360 - (int)((360 - catchRingY()) * k), s = k < 0.5f ? 3 : 2;  // moves away, to the rings
     float spin = (now - bBallT) * CATCH_SPIN_DEG_MS;  // spinning all the way there
+#if UI_V2
+    if (v2MasterThrow) v2MasterBallTurned(s, spin, bBallX, y, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);  // V2
+    else
+#endif
     drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, s, spin, bBallX, y, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
   } else if (bPhase == BP_MISS) {  // bounces and falls: clearly it didn't go in
     float k = (now - bPhaseT) / 700.0f;
     if (k > 1) k = 1;
     float spin = (1500 + now - bPhaseT) * CATCH_SPIN_DEG_MS * (bBallX < foeX ? -1 : 1);  // still spinning as it falls
+#if UI_V2
+    if (v2MasterThrow) v2MasterBallTurned(2, spin, bBallX + (bBallX < foeX ? -70 : 70) * k, catchRingY() + 200 * k * k,
+                                          HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);  // V2
+    else
+#endif
     drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, 2, spin, bBallX + (bBallX < foeX ? -70 : 70) * k, catchRingY() + 200 * k * k,
                   HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
   } else if (bPhase == BP_SHAKE) {  // on the ground, tipping over to one side on each count: it wants out
@@ -3931,10 +3949,19 @@ void renderCatch() {
     float k = in < 420 ? sinf(in * 3.14159f / 420) : 0;  // a tip, then still until the next count
     int side = (t / CATCH_SHAKE_MS) % 2 ? 1 : -1;
     float pivotX = bCatchX + side * 3 * HOME_ICON_N / 2.0f * k * 0.35f;  // rolling a little on its edge
+#if UI_V2
+    if (v2MasterThrow) v2MasterBallTurned(3, side * CATCH_TIP_DEG * k, pivotX, ballGround + 3 * HOME_ICON_N - 3,
+                                          HOME_ICON_N / 2.0f, HOME_ICON_N - 1);  // V2
+    else
+#endif
     drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, 3, side * CATCH_TIP_DEG * k, pivotX, ballGround + 3 * HOME_ICON_N - 3,
                   HOME_ICON_N / 2.0f, HOME_ICON_N - 1);
   } else if (bPhase == BP_CAUGHT) {
     drawCatchShine((int)bFoeX, ballGround + 27, now - bPhaseT);
+#if UI_V2
+    if (v2MasterThrow) v2MasterBall((int)bFoeX - 27, ballGround, 3);  // V2
+    else
+#endif
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, ballGround, 3, false);
   }
 
@@ -3950,6 +3977,12 @@ void renderCatch() {
   switch (bPhase) {
     case BP_AIM:
       battleCenterLine(T(S_THROW_HINT), 350);
+#if UI_V2
+      if (v2MasterAiming()) {  // V2: the Master Ball beside it (master_v2.h)
+        v2MasterAimBalls(bBalls);
+        break;
+      }
+#endif
       drawMap(SPR_HOME_BALL, HOME_ICON_N, CX - 36, 372, 4, false);  // the pokeball is the button
       drawCountBadge(CX + 32, 378, bBalls);                           // how many are left, as on the candy
       break;
@@ -4326,6 +4359,9 @@ void renderBattle() {
         snprintf(b, sizeof(b), T(S_STR_GAIN_FMT), bGain);
         battleCenterLine(b, 380);
       }
+#if UI_V2
+      if (!bPvp) v2MasterEnd(millis() - bPhaseT);  // V2: the Master Ball's bar, or the one it earned
+#endif
       break;
     }
   }

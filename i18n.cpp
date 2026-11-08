@@ -63,6 +63,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Toca uno para elegir!", "Elegir a %s?",
     "Gracias por %u d\241as",
     "Volver\240 a la naturaleza. No se puede deshacer.", "Soltar", "Mantener",
+    "Master Ball!", "Siempre atrapa!",
 #endif
   },
   // ---------------- EN ----------------
@@ -121,6 +122,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Tap one to choose!", "Choose %s?",
     "Thank you for %u days",
     "It goes back to the wild. This cannot be undone.", "Release", "Keep",
+    "Master Ball!", "It always catches!",
 #endif
   },
   // ---------------- FR ----------------
@@ -179,6 +181,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Touche pour choisir!", "Choisir %s?",
     "Merci pour ces %u jours",
     "Il retourne \205 la nature. C'est d\202finitif.", "Rel\203cher", "Garder",
+    "Master Ball!", "Elle attrape toujours!",
 #endif
   },
   // ---------------- DE ----------------
@@ -242,6 +245,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Tippe einen an!", "%s w\204hlen?",
     "Danke f\201r %u Tage",
     "Es kehrt in die Wildnis zur\201ck. Das ist endg\201ltig.", "Loslassen", "Behalten",
+    "Meisterball!", "Er f\204ngt immer!",
 #endif
   },
   // ---------------- IT ----------------
@@ -300,6 +304,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Tocca per scegliere!", "Scegli %s?",
     "Grazie per %u giorni",
     "Torna in natura. Non si pu\225 annullare.", "Libera", "Tienilo",
+    "Master Ball!", "Cattura sempre!",
 #endif
   },
   // ---------------- PT ----------------
@@ -358,6 +363,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Toca para escolher!", "Escolher %s?",
     "Obrigado por %u dias",
     "Volta para a natureza. Nao d\240 para desfazer.", "Soltar", "Manter",
+    "Master Ball!", "Captura sempre!",
 #endif
   },
   // ---------------- JA ----------------
@@ -439,6 +445,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "タッチして えらんでね!", "%sに する?",
     "%uにち ありがとう",
     "やせいに かえります。 もとに もどせません。", "にがす", "やめる",
+    "マスターボール!", "かならず つかまえる!",
 #endif
   },
   // ---------------- KO ----------------
@@ -502,6 +509,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "하나를 눌러 골라요!", "%s, 고를까요?",
     "%u일 동안 고마워",
     "야생으로 돌아가요. 되돌릴 수 없어요.", "놓아주기", "취소",
+    "마스터볼!", "무조건 잡혀요!",
 #endif
   },
 };

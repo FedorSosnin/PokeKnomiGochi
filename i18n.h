@@ -110,6 +110,7 @@ enum StrId : uint8_t {
   S_TAP_ONE, S_CHOOSE_Q_FMT,  // V2: the starter screen's line under its board, and "Choose PIKACHU?"
   S_THANKS_DAYS_FMT,  // V2: under a goodbye's "Goodbye, GENGAR!" (the visitor's string): "Thank you for 4 days"
   S_RELEASE_WARN, S_RELEASE_BTN, S_KEEP_BTN,  // V2: the release question's line and its two buttons
+  S_MASTER_GOT, S_MASTER_HOW,  // V2: the Master Ball earned ("Master Ball!"), and what it does
 #endif
   STR_COUNT
 };

@@ -399,6 +399,7 @@ static void v2CardTraining() {
     printT(rows[i].how);
   }
 }
+static void v2MasterBar(int x, int y, int w, bool full);  // (master_v2.h: the Master Ball's bar)
 static void v2CardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
   v2Sign(T(S_PROGRESS));
@@ -445,6 +446,7 @@ static void v2CardProgress() {
   gfx->setTextColor(pet.careMistakes > 0 ? UI_BAR_BAD : C565(0x3c, 0x8a, 0x4c));
   setCur(centerX(ms, 2), 286);
   printT(ms);
+  v2MasterBar(112, 320, 244, false);  // step 7: the Master Balls you hold, and the fights to the next
 }
 // the card's four pages (the medals' pages are still V1's: step 5b)
 static void v2Card() {

@@ -35,6 +35,10 @@
 #define CEREMONY_MS 10000UL                // duration of the goodbye on screen
 #define CELEBRATE_MS 5000UL                // a new medal or streak milestone on screen
 #define FAREWELL_AGE_MIN (3UL * 24 * 60)   // says goodbye after 3 game days (in final form)
+#if UI_V2
+#define MASTER_FIGHTS 25  // V2: fights fought to the end for a Master Ball (Fedor: 20-30, one a day for a casual player)
+#define MASTER_MAX 99     // the most you can hold
+#endif
 #define SHINY_AFTER_GOODBYE 4              // 1 in 4 after a goodbye or release
 #define RUNAWAY_TICKS 60                   // runs away after 1 h with EVERYTHING at zero
 // Time (docs/HOW_IT_WORKS.md, "Time"): the game counts its own minutes, and only a clock the player
@@ -257,6 +261,14 @@ public:
     farewellQuiet = true;
     save();
   }
+#if UI_V2
+  // V2 (Fedor): fights pay. Every wild or Travel battle fought to the end, won or lost, fills the bar a step;
+  // MASTER_FIGHTS of them earn a Master Ball, which always catches what it hits. They stack, and the bar and
+  // the balls are the trainer's: they stay through a goodbye (START OVER erases them, as everything)
+  uint8_t masterBar = 0, masterBalls = 0;
+  bool masterFight();    // a fight fought to the end: true when it earned a Master Ball (saved with the fight)
+  bool useMasterBall();  // one thrown that hit: false if there was none
+#endif
   // first game: the player picks a starter (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }
 #if UI_V2
