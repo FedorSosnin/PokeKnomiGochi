@@ -47,6 +47,21 @@ static void loadNs(const std::string &ns) {
   fclose(f);
 }
 
+// V2's save has a name of its own (savename.h): while the new name has no file, the old one's is read as the new
+// one's and written under the new name at the next flush; the old file isn't touched
+void hostPrefsCarryOver(const char *from, const char *to) {
+  if (gDir.empty() || gLoaded.count(to)) return;
+  FILE *f = fopen(fileFor(to).c_str(), "r");
+  if (f) {
+    fclose(f);
+    return;
+  }
+  loadNs(from);
+  gStore[to] = gStore[from];
+  gLoaded.insert(to);
+  if (!gStore[to].empty()) gDirty.insert(to);
+}
+
 void hostPrefsSetDir(const char *dir) {
   gDir = dir ? dir : "";
   gStore.clear();

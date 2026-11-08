@@ -511,6 +511,9 @@ void setup() {
   Serial.setTxTimeoutMs(0);
 #endif
   Serial.printf("PokeKnomiGochi fw v%s\n", FW_VERSION);
+#if UI_V2
+  saveMigrate();  // V2: a save from before the rename is carried over first (savename.h)
+#endif
   loadLang();  // saved language (ES by default)
 #ifdef BOARD_KNOMI_V2
   autoUpdateLoad();  // (Wi-Fi updates are the Knomi's)

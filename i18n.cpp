@@ -862,7 +862,7 @@ const char *medalHow(int i)   { return MED_HOW[gLang][i]; }
 
 void loadLang() {
   Preferences p;
-  p.begin("tamapoke", true);  // read-only
+  p.begin(SAVE_NS, true);  // read-only
   uint8_t v = p.getUChar("lang", LANG_DEFAULT);
   p.end();
   gLang = (v < LANG_COUNT) ? (Lang)v : LANG_DEFAULT;
@@ -872,7 +872,7 @@ void setLang(Lang l) {
   if (l >= LANG_COUNT) return;
   gLang = l;
   Preferences p;
-  p.begin("tamapoke", false);
+  p.begin(SAVE_NS, false);
   p.putUChar("lang", (uint8_t)l);
   p.end();
 }

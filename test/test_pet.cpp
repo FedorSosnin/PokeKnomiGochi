@@ -1192,7 +1192,7 @@ TEST(v2pick, an_older_saves_goodbye_counts_and_its_egg_hatches) {
   mockNvsReset();
   mockSetMillis(0);
   Preferences n;
-  n.begin("tamapoke", false);
+  n.begin(SAVE_NS, false);
   n.putBool("init", true);
   n.putShort("dexn", -1);   // an egg, picked in 1.51 and not hatched
   n.putShort("eggT2", 4);
@@ -1498,7 +1498,7 @@ TEST(stars, an_old_save_gets_every_form_rated_once) {
   a.rename("OLD");  // saves everything
   a.flushSave();
   Preferences pr;  // a save from before the stars
-  pr.begin("tamapoke", false);
+  pr.begin(SAVE_NS, false);
   pr.remove("dexstr");
   pr.end();
   Pet b;
@@ -1773,7 +1773,7 @@ TEST(time, an_old_save_starts_today_and_the_next_day_at_midnight) {
   p.setClock(DAY(1000, 21, 0));
   p.flushSave();
   Preferences pr;  // as a save from before the game counted its days
-  pr.begin("tamapoke", false);
+  pr.begin(SAVE_NS, false);
   pr.remove("gday");
   pr.remove("dlife");
   pr.remove("life");
@@ -1902,7 +1902,7 @@ TEST(save, trainer_medals_past_16_and_older_saves) {
   CHECK(b.hasMedal(MED_PLAYMATE));
 
   Preferences p;  // an older firmware's save: no 32-bit key
-  p.begin("tamapoke", false);
+  p.begin(SAVE_NS, false);
   p.remove("trmed32");
   p.putUShort("trmedal", MED_DEX10 | MED_PARTY);
   p.end();

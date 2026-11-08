@@ -2,6 +2,7 @@
 // for whoever wants to play them. The audio thread calls hostAudioRender(); the queue has a single
 // producer and a single consumer, so no locks are needed on that thread.
 #include "audio.h"
+#include "savename.h"
 #include "host.h"
 #include "sfx_notes.h"
 #include <Preferences.h>
@@ -17,7 +18,7 @@ static std::atomic<uint32_t> gHead{0}, gTail{0};
 
 void audioBegin() {
   Preferences p;
-  p.begin("tamapoke", true);
+  p.begin(SAVE_NS, true);
   gOn = p.getBool("snd", true);
   p.end();
 }
@@ -38,7 +39,7 @@ void sfxPlay(uint8_t id) {
 void audioSetEnabled(bool on) {
   gOn = on;
   Preferences p;
-  p.begin("tamapoke", false);
+  p.begin(SAVE_NS, false);
   p.putBool("snd", on);
   p.end();
 }

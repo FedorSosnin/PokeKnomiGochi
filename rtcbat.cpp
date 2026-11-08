@@ -1,4 +1,5 @@
 #include "rtcbat.h"
+#include "savename.h"
 #include "pin_config.h"  // define XPOWERS_CHIP_AXP2101
 
 #ifdef BOARD_KNOMI_V2
@@ -32,7 +33,7 @@ static void tzUse(int i) {
 // the saved city (by name, so the list can grow); New York until one is picked
 static void tzLoad() {
   Preferences p;
-  p.begin("tamapoke", true);  // read-only
+  p.begin(SAVE_NS, true);  // read-only
   char city[24] = "";
   if (p.isKey("tzc")) p.getString("tzc", city, sizeof(city));
   p.end();
@@ -83,7 +84,7 @@ void clockSetTz(int i) {
   tzIdx = i;
   tzUse(i);
   Preferences p;
-  p.begin("tamapoke", false);
+  p.begin(SAVE_NS, false);
   p.putString("tzc", TIME_ZONES[i].city);
   p.end();
 }

@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include "ui_v2.h"
+#include "savename.h"  // the save's storage name
 
 // 1 tick = 1 game minute. Lower this value to test faster
 // (e.g. 5000UL = stats drop 12x faster).
@@ -304,7 +305,11 @@ public:
   bool eggChoice(int16_t dex, bool shinyForm) const;
   int16_t eggChoiceAt(int idx, bool &shinyForm) const;  // the idx-th of those by dex number, regular first; 0 if none
   uint16_t eggChoiceCount() const;
+#if UI_V2
+  void factoryReset() { prefs.clear(); saveForgetOld(); }  // V2: and the save from before the rename
+#else
   void factoryReset() { prefs.clear(); }  // wipes the NVS (test: serial command WIPE)
+#endif
   void dbgRunawayReady() { fullness = joy = energy = hygiene = 0; neglectTicks = RUNAWAY_TICKS; }  // test
   // with MINUTES_PER_LEVEL=60 the level is hours of age; "stay together" keeps a Pokemon as long as
   // you like, so it would keep rising: it stops at LEVEL_MAX (a Pokemon already past it comes back to it)

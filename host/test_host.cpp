@@ -12,6 +12,7 @@
 #include "U8g2lib.h"
 #include "buddy_net.h"
 #include "audio.h"
+#include "savename.h"
 #include "glcdfont.h"
 #include "host.h"
 #include "host_hal.h"
@@ -184,6 +185,52 @@ static void testU8g2() {
   c.setCursor(0, 0);
   c.print("A");
   CHECK(c.getCursorX() == 6);
+}
+
+// V2's save under a name of its own (savename.h): a save from before the rename is read as the new one's and
+// written under the new name at the next flush, the old file as it was; a new file already there wins; starting
+// over empties the old one too, so it can't come back
+static void testSaveRename() {
+  std::string d = tempDir(), oldF = d + "/" SAVE_NS_OLD ".prefs", newF = d + "/" SAVE_NS_NEW ".prefs";
+  FILE *f = fopen(oldF.c_str(), "w");
+  fputs("lvl 2a\nnm 41736800\n", f);
+  fclose(f);
+  std::vector<uint8_t> before = readFile(oldF);
+  hostPrefsSetDir(d.c_str());
+  saveMigrate();
+  {
+    Preferences p;
+    p.begin(SAVE_NS, true);
+    CHECK(p.getUChar("lvl") == 0x2a);
+    p.end();
+  }
+  CHECK(readFile(newF).empty());  // (to disk at the flush)
+  hostPrefsFlush();
+  CHECK(readFile(newF) == before);
+  CHECK(readFile(oldF) == before);
+  {
+    Preferences p;
+    p.begin(SAVE_NS);
+    p.putUChar("lvl", 7);
+    p.end();
+  }
+  hostPrefsFlush();
+  hostPrefsSetDir(d.c_str());  // the next start
+  saveMigrate();
+  {
+    Preferences p;
+    p.begin(SAVE_NS, true);
+    CHECK(p.getUChar("lvl") == 7);
+    p.end();
+  }
+  saveForgetOld();
+  hostPrefsFlush();
+  CHECK(readFile(oldF).empty());
+  CHECK(!readFile(newF).empty());
+  unlink(oldF.c_str());
+  unlink(newF.c_str());
+  rmdir(d.c_str());
+  hostPrefsSetDir(nullptr);
 }
 
 static void testPrefs() {
@@ -470,7 +517,7 @@ static void testGame() {
   CHECK(symlink((cwd + "/fonts").c_str(), (res + "/fonts").c_str()) == 0);
   std::string saveSub = save + "/a/b";  // also creates the intermediate folders
   hostInit(res.c_str(), saveSub.c_str());
-  CHECK(!readFile(saveSub + "/tamapoke.prefs").empty());
+  CHECK(!readFile(saveSub + "/" SAVE_NS_NEW ".prefs").empty());
 
   runTicks(200);
   CHECK(hostFrameDirty());
@@ -541,7 +588,7 @@ static void testGame() {
   CHECK(!hostArrowDir(&dx, &dy));
 
   hostFlushSave();
-  std::vector<uint8_t> saved = readFile(saveSub + "/tamapoke.prefs");
+  std::vector<uint8_t> saved = readFile(saveSub + "/" SAVE_NS_NEW ".prefs");
   std::string text(saved.begin(), saved.end());
   CHECK(text.find("spe ") != std::string::npos || text.find("sp ") != std::string::npos);
   CHECK(!hostRestartRequested());
@@ -708,6 +755,7 @@ int main() {
   testCanvas();
   testU8g2();
   testPrefs();
+  testSaveRename();
   testBuddy();
   testRelay();
   testAudio();

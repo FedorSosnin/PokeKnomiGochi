@@ -244,7 +244,7 @@ TEST(i18n, without_a_saved_setting_starts_in_the_default_language) {
 TEST(i18n, invalid_language_in_nvs_breaks_nothing) {
   mockNvsReset();
   Preferences p;
-  p.begin("tamapoke", false);
+  p.begin(SAVE_NS, false);
   p.putUChar("lang", 200);  // corrupt value
   p.end();
   gLang = LANG_ES;

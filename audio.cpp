@@ -1,4 +1,5 @@
 #include "audio.h"
+#include "savename.h"
 #include "pin_config.h"
 
 #ifdef BOARD_KNOMI_V2
@@ -167,7 +168,7 @@ void audioBegin() {
   if (!es8311Init()) { Serial.println("ES8311 not responding (audio off)"); return; }
 
   Preferences p;
-  p.begin("tamapoke", true);
+  p.begin(SAVE_NS, true);
   gOn = p.getBool("snd", true);
   p.end();
 
@@ -195,7 +196,7 @@ void audioSetEnabled(bool on) {
   gOn = on;
   updateAmplifierPower();
   Preferences p;
-  p.begin("tamapoke", false);
+  p.begin(SAVE_NS, false);
   p.putBool("snd", on);
   p.end();
 }

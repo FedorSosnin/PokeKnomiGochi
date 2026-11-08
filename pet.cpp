@@ -6,7 +6,7 @@
 #include "audio.h"
 
 void Pet::begin() {
-  prefs.begin("tamapoke", false);
+  prefs.begin(SAVE_NS, false);
   if (!prefs.getBool("init", false)) {
     prefs.putBool("init", true);
     newEgg();
@@ -1266,3 +1266,115 @@ void Pet::load() {
     pendingSave = true;
   }
 }
+
+#if UI_V2
+// ----- the save's storage name (savename.h): V2's own, and a save from before the rename carried over -----
+static const char *gSaveNs = SAVE_NS_NEW;
+const char *saveNs() { return gSaveNs; }
+
+#if defined(ARDUINO_ARCH_ESP32) && !defined(BOARD_HOST)
+#include <nvs.h>
+#include <vector>
+#define SAVE_MOVED_NS "pkgsave"  // where it says the save has been carried over (starting over doesn't clear it)
+static bool saveCopyEntry(nvs_handle_t from, nvs_handle_t to, const char *k, nvs_type_t t) {
+  switch (t) {
+    case NVS_TYPE_U8: { uint8_t v; return nvs_get_u8(from, k, &v) == ESP_OK && nvs_set_u8(to, k, v) == ESP_OK; }
+    case NVS_TYPE_I8: { int8_t v; return nvs_get_i8(from, k, &v) == ESP_OK && nvs_set_i8(to, k, v) == ESP_OK; }
+    case NVS_TYPE_U16: { uint16_t v; return nvs_get_u16(from, k, &v) == ESP_OK && nvs_set_u16(to, k, v) == ESP_OK; }
+    case NVS_TYPE_I16: { int16_t v; return nvs_get_i16(from, k, &v) == ESP_OK && nvs_set_i16(to, k, v) == ESP_OK; }
+    case NVS_TYPE_U32: { uint32_t v; return nvs_get_u32(from, k, &v) == ESP_OK && nvs_set_u32(to, k, v) == ESP_OK; }
+    case NVS_TYPE_I32: { int32_t v; return nvs_get_i32(from, k, &v) == ESP_OK && nvs_set_i32(to, k, v) == ESP_OK; }
+    case NVS_TYPE_U64: { uint64_t v; return nvs_get_u64(from, k, &v) == ESP_OK && nvs_set_u64(to, k, v) == ESP_OK; }
+    case NVS_TYPE_I64: { int64_t v; return nvs_get_i64(from, k, &v) == ESP_OK && nvs_set_i64(to, k, v) == ESP_OK; }
+    case NVS_TYPE_STR: {
+      size_t n = 0;
+      if (nvs_get_str(from, k, nullptr, &n) != ESP_OK) return false;
+      std::vector<char> b(n ? n : 1);
+      return nvs_get_str(from, k, b.data(), &n) == ESP_OK && nvs_set_str(to, k, b.data()) == ESP_OK;
+    }
+    case NVS_TYPE_BLOB: {
+      size_t n = 0;
+      if (nvs_get_blob(from, k, nullptr, &n) != ESP_OK) return false;
+      std::vector<uint8_t> b(n ? n : 1);
+      return nvs_get_blob(from, k, b.data(), &n) == ESP_OK && nvs_set_blob(to, k, b.data(), n) == ESP_OK;
+    }
+    default: return true;  // (nothing else is ever written)
+  }
+}
+// A board: every entry of the old namespace is copied into the new one, once (the old stays as it was, so 1.51
+// still finds its save). If it can't all be copied (the NVS too full), this run keeps the old one, and the next
+// start tries again.
+void saveMigrate() {
+  nvs_handle_t mark, from, to;
+  if (nvs_open(SAVE_MOVED_NS, NVS_READWRITE, &mark) != ESP_OK) return;
+  uint8_t moved = 0;
+  if (nvs_get_u8(mark, "moved", &moved) == ESP_OK && moved) {
+    nvs_close(mark);
+    return;
+  }
+  size_t n = 0;
+  bool any = nvs_open(SAVE_NS_OLD, NVS_READONLY, &from) == ESP_OK;
+  if (any && (nvs_get_used_entry_count(from, &n) != ESP_OK || n == 0)) {
+    nvs_close(from);
+    any = false;
+  }
+  if (!any) {  // nothing to carry over: a new game
+    nvs_set_u8(mark, "moved", 1);
+    nvs_commit(mark);
+    nvs_close(mark);
+    return;
+  }
+  struct Entry { char key[NVS_KEY_NAME_MAX_SIZE]; nvs_type_t type; };
+  std::vector<Entry> list;  // its keys first: the NVS isn't changed while it's being walked through
+  nvs_iterator_t it = nullptr;
+  for (esp_err_t e = nvs_entry_find(NVS_DEFAULT_PART_NAME, SAVE_NS_OLD, NVS_TYPE_ANY, &it); e == ESP_OK; e = nvs_entry_next(&it)) {
+    nvs_entry_info_t info;
+    if (nvs_entry_info(it, &info) != ESP_OK) continue;
+    Entry en;
+    strlcpy(en.key, info.key, sizeof(en.key));
+    en.type = info.type;
+    list.push_back(en);
+  }
+  nvs_release_iterator(it);
+  nvs_stats_t st;
+  bool ok = !list.empty() && nvs_get_stats(NULL, &st) == ESP_OK && st.free_entries > n + 8 &&
+            nvs_open(SAVE_NS_NEW, NVS_READWRITE, &to) == ESP_OK;
+  int copied = 0;
+  if (ok) {
+    for (const Entry &en : list) {
+      if (!saveCopyEntry(from, to, en.key, en.type)) {
+        ok = false;
+        break;
+      }
+      copied++;
+    }
+    ok = ok && nvs_commit(to) == ESP_OK;
+    nvs_close(to);
+  }
+  nvs_close(from);
+  if (ok) {
+    nvs_set_u8(mark, "moved", 1);
+    nvs_commit(mark);
+  } else {
+    gSaveNs = SAVE_NS_OLD;
+  }
+  nvs_close(mark);
+  Serial.printf("save: %s %d of %u entries to \"%s\"\n", ok ? "carried" : "could not carry", copied, (unsigned)list.size(), SAVE_NS_NEW);
+}
+#elif defined(BOARD_HOST)
+void hostPrefsCarryOver(const char *from, const char *to);  // (host_prefs.cpp)
+// A computer and the web: while the save folder has no file under the new name, the old file is read as the new
+// one, and the next save writes it under the new name; the old file stays as it was.
+void saveMigrate() { hostPrefsCarryOver(SAVE_NS_OLD, SAVE_NS_NEW); }
+#else
+void saveMigrate() {}  // (the logic tests: nothing to carry over)
+#endif
+
+void saveForgetOld() {
+  if (!strcmp(gSaveNs, SAVE_NS_OLD)) return;  // (the one in use: cleared already)
+  Preferences p;
+  p.begin(SAVE_NS_OLD, false);
+  p.clear();
+  p.end();
+}
+#endif
