@@ -887,14 +887,49 @@ static void trRoom(bool bare) {
 // themselves was odd; the side buttons and swipes step on from there)
 static int v2TrophyAt(int16_t x, int16_t y) { return closeHit(x, y) ? -1 : V2_TROPHY_ORDER[0]; }
 
+// what the won medals draw, a bit a pixel: where the room as it is differs from the bare room (every medal in
+// shadow), so the gleam lights the medals and nothing behind them
+static uint8_t *trGleamMask = nullptr;
 // the room, from the scene buffer (painted again when the medals change); the count on a board on the carpet
-static void v2PaintTrophyRoom(int) { trRoom(false); }
+static void v2PaintTrophyRoom(int) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  if (!trGleamMask) trGleamMask = (uint8_t *)ps_malloc(V2_W * V2_W / 8 + 1);
+  if (trGleamMask && v2SceneBuf) {  // (v2Cached copies the room over the scene buffer straight after)
+    trRoom(true);
+    memcpy(v2SceneBuf, fb, V2_W * V2_W * sizeof(uint16_t));
+    trRoom(false);
+    memset(trGleamMask, 0, V2_W * V2_W / 8 + 1);
+    for (int i = 0; i < V2_W * V2_W; i++)
+      if (fb[i] != v2SceneBuf[i]) trGleamMask[i >> 3] |= 1 << (i & 7);
+  } else {
+    trRoom(false);
+  }
+}
+// the gleam over the medals won (Fedor: "a gleam animation that swipes over them"): every 3.2 s a slanted band of
+// light, a wide stripe and a thin one, crosses the room left to right in 0.9 s, in the room's 4 px cells
+static void trGleam(uint32_t now) {
+  uint32_t t = now % 3200;
+  if (!trGleamMask || t >= 900) return;
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  int pos = -40 + (int)(t * (V2_W / 4 + 120) / 900);  // the band's place, in cells along x + y / 2
+  for (int cy = 56 / 4; cy < 332 / 4; cy++)
+    for (int cx = 0; cx < V2_W / 4; cx++) {
+      int d = cx + cy / 2 - pos, a = d >= 0 && d < 3 ? 150 : d == 5 ? 100 : 0;  // the wide stripe, then the thin one
+      if (!a) continue;
+      for (int y = cy * 4; y < cy * 4 + 4; y++)
+        for (int x = cx * 4; x < cx * 4 + 4 && x < V2_W; x++) {
+          int i = y * V2_W + x;
+          if (trGleamMask[i >> 3] & (1 << (i & 7))) fb[i] = v2Blend(fb[i], 0xFFFF, a);
+        }
+    }
+}
 static void v2TrophyRoom() {
   uint32_t won = 0;
   int got = 0;
   for (int m = 0; m < MED_COUNT; m++)
     if (pet.hasMedal(1UL << m)) won |= 1UL << m, got++;
   v2Cached(0x40000000 | (int)won, v2PaintTrophyRoom, 0);
+  if (won) trGleam(millis());
   char b[32];
   snprintf(b, sizeof(b), T(S_MEDALS_FMT), got, MED_COUNT);
   v2SignIn(b, 350, C565(0x6e, 0x1e, 0x2a), C565(0x8a, 0x2a, 0x38));
@@ -1314,7 +1349,7 @@ static void v2Travel() {
     v2IsleTag(l1, l2, x, y, TAG[k]);
   }
   char b[32];
-  v2SignIn(v2Caps(T(S_TRAVEL), b, sizeof(b)), 18, C565(0xc0, 0x84, 0x10), C565(0xf0, 0xc0, 0x4a));
+  v2SignIn(v2Caps(T(S_ISLAND), b, sizeof(b)), 18, C565(0xc0, 0x84, 0x10), C565(0xf0, 0xc0, 0x4a));  // Knomi Island (Fedor)
   v2CloseX();
 }
 // the box round a pick's tag (a zone, or ZONE_COUNT for the Wild patch), for the press ring
@@ -2311,10 +2346,42 @@ static void v2IntroCard(int cx, int cy, bool dim, const char *title, const char 
 
 // Who's That? (batch3.py quiz_play()): the question, or the answer once it's shown, on a board; the round in a
 // small panel under it; the names as white panels where V1's are, green for the answer, red for a wrong tap
-static void v2QuizHead(const char *q, int round, int rounds) {
+// a white panel edged in slate, as the round's (y: its top inside the edge)
+static void v2Pill(int x, int y, int w) {
+  gfx->fillRoundRect(x - 2, y - 2, w + 4, 28, 8, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(x, y, w, 24, 6, UI_WHITE);
+}
+// the round's panel with the countdown beside it (Fedor: "a 10 second count down on each screen"): a clock and
+// the seconds left, red for the last three. The two side by side, centred
+static void v2RoundClock(const char *round, int y, int secs) {
+  setSize(2);
+  char c[4];
+  snprintf(c, sizeof(c), "%d", secs < 0 ? 0 : secs > 99 ? 99 : secs);
+  int w1 = textW(round, 2) + 24, w2 = 16 + 6 + textW(c, 2) + 20, gap = 10;
+  int x1 = CX - (w1 + gap + w2) / 2, x2 = x1 + w1 + gap;
+  v2Pill(x1, y, w1);
+  gfx->setTextColor(UI_INK);
+  setCur(x1 + 12, y + 5);
+  printT(round);
+  v2Pill(x2, y, w2);
+  uint16_t ink = secs <= 3 ? UI_BAR_BAD : UI_INK;
+  int cx = x2 + 18, cy = y + 12;  // the clock: a ring and two hands
+  gfx->fillCircle(cx, cy, 8, ink);
+  gfx->fillCircle(cx, cy, 6, UI_WHITE);
+  gfx->fillRect(cx - 1, cy - 5, 2, 6, ink);
+  gfx->fillRect(cx - 1, cy - 1, 5, 2, ink);
+  gfx->setTextColor(ink);
+  setCur(x2 + 32, y + 5);
+  printT(c);
+}
+static void v2QuizHead(const char *q, int round, int rounds, int secs = -1) {
   char b[48];
   v2Sign(v2Caps(q, b, sizeof(b)), 40);
   snprintf(b, sizeof(b), "%d / %d", round, rounds);
+  if (secs >= 0) {  // while it asks: the seconds left beside the round
+    v2RoundClock(b, 76, secs);
+    return;
+  }
   setSize(2);
   int w = textW(b, 2) + 24;
   gfx->fillRoundRect(CX - w / 2 - 2, 74, w + 4, 28, 8, C565(0x3a, 0x4a, 0x5a));

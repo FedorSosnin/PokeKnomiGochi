@@ -383,9 +383,7 @@ static void v2PickTap(int16_t x, int16_t y) {
 
 // its scale at home, as drawPetPMD() gets it from drawPmdActM()
 static uint8_t v2HomeScale(PmdMon &m) {
-  uint8_t mx = partyScale(partyOthers(), true), s = m.acts[PMD_IDLE].h ? 170 / m.acts[PMD_IDLE].h : 5;
-  if (s < 2) s = 2;
-  return s > mx ? mx : s;
+  return pmdScale(m, partyScale(partyOthers(), true));
 }
 // a Pokemon at (x, feet), scale s; behind: past the crest, so the hill hides what's under its top line (what
 // was there before it was drawn is put back, grass and pines and all)

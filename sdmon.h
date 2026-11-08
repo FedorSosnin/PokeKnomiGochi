@@ -31,6 +31,10 @@ enum : uint8_t {
 struct PmdAct {
   uint8_t w = 0, h = 0, frames = 0;
   uint8_t base = 0;  // row+1 of the lowest pixel (anchor by the feet, not the canvas)
+#if UI_V2
+  uint8_t top = 0;       // V2: the highest row with something in it, in any frame (its height is base - top)
+  uint8_t low[24] = {};  // V2: each frame's own lowest row + 1: every frame stands on its own feet (pmdFrameY)
+#endif
   uint16_t ms[24];
   const uint8_t *data = nullptr;  // frames * w * h in the blob
 };
@@ -39,6 +43,9 @@ struct PmdAct {
 struct PmdMon {
   bool loaded = false;
   bool shiny = false;  // the shiny sprite was loaded: it gets sparkles
+#if UI_V2
+  uint8_t dex = 0;  // V2: the species, for its size (pmdScale)
+#endif
   uint16_t palCount = 0;
   uint16_t pal[256];
   uint8_t *blob = nullptr;
@@ -48,6 +55,19 @@ struct PmdMon {
   void unload();
   bool has(uint8_t a) const { return loaded && a < PMD_NACTS && acts[a].frames > 0; }
 };
+
+#if UI_V2
+// V2: how far above the ground a frame's top goes. Each frame stands on its own feet: anchored by the lowest
+// pixel of all its frames, the ones whose feet sat higher in the box (Rattata's walk rises and falls 12 rows,
+// Eevee bounds, Venusaur breathes) floated a row's worth at 3 to 5 times the size, up to 60 px over their
+// shadows (Fedor: "make sure they look like they walk"). What's left of a hop is half a pixel a row
+inline int pmdFrameRise(const PmdAct &a, uint8_t f, uint8_t s) {
+  int base = a.base ? a.base : a.h, low = f < 24 && a.low[f] ? a.low[f] : base;
+  int hop = (base - low) / 2;
+  return low * s + (hop > 12 ? 12 : hop);
+}
+uint8_t pmdScale(const PmdMon &m, uint8_t maxS);  // V2: a sprite's size, the same wherever it's drawn (sdmon.cpp)
+#endif
 
 // gallery thumbnails (whole thumbs.bin in PSRAM)
 struct SdThumbs {

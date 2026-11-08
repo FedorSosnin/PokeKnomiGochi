@@ -214,15 +214,18 @@ static void v2ThrowHint() {
   battleCenterLine(T(S_THROW_HINT), V2_HINT_Y);
 #endif
 }
-// the band under the running Pokemon, with an Ultra or a Master Ball in hand: the balls you hold in a row, the Master
-// Ball, the Ultra Ball, then the Poke Ball with its throws left (Fedor), each the button for its throw: a tap throws
-// the one nearest it. Three in the row are drawn at 3x, so they stay inside the round screen
+// the band under the running Pokemon, with an Ultra or a Master Ball in hand: the balls you hold in a row, each the
+// button for its throw (a tap throws the one nearest it). With one of them, it and then the Poke Ball with its throws
+// left (Fedor); with both, the Poke Ball in the middle, the Master Ball left of it and the Ultra Ball right (Fedor:
+// "the regular pokeball in the center"). Three in the row are drawn at 3x, so they stay inside the round screen
 static bool v2MasterAiming() { return pet.masterBalls > 0 || pet.ultraBalls > 0; }
 static int v2AimKinds(uint8_t *kind) {
   int n = 0;
+  bool both = pet.masterBalls && pet.ultraBalls;
   if (pet.masterBalls) kind[n++] = V2_BALL_MASTER;
+  if (both) kind[n++] = V2_BALL_POKE;
   if (pet.ultraBalls) kind[n++] = V2_BALL_ULTRA;
-  kind[n++] = V2_BALL_POKE;
+  if (!both) kind[n++] = V2_BALL_POKE;
   return n;
 }
 static int v2AimX(int i, int n) { return n == 3 ? CX - 117 + i * 90 : CX - 104 + i * 136; }  // ball i's left edge

@@ -13,14 +13,16 @@ A new look for every screen, on the Knomi, Mac, Windows and the web. Your Pokém
 - **A world that walks with you:** your Pokémon walks toward you while its home slides by, in five hand-drawn zones (Field, Forest, Beach, Cave and Mansion), the ones outdoors at day, dusk and night.
 - **Choose your starter:** Bulbasaur, Charmander, Squirtle and Pikachu walk up to meet you. No more eggs: once a Pokémon has been offered its goodbye, you choose your next from any first form in your Pokédex, shinies included, and the old one walks off over the hill.
 - **Items:** an **Ultra Ball** every 25 battles fought to the end (it triples your catch chance), a **Master Ball** every 100 (it always catches) and a **Repel** every 20 minutes of mini games (weaker wild Pokémon stay away for 3 minutes). Each has its own page on the card.
-- **Catching:** the balls you hold sit in a row; tap one to throw it. A ball that hits drops to the ground before the count.
+- **Catching:** the balls you hold sit in a row; tap one to throw it. With a Master and an Ultra Ball, the Poké Ball sits in the middle. A ball that hits drops to the ground before the count.
 - **The backpack:** berries, candy and Repels on a curved band above the icons; a berry drops onto your Pokémon and it hops.
 - **Hold it for a menu:** hold your finger on your Pokémon for a ring of Settings, Medals, Stats and the Pokédex.
 - **Menus:** every menu sits in your Pokémon's bedroom; the card's pages share one layout; "Page 2 of 7" in place of dots.
 - **The Pokédex:** each entry turns round to show its Pokémon from every side.
-- **Travel:** a round island with the five zones, its sea, pines and Mansion windows moving.
+- **Knomi Island:** Travel is a round island with the five zones, its sea, pines and Mansion windows moving.
 - **The games:** cartridges in an old TV, **Play Again!** at every game's end, and new stairs in PokeDungeon.
-- **The trophy room:** all 25 medals as things in one room; tap one for its card.
+- **The trophy room:** all 25 medals as things in one room, a gleam sweeping over the ones you've won; tap one for its card.
+- **Who's That? counts down:** ten seconds for each silhouette, alone or in a Showdown; out of time counts as wrong, and the answer shows.
+- **Every Pokémon on its feet:** each one stands and walks on the ground instead of floating over its shadow, and big ones like Snorlax, Lapras and Dragonite come out bigger.
 - **And more:** a new evolution scene, more lines under your Pokémon's name, a new click sound, **ERASE EVERYTHING** asks twice, and while your Pokémon sleeps only the home screen dims.
 - **The save** has a name of its own: an older save is copied over on the first start, and left as it was.
 

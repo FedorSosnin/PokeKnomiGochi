@@ -236,7 +236,7 @@ static int v2DropMidY() {
         break;
       }
   if (top == a.h) top = 0;
-  int y0 = PET_GROUND - (a.base ? a.base : a.h) * s;  // the frame's top, as drawPmdActM() places it
+  int y0 = PET_GROUND - pmdFrameRise(a, 0, s);  // the frame's top, as drawPmdActM() places it
   return (y0 + top * s + PET_GROUND) / 2;
 }
 static int v2FeedHop() {  // how high your Pokemon is, hopping once a food has landed on it

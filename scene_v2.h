@@ -1368,33 +1368,31 @@ void v2HostBackdrop(int which, int tod) {
 }
 #endif
 
-// The poops on the grass (Fedor: V2's own, not V1's): three coils and a curled tip, outlined like the icons, lit
-// from the upper left, at 2x
-static const char *const SPR_V2_POOP[18] = {
-  "..................",
-  ".........kkk......",
-  "........khwCk.....",
-  ".......kkwcCk.....",
-  ".....kkwccCkk.....",
-  "....khwcccccCk....",
-  "....kcccccccCCk...",
-  "....kkCCCCCCCk....",
-  "...khwccccccCCk...",
-  "..kwwcccccccccCk..",
-  "..kcccccccccCCCk..",
-  ".kkCCCCCCCCCCCCkk.",
-  "khwwccccccccccCCCk",
-  "kwcccccccccccccCCk",
-  ".kcccccccccccCCCk.",
-  "..kkCCCCCCCCCCkk..",
-  "....kkkkkkkkkk....",
-  "..................",
+// The poops on the grass (Fedor: V2's own, not V1's; then "it doesnt match the art style"): drawn the way the
+// scene draws its rocks, in 3 px cells, edged in a darker shade of its own brown rather than the icons' ink,
+// lit from the upper left: three coils and a tip, on a soft shadow like your Pokemon's
+static const char *const SPR_V2_POOP[11] = {  // 12x11
+  ".....11.....",
+  "....1231....",
+  "....1341....",
+  "...122331...",
+  "...144441...",
+  "..12233341..",
+  "..13334441..",
+  ".1444444441.",
+  "122333333341",
+  "133333344441",
+  ".1111111111.",
 };
-static void v2PoopIcon(int x, int y) {  // its top left at (x, y)
-  static const ScKey K[5] = { { 'k', 0x1B1B25 }, { 'c', 0x9A6034 }, { 'C', 0x6B3F22 }, { 'w', 0xC88B52 }, { 'h', 0xE8C08A } };
+static void v2PoopIcon(int x, int y) {  // in the 36 px square at (x, y), standing on its bottom
+  const Rgb base = 0x8A5A30, dark = 0x4A2C18;
+  const ScKey K[4] = { { '1', dark }, { '2', scMix(base, 0xFFFFFF, .38) }, { '3', base }, { '4', scMix(base, dark, .45) } };
   scScreen();
+  uint8_t z = v2HomeZone();
+  scGradeTod = z == Z_CAVE || z == Z_MANSION ? 0 : v2HomeTod();  // dusk and night dim it with the land, as the rocks
+  v2PetShadow(x + 20, y + 33, 16);
+  scSprite(SPR_V2_POOP, 11, x, y + 3, 3, K, 4);
   scGradeTod = 0;
-  scSprite(SPR_V2_POOP, 18, x, y, 2, K, 5);
 }
 
 #include "walk_v2.h"   // step 4: the walk

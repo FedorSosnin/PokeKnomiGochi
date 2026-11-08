@@ -126,6 +126,7 @@ enum StrId : STRID_BASE {
   S_MASTER_DOES, S_REPEL_DOES_FMT,  // V2: what each does, on its own page of the card
   S_RAD_MEDALS, S_RAD_STATS,  // V2: the radial menu's Medals and Stats (Settings and the Pokedex are older)
   S_ULTRA, S_ULTRA_DOES, S_ULTRA_HOW,  // V2: the Ultra Ball: its name, what it does, and the line on the one earned
+  S_ISLAND,  // V2: Travel's title, the island's name (Fedor: "Lets name the island Knomi Island")
 #endif
   STR_COUNT
 };

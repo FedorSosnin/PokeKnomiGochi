@@ -2121,6 +2121,7 @@ static bool staticScreen() {
   if (kbOpen || clockOpen) return true;
 #if UI_V2
   if (cardOpen && !cardAch && cardPage >= 4) return false;  // V2: an item's page: the item hovers (Fedor)
+  if (cardOpen && cardAch && achDetail < 0 && (pet.medals | pet.trainerMedals)) return false;  // V2: the trophy room's gleam
 #endif
   return cardOpen && (cardAch || cardPage != 0);  // the card's page 0 has the animated portrait
 }
@@ -3191,6 +3192,9 @@ void closeQuiz() {
 #define QUIZ_OPT_Y 268
 #define QUIZ_OPT_H 44
 #define QUIZ_OPT_GAP 6
+#if UI_V2
+#define QUIZ_ASK_MS 10000UL  // V2: 10 s to answer, then it counts as wrong (Fedor), as a Showdown round (SD_ROUND_MS)
+#endif
 
 void quizTap(int16_t x, int16_t y) {
   if (quizPhase == QP_END) {
@@ -3214,8 +3218,21 @@ void quizTap(int16_t x, int16_t y) {
 
 void renderQuiz() {
   if (pet.ceremony) { closeQuiz(); return; }
+#if UI_V2
+  if (introPaused() && quizPhase == QP_ASK) quizT = millis();  // V2: the countdown waits under the card
+#else
   introPaused();  // only to start the clock once its card has gone: nothing runs while asking
+#endif
   uint32_t t = millis() - quizT;
+#if UI_V2
+  if (quizPhase == QP_ASK && t >= QUIZ_ASK_MS) {  // V2: out of time: it counts as wrong, and the answer shows
+    quizTapped = 0;
+    sfxPlay(SFX_DENY);
+    quizPhase = QP_REVEAL;
+    quizT = millis();
+    t = 0;
+  }
+#endif
   if (quizPhase == QP_REVEAL && t > 2000) {
     if (++quizRound >= QUIZ_ROUNDS) {
       pet.quizResult(quizScore);
@@ -3263,7 +3280,7 @@ void renderQuiz() {
   if (reveal) snprintf(b, sizeof(b), T(S_ITS_FMT), dexName(quizAnswer));
   else strlcpy(b, T(S_WHO_Q), sizeof(b));
 #if UI_V2
-  v2QuizHead(b, quizRound + 1, QUIZ_ROUNDS);  // V2: the question (or the answer) on a board, the round in a panel
+  v2QuizHead(b, quizRound + 1, QUIZ_ROUNDS, reveal ? -1 : (int)((QUIZ_ASK_MS - t + 999) / 1000));  // V2: the question (or the answer) on a board, the round and the countdown in panels
 #else
   setCur(centerX(b, 2), 48);
   printT(b);
@@ -3952,8 +3969,12 @@ int catchRingY() {
   for (int r = 0; r < a.h && top == a.h; r++)
     for (int c = 0; c < a.w; c++)
       if (a.data[r * a.w + c] != 0xFF) { top = r; break; }
+#if UI_V2
+  uint8_t s = pmdScale(wildPmd, 3);
+#else
   uint8_t s = a.h ? 170 / a.h : 3;
   s = s < 2 ? 2 : s > 3 ? 3 : s;
+#endif
   return CATCH_GROUND_Y - ((a.base ? a.base : a.h) - top) * s / 2;
 }
 void drawCatchRings(int cx) {
@@ -6356,8 +6377,12 @@ void drawMedalBadge(int x, int y, int i) {
 int pmdTopY(const PmdMon &m, int groundY, uint8_t maxS) {
   const PmdAct &a = m.acts[PMD_IDLE];
   if (!a.frames) return groundY - 120;
+#if UI_V2
+  uint8_t s = pmdScale(m, maxS);
+#else
   uint8_t s = a.h ? 170 / a.h : 5;
   s = s < 2 ? 2 : s > maxS ? maxS : s;
+#endif
   while (s > 2 && a.h * s > 250) s--;
   int top = a.h;
   for (int r = 0; r < a.h && top == a.h; r++)
@@ -8608,7 +8633,12 @@ void renderShowdown() {
     snprintf(b, sizeof(b), "%u/%u", sdRound + 1, SD_ROUNDS);
   }
 #if UI_V2
-  v2SmallPanel(b, 76);  // V2: the round (or who got it) in a small panel
+  if (!reveal) {  // V2: the round with its countdown beside it (nobody answering in time: nobody gets it)
+    uint32_t e = millis() - sdAskT;
+    v2RoundClock(b, 76, e >= SD_ROUND_MS ? 0 : (int)((SD_ROUND_MS - e + 999) / 1000));
+  } else {
+    v2SmallPanel(b, 76);  // V2: who got it in a small panel
+  }
 #else
   setCur(centerX(b, 2), 72);
   printT(b);
@@ -9856,17 +9886,29 @@ void drawSparkles(int left, int top, int right, int bottom, uint32_t now) {
 void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS) {
   const PmdAct &a = m.acts[actId];
   if (!a.frames) return;
+#if UI_V2
+  uint8_t sBase = pmdScale(m, maxS);  // V2: a big one by its height too (sdmon.cpp)
+#else
   uint8_t sBase = m.acts[PMD_IDLE].h ? 170 / m.acts[PMD_IDLE].h : 5;
   if (sBase < 2) sBase = 2;
   if (sBase > maxS) sBase = maxS;
+#endif
   uint8_t s = sBase;
+#if UI_V2
+  while (s > 2 && (a.base > a.top ? a.base - a.top : a.h) * s > 250) s--;  // V2: by what it draws, not its box
+#else
   while (s > 2 && a.h * s > 250) s--;  // actions with a large frame (attack)
+#endif
   if (gPmdForceScale) s = gPmdForceScale;
   uint8_t fi = pmdFrameAt(a, t, loop);
   const uint8_t *fr = a.data + (uint32_t)fi * a.w * a.h;
   // anchor by the feet (a.base), not by the canvas height: that way actions
   // with different padding (Hurt, Eat...) all end up at the same ground height
+#if UI_V2
+  int x0 = SNAP2(cx - a.w * s / 2), y0 = SNAP2(groundY - pmdFrameRise(a, fi, s));  // V2: each frame on its own feet
+#else
   int x0 = SNAP2(cx - a.w * s / 2), y0 = SNAP2(groundY - (a.base ? a.base : a.h) * s);  // sharp on the Knomi
+#endif
   int left = a.w, right = -1, top = -1;  // what it fills, for the sparkles
   for (int r = 0; r < a.h; r++) {
     const uint8_t *row = fr + r * a.w;
@@ -9888,7 +9930,11 @@ void drawPmdAct(uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool 
 // sprites are capped by height, so a tall buddy of the same species would otherwise come out the
 // same size as yours. Yours at least step 3; theirs one step below, down to the smallest (2).
 uint8_t partyMineScale(int n) {
+#if UI_V2
+  uint8_t s = pmdScale(pmd, 5);
+#else
   uint8_t s = pmd.acts[PMD_IDLE].h ? 170 / pmd.acts[PMD_IDLE].h : 5;
+#endif
   if (s < 3) s = 3;
   uint8_t cap = partyScale(n, true);
   return s > cap ? cap : s;

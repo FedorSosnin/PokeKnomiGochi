@@ -76,6 +76,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Aleja a los Pok\202mon d\202biles durante %u min.",
     "MEDALLAS", "DATOS",
     "Ultra Ball", "Triplica la captura si acierta.", "Triplica la captura!",
+    "Isla Knomi",
 #endif
   },
   // ---------------- EN ----------------
@@ -147,6 +148,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Weaker wild Pok\202mon stay away for %u min.",
     "MEDALS", "STATS",
     "Ultra Ball", "Triples your catch chance when it hits.", "Triples the catch chance!",
+    "Knomi Island",
 #endif
   },
   // ---------------- FR ----------------
@@ -218,6 +220,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "\220loigne les Pok\202mon faibles pendant %u min.",
     "M\220DAILLES", "STATS",
     "Hyper Ball", "Triple la capture si elle touche.", "Triple la capture!",
+    "\214le Knomi",
 #endif
   },
   // ---------------- DE ----------------
@@ -294,6 +297,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "H\204lt schw\204chere wilde Pok\202mon %u Min. fern.",
     "MEDAILLEN", "WERTE",
     "Hyperball", "Dreifache Fangchance, wenn er trifft.", "Dreifache Fangchance!",
+    "Knomi-Insel",
 #endif
   },
   // ---------------- IT ----------------
@@ -365,6 +369,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Allontana i Pok\202mon deboli per %u min.",
     "MEDAGLIE", "STATISTICHE",
     "Ultra Ball", "Triplica la cattura se colpisce.", "Triplica la cattura!",
+    "Isola Knomi",
 #endif
   },
   // ---------------- PT ----------------
@@ -436,6 +441,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Afasta os Pok\202mon fracos durante %u min.",
     "MEDALHAS", "DADOS",
     "Ultra Ball", "Triplica a captura se acertar.", "Triplica a captura!",
+    "Ilha Knomi",
 #endif
   },
   // ---------------- JA ----------------
@@ -530,6 +536,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%u ふんの あいだ、 よわい やせいの ポケモンが でてこない。",
     "メダル", "つよさ",
     "ハイパーボール", "あたると つかまえやすさが 3ばいに なる。", "つかまえやすさ 3ばい!",
+    "ノーミじま",
 #endif
   },
   // ---------------- KO ----------------
@@ -606,6 +613,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%u분 동안 약한 야생 포켓몬이 나오지 않아요.",
     "메달", "능력치",
     "하이퍼볼", "맞으면 잡힐 확률이 3배가 돼요.", "포획률 3배!",
+    "노미 섬",
 #endif
   },
 };

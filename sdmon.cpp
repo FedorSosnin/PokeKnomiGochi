@@ -80,19 +80,68 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
         bool any = false;
         for (int c = 0; c < w && !any; c++)
           if (fr[r * w + c] != 0xFF) any = true;
+#if UI_V2
+        if (any) a.low[f] = r + 1;  // this frame's own feet
+#endif
         if (any) { if (r + 1 > base) base = r + 1; break; }
       }
     }
     a.base = base;
+#if UI_V2
+    a.top = h;  // the highest row with something in it, in any frame
+    for (uint8_t f = 0; f < nf; f++) {
+      const uint8_t *fr = a.data + (uint32_t)f * w * h;
+      for (int r = 0; r < a.top; r++) {
+        bool any = false;
+        for (int c = 0; c < w && !any; c++)
+          if (fr[r * w + c] != 0xFF) any = true;
+        if (any) { a.top = r; break; }
+      }
+      if (!a.low[f]) a.low[f] = base;  // an empty frame stands where the others do
+    }
+    if (a.top >= base) a.top = 0;
+#endif
   }
 #if UI_V2
   }
 #endif
   loaded = true;
   this->shiny = shinyFile;
+#if UI_V2
+  dex = dexNum;
+#endif
   Serial.printf("loaded %s (%u KB)\n", path, size / 1024);
   return true;
 }
+
+#if UI_V2
+// how tall each one is, in tenths of a metre (the Pokedex's heights): its size on screen (pmdScale)
+static const uint8_t DEX_DM[151] = {
+  7, 10, 20, 6, 11, 17, 5, 10, 16, 3, 7, 11, 3, 6, 10, 3, 11, 15, 3, 7,                // 1-20
+  3, 12, 20, 35, 4, 8, 6, 10, 4, 8, 13, 5, 9, 14, 6, 13, 6, 11, 5, 10,                // 21-40
+  8, 16, 5, 8, 12, 3, 10, 10, 15, 2, 7, 4, 10, 8, 17, 5, 10, 7, 19, 6,                // 41-60
+  10, 13, 9, 13, 15, 8, 15, 16, 7, 10, 17, 9, 16, 4, 10, 14, 10, 17, 12, 16,          // 61-80
+  3, 10, 8, 14, 18, 11, 17, 9, 12, 3, 15, 13, 16, 15, 88, 10, 16, 4, 13, 5,           // 81-100
+  12, 4, 20, 4, 10, 15, 14, 12, 6, 12, 10, 19, 11, 10, 22, 4, 12, 6, 13, 8,           // 101-120
+  11, 13, 15, 14, 11, 13, 15, 14, 9, 65, 25, 3, 3, 10, 8, 9, 8, 4, 10, 5,             // 121-140
+  13, 18, 21, 17, 16, 20, 18, 40, 22, 20, 4,                                          // 141-151
+};
+// A sprite's scale: as before, its frame at most 170 px tall (and maxS); a big Pokemon, 1.5 m and up (Snorlax,
+// Lapras...), at least 5 and from 1 m at least 4, while it stands no taller than 150 px (under the name and
+// mood, hops and all). Frames padded for a big idle made Snorlax smaller than Venusaur (Fedor: "should be the
+// same size as Venasaur"). Nothing comes out smaller than before
+uint8_t pmdScale(const PmdMon &m, uint8_t maxS) {
+  const PmdAct &i = m.acts[PMD_IDLE];
+  uint8_t s = i.h ? 170 / i.h : 5;
+  if (s < 2) s = 2;
+  if (s > maxS) s = maxS;
+  uint8_t dm = m.dex >= 1 && m.dex <= 151 ? DEX_DM[m.dex - 1] : 0;
+  int big = dm >= 15 ? 5 : dm >= 10 ? 4 : 0, tall = i.base > i.top ? i.base - i.top : i.h;
+  if (big > maxS) big = maxS;
+  while (big > s && tall * big > 150) big--;
+  return big > s ? (uint8_t)big : s;
+}
+#endif
 
 void PmdMon::unload() {
   loaded = shiny = false;
@@ -102,6 +151,10 @@ void PmdMon::unload() {
   }
   for (auto &a : acts) {
     a.w = a.h = a.frames = a.base = 0;
+#if UI_V2
+    a.top = 0;
+    memset(a.low, 0, sizeof(a.low));
+#endif
     a.data = nullptr;
   }
   loaded = false;
