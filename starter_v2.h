@@ -71,6 +71,7 @@ static void v2AskDraw(const V2Ask &a, const char *name) {
 static const int16_t V2_STARTERS[4] = { 1, 4, 7, 25 };  // Bulbasaur, Charmander, Squirtle, Pikachu
 static const int16_t V2_STARTER_X[4] = { 100, 186, 276, 364 };
 #define V2_STARTER_FEET 312
+#define V2_STARTER_S 3  // their scale: 3x (Fedor: 2x looked small on the Knomi)
 
 static PmdMon *v2StarterPmd = nullptr;  // the four sprites, while the screen is up
 static int8_t v2StarterSel = -1;        // the one tapped, or -1: they walk
@@ -95,7 +96,7 @@ static void v2StarterFree() {
 // the starter under a tap (its sprite, generously), or -1
 static int v2StarterAt(int16_t x, int16_t y) {
   for (int k = 0; k < 4; k++)
-    if (abs(x - V2_STARTER_X[k]) <= 42 && y >= V2_STARTER_FEET - 100 && y <= V2_STARTER_FEET + 18) return k;
+    if (abs(x - V2_STARTER_X[k]) <= 44 && y >= V2_STARTER_FEET - 120 && y <= V2_STARTER_FEET + 18) return k;
   return -1;
 }
 static int v2StarterBtnAt(int16_t x, int16_t y) { return v2AskBtnAt(v2StarterQ, x, y); }
@@ -131,23 +132,23 @@ static void v2StarterScreen() {
       scGradeTod = 0;
       for (int i = 0; i < 12; i++) {
         float a = i * 0.5235988f + now * 0.0012f;
-        int cx = x + (int)(cosf(a) * 38), cy = feet + 2 + (int)(sinf(a) * 10);
+        int cx = x + (int)(cosf(a) * 44), cy = feet + 2 + (int)(sinf(a) * 12);
         scGridRect(cx - 2, cy - 2, cx + 2, cy + 2, 0x1B1B25);
       }
     }
-    v2PetShadow(x, feet - 2, 26);
+    v2PetShadow(x, feet - 2, 34);
     uint8_t act = PMD_IDLE;
     uint32_t t = now + k * 230;  // standing, out of step
     int hop = 0;
     if (walking && m.has(PMD_WALKD)) {
       act = PMD_WALKD;
       t = v2WalkT() + k * 170;
-    } else if (sel) {  // little hops on the spot (its own Hop rises far too high at 2x)
+    } else if (sel) {  // little hops on the spot (its own Hop rises far too high at 3x)
       t = now - v2StarterSelT;
-      hop = SNAP2((int)(fabsf(sinf(t * 0.00698f)) * 12));
+      hop = SNAP2((int)(fabsf(sinf(t * 0.00698f)) * 16));
     }
-    gPmdForceScale = 2;
-    drawPmdActM(m, act, x, feet - hop, t, true, false, 2);
+    gPmdForceScale = V2_STARTER_S;
+    drawPmdActM(m, act, x, feet - hop, t, true, false, V2_STARTER_S);
     gPmdForceScale = 0;
   }
 
