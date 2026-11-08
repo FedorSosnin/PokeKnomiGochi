@@ -334,37 +334,37 @@ static void v2CardProfile() {
     printT(par);
     cardNameBottom = top = V2_BOARD_Y + 54;
   }
-  v2CardMon(290, 290 - top - 6, 4);
-  v2Panel(92, 300, 374, 374, 10);
+  v2CardMon(262, 262 - top - 6, 4);
+  v2Panel(84, 272, 382, 374, 10);  // (Fedor: roomier, its three lines 26 px apart in the middle of it)
   // the streak with its flame
-  gfx->fillTriangle(110, 312, 104, 324, 116, 324, UI_BAR_BAD);
-  gfx->fillTriangle(110, 317, 107, 324, 113, 324, UI_BAR_WARN);
+  gfx->fillTriangle(106, 291, 100, 303, 112, 303, UI_BAR_BAD);
+  gfx->fillTriangle(106, 296, 103, 303, 109, 303, UI_BAR_WARN);
   char rl[40];
   snprintf(rl, sizeof(rl), T(S_STREAK_FMT), pet.streak, pet.bestStreak);
   gfx->setTextColor(UI_INK);
   setSize(2);
-  setCur(124, 310);
+  setCur(120, 289);
   printT(rl);
   // the bond
-  setCur(104, 332);
+  setCur(100, 315);
   printT(T(S_VIN));
-  int bx = 104 + textW(T(S_VIN), 2) + 12;
-  if (bx < 160) bx = 160;
-  gfx->fillRect(bx, 334, 300 - bx, 10, C565(0xd8, 0xd2, 0xbd));
-  int bw = (296 - bx) * (pet.bond > 100 ? 100 : pet.bond) / 100;
-  if (bw > 0) gfx->fillRect(bx + 2, 336, bw, 6, C565(0xf0, 0x8a, 0xa4));
+  int bx = 100 + textW(T(S_VIN), 2) + 12;
+  if (bx < 156) bx = 156;
+  gfx->fillRect(bx, 317, 362 - bx, 10, C565(0xd8, 0xd2, 0xbd));
+  int bw = (358 - bx) * (pet.bond > 100 ? 100 : pet.bond) / 100;
+  if (bw > 0) gfx->fillRect(bx + 2, 319, bw, 6, C565(0xf0, 0x8a, 0xa4));
   // the favourite berry and the age
   const char *berry = !pet.berryKnown ? T(S_BERRY_UNK) : pet.lovesBerry(0) ? T(S_BERRY_RED) : pet.lovesBerry(1) ? T(S_BERRY_BLUE) : T(S_BERRY_GREEN);
   char info[48];
   snprintf(info, sizeof(info), T(S_INFO_FMT), berry, (unsigned long)(pet.ageMinutes / 1440));
-  int x = 104;
+  int x = 100;
   if (pet.berryKnown) {
     static const char *const *const BERRY_ICON[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
-    drawMap(BERRY_ICON[pet.lovesBerry(0) ? 0 : pet.lovesBerry(1) ? 1 : 2], HOME_ICON_N, 100, 350, 1, false);
-    x = 124;
+    drawMap(BERRY_ICON[pet.lovesBerry(0) ? 0 : pet.lovesBerry(1) ? 1 : 2], HOME_ICON_N, 96, 337, 1, false);
+    x = 120;
   }
   gfx->setTextColor(UI_INK);
-  setCur(x, 354);
+  setCur(x, 341);
   printT(info);
 }
 static void v2CardStats() {
@@ -412,7 +412,6 @@ static void v2CardTraining() {
     printT(rows[i].how);
   }
 }
-static void v2MasterBar(int x, int y, int w, bool full);  // (master_v2.h: the Master Ball's bar)
 static void v2CardItem(int which);                         // (repel_v2.h: an item's own page: 0 the Master Ball, 1 the Repel)
 static void v2CardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
@@ -468,7 +467,7 @@ static void v2Card() {
   else if (cardPage == 1) v2CardStats();
   else if (cardPage == 2) v2CardTraining();
   else if (cardPage == 3) v2CardProgress();
-  else v2CardItem(cardPage - 4);  // the Master Ball, then the Repel: a page each, after Progress (Fedor)
+  else v2CardItem(cardPage - 4);  // the Ultra Ball, the Master Ball, then the Repel: a page each, after Progress
   drawPageArrows(cardPage, cardPageCount(), V2_PAGE_ARROW_Y);
   v2PageOf(cardPageCount(), cardPage);
   v2CloseX();

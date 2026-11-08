@@ -1065,13 +1065,13 @@ TEST(v2pick, a_shiny_starter_only_if_you_own_its_shiny) {
 }
 
 // ---------------------------------------------------------------- V2: fights pay, the Master Ball (Fedor)
-TEST(v2master, twenty_five_fights_earn_a_master_ball) {
+TEST(v2master, a_hundred_fights_earn_a_master_ball) {
   Pet p;
   makePet(p, 25);
   CHECK_EQ(p.masterBalls, (uint8_t)0);
   for (int i = 1; i < MASTER_FIGHTS; i++) CHECK_MSG(!p.masterFight(), "not yet");
   CHECK_EQ(p.masterBar, (uint8_t)(MASTER_FIGHTS - 1));
-  CHECK_MSG(p.masterFight(), "the 25th earns one");
+  CHECK_MSG(p.masterFight(), "the 100th earns one");
   CHECK_EQ(p.masterBalls, (uint8_t)1);
   CHECK_EQ(p.masterBar, (uint8_t)0);
   p.masterFight();
@@ -1101,6 +1101,36 @@ TEST(v2master, they_stack_to_99) {
   makePet(p, 25);
   for (int i = 0; i < 101 * MASTER_FIGHTS; i++) p.masterFight();
   CHECK_EQ(p.masterBalls, (uint8_t)MASTER_MAX);
+}
+
+// ---------------------------------------------------------------- V2: the Ultra Ball (Fedor)
+TEST(v2ultra, twenty_five_fights_earn_an_ultra_ball_and_a_hundred_a_master_ball) {
+  Pet p;
+  makePet(p, 25);
+  for (int i = 1; i < ULTRA_FIGHTS; i++) CHECK_MSG(p.fightPays() == 0, "not yet");
+  CHECK_MSG(p.fightPays() == 2, "the 25th earns an Ultra Ball");
+  CHECK_EQ(p.ultraBalls, (uint8_t)1);
+  CHECK_EQ(p.ultraBar, (uint8_t)0);
+  CHECK_EQ(p.masterBar, (uint8_t)ULTRA_FIGHTS);
+  for (int i = ULTRA_FIGHTS + 1; i < MASTER_FIGHTS; i++) p.fightPays();
+  CHECK_MSG(p.fightPays() == 3, "the 100th earns both");
+  CHECK_EQ(p.ultraBalls, (uint8_t)(MASTER_FIGHTS / ULTRA_FIGHTS));
+  CHECK_EQ(p.masterBalls, (uint8_t)1);
+  p.fightPays();
+  p.flushSave();
+  Pet again;
+  again.begin();
+  CHECK_MSG(again.ultraBalls == 4 && again.ultraBar == 1 && again.masterBalls == 1 && again.masterBar == 1, "kept in the save");
+}
+
+TEST(v2ultra, an_ultra_ball_is_used_once) {
+  Pet p;
+  makePet(p, 25);
+  CHECK_MSG(!p.useUltraBall(), "none yet");
+  for (int i = 0; i < ULTRA_FIGHTS; i++) p.fightPays();
+  CHECK(p.useUltraBall());
+  CHECK_EQ(p.ultraBalls, (uint8_t)0);
+  CHECK_MSG(!p.useUltraBall(), "none left");
 }
 
 // ---------------------------------------------------------------- V2: the Repel (Fedor)

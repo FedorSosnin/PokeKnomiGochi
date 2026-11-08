@@ -96,3 +96,6 @@ static inline int v2TrophyPos(int medal) {
     if (V2_TROPHY_ORDER[p] == medal) return p;
   return 0;
 }
+
+// the radial menu (radial_v2.h): how long a still finger on the Pokemon takes to open it (the taps need it early)
+#define V2_RADIAL_HOLD_MS 450

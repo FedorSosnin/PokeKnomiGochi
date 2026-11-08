@@ -1394,3 +1394,4 @@ static void v2PoopIcon(int x, int y) {  // its top left at (x, y)
 #include "starter_v2.h"  // step 6: the starter screen
 #include "master_v2.h"   // step 7: fights pay, the Master Ball
 #include "repel_v2.h"    // the Repel
+#include "radial_v2.h"   // the radial menu: a hold on the Pokemon

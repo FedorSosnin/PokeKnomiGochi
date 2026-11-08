@@ -145,29 +145,32 @@ static void v2Wrapped(const char *s, int y, int w, int pitch, int n) {
     while (*s == ' ') s++;
   }
 }
-// An item's own page of the card (Fedor: one each, so there's room to say what it does): the item big with how
-// many you hold, then in a panel what it does and how to use it, how to earn one, and how far along the next is
-// (the Repel's, while one runs: its minutes left)
+// An item's own page of the card (Fedor: one each, so there's room to say what it does): 0 the Ultra Ball, 1 the
+// Master Ball, 2 the Repel. The item big with how many you hold, then in a panel what it does and how to use it, how
+// to earn one, and how far along the next is (the Repel's, while one runs: its minutes left)
 static void v2CardItem(int which) {
-  char b[160];
-  v2Sign(v2Caps(T(which ? S_REPEL : S_MASTER), b, sizeof(b)));
-  int held = which ? pet.repelHeld : pet.masterBalls;
-  if (which) v2RepelIcon(CX - 37, 80, 5);  // (the can in the middle)
-  else v2MasterBall(CX - 45, 76, 5);
+  static const StrId NAME[3] = { S_ULTRA, S_MASTER, S_REPEL };
+  char b[200];
+  v2Sign(v2Caps(T(NAME[which]), b, sizeof(b)));
+  int held = which == 0 ? pet.ultraBalls : which == 1 ? pet.masterBalls : pet.repelHeld;
+  if (which == 2) v2RepelIcon(CX - 37, 80, 5);  // (the can in the middle)
+  else if (which == 1) v2MasterBall(CX - 45, 76, 5);
+  else v2UltraBall(CX - 45, 76, 5);
   if (held) drawCountBadge(CX + 44, 88, held);
   v2Panel(84, 172, 382, 372, 10);
-  if (which) snprintf(b, sizeof(b), T(S_REPEL_DOES_FMT), (unsigned)REPEL_MIN);
-  else strlcpy(b, T(S_MASTER_DOES), sizeof(b));
+  if (which == 2) snprintf(b, sizeof(b), T(S_REPEL_DOES_FMT), (unsigned)REPEL_MIN);
+  else strlcpy(b, T(which ? S_MASTER_DOES : S_ULTRA_DOES), sizeof(b));
   gfx->setTextColor(UI_INK);
-  v2Wrapped(b, 184, 270, 20, 5);
-  if (which) snprintf(b, sizeof(b), T(S_REPEL_EARN_FMT), (unsigned)(REPEL_PLAY_S / 60));
-  else snprintf(b, sizeof(b), T(S_MASTER_EARN_FMT), (unsigned)MASTER_FIGHTS);
+  v2Wrapped(b, 180, 280, 18, 6);
+  if (which == 2) snprintf(b, sizeof(b), T(S_REPEL_EARN_FMT), (unsigned)(REPEL_PLAY_S / 60));
+  else snprintf(b, sizeof(b), T(S_MASTER_EARN_FMT), (unsigned)(which ? MASTER_FIGHTS : ULTRA_FIGHTS));
   gfx->setTextColor(V2_INK_MUTED);
-  v2Wrapped(b, 300, 270, 20, 1);
+  v2Wrapped(b, 300, 280, 20, 1);
   char t[16];
-  if (!which) {
-    snprintf(t, sizeof(t), "%u/%u", pet.masterBar, MASTER_FIGHTS);
-    v2ItemBar(332, pet.masterBar / (float)MASTER_FIGHTS, t, v2MasterInk('q'));
+  if (which < 2) {
+    uint8_t bar = which ? pet.masterBar : pet.ultraBar, n = which ? MASTER_FIGHTS : ULTRA_FIGHTS;
+    snprintf(t, sizeof(t), "%u/%u", bar, n);
+    v2ItemBar(332, bar / (float)n, t, which ? v2MasterInk('q') : C565(0xd0, 0xa0, 0x20));
   } else if (pet.repelOn()) {
     snprintf(t, sizeof(t), "%um", pet.repelMinutesLeft());
     v2ItemBar(332, pet.repelMinutesLeft() / (float)REPEL_MIN, t, C565(0x5a, 0x3a, 0x8c));

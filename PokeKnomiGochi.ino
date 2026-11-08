@@ -166,7 +166,7 @@ uint8_t nameLen = 0;
 int cardNameBottom = 84;      // where the card's name (and the species under a nickname) ends: tapping above renames
 uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 training, 3 progress; the achievements: their pages
 #if UI_V2
-#define CARD_PAGES 6  // V2: after Progress, a page for each item: the Master Ball (4), the Repel (5)
+#define CARD_PAGES 7  // V2: after Progress, a page for each item: the Ultra Ball (4), the Master Ball (5), the Repel (6)
 #else
 #define CARD_PAGES 4
 #endif
@@ -499,6 +499,11 @@ uint32_t confirmUntil = 0;  // "release?" dialog active until this millis
 uint32_t gBtnSimUntil = 0;  // simulated press of the physical button (serial console)
 #endif
 #if UI_V2
+bool v2RadialOpen = false;    // V2: the radial menu, a hold on the Pokemon (radial_v2.h)
+int8_t v2RadialHover = -1;   // its section under the finger
+static void v2RadialStart();
+static int v2RadialAt(int16_t x, int16_t y);
+static void v2RadialLift(int16_t x, int16_t y);
 bool v2ResetSure = false;    // V2: ERASE EVERYTHING was tapped once; the question now asks "Are you sure?"
 uint32_t v2ResetSureT = 0;
 #endif
@@ -1332,6 +1337,15 @@ void handleTouch() {
   } else if (pressed) {  // still held down
     tXl = x;
     tYl = y;
+#if UI_V2
+    // V2: a hold on the pet opens the radial menu (Fedor); held on still in its middle, the release dialog below
+    if (!v2RadialOpen && !holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen &&
+        !buddyMenuOpen && !partyOpen && !tradeOpen && millis() - tStart > V2_RADIAL_HOLD_MS && abs(tXl - tX0) < 30 &&
+        abs(tYl - tY0) < 30 && inPetZone(tX0, tY0) && !pet.isEgg() && !confirmUntil && !pet.ceremony && !homeModal() &&
+        !feedMenuUntil && !choiceKind)
+      v2RadialStart();
+    if (v2RadialOpen) v2RadialHover = v2RadialAt(tXl, tYl);
+#endif
     // long press without moving on the pet -> release dialog
     if (!holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen && !buddyMenuOpen && !partyOpen && !tradeOpen && millis() - tStart > 3000 &&
         abs(tXl - tX0) < 30 && abs(tYl - tY0) < 30 && inPetZone(tX0, tY0) &&
@@ -1343,12 +1357,23 @@ void handleTouch() {
         confirmUntil = millis() + 10000;
       }
       holdFired = true;
+#if UI_V2
+      v2RadialOpen = false;  // V2: (the radial menu gives way)
+#endif
     }
   }
   if (pressed) {
-    if (!holdFired) pressUpdate(x, y);
+    if (!holdFired V2_AND(!v2RadialOpen)) pressUpdate(x, y);
   } else if (wasPressed) {  // finger lifts: resolve gesture
     wakeUI();
+#if UI_V2
+    if (v2RadialOpen && !holdFired) {  // V2: the radial menu takes the lift
+      pressRelease();
+      if (!swallowGesture) v2RadialLift(tXl, tYl);
+      wasPressed = pressed;
+      return;
+    }
+#endif
     int dx = tXl - tX0, dy = tYl - tY0;
     uint32_t dt = millis() - tStart;
     bool picked = pressRelease();
@@ -2128,7 +2153,8 @@ static uint32_t screenKey() {
                         (uint32_t)pet.berryKnown, (uint32_t)pet.battleWins, (uint32_t)pet.trainerMedals, (uint32_t)gLang })
       h = mixKey(h, v);
 #if UI_V2
-    for (uint32_t v : { (uint32_t)pet.masterBar, (uint32_t)pet.masterBalls, (uint32_t)pet.repelHeld, (uint32_t)pet.repelPlaySec,
+    for (uint32_t v : { (uint32_t)pet.masterBar, (uint32_t)pet.masterBalls, (uint32_t)pet.ultraBar, (uint32_t)pet.ultraBalls,
+                        (uint32_t)pet.repelHeld, (uint32_t)pet.repelPlaySec,
                         (uint32_t)pet.repelMinutesLeft() })  // V2: the Items page
       h = mixKey(h, v);
 #endif
@@ -2354,6 +2380,7 @@ bool render() {
 
 #if UI_V2
   v2FoodDropDraw();  // V2: a food from the bag dropping onto it (repel_v2.h)
+  if (v2RadialOpen) v2RadialDraw();  // V2: the radial menu, over everything on the home (radial_v2.h)
 #endif
 
   // "release?" dialog (long press on the pet)
@@ -3538,7 +3565,7 @@ void battleTap(int16_t x, int16_t y) {
   if (bPhase == BP_AIM) {
     if (y < BTL_BAND_Y) return;
 #if UI_V2
-    v2MasterThrow = v2MasterAiming() && x < CX;  // V2: the left half is the Master Ball's
+    v2Throw = v2BallAt(x);  // V2: the ball nearest the tap, in the row of those you hold (master_v2.h)
 #endif
     sfxPlay(SFX_TAP);
     tiltZero();
@@ -3585,7 +3612,7 @@ void battleTap(int16_t x, int16_t y) {
 void battleFinish(bool won) {
   bWon = won;
 #if UI_V2
-  v2MasterNew = !bPvp && pet.masterFight();  // V2: a fight fought to the end fills the Master Ball's bar (master_v2.h)
+  v2MasterNew = bPvp ? 0 : pet.fightPays();  // V2: a fight fought to the end fills the balls' bars (master_v2.h)
 #endif
   if (bPvp) {
     pet.friendlyBattle(won);
@@ -3687,14 +3714,19 @@ void battleThrowStep(uint32_t now) {
     uint8_t chance = catchChance(bBallX, bCatchX);  // which ring it landed in
     bBreakAt = catchBreakAt(random(100), random(CATCH_SHAKES), chance);
 #if UI_V2
-    if (v2MasterThrow && pet.useMasterBall()) bBreakAt = 0;  // V2: a Master Ball that hits always holds
+    if (v2Throw == V2_BALL_MASTER && pet.useMasterBall()) {
+      bBreakAt = 0;  // V2: a Master Ball that hits always holds
+    } else if (v2Throw == V2_BALL_ULTRA && pet.useUltraBall()) {  // V2: an Ultra Ball triples its chance (Fedor)
+      chance = chance > 33 ? 100 : chance * 3;
+      bBreakAt = catchBreakAt(random(100), random(CATCH_SHAKES), chance);
+    }
 #endif
     bShakesHeard = 0;
     Serial.printf("catch: in the ball, %u%% ring (%s)\n", chance, bBreakAt ? "will break out" : "holds");
     battleSetPhase(BP_SHAKE);
   } else {
 #if UI_V2
-    if (!v2MasterThrow)  // V2: a missed Master Ball comes back, and isn't one of the three
+    if (v2Throw == V2_BALL_POKE)  // V2: a missed Ultra or Master Ball comes back, and isn't one of the three
 #endif
     bBalls--;
     Serial.printf("catch: miss, %u left\n", bBalls);
@@ -4000,7 +4032,7 @@ void renderCatch() {
     int y = 360 - (int)((360 - catchRingY()) * k), s = k < 0.5f ? 3 : 2;  // moves away, to the rings
     float spin = (now - bBallT) * CATCH_SPIN_DEG_MS;  // spinning all the way there
 #if UI_V2
-    if (v2MasterThrow) v2MasterBallTurned(s, spin, bBallX, y, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);  // V2
+    if (v2Throw) v2SpecialBallTurned(s, spin, bBallX, y, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);  // V2
     else
 #endif
     drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, s, spin, bBallX, y, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
@@ -4009,7 +4041,7 @@ void renderCatch() {
     if (k > 1) k = 1;
     float spin = (1500 + now - bPhaseT) * CATCH_SPIN_DEG_MS * (bBallX < foeX ? -1 : 1);  // still spinning as it falls
 #if UI_V2
-    if (v2MasterThrow) v2MasterBallTurned(2, spin, bBallX + (bBallX < foeX ? -70 : 70) * k, catchRingY() + 200 * k * k,
+    if (v2Throw) v2SpecialBallTurned(2, spin, bBallX + (bBallX < foeX ? -70 : 70) * k, catchRingY() + 200 * k * k,
                                           HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);  // V2
     else
 #endif
@@ -4027,7 +4059,7 @@ void renderCatch() {
       int s = k < 0.5f ? 2 : 3;
       float x = bBallX + (bCatchX - bBallX) * m, cy = yb - 8 * s;
       v2PetShadow((int)bCatchX, (int)gy, 8 + (int)(12 * m));  // its shadow on the ground, growing as it comes down
-      if (v2MasterThrow) v2MasterBallTurned(s, a, x, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
+      if (v2Throw) v2SpecialBallTurned(s, a, x, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
       else drawMapTurned(SPR_HOME_BALL, HOME_ICON_N, s, a, x, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
     } else {
     t -= V2_CATCH_DROP_MS;
@@ -4038,7 +4070,7 @@ void renderCatch() {
     int side = (t / CATCH_SHAKE_MS) % 2 ? 1 : -1;
     float pivotX = bCatchX + side * 3 * HOME_ICON_N / 2.0f * k * 0.35f;  // rolling a little on its edge
 #if UI_V2
-    if (v2MasterThrow) v2MasterBallTurned(3, side * CATCH_TIP_DEG * k, pivotX, ballGround + 3 * HOME_ICON_N - 3,
+    if (v2Throw) v2SpecialBallTurned(3, side * CATCH_TIP_DEG * k, pivotX, ballGround + 3 * HOME_ICON_N - 3,
                                           HOME_ICON_N / 2.0f, HOME_ICON_N - 1);  // V2
     else
 #endif
@@ -4053,7 +4085,7 @@ void renderCatch() {
 #endif
     drawCatchShine((int)bFoeX, ballGround + 27, now - bPhaseT);
 #if UI_V2
-    if (v2MasterThrow) v2MasterBall((int)bFoeX - 27, ballGround, 3);  // V2
+    if (v2Throw) v2SpecialBall((int)bFoeX - 27, ballGround, 3);  // V2
     else
 #endif
     drawMap(SPR_HOME_BALL, HOME_ICON_N, (int)bFoeX - 27, ballGround, 3, false);

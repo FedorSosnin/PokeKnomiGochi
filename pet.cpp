@@ -368,14 +368,26 @@ bool Pet::chooseEgg(int16_t dex, bool shinyForm) {
 }
 
 #if UI_V2
-bool Pet::masterFight() {
-  bool earned = ++masterBar >= MASTER_FIGHTS;
-  if (earned) {
+uint8_t Pet::fightPays() {
+  uint8_t earned = 0;
+  if (++masterBar >= MASTER_FIGHTS) {
     masterBar = 0;
     if (masterBalls < MASTER_MAX) masterBalls++;
+    earned |= 1;
+  }
+  if (++ultraBar >= ULTRA_FIGHTS) {
+    ultraBar = 0;
+    if (ultraBalls < ULTRA_MAX) ultraBalls++;
+    earned |= 2;
   }
   pendingSave = true;  // (the fight's own result saves it at once)
   return earned;
+}
+bool Pet::useUltraBall() {
+  if (!ultraBalls) return false;
+  ultraBalls--;
+  pendingSave = true;
+  return true;
 }
 bool Pet::useMasterBall() {
   if (!masterBalls) return false;
@@ -1128,6 +1140,8 @@ void Pet::save() {
   prefs.putBool("pkok", pickOk);
   prefs.putUChar("mbar", masterBar);
   prefs.putUChar("mbls", masterBalls);
+  prefs.putUChar("ubar", ultraBar);
+  prefs.putUChar("ubls", ultraBalls);
   prefs.putUChar("rpl", repelHeld);
   prefs.putUShort("rpls", repelPlaySec);
   prefs.putUInt("rplu", repelUntil);
@@ -1216,6 +1230,9 @@ void Pet::load() {
   masterBar = prefs.getUChar("mbar", 0);
   masterBalls = prefs.getUChar("mbls", 0);
   if (masterBar >= MASTER_FIGHTS) masterBar = 0;
+  ultraBar = prefs.getUChar("ubar", 0);
+  ultraBalls = prefs.getUChar("ubls", 0);
+  if (ultraBar >= ULTRA_FIGHTS) ultraBar = 0;
   repelHeld = prefs.getUChar("rpl", 0);
   repelPlaySec = prefs.getUShort("rpls", 0);
   repelUntil = prefs.getUInt("rplu", 0);

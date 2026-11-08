@@ -29,7 +29,7 @@ static uint32_t v2WalkT() { return v2WalkMs * 7 / 10; }
 static bool v2CanWalk() {
   return beh.mode == 1 && pmd.has(PMD_WALKD) && !pet.isEgg() && !pet.evolving() && !pet.ceremony &&
          pet.mood() == MOOD_HAPPY && !bathUntil && !feedMenuUntil && !confirmUntil && !choiceKind &&
-         !homeModal() && !timeLeft(farHintUntil) && !buddyMenuOpen;
+         !homeModal() && !timeLeft(farHintUntil) && !buddyMenuOpen && !v2RadialOpen;
 }
 // once a frame, before the scene: moves the clock on while it walks, and sets the bob by its step
 static void v2WalkUpdate() {

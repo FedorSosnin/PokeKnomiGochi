@@ -124,6 +124,8 @@ enum StrId : STRID_BASE {
   S_ST_NAP, S_ST_PLAY, S_ST_FULL, S_ST_CLEAN, S_ST_SLEEPY, S_ST_MORNING,             // (Fedor), taking turns
   S_RESET_SURE, S_RESET_NOUNDO,  // V2: ERASE EVERYTHING asks once more: "Are you sure?" "There's no going back."
   S_MASTER_DOES, S_REPEL_DOES_FMT,  // V2: what each does, on its own page of the card
+  S_RAD_MEDALS, S_RAD_STATS,  // V2: the radial menu's Medals and Stats (Settings and the Pokedex are older)
+  S_ULTRA, S_ULTRA_DOES, S_ULTRA_HOW,  // V2: the Ultra Ball: its name, what it does, and the line on the one earned
 #endif
   STR_COUNT
 };
