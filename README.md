@@ -40,13 +40,18 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 ## See it move
 
+| | |
+|:--:|:--:|
+| ![Pikachu walking toward you through the Forest by day while the grass, flowers and pines slide by](docs/images/v2/walk-forest.gif) | ![Squirtle walking along the Beach at dusk](docs/images/v2/walk-beach.gif) |
+| **The Forest by day** | **Day, dusk and night** |
+| ![Charmander walking through the Field at night, the house's windows lit](docs/images/v2/walk-field.gif) | ![Gengar walking past the haunted Mansion](docs/images/v2/walk-mansion.gif) |
+| **The Field after dark** | **The Mansion, always night** |
+
 | | | |
 |:--:|:--:|:--:|
-| ![Squirtle walking along the Beach at dusk](docs/images/v2/walk-beach.gif) | ![Charmander walking through the Field at night, the house's windows lit](docs/images/v2/walk-field.gif) | ![Gengar walking past the haunted Mansion](docs/images/v2/walk-mansion.gif) |
-| **Day, dusk and night** | **The Field after dark** | **The Mansion, always night** |
 | ![Bulbasaur, Charmander, Squirtle and Pikachu walking toward you; a tap on Pikachu dims the others and asks](docs/images/v2/starters.gif) | ![An Ultra Ball thrown at a running Pikachu: it hits, drops to the ground, counts to three and holds](docs/images/v2/catch.gif) | ![Charmander evolving into Charmeleon in a burst of light](docs/images/v2/evolve.gif) |
 | **Choose your starter** | **Throw, drop, one, two, three** | **Evolution** |
-| ![A hold on Pikachu opens a ring of Settings, Medals, Stats and the Pokédex; sliding to Medals opens the trophy room](docs/images/v2/radial.gif) | ![The backpack opens over the icons and berries drop onto Pikachu, who hops](docs/images/v2/feed.gif) | ![Charizard's Pokédex entry, the Pokémon turning round](docs/images/v2/pokedex-spin.gif) |
+| ![A hold on Pikachu opens a ring of Settings, Medals, Stats and the Pokédex; sliding to Medals opens the trophy room](docs/images/v2/radial.gif) | ![The backpack's band slides up out of the bag, its tail pointing into it, and berries drop onto Pikachu, who hops](docs/images/v2/feed.gif) | ![Charizard's Pokédex entry, the Pokémon turning round](docs/images/v2/pokedex-spin.gif) |
 | **Hold it for a menu** | **Berries from the backpack** | **Every entry turns round** |
 | ![PikaSurf: Squirtle surfing down the rushing water beside Pikachu, dodging rocks](docs/images/v2/pikasurf.gif) | ![PokeDungeon: Squirtle exploring the cave, meeting wild Pokémon](docs/images/v2/dungeon.gif) | ![PokeRun: Charmander jumping over logs and rocks in the forest](docs/images/v2/pokerun.gif) |
 | **PikaSurf** | **PokeDungeon** | **PokeRun** |
@@ -65,7 +70,7 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 | **Five mini games** | **How to play, before each game** | **Play Again!** |
 | ![Who's That Pokémon? A silhouette, three names and ten seconds on the clock](docs/images/v2/quiz.png) | ![The trophy room: 14 of 25 medals](docs/images/v2/trophy-room.png) | ![The shiny medal's card: a gem under a spotlight, earned](docs/images/v2/medal-card.png) |
 | **Who's That Pokémon?** | **The trophy room** | **How to earn each medal** |
-| ![The backpack open over the icons: three berries, a candy and a Repel](docs/images/v2/backpack.png) | ![Gengar in the bath, with bubbles and a duck](docs/images/v2/bath.png) | ![A new medal dropping in on a ribbon](docs/images/v2/medal-banner.png) |
+| ![The backpack's band out of the bag: three berries, a candy and a Repel](docs/images/v2/backpack.png) | ![Gengar in the bath, with bubbles and a duck](docs/images/v2/bath.png) | ![A new medal dropping in on a ribbon](docs/images/v2/medal-banner.png) |
 | **The backpack** | **Bath time** | **New medals** |
 | ![Pikachu walking with Eevee and Squirtle visiting, and the Party Boost button](docs/images/v2/buddies.png) | ![A buddy's menu over the home: Battle, Trade, Play](docs/images/v2/buddy-menu.png) | ![Play together: Poké Ball Volley, Showdown and PikaSurf for two](docs/images/v2/play-together.png) |
 | **Buddies visit** | **Battle, trade or play** | **Games for two** |
