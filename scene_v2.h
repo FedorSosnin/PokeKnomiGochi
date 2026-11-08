@@ -207,12 +207,16 @@ static void v2DrawBand() {
 }
 
 // The icons on their circle. Asleep, all but the moon are slate shadows: ink would vanish on the band.
+static void v2RepelBagBadge(int cx, int cy);  // (repel_v2.h, below: the Repel)
+static bool v2RepelSeat();
+static void v2RepelSeatDraw(int cx, int cy);
 static void v2DrawIcons() {
   for (int i = 0; i < BTN_COUNT; i++) {
     int x = buttons[i].cx - BTN_HALF, y = buttons[i].cy - BTN_HALF;
     if (pet.sleeping && i != BTN_LIGHT) v2MapFlat(buttons[i].icon, HOME_ICON_N, x, y, 3, C565(0x3a, 0x4a, 0x5a));
     else drawMap(buttons[i].icon, HOME_ICON_N, x, y, 3, false);
   }
+  v2RepelBagBadge(buttons[0].cx + 22, buttons[0].cy - 22);  // a Repel running: the minutes left, on the bag
 }
 
 // ---------- the header ----------
@@ -293,9 +297,10 @@ static void v2CountBadge(int cx, int cy, int n) {
 }
 
 // The food picker: a text-box bubble out of the bag, its tail pointing at it, each food on a round seat
-// (the candy, while there are any left today, with its count)
-static void v2DrawFoodPicker(int count) {
+// (the candy, while there are any left today, with its count), then the Repel's while you hold one or one runs
+static void v2DrawFoodPicker(int foods) {
   static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
+  int count = foods + (v2RepelSeat() ? 1 : 0);
   int x0 = V2_FEED_X0, y0 = V2_FEED_Y0, x1 = x0 + count * V2_FEED_CELL, y1 = y0 + V2_FEED_H;
   gfx->fillTriangle(118, y1, 146, y1, 124, y1 + 16, V2_RIM);  // the tail's rim, under the box's
   v2Panel(x0, y0, x1, y1, 14);
@@ -303,9 +308,10 @@ static void v2DrawFoodPicker(int count) {
   for (int i = 0; i < count; i++) {
     int cx = x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * i, cy = y0 + 36;
     gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, V2_SEAT);
-    drawMap(FOOD[i], HOME_ICON_N, cx - 27, cy - 27, 3, false);
+    if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - 27, cy - 27, 3, false);
+    else v2RepelSeatDraw(cx, cy);
   }
-  if (count == 4) v2CountBadge(x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * 3 + 22, y0 + 8, pet.candiesLeft());
+  if (foods == 4) v2CountBadge(x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * 3 + 22, y0 + 8, pet.candiesLeft());
 }
 
 // ---------- the scenes: the home's backdrop, in the Pokemon's Travel zone ----------
@@ -1279,3 +1285,4 @@ void v2HostBackdrop(int which, int tod) {
 #include "menus_v2.h"  // step 5: the menus
 #include "starter_v2.h"  // step 6: the starter screen
 #include "master_v2.h"   // step 7: fights pay, the Master Ball
+#include "repel_v2.h"    // the Repel

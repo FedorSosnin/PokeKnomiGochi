@@ -38,6 +38,9 @@
 #if UI_V2
 #define MASTER_FIGHTS 25  // V2: fights fought to the end for a Master Ball (Fedor: 20-30, one a day for a casual player)
 #define MASTER_MAX 99     // the most you can hold
+#define REPEL_PLAY_S 300  // V2: seconds of minigames played for a Repel (Fedor: about one a day)
+#define REPEL_MIN 10      // how long one lasts, in the game's minutes
+#define REPEL_MAX 99
 #endif
 #define SHINY_AFTER_GOODBYE 4              // 1 in 4 after a goodbye or release
 #define RUNAWAY_TICKS 60                   // runs away after 1 h with EVERYTHING at zero
@@ -268,6 +271,19 @@ public:
   uint8_t masterBar = 0, masterBalls = 0;
   bool masterFight();    // a fight fought to the end: true when it earned a Master Ball (saved with the fight)
   bool useMasterBall();  // one thrown that hit: false if there was none
+  // V2 (Fedor): the Repel, a spray in the backpack. For REPEL_MIN minutes, wild encounters keep weaker Pokemon away
+  // (none below your level, nor any species weaker than yours), and in a Travel zone not yet complete every
+  // non-legendary there is as likely (a complete one: as the wild). Shiny odds don't change. Earned by playing
+  // minigames, REPEL_PLAY_S seconds each; they stack, and are the trainer's, as the Master Balls
+  uint8_t repelHeld = 0;
+  uint16_t repelPlaySec = 0;  // played toward the next
+  uint32_t repelUntil = 0;    // the lifeMin it runs out at (0: none running)
+  bool repelPlay(uint32_t ms);  // ms of a minigame played: true when it earned a Repel
+  bool useRepel();              // from the backpack: false with none, or one already running
+  bool repelOn() const { return repelUntil > lifeMin; }
+  uint8_t repelMinutesLeft() const { return repelOn() ? (uint8_t)(repelUntil - lifeMin) : 0; }
+  bool repelKeepsAway(int16_t dex) const;  // a running Repel keeps this species away from a wild encounter
+  bool zoneComplete(uint8_t zone) const;
 #endif
   // first game: the player picks a starter (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }
@@ -361,6 +377,7 @@ private:
   // V2 (Fedor): a goodbye has been offered once (a final form 3 days old): every new Pokemon after that is picked
   // from the Pokedex, not from the four starters
   bool pickOk = false;
+  uint16_t repelMs = 0;  // the part of a second played not counted yet (not saved)
 #endif
   uint8_t neglectTicks = 0;
   void careMinute(bool asleep);

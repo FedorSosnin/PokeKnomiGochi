@@ -3,6 +3,8 @@
 #include "shim/Arduino.h"
 #include "../pet.h"
 #include "../dex.h"
+#include "../zones.h"
+#include "../battle.h"
 #include <string.h>
 
 // ---------------------------------------------------------------- helpers
@@ -1099,6 +1101,90 @@ TEST(v2master, they_stack_to_99) {
   makePet(p, 25);
   for (int i = 0; i < 101 * MASTER_FIGHTS; i++) p.masterFight();
   CHECK_EQ(p.masterBalls, (uint8_t)MASTER_MAX);
+}
+
+// ---------------------------------------------------------------- V2: the Repel (Fedor)
+static int dexPowerOf(int16_t d) { return DEX_TBL[d].bHp + DEX_TBL[d].bAtk + DEX_TBL[d].bDef + DEX_TBL[d].bSpe; }
+
+TEST(v2repel, minigame_seconds_earn_one) {
+  Pet p;
+  makePet(p, 25);
+  CHECK(!p.repelPlay((REPEL_PLAY_S - 1) * 1000UL));
+  CHECK_EQ(p.repelHeld, (uint8_t)0);
+  CHECK(!p.repelPlay(999));
+  CHECK_MSG(p.repelPlay(1), "the millisecond that makes the last second");
+  CHECK_EQ(p.repelHeld, (uint8_t)1);
+  CHECK_EQ(p.repelPlaySec, (uint16_t)0);
+}
+
+TEST(v2repel, one_runs_ten_minutes_and_cant_be_doubled) {
+  Pet p;
+  makePet(p, 25);
+  CHECK_MSG(!p.useRepel(), "none held");
+  p.repelPlay(2UL * REPEL_PLAY_S * 1000);
+  CHECK_EQ(p.repelHeld, (uint8_t)2);
+  CHECK(p.useRepel());
+  CHECK(p.repelOn());
+  CHECK_EQ(p.repelMinutesLeft(), (uint8_t)REPEL_MIN);
+  CHECK_MSG(!p.useRepel(), "one already running");
+  CHECK_EQ(p.repelHeld, (uint8_t)1);
+  advance(p, REPEL_MIN - 1);
+  CHECK(p.repelOn());
+  advance(p, 1);
+  CHECK_MSG(!p.repelOn(), "ten of the game's minutes");
+  p.flushSave();  // (the minutes lived get saved; a reboot also applies those it missed)
+  Pet again;
+  again.begin();
+  CHECK_MSG(again.repelHeld == 1 && !again.repelOn(), "kept in the save");
+}
+
+TEST(v2repel, the_wild_keeps_weaker_ones_away_shinies_untouched) {
+  Pet p;
+  makePet(p, 94);  // Gengar
+  int weaker = 0;
+  for (int seed = 1; seed <= 300; seed++) {
+    randomSeed(seed);
+    if (dexPowerOf(p.pickWildSpecies(37)) < dexPowerOf(94)) weaker++;
+  }
+  CHECK_MSG(weaker > 0, "without one, weaker ones come");
+  p.repelPlay(REPEL_PLAY_S * 1000UL);
+  CHECK(p.useRepel());
+  for (int seed = 1; seed <= 300; seed++) {
+    randomSeed(seed);
+    int16_t d = p.pickWildSpecies(37);
+    CHECK_MSG(dexPowerOf(d) >= dexPowerOf(94), "a Repel keeps weaker ones away");
+  }
+}
+
+TEST(v2repel, an_incomplete_zone_evens_out_and_a_complete_one_keeps_weaker_away) {
+  Pet p;
+  makePet(p, 94);
+  const uint8_t z = Z_FOREST;
+  const int16_t legend = ZONE_LEGEND[z];
+  int seen[152] = {}, eligible = 0;
+  p.repelPlay(REPEL_PLAY_S * 1000UL);
+  CHECK(p.useRepel());
+  for (int i = 0; i < 6000; i++) {
+    randomSeed(i + 1);
+    seen[p.pickZoneSpecies(z, 60)]++;
+  }
+  int lo = 1 << 30, hi = 0;
+  for (int16_t d = 1; d <= 151; d++)
+    if (zoneOf(d) == z && d != legend && btlMinLevel(d) <= 60) {
+      eligible++;
+      lo = seen[d] < lo ? seen[d] : lo;
+      hi = seen[d] > hi ? seen[d] : hi;
+    }
+  CHECK(eligible > 5);
+  CHECK_MSG(lo > 0 && hi < lo * 2, "about as likely, each of them");
+  for (int16_t d = 1; d <= 151; d++)
+    if (zoneOf(d) == z) p.catchWild(d);
+  CHECK(p.zoneComplete(z));
+  for (int seed = 1; seed <= 300; seed++) {
+    randomSeed(seed);
+    int16_t d = p.pickZoneSpecies(z, 60);
+    CHECK_MSG(d == legend || dexPowerOf(d) >= dexPowerOf(94), "complete: as in the wild");
+  }
 }
 
 TEST(v2pick, an_older_saves_goodbye_counts_and_its_egg_hatches) {

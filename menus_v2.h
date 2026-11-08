@@ -400,6 +400,7 @@ static void v2CardTraining() {
   }
 }
 static void v2MasterBar(int x, int y, int w, bool full);  // (master_v2.h: the Master Ball's bar)
+static void v2RepelCardRow(int x, int y);                 // (repel_v2.h: the Repel's)
 static void v2CardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
   v2Sign(T(S_PROGRESS));
@@ -421,7 +422,7 @@ static void v2CardProgress() {
   setSize(2);
   setCur(centerX(nx, 2), 162);
   printT(nx);
-  setCur(centerX(T(S_EVO_LABEL), 2), 206);
+  setCur(centerX(T(S_EVO_LABEL), 2), 192);
   printT(T(S_EVO_LABEL));
   char evoBuf[32];
   const char *evo;
@@ -439,14 +440,15 @@ static void v2CardProgress() {
     }
   }
   gfx->setTextColor(evoCol);
-  setCur(centerX(evo, 2), 230);
+  setCur(centerX(evo, 2), 214);
   printT(evo);
   char ms[24];  // the slip-ups, which hold evolution back
   snprintf(ms, sizeof(ms), T(S_MISTAKES_FMT), pet.careMistakes);
   gfx->setTextColor(pet.careMistakes > 0 ? UI_BAR_BAD : C565(0x3c, 0x8a, 0x4c));
-  setCur(centerX(ms, 2), 286);
+  setCur(centerX(ms, 2), 248);
   printT(ms);
-  v2MasterBar(112, 320, 244, false);  // step 7: the Master Balls you hold, and the fights to the next
+  v2MasterBar(112, 280, 244, false);  // step 7: the Master Balls you hold, and the fights to the next
+  v2RepelCardRow(112, 322);           // the Repels you hold, and the play to the next (and one running)
 }
 // the card's four pages (the medals' pages are still V1's: step 5b)
 static void v2Card() {
@@ -2146,6 +2148,7 @@ static void v2AgainButton(int y) {
   v2LabelButton(V2_AGAIN_X0, y, V2_AGAIN_X1, y + V2_AGAIN_H, v2Caps(T(S_PLAY_AGAIN), b, sizeof(b)), C565(0x58, 0xb8, 0x68));
   v2CloseX();
 }
+static void v2RepelRow(int y);  // (repel_v2.h: how far along the next Repel is)
 // a game's result (rooms2_px.py game_over()): the game behind, dimmed 45%, its name on a board; in a panel a
 // line on what happened (the dungeon's faint), the score big, the record (or NEW RECORD! in gold) and the
 // happiness it brought, in green, all of it in the room over PLAY AGAIN!, which is at the panel's foot
@@ -2180,6 +2183,7 @@ static void v2GameResult(const char *title, const char *top, const char *big, bo
   setCur(centerX(joy, 2), y);
   printT(joy);
   v2AgainButton(V2_AGAIN_Y);
+  v2RepelRow(338);  // the Repel this play counts toward, between the panel and the X
 }
 
 // a game's how-to card (rooms2_px.py howto()): its name on a board, how to play in a panel, READY, GO! where
@@ -2352,6 +2356,7 @@ static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, 
   setCur(nx0, 278);
   printT(nm);
   v2AgainButton(V2_AGAIN_YB);
+  v2RepelRow(362);  // the Repel this play counts toward
 }
 // PikaSurf with a buddy, both out (V1's words over the water): as the other games with a buddy, the times
 // for the score

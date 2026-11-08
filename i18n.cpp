@@ -64,6 +64,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Gracias por %u d\241as",
     "Volver\240 a la naturaleza. No se puede deshacer.", "Soltar", "Mantener",
     "Master Ball!", "Siempre atrapa!",
+    "Repelente", "Repelente: %u min",
 #endif
   },
   // ---------------- EN ----------------
@@ -123,6 +124,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Thank you for %u days",
     "It goes back to the wild. This cannot be undone.", "Release", "Keep",
     "Master Ball!", "It always catches!",
+    "Repel", "Repel: %u min",
 #endif
   },
   // ---------------- FR ----------------
@@ -182,6 +184,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Merci pour ces %u jours",
     "Il retourne \205 la nature. C'est d\202finitif.", "Rel\203cher", "Garder",
     "Master Ball!", "Elle attrape toujours!",
+    "Repousse", "Repousse: %u min",
 #endif
   },
   // ---------------- DE ----------------
@@ -246,6 +249,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Danke f\201r %u Tage",
     "Es kehrt in die Wildnis zur\201ck. Das ist endg\201ltig.", "Loslassen", "Behalten",
     "Meisterball!", "Er f\204ngt immer!",
+    "Schutz", "Schutz: %u Min.",
 #endif
   },
   // ---------------- IT ----------------
@@ -305,6 +309,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Grazie per %u giorni",
     "Torna in natura. Non si pu\225 annullare.", "Libera", "Tienilo",
     "Master Ball!", "Cattura sempre!",
+    "Repellente", "Repellente: %u min",
 #endif
   },
   // ---------------- PT ----------------
@@ -364,6 +369,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Obrigado por %u dias",
     "Volta para a natureza. Nao d\240 para desfazer.", "Soltar", "Manter",
     "Master Ball!", "Captura sempre!",
+    "Repelente", "Repelente: %u min",
 #endif
   },
   // ---------------- JA ----------------
@@ -446,6 +452,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%uにち ありがとう",
     "やせいに かえります。 もとに もどせません。", "にがす", "やめる",
     "マスターボール!", "かならず つかまえる!",
+    "むしよけスプレー", "むしよけ: あと %u ふん",
 #endif
   },
   // ---------------- KO ----------------
@@ -510,6 +517,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "%u일 동안 고마워",
     "야생으로 돌아가요. 되돌릴 수 없어요.", "놓아주기", "취소",
     "마스터볼!", "무조건 잡혀요!",
+    "벌레회피스프레이", "벌레회피: %u분",
 #endif
   },
 };

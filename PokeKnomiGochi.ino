@@ -619,6 +619,9 @@ void loopTiming(uint32_t start) {
 #endif
 }
 
+#if UI_V2
+static void v2RepelTick(uint32_t now);  // V2: minigame time earns Repels (repel_v2.h, included with the scene)
+#endif
 void loop() {
   uint32_t now = millis();
   uint32_t loopStart = now;
@@ -643,6 +646,9 @@ void loop() {
   wasRunReady = runReady;
 
   handleTouch();
+#if UI_V2
+  v2RepelTick(now);  // V2: every second of a minigame played counts toward a Repel
+#endif
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
   autoRotateTick(now);
 #endif
@@ -1473,6 +1479,8 @@ void onSwipe(int dir) {
 #if UI_V2
 static void v2StarterTap(int16_t x, int16_t y);  // V2: the starter screen (starter_v2.h, included with the scene)
 static void v2StarterScreen();
+static bool v2RepelSeat();  // V2: the Repel in the backpack (repel_v2.h)
+static void v2RepelUse();
 #endif
 void onTap(int16_t x, int16_t y) {
   // Serial.printf("TOUCH %d %d\n", x, y);  // diagnostic (silenced: floods the log)
@@ -1626,14 +1634,18 @@ void onTap(int16_t x, int16_t y) {
   }
 #if UI_V2
   if (feedMenuUntil) {       // food picker: V2's bubble out of the bag
-    int count = pet.canHaveCandy() ? 4 : 3;
+    int foods = pet.canHaveCandy() ? 4 : 3, count = foods + (v2RepelSeat() ? 1 : 0);  // (then the Repel's seat)
     int x0 = V2_FEED_X0;
     if (timeLeft(feedMenuUntil) && y >= V2_FEED_Y0 && y <= V2_FEED_Y0 + V2_FEED_H && x >= x0 && x <= x0 + count * 66) {
       int item = (x - x0) / 66;
       if (item >= count) item = count - 1;
-      if (item == 3) pet.feedCandy();
-      else pet.feedBerry(item);
-      sfxPlay(SFX_EAT);
+      if (item >= foods) {
+        v2RepelUse();
+      } else {
+        if (item == 3) pet.feedCandy();
+        else pet.feedBerry(item);
+        sfxPlay(SFX_EAT);
+      }
     }
     feedMenuUntil = 0;
     return;
@@ -3422,6 +3434,9 @@ void startBattleWith(int16_t dex) {
     return;
   }
   uint8_t foeLvl = btlWildLevel(lvl, random(4));
+#if UI_V2
+  if (pet.repelOn() && (bZone < 0 || pet.zoneComplete(bZone))) foeLvl = btlWildLevel(lvl, 3);  // V2: a Repel: none below yours
+#endif
   if (dex < 1 || dex > DEX_COUNT) dex = bZone >= 0 ? pet.pickZoneSpecies(bZone, foeLvl) : pet.pickWildSpecies(foeLvl);
   bFoeShiny = bNextShiny || random(100) < WILD_SHINY_PCT;
   bNextShiny = false;
@@ -10351,10 +10366,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     static const char *const *const ICON[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
     int count = pet.canHaveCandy() ? 4 : 3;
 #if UI_V2
-    int x0 = V2_FEED_X0;
+    int x0 = V2_FEED_X0, foods = count;
+    count += v2RepelSeat() ? 1 : 0;  // the Repel's seat after the foods
     if (y < V2_FEED_Y0 || y > V2_FEED_Y0 + V2_FEED_H || x < x0 || x > x0 + count * 66) return false;
     int item = (x - x0) / 66;
     if (item >= count) item = count - 1;
+    if (item >= foods) return pressSet(t, x0 + item * 66, V2_FEED_Y0, 66, V2_FEED_H, T(S_REPEL));
     return pressSet(t, x0 + item * 66, V2_FEED_Y0, 66, V2_FEED_H, nullptr, ICON[item]);
 #else
     int x0 = CX - count * 33;

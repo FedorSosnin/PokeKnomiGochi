@@ -384,6 +384,32 @@ bool Pet::useMasterBall() {
   return true;
 }
 
+bool Pet::repelPlay(uint32_t ms) {
+  uint32_t t = repelMs + ms, sec = repelPlaySec + t / 1000;
+  repelMs = t % 1000;
+  bool earned = false;
+  for (; sec >= REPEL_PLAY_S; sec -= REPEL_PLAY_S) {
+    if (repelHeld < REPEL_MAX) repelHeld++;
+    earned = true;
+  }
+  repelPlaySec = (uint16_t)sec;
+  if (earned) pendingSave = true;
+  return earned;
+}
+bool Pet::useRepel() {
+  if (!repelHeld || repelOn()) return false;
+  repelHeld--;
+  repelUntil = lifeMin + REPEL_MIN;
+  save();
+  return true;
+}
+// a species' strength: its base stats added up
+static int dexPower(int16_t d) { return DEX_TBL[d].bHp + DEX_TBL[d].bAtk + DEX_TBL[d].bDef + DEX_TBL[d].bSpe; }
+bool Pet::repelKeepsAway(int16_t dex) const {
+  return repelOn() && speciesId >= 1 && dexPower(dex) < dexPower(speciesId);
+}
+bool Pet::zoneComplete(uint8_t zone) const { return zoneCaught(zone) >= zoneSize(zone); }
+
 void Pet::chooseStarter(int16_t dex, bool shinyForm) {
   eggTarget = dex;
   eggShiny = shinyForm && hasForm(dex, true);
@@ -947,6 +973,9 @@ int16_t Pet::pickWildSpecies(uint8_t lvl) {
       uint8_t r = DEX_TBL[d].rarity;
       if (legend ? r != R_LEGENDARY : r == R_LEGENDARY) continue;
       if (btlMinLevel(d) > lvl) continue;
+#if UI_V2
+      if (pass < 2 && repelKeepsAway(d)) continue;  // V2: a Repel keeps weaker ones away
+#endif
       if (pass == 0 && preferNew && isRegistered(d)) continue;
       if (pass == 0 && r == R_RARE && random(100) < 60) continue;  // rares, less often
       cand[n++] = d;
@@ -968,15 +997,30 @@ int16_t Pet::pickZoneSpecies(uint8_t zone, uint8_t lvl) {
   int16_t legend = ZONE_LEGEND[zone];
   if (random(1000) < ZONE_LEGEND_PERMIL) return legend;  // any time, but seldom
   // now and then only the common ones you're missing; otherwise anyone strong enough to be here
+#if UI_V2
+  // V2: a Repel. In a zone not yet complete every one here is as likely; in a complete one, weaker ones stay away
+  // (and if that leaves nobody, the last pass is the usual one)
+  int first = random(100) < ZONE_NEW_PCT ? 0 : 1;
+  bool even = repelOn() && !zoneComplete(zone), strong = repelOn() && !even;
+  if (even) first = 1;
+  for (int pass = first; pass < (strong ? 3 : 2); pass++) {
+#else
   for (int pass = random(100) < ZONE_NEW_PCT ? 0 : 1; pass < 2; pass++) {
+#endif
     int16_t cand[151];
     uint8_t w[151];
     int n = 0, total = 0;
     for (int16_t d = 1; d <= 151; d++) {
       if (zoneOf(d) != zone || d == legend || btlMinLevel(d) > lvl) continue;
       if (pass == 0 && (isRegistered(d) || zoneIsRare(d))) continue;
+#if UI_V2
+      if (strong && pass < 2 && repelKeepsAway(d)) continue;
+#endif
       cand[n] = d;
       w[n] = zoneWeight(d);
+#if UI_V2
+      if (even) w[n] = 1;
+#endif
       total += w[n++];
     }
     if (n > 0) {
@@ -1084,6 +1128,9 @@ void Pet::save() {
   prefs.putBool("pkok", pickOk);
   prefs.putUChar("mbar", masterBar);
   prefs.putUChar("mbls", masterBalls);
+  prefs.putUChar("rpl", repelHeld);
+  prefs.putUShort("rpls", repelPlaySec);
+  prefs.putUInt("rplu", repelUntil);
 #endif
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putUInt("life", lifeMin);
@@ -1169,6 +1216,10 @@ void Pet::load() {
   masterBar = prefs.getUChar("mbar", 0);
   masterBalls = prefs.getUChar("mbls", 0);
   if (masterBar >= MASTER_FIGHTS) masterBar = 0;
+  repelHeld = prefs.getUChar("rpl", 0);
+  repelPlaySec = prefs.getUShort("rpls", 0);
+  repelUntil = prefs.getUInt("rplu", 0);
+  if (repelPlaySec >= REPEL_PLAY_S) repelPlaySec = 0;
 #endif
   prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
   bool hadStars = prefs.isKey("dexstr");

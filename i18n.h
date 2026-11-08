@@ -111,6 +111,7 @@ enum StrId : uint8_t {
   S_THANKS_DAYS_FMT,  // V2: under a goodbye's "Goodbye, GENGAR!" (the visitor's string): "Thank you for 4 days"
   S_RELEASE_WARN, S_RELEASE_BTN, S_KEEP_BTN,  // V2: the release question's line and its two buttons
   S_MASTER_GOT, S_MASTER_HOW,  // V2: the Master Ball earned ("Master Ball!"), and what it does
+  S_REPEL, S_REPEL_ON_FMT,  // V2: the Repel's name, and "Repel: 10 min" when one is used
 #endif
   STR_COUNT
 };
