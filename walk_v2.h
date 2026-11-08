@@ -10,7 +10,8 @@
 //
 // The scene is put together every frame: the sky from the scene buffer (v2Cached), then the far, middle and
 // near hills, each from a strip of its own (drawn once per zone and time of day, with what stands on it) and
-// shifted by its sway (the near one by the bob), then what stands in front of them, then the stream. The Forest, the Cave
+// shifted by its sway (the near one by the bob), what stands on the middle hills going in before the near one so
+// its edge covers their feet, then the stream. The Forest, the Cave
 // and the Mansion weren't mocked walking: they move the same way, with their own things in the stream.
 
 // ----- the world's clock -----
@@ -291,22 +292,21 @@ static bool v2DrawWalkScene(uint8_t zone, uint8_t tod) {
   }
   v2StripBlit(v2Far, fdx, 0);  // (the far and middle hills sway, but only the near land bobs)
   v2StripBlit(v2Mid, mdx, 0);
+  // what stands on the middle hills sways with them, behind the near hill's edge (Fedor: the Forest's big pines
+  // and the Mansion's fence and graves hung over the hill the Pokemon walks on)
   if (zone == Z_BEACH) {  // palms on the dunes, under the shore's edge, their fronds leaning on alternate beats
     ScKey palm[5];
     scPalmKeys(palm, p);
     const char *const *spr = (fi / 12) % 2 ? V2_PALM_LEAN : SPR_V2_PALM;
     scSprite(spr, 12, 34 + mdx, 224, 4, palm, 5);
     scSprite(spr, 12, 368 + mdx, 236, 4, palm, 5);
-  }
-  v2StripBlit(v2Near, 0, bob);
-  // what stands in front of the hills, on the middle ones: it sways with them
-  if (zone == Z_FOREST) {
+  } else if (zone == Z_FOREST) {
     for (auto &t : SC_FOREST_BIG) scRole(SPR_V2_PINE, 12, t[0] + mdx, t[1], 4, p, p.mid);
   } else if (zone == Z_MANSION) {
     scGraveyard(mdx, 0);
-  } else if (zone == Z_CAVE) {
-    scCaveGlints();
   }
+  v2StripBlit(v2Near, 0, bob);
+  if (zone == Z_CAVE) scCaveGlints();  // glints in the dark, over it all
   v2Stream(zone, p, f);
   scGradeTod = 0;
   return true;

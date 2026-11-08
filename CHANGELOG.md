@@ -23,6 +23,7 @@ A new look for every screen, on the Knomi, Mac, Windows and the web. Your Pokém
 - **The trophy room:** all 25 medals as things in one room, a gleam sweeping over the ones you've won; tap one for its card.
 - **Who's That? counts down:** ten seconds for each silhouette, alone or in a Showdown; out of time counts as wrong, and the answer shows.
 - **Every Pokémon on its feet:** each one stands and walks on the ground instead of floating over its shadow, and big ones like Snorlax, Lapras and Dragonite come out bigger.
+- **The hills in order:** the Forest's big pines and the Mansion's fence and graves stand behind the hill your Pokémon walks on, not over it.
 - **And more:** a new evolution scene, more lines under your Pokémon's name, a new click sound, **ERASE EVERYTHING** asks twice, and while your Pokémon sleeps only the home screen dims.
 - **The save** has a name of its own: an older save is copied over on the first start, and left as it was.
 

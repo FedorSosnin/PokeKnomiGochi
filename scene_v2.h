@@ -526,7 +526,8 @@ static int scLay(const ScLayer *L, int nl, int x, int y) {
   return 0;
 }
 // Stepped hills, each with a lit top row and a checker fringe under it. from = 1 draws them all; 2 draws
-// the nearer ones again, over the trees and houses that stand on the far ones.
+// the nearer ones again, over the trees and houses that stand on the far ones; 3 the near one alone, over
+// what stands on the middle ones.
 static void scHills(const ScLayer *L, int nl, double lit, int from) {
   Rgb litc[3], half[3];
   for (int i = 0; i < nl; i++) {
@@ -668,6 +669,7 @@ static void scLandForest(const ScPal &p) {
   scPineWall(p);
   scStdHills(p, 2);
   for (auto &t : SC_FOREST_BIG) scRole(SPR_V2_PINE, 12, t[0], t[1], 4, p, p.mid);
+  scStdHills(p, 3);  // the near hill again, over the big pines' feet: they stand on the middle hills
   scGrass(p, grass, 4);
   scFlowers(flowers, 3, &pink, 1);
 }
@@ -772,14 +774,17 @@ static void scMansionFar(const ScPal &p) {  // on the rise: the mansion and a ba
   const ScKey bare[1] = { { '1', p.dark } };
   scSprite(SPR_V2_BARE, 11, 28, 170, 4, bare, 1);
 }
-static void scGraveyard(int dx, int dy) {  // down the right slope, behind an iron fence
-  static const int16_t stones[7][3] = { {352, 258, 3}, {378, 252, 3}, {404, 262, 3}, {428, 256, 3}, {364, 286, 4}, {402, 290, 4}, {436, 284, 3} };
+// down the right slope, behind an iron fence, all on the middle hill, where the near hill's edge covers the
+// fence's foot (Fedor: the fence and graves hung over the hill the Pokemon walks on). The fence stands 22 px
+// higher than the mockup had it, so it still shows over that edge; the mockup's three front stones, which the
+// edge would hide but for slivers, are gone.
+static void scGraveyard(int dx, int dy) {
+  static const int16_t stones[4][2] = { {352, 258}, {378, 252}, {404, 262}, {428, 256} };
   const ScKey stone[2] = { { 'o', 0x0D0B20 }, { 's', 0x5A5F7C } };
-  for (int i = 0; i < 7; i++)
-    if (i % 3 == 1) scSprite(SPR_V2_CROSS, 7, stones[i][0] + dx, stones[i][1] + dy, stones[i][2], stone, 2);
-    else scSprite(SPR_V2_TOMB, 7, stones[i][0] + dx, stones[i][1] + dy, stones[i][2], stone, 2);
-  scFence(312 + dy, 340 + dx, 466 + dx, 0x0D0B20, 0x0D0B20, 18);
-  for (int x = 340; x < 466; x += 18) scRect(x + 1 + dx, 292 + dy, x + 2 + dx, 295 + dy, 0x0D0B20);
+  for (int i = 0; i < 4; i++)
+    scSprite(i == 1 ? SPR_V2_CROSS : SPR_V2_TOMB, 7, stones[i][0] + dx, stones[i][1] + dy, 3, stone, 2);
+  scFence(290 + dy, 340 + dx, 466 + dx, 0x0D0B20, 0x0D0B20, 18);
+  for (int x = 340; x < 466; x += 18) scRect(x + 1 + dx, 270 + dy, x + 2 + dx, 273 + dy, 0x0D0B20);  // spikes
 }
 static void scMansionZone() {
   const ScPal p = scMansionPal();
@@ -790,6 +795,7 @@ static void scMansionZone() {
   scMansionFar(p);
   scStdHills(p, 2);
   scGraveyard(0, 0);
+  scStdHills(p, 3);  // the near hill again, over the graveyard's feet: it's on the middle hill
   static const int16_t grass[2][2] = { {40, 330}, {120, 304} };
   scGrass(p, grass, 2);
 }
