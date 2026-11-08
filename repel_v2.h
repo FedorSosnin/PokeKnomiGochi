@@ -29,7 +29,9 @@ static const char *const SPR_V2_REPEL[18] = {
   "..................",
   "..................",
 };
-static void v2RepelIcon(int x, int y, int s) {  // its top left at (x, y), cells of s px
+// its top left at (x, y), cells of s px; the can itself is 1.5 cells left of the square's middle and 1 cell up
+// (the mist is on its right), so one meant to sit in the middle goes at v2RepelIcon(cx - 7.5 s, cy - 8 s)
+static void v2RepelIcon(int x, int y, int s) {
   static const ScKey K[8] = { { 'k', 0x1B1B25 }, { 'S', 0x787E8C }, { 's', 0xC8CCD4 }, { 'V', 0x5A3A8C },
                               { 'v', 0x8A5CC8 }, { 'h', 0xA888E0 }, { 'w', 0xFFFFFF }, { 'm', 0xE85AA8 } };
   scScreen();
@@ -136,7 +138,7 @@ static void v2CardItems() {
   v2ItemBar(188, pet.masterBar / (float)MASTER_FIGHTS, t, v2MasterInk('q'));
   gfx->fillRect(112, 218, 242, 2, C565(0xe4, 0xea, 0xf2));
   // the Repel: how many you hold, the play to the next; while one runs, its minutes left
-  v2RepelIcon(CX - 27, 228, 3);
+  v2RepelIcon(CX - 22, 228, 3);  // (the can in the middle, under the board)
   if (pet.repelHeld) drawCountBadge(CX + 26, 234, pet.repelHeld);
   snprintf(b, sizeof(b), T(S_REPEL_EARN_FMT), (unsigned)(REPEL_PLAY_S / 60));
   v2ItemHead(T(S_REPEL), b, 288);
@@ -154,7 +156,7 @@ static void v2CardItems() {
 static bool v2RepelSeat() { return pet.repelHeld || pet.repelOn(); }
 // its seat (the bubble's own, centre (cx, cy)): the spray, how many you hold, and the minutes left while one runs
 static void v2RepelSeatDraw(int cx, int cy) {
-  v2RepelIcon(cx - 27, cy - 27, 3);
+  v2RepelIcon(cx - 22, cy - 24, 3);  // the can in the middle of its seat (Fedor)
   if (pet.repelHeld) v2CountBadge(cx + 22, cy - 28, pet.repelHeld);
   if (pet.repelOn()) {
     char b[8];
@@ -218,7 +220,7 @@ static void v2FoodDropDraw() {  // over everything, the bag too
   if (v2DropItem < 4)  // turning a little as it falls
     drawMapTurned(FOOD[v2DropItem], HOME_ICON_N, 3, v2DropSpin * V2_DROP_TURN * k, v2DropX, cy, HOME_ICON_N / 2.0f, HOME_ICON_N / 2.0f);
   else
-    v2RepelIcon(v2DropX - 27, cy - 27, 3);  // the Repel, dropping too (Fedor)
+    v2RepelIcon(v2DropX - 22, cy - 24, 3);  // the Repel, dropping too (Fedor), the can centred
 }
 
 // used from the backpack: it starts, and the home says for how long; one already running can't be doubled

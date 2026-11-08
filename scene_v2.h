@@ -206,14 +206,16 @@ static void v2DrawBand() {
   }
 }
 
-// The icons on their circle. Asleep, all but the moon are slate shadows: ink would vanish on the band.
+// The icons on their circle. Asleep, all but the moon are slate shadows: ink would vanish on the band. With the
+// backpack open, all but the bag are (the band over them has no tail pointing at the bag).
 static void v2RepelBagBadge(int cx, int cy);  // (repel_v2.h, below: the Repel)
 static bool v2RepelSeat();
 static void v2RepelSeatDraw(int cx, int cy);
 static void v2DrawIcons() {
+  bool bag = feedMenuUntil != 0;  // the backpack open: all but the bag go dim, as they do while it sleeps (Fedor)
   for (int i = 0; i < BTN_COUNT; i++) {
     int x = buttons[i].cx - BTN_HALF, y = buttons[i].cy - BTN_HALF;
-    if (pet.sleeping && i != BTN_LIGHT) v2MapFlat(buttons[i].icon, HOME_ICON_N, x, y, 3, C565(0x3a, 0x4a, 0x5a));
+    if ((pet.sleeping && i != BTN_LIGHT) || (bag && i != 0)) v2MapFlat(buttons[i].icon, HOME_ICON_N, x, y, 3, C565(0x3a, 0x4a, 0x5a));
     else drawMap(buttons[i].icon, HOME_ICON_N, x, y, 3, false);
   }
   v2RepelBagBadge(buttons[0].cx + 22, buttons[0].cy - 22);  // a Repel running: the minutes left, on the bag

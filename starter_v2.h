@@ -64,14 +64,52 @@ static void v2AskDraw(const V2Ask &a, const char *name) {
 
 // ----- the starter screen (v2d-starter.gif, r29-starter-no-names.png, v2h-starter-tap.gif) -----
 // The four starters walk side by side toward you through the Field while the world slides by (walk_v2.h's
-// scene and clock). Tap one and all four stop, the world holds still, the one tapped hops with a ring at its
-// feet and the question slides up. Tapping another switches to it; BACK, or a tap anywhere else, slides the
+// scene and clock). Tap one and all four stop, the world holds still, the one tapped hops, the other three go
+// dim (Fedor: cleaner than the ring of dots it had at its feet) and the question slides up. Tapping another switches to it; BACK, or a tap anywhere else, slides the
 // question down and they walk on. YES makes it yours at once. A starter whose shiny form you own walks in
 // shiny, sparkles and all, and is yours shiny.
 static const int16_t V2_STARTERS[4] = { 1, 4, 7, 25 };  // Bulbasaur, Charmander, Squirtle, Pikachu
 static const int16_t V2_STARTER_X[4] = { 100, 186, 276, 364 };
 #define V2_STARTER_FEET 312
 #define V2_STARTER_S 3  // their scale: 3x (Fedor: 2x looked small on the Knomi)
+
+// The board's two lines: broken at its first space ("CHOOSE" / "YOUR STARTER"), or in Japanese, which has none,
+// where the hiragana turn to katakana ("SAISHO NO" / "POKEMON WO ERABU"); the second line's start is cut + skip.
+// -1: one line.
+static int v2TitleCut(const char *s, int &skip) {
+  const char *sp = strchr(s, ' ');
+  skip = 1;
+  if (sp) return sp - s;
+  skip = 0;
+  int prev = 0;  // 1 hiragana, 2 katakana
+  for (const unsigned char *u = (const unsigned char *)s; *u;) {
+    int len = *u < 0x80 ? 1 : (*u >> 5) == 6 ? 2 : (*u >> 4) == 14 ? 3 : 4, kind = 0;
+    if (len == 3 && u[0] == 0xE3 && u[1] && u[2]) {
+      uint32_t cp = ((u[0] & 15) << 12) | ((u[1] & 63) << 6) | (u[2] & 63);
+      kind = cp >= 0x3041 && cp <= 0x309F ? 1 : cp >= 0x30A0 && cp <= 0x30FF ? 2 : 0;
+    }
+    if (prev && kind && kind != prev) return (const char *)u - s;
+    if (kind) prev = kind;
+    for (int i = 0; i < len && *u; i++) u++;
+  }
+  return -1;
+}
+// a board with two lines, as v2SignIn()'s with one
+static void v2Sign2(const char *a, const char *b, int y) {
+  setSize(2);
+  int wa = textW(a, 2), wb = textW(b, 2), w = (wa > wb ? wa : wb) + 28, x0 = CX - w / 2;
+  const uint16_t dark = C565(0x3a, 0x24, 0x14);
+  gfx->fillRect(x0 - 3, y - 3, w + 7, 53, dark);
+  gfx->fillRect(x0, y, w + 1, 47, C565(0x8a, 0x5a, 0x30));
+  gfx->fillRect(x0, y, w + 1, 4, C565(0xb0, 0x7a, 0x45));
+  gfx->fillRect(x0 + 5, y + 21, 4, 4, dark);  // its nails
+  gfx->fillRect(x0 + w - 8, y + 21, 4, 4, dark);
+  gfx->setTextColor(C565(0xff, 0xf3, 0xdc));
+  setCur(centerX(a, 2), y + 6);
+  printT(a);
+  setCur(centerX(b, 2), y + 26);
+  printT(b);
+}
 
 static PmdMon *v2StarterPmd = nullptr;  // the four sprites, while the screen is up
 static int8_t v2StarterSel = -1;        // the one tapped, or -1: they walk
@@ -126,16 +164,7 @@ static void v2StarterScreen() {
     PmdMon &m = v2StarterPmd[k];
     if (!m.loaded) continue;
     int x = V2_STARTER_X[k], feet = V2_STARTER_FEET + v2Bob;
-    bool sel = k == v2StarterSel;
-    if (sel) {  // a ring of dark cells round its feet, turning slowly
-      scScreen();
-      scGradeTod = 0;
-      for (int i = 0; i < 12; i++) {
-        float a = i * 0.5235988f + now * 0.0012f;
-        int cx = x + (int)(cosf(a) * 44), cy = feet + 2 + (int)(sinf(a) * 12);
-        scGridRect(cx - 2, cy - 2, cx + 2, cy + 2, 0x1B1B25);
-      }
-    }
+    bool sel = k == v2StarterSel, dim = v2StarterSel >= 0 && !sel;  // the three not tapped, dim
     v2PetShadow(x, feet - 2, 34);
     uint8_t act = PMD_IDLE;
     uint32_t t = now + k * 230;  // standing, out of step
@@ -147,14 +176,32 @@ static void v2StarterScreen() {
       t = now - v2StarterSelT;
       hop = SNAP2((int)(fabsf(sinf(t * 0.00698f)) * 16));
     }
+    uint16_t keep[256];
+    bool shiny = m.shiny;
+    if (dim) {  // its colours 55% of the way to a dusky blue, and no sparkles
+      memcpy(keep, m.pal, m.palCount * sizeof(uint16_t));
+      for (int i = 0; i < m.palCount; i++) m.pal[i] = v2Blend(m.pal[i], C565(0x26, 0x2c, 0x44), 140);
+      m.shiny = false;
+    }
     gPmdForceScale = V2_STARTER_S;
     drawPmdActM(m, act, x, feet - hop, t, true, false, V2_STARTER_S);
     gPmdForceScale = 0;
+    if (dim) {
+      memcpy(m.pal, keep, m.palCount * sizeof(uint16_t));
+      m.shiny = shiny;
+    }
   }
 
-  char b[48];
-  v2Sign(v2Caps(T(S_CHOOSE_STARTER), b, sizeof(b)), 36);
-  v2SmallPanel(T(S_TAP_ONE), 76);
+  char b[48], l1[48];  // the board on two lines (Fedor: on one it ran off the round screen)
+  v2Caps(T(S_CHOOSE_STARTER), b, sizeof(b));
+  int skip, cut = v2TitleCut(b, skip);
+  if (cut > 0) {
+    snprintf(l1, sizeof(l1), "%.*s", cut, b);
+    v2Sign2(l1, b + cut + skip, 36);
+  } else {
+    v2Sign(b, 36);
+  }
+  v2SmallPanel(T(S_TAP_ONE), cut > 0 ? 98 : 76);
   if (v2StarterAsked >= 0) v2AskDraw(v2StarterQ, dexName(V2_STARTERS[v2StarterAsked]));
 }
 
