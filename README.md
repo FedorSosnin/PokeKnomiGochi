@@ -24,13 +24,13 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Fill the Pokédex.** All 151, with their shiny forms, each caught with 1 to 3 stars. Every entry turns round to show its Pokémon from all sides.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Travel the island.** Five zones on a round island that's alive: foam runs round the coast, the pines sway and the Mansion's windows light up and go dark. See what's still missing in each.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Travel Knomi Island.** Five zones on a round island that's alive: foam runs round the coast, the pines sway and the Mansion's windows light up and go dark. See what's still missing in each.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Five mini games.** Berry Drop, PokeRun, PikaSurf, PokeDungeon and Who's That Pokémon?, on cartridges in an old TV. **Play Again!** at the end.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Buddies.** Knomis, Macs, PCs and browsers on the same Wi-Fi visit each other. Their Pokémon walk beside yours, give it a Party Boost, and battle, trade and play games for two.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **A trophy room.** All 25 medals as things in one room: badges in a case, statues, cups, a shiny gem. Tap one to see how to earn it.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **A trophy room.** All 25 medals as things in one room: badges in a case, statues, cups, a shiny gem, a gleam sweeping over the ones you've won. Tap one to see how to earn it.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Care for it.** Feed it berries from the backpack, give it a bath and turn the lights off for bed. It evolves when it's ready, and one day it says goodbye and walks off over the hill.
 
@@ -57,13 +57,13 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 |:--:|:--:|:--:|
 | ![The card's profile: Pikachu on the rug, its streak, bond, favorite berry and age](docs/images/v2/card-profile.png) | ![Battle stats: ATK, DEF, SPD and weight in bars, and the battle wins](docs/images/v2/card-battle.png) | ![Progress: the level, the time to the next, and when it evolves](docs/images/v2/card-progress.png) |
 | **Its card** | **Battle stats** | **How close it is to evolving** |
-| ![Charizard using a fire attack on a wild Pikachu](docs/images/v2/battle.png) | ![The catch: Master, Ultra and Poké Balls along the bottom, a Pokémon running](docs/images/v2/catch-aim.png) | ![Caught GENGAR! with three stars, new in the Pokédex](docs/images/v2/caught.png) |
+| ![Charizard using a fire attack on a wild Pikachu](docs/images/v2/battle.png) | ![The catch: Master, Poké and Ultra Balls along the bottom, a Pokémon running](docs/images/v2/catch-aim.png) | ![Caught GENGAR! with three stars, new in the Pokédex](docs/images/v2/caught.png) |
 | **Battle wild Pokémon** | **Pick a ball and throw** | **Catch them, 1 to 3 ★** |
-| ![The Pokédex at 55 of 151, with stars and sparkling shinies](docs/images/v2/pokedex.png) | ![Travel: the round island with five zones, the coast's foam and waves moving](docs/images/v2/travel.gif) | ![The Forest's Pokémon: 23 of 41, with Search](docs/images/v2/zone.png) |
-| **Fill the Pokédex** | **Travel the island** | **See what's missing** |
+| ![The Pokédex at 55 of 151, with stars and sparkling shinies](docs/images/v2/pokedex.png) | ![Knomi Island: the round island with five zones, the coast's foam and waves moving](docs/images/v2/travel.gif) | ![The Forest's Pokémon: 23 of 41, with Search](docs/images/v2/zone.png) |
+| **Fill the Pokédex** | **Travel Knomi Island** | **See what's missing** |
 | ![The games: five cartridges in an old TV](docs/images/v2/games-tv.png) | ![PokeRun's how-to card over the game](docs/images/v2/howto.png) | ![Berry Drop's end: the score, Play Again! and the Repel bar](docs/images/v2/game-end.png) |
 | **Five mini games** | **How to play, before each game** | **Play Again!** |
-| ![Who's That Pokémon? A silhouette and three names](docs/images/v2/quiz.png) | ![The trophy room: 14 of 25 medals](docs/images/v2/trophy-room.png) | ![The shiny medal's card: a gem under a spotlight, earned](docs/images/v2/medal-card.png) |
+| ![Who's That Pokémon? A silhouette, three names and ten seconds on the clock](docs/images/v2/quiz.png) | ![The trophy room: 14 of 25 medals](docs/images/v2/trophy-room.png) | ![The shiny medal's card: a gem under a spotlight, earned](docs/images/v2/medal-card.png) |
 | **Who's That Pokémon?** | **The trophy room** | **How to earn each medal** |
 | ![The backpack open over the icons: three berries, a candy and a Repel](docs/images/v2/backpack.png) | ![Gengar in the bath, with bubbles and a duck](docs/images/v2/bath.png) | ![A new medal dropping in on a ribbon](docs/images/v2/medal-banner.png) |
 | **The backpack** | **Bath time** | **New medals** |
@@ -174,7 +174,7 @@ Three items you earn by playing, kept with you from one Pokémon to the next (up
 | **Master Ball** | Every 100 battles you fight to the end, won or lost | Always catches the Pokémon it hits. |
 | **Repel** | Every 20 minutes of mini games | Spray it from the backpack: for 3 minutes, weaker wild Pokémon stay away. |
 
-Running away, battles with buddies and PokeDungeon don't count toward the balls. Ultra and Master Balls sit beside your Poké Balls on the catch screen while you have them; one that misses isn't used up. While a Repel works, wild Pokémon below your Pokémon's level, or with lower base stats, stay away, and in a zone you haven't finished, every Pokémon there except its legendary is equally likely; shiny odds don't change. The backpack shows a badge with its minutes left. Only time spent actually playing counts toward a Repel: sitting in a game without touching it earns nothing.
+Running away, battles with buddies and PokeDungeon don't count toward the balls. Ultra and Master Balls sit beside your Poké Balls on the catch screen while you have them (with both, the Poké Ball in the middle); one that misses isn't used up. While a Repel works, wild Pokémon below your Pokémon's level, or with lower base stats, stay away, and in a zone you haven't finished, every Pokémon there except its legendary is equally likely; shiny odds don't change. The backpack shows a badge with its minutes left. Only time spent actually playing counts toward a Repel: sitting in a game without touching it earns nothing.
 
 <p align="center"><img src="docs/images/v2/card-ultra.png" width="240" alt="The card's Ultra Ball page: the ball hovering in a gold glow, what it does, and 9 of 25 battles toward the next"> <img src="docs/images/v2/card-master.png" width="240" alt="The card's Master Ball page"> <img src="docs/images/v2/card-repel.png" width="240" alt="The card's Repel page"></p>
 
@@ -206,7 +206,7 @@ Each kind of training stops at 100. The card's **Training** page (swipe up, then
 
 ### Travel
 
-Tap the **map** icon in the middle of the bottom to open **Travel**: a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
+Tap the **map** icon in the middle of the bottom to open **Travel**: **Knomi Island**, a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
 
 ### Games
 
@@ -215,12 +215,12 @@ Tap the **handheld** icon, second from the left, for the mini games: cartridges 
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs down. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?
 - **PikaSurf:** your Pokémon surfs down the rushing water on a board; tilt, drag it or use the arrow keys to dodge the rocks coming up in three lanes. Pikachu surfs alongside and never hits one, until he pulls ahead out of sight. It keeps speeding up, and one rock ends the run.
-- **Who's That Pokémon?:** name the silhouette, ten rounds per game, never the same Pokémon twice.
+- **Who's That Pokémon?:** name the silhouette, ten rounds per game, never the same Pokémon twice. Each one has ten seconds on the clock: run out and it counts as wrong, and the answer shows.
 - **Berry Drop:** in the woods under two tall berry trees, tilt left and right, or drag your Pokémon with a finger, to catch falling berries. They fall faster with every catch, with no top speed, so every game ends.
 
 ### Medals
 
-Swipe from right to left for the trophy room: all 25 medals as things in one room, the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes. One you haven't won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, and how far along you are where the game counts it. A new medal drops in on a ribbon; tap it to see its card.
+Swipe from right to left for the trophy room: all 25 medals as things in one room, the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes. Every few seconds a gleam sweeps over the ones you've won; one you haven't won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, and how far along you are where the game counts it. A new medal drops in on a ribbon; tap it to see its card.
 
 ### Buddies
 
@@ -278,7 +278,7 @@ A Poké Ball case for the Knomi, ready to print in three colors. It's a remix: t
 
 | | |
 |:--:|:--:|
-| ![The printed case in hand](docs/images/knomi-in-hand.jpg) | ![The printed case on a desk](docs/images/knomi-on-desk.jpg) |
+| ![The printed case in hand, showing V2's starter screen](docs/images/v2/knomi-in-hand.jpg) | ![The printed case on a desk, showing V2's starter screen](docs/images/v2/knomi-on-desk.jpg) |
 | **Printed and in hand** | **On the desk** |
 | ![The finished case](docs/images/case.png) | ![The parts laid out by color](docs/images/case-parts.png) |
 | **Render** | **Parts in their recommended colors** |
@@ -343,18 +343,18 @@ The code also builds for the Waveshare ESP32-S3-Touch-AMOLED-1.75, a bigger roun
 
 ## PokeWebGochi (browser)
 
-**[Play in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet: the same game, with the Knomi screen centered on a black page. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.
+**[Play in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet: the same game, the Knomi screen in a Poké Ball ring on a black page. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.
 
 | | |
 |:--:|:--:|
-| <img src="docs/images/web-desktop.png" alt="PokeWebGochi in a computer's browser" width="520"> | <img src="docs/images/web-phone.png" alt="PokeWebGochi on a phone" width="170"> |
+| <img src="docs/images/v2/web-desktop.png" alt="PokeWebGochi in a computer's browser: Charmeleon in the Field on a sunny morning, the controls above and the buttons below" width="520"> | <img src="docs/images/v2/web-phone.png" alt="PokeWebGochi on a phone: the same Charmeleon, with Enable tilt and Vibration among the buttons" width="175"> |
 | **On a computer** | **On a phone** |
 
-- **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser.
+- **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser. Coming from V1, your Pokémon comes along by itself, and V1's save stays as it was.
 - **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.
-- **Controls:** tap, hold and swipe the screen. On a phone, tilt it to aim (iPhones ask permission once). On Android it also buzzes with taps, meals, medals and catches; **Vibration** under the screen turns that off (iPhone browsers can't vibrate). On a computer, the mouse is a finger that presses when you click, the left and right arrows tilt, all four arrows walk in PokeDungeon, and Space is the Knomi's button.
+- **Controls:** tap, hold and swipe the screen, as on the Knomi (see [How to play](#how-to-play)). On a phone, tilt it to aim the ball and to steer in PikaSurf and Berry Drop; where the browser asks first, **Enable tilt** turns it on. On Android it also buzzes along with the sounds; **Vibration** turns that off (iPhone browsers can't vibrate). On a computer, the mouse is a finger that presses when you click, the left and right arrows tilt, all four arrows walk in PokeDungeon, and Space is the Knomi's button.
 - **Size:** Small (the default), Medium or Large, like the Mac app. On a small screen it shrinks to fit.
-- **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and PokeMacGochi use it too, so all three meet each other.
+- **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and the Mac and Windows apps use it too, so they all meet each other.
 - **Updates:** it updates itself: reload to get the newest version. A tab left open checks every hour and says when there is one; with **Auto-update** on (the button under the game; on unless you turn it off), it reloads onto it by itself once nobody has touched it for a minute on the home screen.
 
 To build it yourself, run `webgame/build.sh` (needs [Emscripten](https://emscripten.org)); `tools/publish_web.sh` publishes it. The relay's code is in [relay/](relay/).
