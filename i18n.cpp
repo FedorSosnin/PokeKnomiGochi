@@ -73,7 +73,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Limpio y reluciente!", "Tiene sue\244o...", "Buenos d\241as!",
     "Est\240s seguro?", "No se puede deshacer.",
     "Siempre atrapa al Pok\202mon que golpea.",
-    "Durante %u minutos, los Pok\202mon salvajes m\240s d\202biles no aparecen. Se usa desde la mochila.",
+    "Aleja a los Pok\202mon d\202biles durante %u min.",
     "MEDALLAS", "DATOS",
     "Ultra Ball", "Triplica la captura si acierta.", "Triplica la captura!",
 #endif
@@ -144,7 +144,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Squeaky clean!", "Getting sleepy...", "Good morning!",
     "Are you sure?", "There's no going back.",
     "Always catches the Pok\202mon it hits.",
-    "For %u minutes, weaker wild Pok\202mon stay away. Use it from the backpack.",
+    "Weaker wild Pok\202mon stay away for %u min.",
     "MEDALS", "STATS",
     "Ultra Ball", "Triples your catch chance when it hits.", "Triples the catch chance!",
 #endif
@@ -215,7 +215,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Tout propre!", "Il a sommeil...", "Bonjour!",
     "Tu es s\226r?", "Impossible de l\'annuler.",
     "Attrape toujours le Pok\202mon touch\202.",
-    "Pendant %u minutes, les Pok\202mon sauvages plus faibles restent loin. S\'utilise depuis le sac.",
+    "\220loigne les Pok\202mon faibles pendant %u min.",
     "M\220DAILLES", "STATS",
     "Hyper Ball", "Triple la capture si elle touche.", "Triple la capture!",
 #endif
@@ -291,7 +291,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Blitzsauber!", "Wird m\201de...", "Guten Morgen!",
     "Bist du sicher?", "Es gibt kein Zur\201ck.",
     "F\204ngt jedes Pok\202mon, das er trifft.",
-    "%u Minuten lang bleiben schw\204chere wilde Pok\202mon fern. Im Rucksack einsetzen.",
+    "H\204lt schw\204chere wilde Pok\202mon %u Min. fern.",
     "MEDAILLEN", "WERTE",
     "Hyperball", "Dreifache Fangchance, wenn er trifft.", "Dreifache Fangchance!",
 #endif
@@ -362,7 +362,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pulito e splendente!", "Ha sonno...", "Buongiorno!",
     "Sei sicuro?", "Non si torna indietro.",
     "Cattura sempre il Pok\202mon che colpisce.",
-    "Per %u minuti, i Pok\202mon selvatici pi\227 deboli stanno lontani. Si usa dallo zaino.",
+    "Allontana i Pok\202mon deboli per %u min.",
     "MEDAGLIE", "STATISTICHE",
     "Ultra Ball", "Triplica la cattura se colpisce.", "Triplica la cattura!",
 #endif
@@ -433,7 +433,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Limpinho!", "Com sono...", "Bom dia!",
     "Tens a certeza?", "Nao d\240 para desfazer.",
     "Captura sempre o Pok\202mon que atinge.",
-    "Durante %u minutos, os Pok\202mon selvagens mais fracos ficam longe. Usa-se na mochila.",
+    "Afasta os Pok\202mon fracos durante %u min.",
     "MEDALHAS", "DADOS",
     "Ultra Ball", "Triplica a captura se acertar.", "Triplica a captura!",
 #endif
@@ -527,7 +527,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ぴかぴか！", "ねむくなってきた...", "おはよう！",
     "ほんとうに いいの?", "もとに もどせません。",
     "あたれば かならず つかまえる。",
-    "%u ふんの あいだ、 よわい やせいの ポケモンが でてこない。 リュックから つかう。",
+    "%u ふんの あいだ、 よわい やせいの ポケモンが でてこない。",
     "メダル", "つよさ",
     "ハイパーボール", "あたると つかまえやすさが 3ばいに なる。", "つかまえやすさ 3ばい!",
 #endif
@@ -603,7 +603,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "반짝반짝 깨끗해요!", "졸려요...", "좋은 아침!",
     "정말 지울까요?", "되돌릴 수 없어요.",
     "맞으면 반드시 잡혀요.",
-    "%u분 동안 약한 야생 포켓몬이 나오지 않아요. 가방에서 써요.",
+    "%u분 동안 약한 야생 포켓몬이 나오지 않아요.",
     "메달", "능력치",
     "하이퍼볼", "맞으면 잡힐 확률이 3배가 돼요.", "포획률 3배!",
 #endif

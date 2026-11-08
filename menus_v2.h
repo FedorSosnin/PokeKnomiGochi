@@ -399,26 +399,25 @@ static void v2CardMon(int feet, int maxH, uint8_t maxS) {
   drawPmdAct(PMD_IDLE, CX, feet, millis(), true, false, maxS);
   gPmdForceScale = 0;
 }
-// The Profile: your Pokemon big on the rug, and in the panel the streak by its flame (the best at the right), the
-// bond by a heart with its bar, the favourite berry by its icon (the age at the right, or on a line of its own when
-// the two would meet)
+// The Profile: its name alone on the board (Fedor: room for a long one), the level in white under it as the
+// Pokedex has its number, with the species before it under a nickname ("PIKACHU Lv.22"); your Pokemon big on the
+// rug; in the panel the streak by its flame (the best at the right), the bond by a heart with its bar, the
+// favourite berry by its icon (the age at the right, or on a line of its own when the two would meet)
 static void v2CardProfile() {
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   char head[32];
-  snprintf(head, sizeof(head), T(S_NAME_FMT), pet.shiny ? "*" : "", nm, pet.level());
+  snprintf(head, sizeof(head), "%s%s", pet.shiny ? "*" : "", nm);
   int right = v2Sign(head);
   drawMap(SPR_PENCIL, 10, right + 4, V2_BOARD_Y + 2, 2, false);  // the name can be changed: tap the board
-  cardNameBottom = V2_BOARD_Y + 32;
-  int top = V2_BOARD_Y + 34;
-  if (pet.nick[0]) {  // its species under a nickname
-    char par[32];
-    snprintf(par, sizeof(par), "(%s)", dexName(pet.speciesId));
-    gfx->setTextColor(V2_ON_DARK);
-    setSize(2);
-    setCur(centerX(par, 2), V2_BOARD_Y + 34);
-    printT(par);
-    cardNameBottom = top = V2_BOARD_Y + 54;
-  }
+  char sub[40];
+  if (pet.nick[0]) snprintf(sub, sizeof(sub), T(S_NAME_FMT), "", dexName(pet.speciesId), pet.level());
+  else snprintf(sub, sizeof(sub), T(S_LVL_FMT), pet.level());
+  gfx->setTextColor(UI_WHITE);
+  setSize(2);
+  setCur(centerX(sub, 2), V2_BOARD_Y + 35);
+  printT(sub);
+  cardNameBottom = V2_BOARD_Y + 54;  // (a tap on the line under the board renames too)
+  int top = V2_BOARD_Y + 54;
   char line[48], streak[48], best[48], berryName[48], age[48];
   snprintf(line, sizeof(line), T(S_STREAK_FMT), pet.streak, pet.bestStreak);
   v2SplitPair(line, streak, best, sizeof(streak));
