@@ -131,7 +131,8 @@ static int v2ItemBob() {
 // a soft glow behind it, rings on the 2 px grid in its own colour, so a dark ball shows up in front of the room's
 // window (Fedor)
 static void v2ItemGlow(int cx, int cy, uint16_t col) {
-  static const uint8_t R[4] = { 50, 56, 62, 68 }, A[4] = { 150, 105, 66, 34 };  // each ring's reach, its strength /256
+  // each ring's reach, and its strength /256 (Fedor: half the first glow's, which was 150, 105, 66, 34)
+  static const uint8_t R[4] = { 50, 56, 62, 68 }, A[4] = { 75, 52, 33, 17 };
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   for (int y = (cy - 68) & ~1; y <= cy + 68; y += 2)
     for (int x = (cx - 68) & ~1; x <= cx + 68; x += 2) {
