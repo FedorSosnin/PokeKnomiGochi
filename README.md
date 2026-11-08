@@ -8,8 +8,6 @@ A Pokémon tamagotchi for the **BTT Knomi V2**, the little round screen made for
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows).
 
-This is an adaptation of [**TamaPoke**](https://github.com/socquique/TamaPoke) by Quique Tortosa, who created the original game. PokeKnomiGochi brings it to the Knomi and adds battles, catching and new games. Please give the original a star.
-
 | | | |
 |:--:|:--:|:--:|
 | ![Gengar at home](docs/images/home.png) | ![Charizard's fire attack on a wild Pikachu](docs/images/battle.png) | ![Aiming a Poké Ball inside the catch rings](docs/images/catch.png) |
@@ -278,7 +276,7 @@ Game rules run on your computer without a board:
 ./test/run_tests.sh
 ```
 
-The code still supports the original Waveshare board that TamaPoke was made for. Its guide is in [`docs/TAMAPOKE-README.md`](docs/TAMAPOKE-README.md), and that document also explains the game's numbers in depth.
+The code also builds for the Waveshare ESP32-S3-Touch-AMOLED-1.75, a bigger round board with a microSD slot. [`docs/WAVESHARE.md`](docs/WAVESHARE.md) explains how to build it, flash it and load the sprites.
 
 ## PokeWebGochi (browser)
 
@@ -342,10 +340,13 @@ To build it yourself, run `windows/build.sh` on a Mac or Linux with [llvm-mingw]
 
 ## Credits and license
 
-- **Game and original firmware:** [TamaPoke](https://github.com/socquique/TamaPoke) by Quique Tortosa and its contributors.
 - **Sprites:** the community artists of [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), under CC BY-NC 4.0.
 - **Full list:** [`CREDITS.md`](CREDITS.md).
 
 The source code is [MIT licensed](LICENSE). The sprites and Pokémon names are not covered by that license and are for **personal, non-commercial use only**. The 3D-printed case is a remix shared under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/); see [`CREDITS.md`](CREDITS.md).
 
 This is an unofficial fan project, not affiliated with or endorsed by Nintendo, Game Freak or The Pokémon Company. Pokémon and all related names are trademarks of their respective owners.
+
+## Thank you
+
+Thank you to [Quique Tortosa](https://github.com/socquique), whose [TamaPoke](https://github.com/socquique/TamaPoke) inspired this game. PokeKnomiGochi began from his original code, which is why his name is in the [license](LICENSE).

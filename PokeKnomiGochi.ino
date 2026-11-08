@@ -1,5 +1,5 @@
-// PokeKnomiGochi - pixel-art tamagotchi inspired by gen 1, adapted from TamaPoke by Quique Tortosa
-// for Waveshare ESP32-S3-Touch-AMOLED-1.75
+// PokeKnomiGochi - a pixel-art Pokemon tamagotchi inspired by gen 1, for the BTT Knomi V2 (and the
+// Waveshare ESP32-S3-Touch-AMOLED-1.75)
 //
 // Libraries (Library Manager or Waveshare repo):
 //   - "GFX Library for Arduino" (moononournation), with CO5300 QSPI support

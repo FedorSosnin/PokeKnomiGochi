@@ -196,7 +196,7 @@ class TestGeneratedFiles(unittest.TestCase):
     """dex.h is generated: if it does not match its generator, someone edited it by hand."""
 
     def test_gen_dex_reproduces_dex_h(self):
-        tmp = tempfile.mkdtemp(prefix='tamapoke-gen-')
+        tmp = tempfile.mkdtemp(prefix='pokeknomigochi-gen-')
         try:
             shutil.copytree(TOOLS, os.path.join(tmp, 'tools'))
             r = subprocess.run([sys.executable, os.path.join(tmp, 'tools', 'gen_dex.py')],

@@ -1,9 +1,9 @@
 # Changelog
 
 All notable changes to the firmware. Versions match the number shown at the
-bottom of the clock/settings screen (swipe down) and `web/manifest.json`.
+bottom of the clock/settings screen (swipe down) and `web/knomi/manifest.json`.
 
-Updating from the [web installer](https://socquique.github.io/TamaPoke/web/)
+Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
 ## [1.51] - 2026-11-06

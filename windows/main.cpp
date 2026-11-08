@@ -778,7 +778,7 @@ static void showAbout() {
                       L"\n\nBy <a href=\"mailto:" AUTHOR_EMAIL L"\">" AUTHOR_EMAIL L"</a>"
                       L"\n<a href=\"" GITHUB_URL L"\">PokeKnomiGochi on GitHub</a>"
                       L"\n<a href=\"" YOUTUBE_URL L"\">YouTube channel</a>"
-                      L"\n\nBased on TamaPoke by Quique Tortosa. Sprites from PMDCollab (CC BY-NC). "
+                      L"\n\nSprites from PMDCollab (CC BY-NC). "
                       L"Pokémon © Nintendo / Game Freak / The Pokémon Company.";
   TASKDIALOGCONFIG cfg = {};
   cfg.cbSize = sizeof(cfg);

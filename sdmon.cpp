@@ -277,8 +277,8 @@ bool sdSerialCommand(const String &line) {
     if (!path.startsWith("/")) path = "/" + path;
     // bounds the write to /mons/: the path arrives as is from the serial line, without
     // sanitizing, so a tampered PUT could write anywhere on the
-    // card. The two real clients (tools/send_sd.py and web/index.html) already
-    // send names with the mons/ prefix.
+    // card. The real client (tools/send_sd.py) already sends names with the mons/
+    // prefix.
     if (!path.startsWith("/mons/") || path.indexOf("..") >= 0) {
       Serial.println("ERR");
       return true;

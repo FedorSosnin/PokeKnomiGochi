@@ -506,7 +506,7 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
   [credits appendAttributedString:aboutLine(@"", @"PokeKnomiGochi on GitHub", @GITHUB_URL)];
   if (strlen(YOUTUBE_URL)) [credits appendAttributedString:aboutLine(@"", @"YouTube channel", @YOUTUBE_URL)];
   [credits appendAttributedString:[[NSAttributedString alloc]
-                                      initWithString:@"\nBased on TamaPoke by Quique Tortosa. Sprites from PMDCollab (CC BY-NC). "
+                                      initWithString:@"\nSprites from PMDCollab (CC BY-NC). "
                                                      @"Pok\u00e9mon \u00a9 Nintendo / Game Freak / The Pok\u00e9mon Company."]];
   NSMutableParagraphStyle *centered = [[NSMutableParagraphStyle alloc] init];
   centered.alignment = NSTextAlignmentCenter;

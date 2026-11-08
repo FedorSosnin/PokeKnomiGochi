@@ -87,7 +87,7 @@ More in the [PokeKnomiGochi README](https://github.com/FedorSosnin/PokeKnomiGoch
 
 ## Credits
 
-Based on [**TamaPoke**](https://github.com/socquique/TamaPoke) by Quique Tortosa. Sprites from [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab) under CC BY-NC 4.0. Pokémon © Nintendo / Game Freak / The Pokémon Company; this is a free, unofficial fan project for personal, non-commercial use.
+Sprites from [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab) under CC BY-NC 4.0. Pokémon © Nintendo / Game Freak / The Pokémon Company; this is a free, unofficial fan project for personal, non-commercial use.
 
 Made by [Fedor](mailto:fedor@3dprintsos.com) · [YouTube](https://youtube.com/3dprintsos)
 
