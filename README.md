@@ -4,7 +4,7 @@
 
 A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made for 3D printers, and for your Mac, your Windows PC and your browser. Raise any of the original 151 as it walks through its own pixel world, battle and catch wild Pokémon, fill your Pokédex, and play mini games by tapping and tilting.
 
-<p align="center"><img src="docs/images/v2/walk-forest.gif" alt="Pikachu walking toward you through the Forest by day while the grass, flowers and pines slide by" width="360"></p>
+<p align="center"><img src="docs/images/v2/knomi-gameboys.gif" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, on a desk beside two Game Boys: Gengar walking past the haunted Mansion" width="720"></p>
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows).
 
