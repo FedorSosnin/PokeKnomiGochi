@@ -202,7 +202,7 @@ Your Pokémon's ATK, DEF and SPD grow as it levels up, and training adds more on
 
 Each kind of training stops at 100. The card's **Training** page (swipe up, then left twice) shows how far along each one is, with **MAX** when it's full, and your Pokémon's weight. Once attack training is maxed, a win says so instead of adding more. A new Pokémon starts training from zero.
 
-<img src="docs/images/v2/card-training.png" width="240" alt="The Training page: ATK, DEF and SPD training, what trains each, and weight">
+<p align="center"><img src="docs/images/v2/card-training.png" width="240" alt="The Training page: ATK, DEF and SPD training, what trains each, and weight"></p>
 
 ### Travel
 

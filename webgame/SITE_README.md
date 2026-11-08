@@ -47,7 +47,7 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 
 Each one stops at 100. The **Training** page on your Pokémon's card shows how far along each one is, and says **MAX** when it's full.
 
-<img src="images/training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each">
+<p align="center"><img src="images/training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each"></p>
 
 ## Moves
 
