@@ -1612,6 +1612,12 @@ void onTap(int16_t x, int16_t y) {
     return;
   }
   if (confirmUntil) {        // "release?" dialog: YES / NO
+#if UI_V2
+    if (timeLeft(confirmUntil) && x >= V2_REL_X0 - 4 && x <= V2_REL_X1 + 4 && y >= V2_REL_Y0 - 4 && y <= V2_REL_Y1 + 4)
+      pet.release();  // V2: RELEASE (KEEP, or anywhere else, keeps it)
+    confirmUntil = 0;
+    return;
+#endif
     if (timeLeft(confirmUntil) && x >= 118 && x <= 218 && y >= 252 && y <= 304) {
       pet.release();
     }
@@ -10294,6 +10300,13 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (confirmUntil) {
+#if UI_V2
+    if (pressIn(x, y, V2_REL_X0, V2_REL_Y0, V2_REL_X1 - V2_REL_X0, V2_REL_Y1 - V2_REL_Y0))  // V2: RELEASE and KEEP
+      return pressSet(t, V2_REL_X0, V2_REL_Y0, V2_REL_X1 - V2_REL_X0, V2_REL_Y1 - V2_REL_Y0, T(S_RELEASE_BTN));
+    if (pressIn(x, y, V2_KEEP_X0, V2_REL_Y0, V2_KEEP_X1 - V2_KEEP_X0, V2_REL_Y1 - V2_REL_Y0))
+      return pressSet(t, V2_KEEP_X0, V2_REL_Y0, V2_KEEP_X1 - V2_KEEP_X0, V2_REL_Y1 - V2_REL_Y0, T(S_KEEP_BTN));
+    return false;
+#endif
     if (pressIn(x, y, 118, 252, 100, 52)) return pressSet(t, 118, 252, 100, 52, T(S_YES));
     if (pressIn(x, y, 248, 252, 100, 52)) return pressSet(t, 248, 252, 100, 52, T(S_NO));
     return false;

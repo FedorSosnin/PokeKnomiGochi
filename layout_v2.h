@@ -49,6 +49,15 @@ static const int16_t V2_BTN[5][2] = { {121, 374}, {173, 403}, {233, 413}, {293, 
 #define V2_PAGE_ARROW_R_PX 22
 #define V2_MIN_TAP 52             // the smallest tap target, canvas px
 
+// the release question (rooms2_px.py release_dialog()): its RELEASE, red, and KEEP, green (the taps read them
+// early in the sketch); a tap anywhere but RELEASE keeps it, as in V1
+#define V2_REL_Y0 266
+#define V2_REL_Y1 312
+#define V2_REL_X0 104   // RELEASE: 104..226
+#define V2_REL_X1 226
+#define V2_KEEP_X0 240  // KEEP: 240..362
+#define V2_KEEP_X1 362
+
 // pet
 #define V2_PET_FEET 296           // ground line of the pet's feet
 #define V2_PET_SHADOW_Y 292       // soft shadow ellipse 40x7, 28% black (35% at night)

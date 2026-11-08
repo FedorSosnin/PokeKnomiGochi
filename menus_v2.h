@@ -2460,17 +2460,21 @@ static void v2ChoiceDialog(const char *q, const char *o1, uint16_t c1, uint16_t 
   v2LabelButton(96, 209, 370, 255, v2Caps(o1, a, sizeof(a)), c1, t1);
   v2LabelButton(96, 271, 370, 317, v2Caps(o2, b, sizeof(b)), c2, t2);
 }
-// "Release GENGAR?" (release_dialog()): YES in red and NO in green, in V1's two boxes
+// "Release GENGAR?" (release_dialog()): under it, what it means ("It goes back to the wild. This cannot be
+// undone."), then RELEASE in red and KEEP in green (Fedor)
 static void v2ReleaseDialog(const char *q) {
   dimFrame();
-  v2Panel(84, 160, 382, 324, 12);
+  v2Panel(84, 140, 382, 330, 12);
   gfx->setTextColor(UI_INK);
   setSize(2);
-  setCur(centerX(q, 2), 196);
+  setCur(centerX(q, 2), 160);
   printT(q);
-  char a[16], b[16];
-  v2LabelButton(121, 255, 215, 301, v2Caps(T(S_YES), a, sizeof(a)), C565(0xe8, 0x50, 0x3a));
-  v2LabelButton(251, 255, 345, 301, v2Caps(T(S_NO), b, sizeof(b)), C565(0x58, 0xb8, 0x68));
+  gfx->setTextColor(V2_INK_MUTED);
+  drawWrappedAt(T(S_RELEASE_WARN), 2, 252, CX, 192, 20, true);
+  char a[24];
+  char b[24];
+  v2LabelButton(V2_REL_X0, V2_REL_Y0, V2_REL_X1, V2_REL_Y1, v2Caps(T(S_RELEASE_BTN), a, sizeof(a)), C565(0xe8, 0x50, 0x3a));
+  v2LabelButton(V2_KEEP_X0, V2_REL_Y0, V2_KEEP_X1, V2_REL_Y1, v2Caps(T(S_KEEP_BTN), b, sizeof(b)), C565(0x58, 0xb8, 0x68));
 }
 // the evolve, goodbye and runaway buttons (v2b-evolve.png): V2 buttons under the pet, breathing a little; a long
 // line goes on two

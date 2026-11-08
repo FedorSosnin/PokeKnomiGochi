@@ -109,6 +109,7 @@ enum StrId : uint8_t {
   S_PLAY_AGAIN,  // V2: the button at the end of a game
   S_TAP_ONE, S_CHOOSE_Q_FMT,  // V2: the starter screen's line under its board, and "Choose PIKACHU?"
   S_THANKS_DAYS_FMT,  // V2: under a goodbye's "Goodbye, GENGAR!" (the visitor's string): "Thank you for 4 days"
+  S_RELEASE_WARN, S_RELEASE_BTN, S_KEEP_BTN,  // V2: the release question's line and its two buttons
 #endif
   STR_COUNT
 };

@@ -201,7 +201,7 @@ static int v2PickPages() { return (pet.eggChoiceCount() + DEXG_PAGE - 1) / DEXG_
 // the bottom; its squares start 6 px in, and the page buttons are level with its middle
 #define V2_PICK_PANEL_H (3 * DEXG_CELL + 12)
 static int v2PickPanelY() {
-  int top = V2_BOARD_Y + 28, h = V2_PICK_PANEL_H + (v2PickPages() > 1 ? 22 : 0);
+  int top = V2_BOARD_Y + 28, h = V2_PICK_PANEL_H + (v2PickPages() > 1 ? 28 : 0);
   return top + (V2_W - top - h) / 2;
 }
 static int v2PickGridY() { return v2PickPanelY() + 6; }
@@ -270,7 +270,7 @@ static void v2PickScreen() {
     drawStars(cx, y + DEXG_CELL - DEXG_STAR_R - 3, DEXG_STAR_R, pet.starsOf(dex, shiny));
   }
   if (pages > 1) {
-    drawDexGridPage(eggPickPage, pages, gy + 3 * DEXG_CELL + 12);
+    drawDexGridPage(eggPickPage, pages, gy + 3 * DEXG_CELL + 18);  // (12 px under the panel: clear of its rim)
     drawPageArrows(eggPickPage, pages, v2PickArrowY());
   }
 }
