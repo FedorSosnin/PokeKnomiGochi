@@ -23,7 +23,7 @@ rsync -a --delete --exclude .git --exclude CNAME web/play/ $SITE/
 echo $DOMAIN > $SITE/CNAME
 cp webgame/SITE_README.md $SITE/README.md
 mkdir -p $SITE/images  # the README's pictures
-for i in web-desktop web-phone home battle catch zones pokedex games buddy buddy-menu press play showdown showdown-win volley food card shiny achievements stats training progress party friend-stats; do
+for i in web-desktop web-phone home battle catch zones pokedex games buddy buddy-menu press play showdown volley food card shiny achievements stats training progress party friend-stats; do
   cp docs/images/$i.png $SITE/images/
 done
 cp docs/images/knomi-updated.jpg docs/images/knomi-in-hand.jpg docs/images/knomi-on-desk.jpg $SITE/images/
