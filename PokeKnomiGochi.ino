@@ -10134,8 +10134,8 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     }
     if (!eggPickDetail) {
-      if (int d = pageArrowAt(x, y, eggPickPage, (pet.eggChoiceCount() + DEXG_PAGE - 1) / DEXG_PAGE, PAGE_ARROW_Y))
-        return pressSet(t, CX + d * pageArrowDx(PAGE_ARROW_Y) - CLOSE_R, PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+      if (int d = pageArrowAt(x, y, eggPickPage, v2PickPages(), v2PickArrowY()))  // (level with its grid)
+        return pressSet(t, CX + d * pageArrowDx(v2PickArrowY()) - CLOSE_R, v2PickArrowY() - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
     }
     return false;
 #endif

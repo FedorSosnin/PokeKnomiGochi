@@ -188,13 +188,24 @@ static void v2StarterTap(int16_t x, int16_t y) {
 // ----- the Pokedex pick -----
 // The Pokedex's own look (the dimmed room, the board, the squares in a white panel, the page buttons), with only
 // the forms you can raise: base forms you have, each form on its own (a shiny one sparkles), each with its stars
-// (they set its genes). Tap one for its entry: it turns round as in the Pokedex, with CHOOSE under it and the X
-// back to the grid; CHOOSE asks the question, and YES makes it yours at once. No X on the grid: one is chosen.
+// (they set its genes). No X on the grid (one has to be chosen), so the panel and its page line sit in the
+// middle of the room between the board and the screen's bottom (Fedor). Tap one for its entry: it turns round as
+// in the Pokedex, with its type under it (not the level it evolves at: Fedor), CHOOSE and the X back to the grid;
+// CHOOSE asks the question, and YES makes it yours at once.
 #define V2_PICK_BTN_Y 316  // CHOOSE: 136..330 x 316..360, between the entry's panel and the X
 #define V2_PICK_BTN_H 44
 static V2Ask v2PickQ;
 
 static int v2PickPages() { return (pet.eggChoiceCount() + DEXG_PAGE - 1) / DEXG_PAGE; }
+// the grid's panel: its top, centred with the page line (if there's more than one page) between the board and
+// the bottom; its squares start 6 px in, and the page buttons are level with its middle
+#define V2_PICK_PANEL_H (3 * DEXG_CELL + 12)
+static int v2PickPanelY() {
+  int top = V2_BOARD_Y + 28, h = V2_PICK_PANEL_H + (v2PickPages() > 1 ? 22 : 0);
+  return top + (V2_W - top - h) / 2;
+}
+static int v2PickGridY() { return v2PickPanelY() + 6; }
+static int v2PickArrowY() { return v2PickPanelY() + V2_PICK_PANEL_H / 2; }
 static void v2PickOpen(int16_t dex, bool shiny) {
   eggPickDetail = dex;
   eggPickShiny = shiny;
@@ -230,7 +241,7 @@ static void v2PickScreen() {
       if (eggPickShiny) drawSparkles(box[0], box[1], box[2], box[3], millis());
       drawStars(CX, 237, 9, stars);  // (DEX_STAR_R's size)
     }
-    v2DexInfo(eggPickDetail, false);
+    v2TypeChip(eggPickDetail);
     if (!v2PickQ.up && v2AskK(v2PickQ) <= 0) {  // CHOOSE and the X, unless the question is up (or on its way)
       char b[24];
       v2LabelButton(CX - 97, V2_PICK_BTN_Y, CX + 97, V2_PICK_BTN_Y + V2_PICK_BTN_H, v2Caps(T(S_CHOOSE_BTN), b, sizeof(b)),
@@ -242,14 +253,14 @@ static void v2PickScreen() {
   }
   char b[40];
   v2Sign(v2Caps(T(S_CHOOSE_POKEMON), b, sizeof(b)));
-  int pages = v2PickPages();
+  int pages = v2PickPages(), gy = v2PickGridY();
   if (eggPickPage >= pages) eggPickPage = pages ? pages - 1 : 0;
-  v2Panel(DEXG_X - 6, DEXG_Y - 6, DEXG_X + 3 * DEXG_CELL + 6, DEXG_Y + 3 * DEXG_CELL + 6, 10);
+  v2Panel(DEXG_X - 6, gy - 6, DEXG_X + 3 * DEXG_CELL + 6, gy + 3 * DEXG_CELL + 6, 10);
   for (int i = 0; i < DEXG_PAGE; i++) {
     bool shiny;
     int16_t dex = pet.eggChoiceAt(eggPickPage * DEXG_PAGE + i, shiny);
     if (!dex) break;
-    int x = DEXG_X + (i % DEXG_COLS) * DEXG_CELL, y = DEXG_Y + (i / DEXG_COLS) * DEXG_CELL;
+    int x = DEXG_X + (i % DEXG_COLS) * DEXG_CELL, y = gy + (i / DEXG_COLS) * DEXG_CELL;
     int cx = x + DEXG_CELL / 2, cy = y + DEXG_CELL / 2;
     if (const uint8_t *t = thumbs.getForm(dex, shiny)) {
       int box[4];
@@ -259,8 +270,8 @@ static void v2PickScreen() {
     drawStars(cx, y + DEXG_CELL - DEXG_STAR_R - 3, DEXG_STAR_R, pet.starsOf(dex, shiny));
   }
   if (pages > 1) {
-    drawDexGridPage(eggPickPage, pages, DEXG_PAGE_Y);
-    drawPageArrows(eggPickPage, pages, PAGE_ARROW_Y);
+    drawDexGridPage(eggPickPage, pages, gy + 3 * DEXG_CELL + 12);
+    drawPageArrows(eggPickPage, pages, v2PickArrowY());
   }
 }
 
@@ -296,12 +307,12 @@ static void v2PickTap(int16_t x, int16_t y) {
     dexArtPet(x, y);  // its sprite: a pat, as in the Pokedex
     return;
   }
-  if (int d = pageArrowAt(x, y, eggPickPage, v2PickPages(), PAGE_ARROW_Y)) {
+  if (int d = pageArrowAt(x, y, eggPickPage, v2PickPages(), v2PickArrowY())) {
     sfxPlay(SFX_TAP);
     eggPickPage += d;
     return;
   }
-  int i = dexGridAt(x, y, DEXG_X, DEXG_Y, DEXG_CELL);
+  int i = dexGridAt(x, y, DEXG_X, v2PickGridY(), DEXG_CELL);
   if (i < 0) return;
   bool shiny;
   int16_t dex = pet.eggChoiceAt(eggPickPage * DEXG_PAGE + i, shiny);

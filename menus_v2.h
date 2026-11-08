@@ -582,8 +582,8 @@ static uint8_t v2SpinAct(const PmdMon &m, uint32_t now) {
     if (!m.has(a)) return PMD_IDLE;
   return VIEW[(now / V2_SPIN_STEP_MS) % 8];
 }
-// under the art: the type chip on the room, then the next form and the fact in a panel (dex_entry())
-static void v2DexInfo(int16_t dex, bool withFact) {
+// an entry's type chip, under its art on the room
+static void v2TypeChip(int16_t dex) {
   const DexEntry &d = DEX_TBL[dex];
   setSize(2);
   const char *ty = TYPE_NAME[d.type];
@@ -592,6 +592,12 @@ static void v2DexInfo(int16_t dex, bool withFact) {
   gfx->setTextColor(UI_WHITE);
   setCur(centerX(ty, 2), 255);
   printT(ty);
+}
+// under the art: the type chip on the room, then the next form and the fact in a panel (dex_entry())
+static void v2DexInfo(int16_t dex, bool withFact) {
+  const DexEntry &d = DEX_TBL[dex];
+  v2TypeChip(dex);
+  setSize(2);
   v2Panel(60, 280, 406, withFact ? 386 : 306, 10);
   char line[40];
   gfx->setTextColor(V2_INK_MUTED);
