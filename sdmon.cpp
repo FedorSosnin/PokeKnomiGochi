@@ -100,6 +100,37 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
       if (!a.low[f]) a.low[f] = base;  // an empty frame stands where the others do
     }
     if (a.top >= base) a.top = 0;
+    // Ivysaur and Venusaur face you head down, the face lower than their feet: stood by the face, their legs were
+    // in the air (Fedor: "His nose touches but his legs are in the air"). Facing you, each frame stands by its
+    // legs instead, the lowest of its three outermost columns each side, and the face hangs over the ground in
+    // front. (Turned any other way a leg is what's lowest.)
+    if ((dexNum == 2 || dexNum == 3) && (id == PMD_IDLE || id == PMD_WALKD)) {
+      uint8_t legsBase = 0;
+      for (uint8_t f = 0; f < nf; f++) {
+        const uint8_t *fr = a.data + (uint32_t)f * w * h;
+        int x0 = w, x1 = -1;
+        for (int r = 0; r < h; r++)
+          for (int c = 0; c < w; c++)
+            if (fr[r * w + c] != 0xFF) {
+              if (c < x0) x0 = c;
+              if (c > x1) x1 = c;
+            }
+        uint8_t legs = 0;
+        for (int k = 0; k < 3 && x1 >= 0; k++) {
+          const int cols[2] = { x0 + k, x1 - k };
+          for (int c : cols)
+            for (int r = h - 1; r >= 0; r--)
+              if (fr[r * w + c] != 0xFF) {
+                if (r + 1 > legs) legs = r + 1;
+                break;
+              }
+        }
+        if (legs) a.low[f] = legs;
+        if (a.low[f] > legsBase) legsBase = a.low[f];
+        if (x1 >= 0 && x1 - x0 + 1 > a.footW) a.footW = x1 - x0 + 1;  // (its shadow reaches past its legs: the home)
+      }
+      if (legsBase) a.base = legsBase;
+    }
 #endif
   }
 #if UI_V2
@@ -154,6 +185,7 @@ void PmdMon::unload() {
 #if UI_V2
     a.top = 0;
     memset(a.low, 0, sizeof(a.low));
+    a.footW = 0;
 #endif
     a.data = nullptr;
   }

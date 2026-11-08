@@ -10075,7 +10075,13 @@ void drawPetPMD() {
   int px = n ? PARTY_MINE_X : (int)beh.x;
   if (n) gPmdForceScale = partyMineScale(n);
 #if UI_V2
-  v2PetShadow(px, PET_GROUND - 4 + v2Bob, n ? 30 : 42);  // V2: a soft shadow on the grass under it
+  int shRx = n ? 30 : 42;  // V2: a soft shadow on the grass under it...
+  if (pmd.acts[PMD_IDLE].footW) {  // ...reaching past its legs where they stand wide (Ivysaur, Venusaur: hidden under it)
+    uint8_t ss = gPmdForceScale ? gPmdForceScale : pmdScale(pmd, partyScale(n, true));
+    int fw = pmd.acts[PMD_IDLE].footW * ss / 2 + 6;
+    if (fw > shRx) shRx = fw;
+  }
+  v2PetShadow(px, PET_GROUND - 4 + v2Bob, shRx);
   bool walkD = act == PMD_WALKD;  // walking toward you: in step with the world (walk_v2.h)
   drawPmdAct(act, px, PET_GROUND + v2Bob - v2FeedHop(), walkD ? v2WalkT() : now - beh.t0, loop || act == PMD_IDLE || walkD, false,
              partyScale(n, true));

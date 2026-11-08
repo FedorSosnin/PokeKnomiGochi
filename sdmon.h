@@ -34,6 +34,7 @@ struct PmdAct {
 #if UI_V2
   uint8_t top = 0;       // V2: the highest row with something in it, in any frame (its height is base - top)
   uint8_t low[24] = {};  // V2: each frame's own lowest row + 1: every frame stands on its own feet (pmdFrameY)
+  uint8_t footW = 0;     // V2: how far apart its legs stand, in its own pixels, where it stands by its legs (sdmon.cpp)
 #endif
   uint16_t ms[24];
   const uint8_t *data = nullptr;  // frames * w * h in the blob
