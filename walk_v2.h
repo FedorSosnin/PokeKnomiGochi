@@ -2,14 +2,15 @@
 //
 // At rest on the home screen the Pokemon sometimes walks toward you (PMD Walk row 0: PMD_WALKD) while the
 // world slides away behind it, as walk.py draws it (walk-field-band.gif, walk-beach.gif): grass and flowers
-// come up from the bottom and shrink toward the horizon, the land bobs 2 px on every other step, the far and
-// middle hills sway a few px out of step, the clouds drift and the birds flap. One loop is 8.4 s (84 of the
+// come up from the bottom and shrink toward the horizon, the near land bobs 2 px on every other step, the far and
+// middle hills sway a few px out of step without bobbing (Fedor: bobbing too, the whole world seemed to shake),
+// the clouds drift and the birds flap. One loop is 8.4 s (84 of the
 // mockup's 100 ms frames). The world's clock runs only while it walks, so when it stops everything holds
 // still where it was, the grass too.
 //
 // The scene is put together every frame: the sky from the scene buffer (v2Cached), then the far, middle and
 // near hills, each from a strip of its own (drawn once per zone and time of day, with what stands on it) and
-// shifted by its sway and the bob, then what stands in front of them, then the stream. The Forest, the Cave
+// shifted by its sway (the near one by the bob), then what stands in front of them, then the stream. The Forest, the Cave
 // and the Mansion weren't mocked walking: they move the same way, with their own things in the stream.
 
 // ----- the world's clock -----
@@ -17,7 +18,7 @@ static uint32_t v2WalkMs = 0;     // how far it has walked
 static uint32_t v2WalkLast = 0;   // the last frame it walked in (0: it wasn't walking)
 static uint32_t v2RestUntil = 0;  // after a walk it rests a while (behNext)
 static bool v2Walking = false;    // walking this frame
-static int v2Bob = 0;             // the land and everyone on it are 2 px lower on every other step
+static int v2Bob = 0;             // the near land and everyone on it are 2 px lower on every other step
 
 // the walk's time at the home's slow pace: the packs time PMD at 1.4x its own pace, this walk is 2.0x
 // (a step cycle of 1.2 s for most)
@@ -277,32 +278,32 @@ static bool v2DrawWalkScene(uint8_t zone, uint8_t tod) {
     scSprite(b, 3, 226 + cdx * 2, 140 + (up ? 2 : 0), 3, bird, 1);
   }
   if (zone == Z_BEACH) {  // the sea, its glints sliding sideways and blinking
-    scRect(0, 224 + bob, V2_W, 300, SC_SEA);
-    scRect(0, 224 + bob, V2_W, 227 + bob, scMix(SC_SEA, 0xFFFFFF, .35));
+    scRect(0, 224, V2_W, 300, SC_SEA);
+    scRect(0, 224, V2_W, 227, scMix(SC_SEA, 0xFFFFFF, .35));
     for (int i = 0; i < 25; i++) {
       int y = 236 + i / 5 * 12;
       if ((fi + i % 5 * 5) % 24 >= 19) continue;
       double xf = fmod(V2_GLINT[i][0] + V2_GLINT[i][1] * (1 + (y - 236) / 30.0) * f * 2, V2_W + 40);
       if (xf < 0) xf += V2_W + 40;
       int x = scFl4((int)xf - 20) * 4;
-      scRect(x, y + bob, x + 11, y + bob + 3, y < 260 ? SC_SEA_HI : scMix(SC_SEA_HI, SC_SEA, .4));
+      scRect(x, y, x + 11, y + 3, y < 260 ? SC_SEA_HI : scMix(SC_SEA_HI, SC_SEA, .4));
     }
   }
-  v2StripBlit(v2Far, fdx, bob);
-  v2StripBlit(v2Mid, mdx, bob);
+  v2StripBlit(v2Far, fdx, 0);  // (the far and middle hills sway, but only the near land bobs)
+  v2StripBlit(v2Mid, mdx, 0);
   if (zone == Z_BEACH) {  // palms on the dunes, under the shore's edge, their fronds leaning on alternate beats
     ScKey palm[5];
     scPalmKeys(palm, p);
     const char *const *spr = (fi / 12) % 2 ? V2_PALM_LEAN : SPR_V2_PALM;
-    scSprite(spr, 12, 34 + mdx, 224 + bob, 4, palm, 5);
-    scSprite(spr, 12, 368 + mdx, 236 + bob, 4, palm, 5);
+    scSprite(spr, 12, 34 + mdx, 224, 4, palm, 5);
+    scSprite(spr, 12, 368 + mdx, 236, 4, palm, 5);
   }
   v2StripBlit(v2Near, 0, bob);
-  // what stands in front of the hills
+  // what stands in front of the hills, on the middle ones: it sways with them
   if (zone == Z_FOREST) {
-    for (auto &t : SC_FOREST_BIG) scRole(SPR_V2_PINE, 12, t[0] + mdx, t[1] + bob, 4, p, p.mid);
+    for (auto &t : SC_FOREST_BIG) scRole(SPR_V2_PINE, 12, t[0] + mdx, t[1], 4, p, p.mid);
   } else if (zone == Z_MANSION) {
-    scGraveyard(mdx, bob);
+    scGraveyard(mdx, 0);
   } else if (zone == Z_CAVE) {
     scCaveGlints();
   }
