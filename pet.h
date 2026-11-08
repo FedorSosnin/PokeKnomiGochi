@@ -39,7 +39,7 @@
 #define MASTER_FIGHTS 25  // V2: fights fought to the end for a Master Ball (Fedor: 20-30, one a day for a casual player)
 #define MASTER_MAX 99     // the most you can hold
 #define REPEL_PLAY_S 300  // V2: seconds of minigames played for a Repel (Fedor: about one a day)
-#define REPEL_MIN 10      // how long one lasts, in the game's minutes
+#define REPEL_MIN 3       // how long one lasts, in the game's minutes (Fedor: 3; 10 was long)
 #define REPEL_MAX 99
 #endif
 #define SHINY_AFTER_GOODBYE 4              // 1 in 4 after a goodbye or release

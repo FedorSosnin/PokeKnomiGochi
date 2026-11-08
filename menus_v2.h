@@ -400,7 +400,7 @@ static void v2CardTraining() {
   }
 }
 static void v2MasterBar(int x, int y, int w, bool full);  // (master_v2.h: the Master Ball's bar)
-static void v2RepelCardRow(int x, int y);                 // (repel_v2.h: the Repel's)
+static void v2CardItems();                                // (repel_v2.h: the card's Items page)
 static void v2CardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
   v2Sign(T(S_PROGRESS));
@@ -422,7 +422,7 @@ static void v2CardProgress() {
   setSize(2);
   setCur(centerX(nx, 2), 162);
   printT(nx);
-  setCur(centerX(T(S_EVO_LABEL), 2), 192);
+  setCur(centerX(T(S_EVO_LABEL), 2), 206);
   printT(T(S_EVO_LABEL));
   char evoBuf[32];
   const char *evo;
@@ -440,15 +440,13 @@ static void v2CardProgress() {
     }
   }
   gfx->setTextColor(evoCol);
-  setCur(centerX(evo, 2), 214);
+  setCur(centerX(evo, 2), 230);
   printT(evo);
   char ms[24];  // the slip-ups, which hold evolution back
   snprintf(ms, sizeof(ms), T(S_MISTAKES_FMT), pet.careMistakes);
   gfx->setTextColor(pet.careMistakes > 0 ? UI_BAR_BAD : C565(0x3c, 0x8a, 0x4c));
-  setCur(centerX(ms, 2), 248);
+  setCur(centerX(ms, 2), 286);
   printT(ms);
-  v2MasterBar(112, 280, 244, false);  // step 7: the Master Balls you hold, and the fights to the next
-  v2RepelCardRow(112, 322);           // the Repels you hold, and the play to the next (and one running)
 }
 // the card's four pages (the medals' pages are still V1's: step 5b)
 static void v2Card() {
@@ -456,6 +454,7 @@ static void v2Card() {
   if (cardPage == 0) v2CardProfile();
   else if (cardPage == 1) v2CardStats();
   else if (cardPage == 2) v2CardTraining();
+  else if (cardPage == 3) v2CardItems();  // the Master Ball and the Repel (Fedor)
   else v2CardProgress();
   drawPageArrows(cardPage, cardPageCount(), V2_PAGE_ARROW_Y);
   v2Dots(cardPageCount(), cardPage);

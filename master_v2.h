@@ -4,9 +4,10 @@
 // Every wild or Travel battle fought to the end, won or lost (not run from; buddy battles and the dungeon don't
 // count), fills a bar a step; 25 earn a Master Ball (pet.masterFight()), which always catches what it hits. They
 // stack. The bar shows at a fight's end and on the card's Progress page; the fight that fills it brings a moment of
-// its own, on the Caught screen's gold burst. On the catch, with one in hand, the Master Ball sits beside the Poke
-// Ball: tap it to throw it. A hit always holds and uses it up; a miss doesn't use it (it comes back), though the
-// throw counts as any miss does.
+// its own, on the Caught screen's gold burst. On the catch, with one in hand, the Master Ball sits left of the Poke
+// Ball: tap it to throw it. A hit always holds and uses it up; a miss doesn't use it (it comes back). Only the three
+// Poke Balls count (Fedor): the catch ends when the third one fails (a miss, or it breaks out) or anything catches it,
+// so a Master Ball can be thrown any time before then, even after a Poke Ball it broke out of.
 
 // ----- the ball: purple, two pink spots, a white M, as the Poke Ball's 18 x 18 sprite -----
 static const char *const SPR_V2_MASTER_BALL[18] = {
@@ -119,12 +120,12 @@ static void v2MasterEnd(uint32_t t) {
 }
 
 // ----- the throw -----
-// the band under the running Pokemon, with one in hand: the Poke Ball (its throws left) and the Master Ball (how
-// many), each the button for its throw; a tap on the left half throws the Poke Ball, on the right the Master Ball
+// the band under the running Pokemon, with one in hand: the Master Ball (how many) on the left and the Poke Ball (its
+// throws left) on the right (Fedor), each the button for its throw: a tap on the left half throws the Master Ball
 static bool v2MasterAiming() { return pet.masterBalls > 0; }
 static void v2MasterAimBalls(uint8_t throws) {
-  drawMap(SPR_HOME_BALL, HOME_ICON_N, CX - 104, 372, 4, false);
-  drawCountBadge(CX - 36, 378, throws);
-  v2MasterBall(CX + 32, 372, 4);
-  drawCountBadge(CX + 100, 378, pet.masterBalls);
+  v2MasterBall(CX - 104, 372, 4);
+  drawCountBadge(CX - 36, 378, pet.masterBalls);
+  drawMap(SPR_HOME_BALL, HOME_ICON_N, CX + 32, 372, 4, false);
+  drawCountBadge(CX + 100, 378, throws);
 }

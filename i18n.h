@@ -111,7 +111,9 @@ enum StrId : uint8_t {
   S_THANKS_DAYS_FMT,  // V2: under a goodbye's "Goodbye, GENGAR!" (the visitor's string): "Thank you for 4 days"
   S_RELEASE_WARN, S_RELEASE_BTN, S_KEEP_BTN,  // V2: the release question's line and its two buttons
   S_MASTER_GOT, S_MASTER_HOW,  // V2: the Master Ball earned ("Master Ball!"), and what it does
-  S_REPEL, S_REPEL_ON_FMT,  // V2: the Repel's name, and "Repel: 10 min" when one is used
+  S_REPEL, S_REPEL_ON_FMT,  // V2: the Repel's name, and "Repel: 3 min" when one is used
+  S_BROKE_FREE_FMT,  // V2: it broke out of a Poke Ball, and there are more to throw
+  S_ITEMS, S_MASTER, S_MASTER_EARN_FMT, S_REPEL_EARN_FMT,  // V2: the card's Items page, and how to earn each
 #endif
   STR_COUNT
 };

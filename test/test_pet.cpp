@@ -1131,8 +1131,9 @@ TEST(v2repel, one_runs_ten_minutes_and_cant_be_doubled) {
   advance(p, REPEL_MIN - 1);
   CHECK(p.repelOn());
   advance(p, 1);
-  CHECK_MSG(!p.repelOn(), "ten of the game's minutes");
-  p.flushSave();  // (the minutes lived get saved; a reboot also applies those it missed)
+  CHECK_MSG(!p.repelOn(), "REPEL_MIN of the game's minutes");
+  advance(p, 5);  // (five minutes on, the minutes lived are due to be saved; a reboot also applies those it missed)
+  p.flushSave();
   Pet again;
   again.begin();
   CHECK_MSG(again.repelHeld == 1 && !again.repelOn(), "kept in the save");

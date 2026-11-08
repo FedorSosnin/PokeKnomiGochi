@@ -387,6 +387,7 @@ class TestTextBuffers(unittest.TestCase):
         'S_SD_THEY_GOT_FMT': ('name_or_nick',),
         'S_SD_LOSE_FMT': ('name_or_nick',),
         'S_GOT_AWAY_FMT': ('name',),
+        'S_BROKE_FREE_FMT': ('name',),  # V2: out of a Poke Ball, more to throw
         'S_VB_THEY_SCORE_FMT': ('name_or_nick',),
         'S_SHINY_WILD_FMT': ('name',),
         'S_VISIT_CANDY_FMT': ('name',),

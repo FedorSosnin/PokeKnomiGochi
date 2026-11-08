@@ -93,6 +93,9 @@ static const ExpectedFmt EXPECTED[] = {
   { S_CHOOSE_Q_FMT,    "%s" },  // V2: the starter screen's "Choose PIKACHU?" (starter_v2.h)
   { S_THANKS_DAYS_FMT, "%u" },  // V2: a goodbye's panel (starter_v2.h)
   { S_REPEL_ON_FMT,    "%u" },  // V2: a Repel used (repel_v2.h)
+  { S_BROKE_FREE_FMT,  "%s" },  // V2: out of a Poke Ball, more to throw
+  { S_MASTER_EARN_FMT, "%u" },  // V2: the card's Items page (repel_v2.h)
+  { S_REPEL_EARN_FMT,  "%u" },
 #endif
 };
 static const int NUM_EXPECTED = (int)(sizeof(EXPECTED) / sizeof(EXPECTED[0]));

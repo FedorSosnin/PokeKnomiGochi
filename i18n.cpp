@@ -65,6 +65,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Volver\240 a la naturaleza. No se puede deshacer.", "Soltar", "Mantener",
     "Master Ball!", "Siempre atrapa!",
     "Repelente", "Repelente: %u min",
+    "%s se solt\242!",
+    "Objetos", "Master Ball", "Termina %u combates", "%u min de minijuegos",
 #endif
   },
   // ---------------- EN ----------------
@@ -125,6 +127,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "It goes back to the wild. This cannot be undone.", "Release", "Keep",
     "Master Ball!", "It always catches!",
     "Repel", "Repel: %u min",
+    "%s broke free!",
+    "Items", "Master Ball", "Finish %u battles", "%u min of minigames",
 #endif
   },
   // ---------------- FR ----------------
@@ -185,6 +189,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Il retourne \205 la nature. C'est d\202finitif.", "Rel\203cher", "Garder",
     "Master Ball!", "Elle attrape toujours!",
     "Repousse", "Repousse: %u min",
+    "%s s'est lib\202r\202!",
+    "Objets", "Master Ball", "Finis %u combats", "%u min de mini-jeux",
 #endif
   },
   // ---------------- DE ----------------
@@ -250,6 +256,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Es kehrt in die Wildnis zur\201ck. Das ist endg\201ltig.", "Loslassen", "Behalten",
     "Meisterball!", "Er f\204ngt immer!",
     "Schutz", "Schutz: %u Min.",
+    "%s hat sich befreit!",
+    "Gegenst\204nde", "Meisterball", "Beende %u K\204mpfe", "%u Min. Minispiele",
 #endif
   },
   // ---------------- IT ----------------
@@ -310,6 +318,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Torna in natura. Non si pu\225 annullare.", "Libera", "Tienilo",
     "Master Ball!", "Cattura sempre!",
     "Repellente", "Repellente: %u min",
+    "%s si \212 liberato!",
+    "Strumenti", "Master Ball", "Finisci %u lotte", "%u min di minigiochi",
 #endif
   },
   // ---------------- PT ----------------
@@ -370,6 +380,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Volta para a natureza. Nao d\240 para desfazer.", "Soltar", "Manter",
     "Master Ball!", "Captura sempre!",
     "Repelente", "Repelente: %u min",
+    "%s se soltou!",
+    "Itens", "Master Ball", "Termina %u combates", "%u min de minijogos",
 #endif
   },
   // ---------------- JA ----------------
@@ -453,6 +465,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "やせいに かえります。 もとに もどせません。", "にがす", "やめる",
     "マスターボール!", "かならず つかまえる!",
     "むしよけスプレー", "むしよけ: あと %u ふん",
+    "%sが とびだした!",
+    "どうぐ", "マスターボール", "バトルを %uかい さいごまで", "ミニゲーム %uふん",
 #endif
   },
   // ---------------- KO ----------------
@@ -518,6 +532,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "야생으로 돌아가요. 되돌릴 수 없어요.", "놓아주기", "취소",
     "마스터볼!", "무조건 잡혀요!",
     "벌레회피스프레이", "벌레회피: %u분",
+    "%s 빠져나왔다!",
+    "도구", "마스터볼", "배틀 %u번 끝내기", "미니게임 %u분",
 #endif
   },
 };

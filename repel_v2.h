@@ -97,24 +97,55 @@ static void v2RepelRow(int y) {
   classicFontEnd(cjk);
 }
 
-// ----- the card's Progress page: under the Master Ball's bar, the spray, how many, the play to the next -----
-static void v2RepelCardRow(int x, int y) {
-  v2RepelIcon(x + 2, y, 2);
-  if (pet.repelHeld) drawCountBadge(x + 34, y + 4, pet.repelHeld);
-  uint16_t sec = pet.repelPlaySec;
-  char b[16];
-  if (pet.repelOn()) snprintf(b, sizeof(b), "%um", pet.repelMinutesLeft());  // one running: its minutes left
-  else snprintf(b, sizeof(b), "%u:%02u", sec / 60, sec % 60);
+// ----- the card's Items page (Fedor): the Master Ball and the Repel, each with how it's earned and its bar -----
+// a bar across the panel, k of it filled in col, its words (a count, or a time) at its right
+static void v2ItemBar(int y, float k, const char *txt, uint16_t col) {
   bool cjk = classicFontBegin();
   setSize(2);
-  int tw = textW(b, 2), bx = x + 50, bw = 244 - 50 - tw - 10;
-  gfx->fillRoundRect(bx, y + 11, bw, 15, 6, C565(0xd8, 0xd2, 0xbd));
-  int fw = pet.repelOn() ? (bw - 4) * pet.repelMinutesLeft() / REPEL_MIN : (bw - 4) * sec / REPEL_PLAY_S;  // running: its time left
-  if (fw > 2) gfx->fillRoundRect(bx + 2, y + 13, fw, 11, 5, C565(0x8a, 0x5c, 0xc8));
-  gfx->setTextColor(pet.repelOn() ? C565(0x5a, 0x3a, 0x8c) : V2_INK_MUTED);
-  setCur(x + 244 - tw, y + 11);
-  printT(b);
+  int tw = textW(txt, 2), bx = 116, bw = 350 - bx - tw - 10;
+  gfx->fillRoundRect(bx, y, bw, 15, 6, C565(0xd8, 0xd2, 0xbd));
+  int fw = (int)((bw - 4) * (k < 0 ? 0 : k > 1 ? 1 : k));
+  if (fw > 2) gfx->fillRoundRect(bx + 2, y + 2, fw, 11, 5, col);
+  gfx->setTextColor(V2_INK_MUTED);
+  setCur(350 - tw, y);
+  printT(txt);
   classicFontEnd(cjk);
+}
+static void v2ItemHead(const char *name, const char *how, int y) {  // its name, then how to earn it (muted)
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(name, 2), y);
+  printT(name);
+  gfx->setTextColor(V2_INK_MUTED);
+  setCur(centerX(how, 2), y + 22);
+  printT(how);
+}
+static void v2CardItems() {
+  char b[40];
+  v2Sign(v2Caps(T(S_ITEMS), b, sizeof(b)));
+  v2Panel(92, 70, 374, 372, 10);
+  char t[16];
+  // the Master Ball: how many you hold, the fights to the next
+  v2MasterBall(CX - 27, 82, 3);
+  if (pet.masterBalls) drawCountBadge(CX + 26, 88, pet.masterBalls);
+  snprintf(b, sizeof(b), T(S_MASTER_EARN_FMT), (unsigned)MASTER_FIGHTS);
+  v2ItemHead(T(S_MASTER), b, 142);
+  snprintf(t, sizeof(t), "%u/%u", pet.masterBar, MASTER_FIGHTS);
+  v2ItemBar(188, pet.masterBar / (float)MASTER_FIGHTS, t, v2MasterInk('q'));
+  gfx->fillRect(112, 218, 242, 2, C565(0xe4, 0xea, 0xf2));
+  // the Repel: how many you hold, the play to the next; while one runs, its minutes left
+  v2RepelIcon(CX - 27, 228, 3);
+  if (pet.repelHeld) drawCountBadge(CX + 26, 234, pet.repelHeld);
+  snprintf(b, sizeof(b), T(S_REPEL_EARN_FMT), (unsigned)(REPEL_PLAY_S / 60));
+  v2ItemHead(T(S_REPEL), b, 288);
+  uint16_t sec = pet.repelPlaySec;
+  if (pet.repelOn()) {
+    snprintf(t, sizeof(t), "%um", pet.repelMinutesLeft());
+    v2ItemBar(334, pet.repelMinutesLeft() / (float)REPEL_MIN, t, C565(0x5a, 0x3a, 0x8c));
+  } else {
+    snprintf(t, sizeof(t), "%u:%02u/%u:%02u", sec / 60, sec % 60, REPEL_PLAY_S / 60, REPEL_PLAY_S % 60);
+    v2ItemBar(334, sec / (float)REPEL_PLAY_S, t, C565(0x8a, 0x5c, 0xc8));
+  }
 }
 
 // ----- the backpack: the Repel's seat, after the berries and the candy, while you hold one or one runs -----
@@ -136,6 +167,38 @@ static void v2RepelSeatDraw(int cx, int cy) {
     classicFontEnd(cjk);
   }
 }
+// ----- a food from the backpack (Fedor): it drops from the top onto your Pokemon, which hops for a second; the bag
+// stays open for another -----
+#define V2_DROP_MS 450
+#define V2_HOP_MS 1000
+static uint32_t v2DropT = 0;  // when the last one was tapped (0: none falling or hopping)
+static uint8_t v2DropItem = 0;
+static int v2DropX = CX;
+static void v2FoodDropStart(int item) {
+  v2DropItem = item;
+  v2DropT = millis() ? millis() : 1;
+  v2DropX = partyOthers() ? PARTY_MINE_X : (int)beh.x;
+}
+static int v2FeedHop() {  // how high your Pokemon is, hopping once a food has landed on it
+  if (!v2DropT) return 0;
+  uint32_t e = millis() - v2DropT;
+  if (e < V2_DROP_MS || e >= V2_DROP_MS + V2_HOP_MS) return 0;
+  return SNAP2((int)(fabsf(sinf((e - V2_DROP_MS) * 3.14159f / 500)) * 14));  // two hops
+}
+static void v2FoodDropDraw() {  // over everything, the bag too
+  if (!v2DropT) return;
+  uint32_t e = millis() - v2DropT;
+  if (e >= V2_DROP_MS + V2_HOP_MS) {
+    v2DropT = 0;
+    return;
+  }
+  if (e >= V2_DROP_MS || !pmd.loaded) return;  // landed: eaten
+  static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
+  float k = e / (float)V2_DROP_MS;
+  int head = PET_GROUND - pmd.acts[PMD_IDLE].h * v2HomeScale(pmd) + 12;
+  drawMap(FOOD[v2DropItem], HOME_ICON_N, v2DropX - 27, 30 + (int)((head - 84) * k * k), 3, false);  // falling faster and faster
+}
+
 // used from the backpack: it starts, and the home says for how long; one already running can't be doubled
 static void v2RepelUse() {
   if (!pet.useRepel()) {

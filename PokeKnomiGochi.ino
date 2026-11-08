@@ -165,7 +165,11 @@ char nameBuf[12] = "";
 uint8_t nameLen = 0;
 int cardNameBottom = 84;      // where the card's name (and the species under a nickname) ends: tapping above renames
 uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 training, 3 progress; the achievements: their pages
+#if UI_V2
+#define CARD_PAGES 5  // V2: the items (the Master Ball and the Repel) before Progress, which is now 4
+#else
 #define CARD_PAGES 4
+#endif
 bool cardAch = false;         // the same screen showing the achievements (swipe right to left from home)
 int8_t achDetail = -1;        // a medal tapped there: its card, with how to earn it (-1: the medals)
 #define ACH_PAGES 6           // the pet's medals (2 pages), the trainer's (2), the zones' (1), level 100 (1): 6 at most a page
@@ -1481,6 +1485,9 @@ static void v2StarterTap(int16_t x, int16_t y);  // V2: the starter screen (star
 static void v2StarterScreen();
 static bool v2RepelSeat();  // V2: the Repel in the backpack (repel_v2.h)
 static void v2RepelUse();
+static int v2FeedAt(int16_t x, int16_t y);  // V2: the backpack's seats (scene_v2.h)
+static int v2FeedFoods();
+static void v2FoodDropStart(int item);
 #endif
 void onTap(int16_t x, int16_t y) {
   // Serial.printf("TOUCH %d %d\n", x, y);  // diagnostic (silenced: floods the log)
@@ -1633,21 +1640,20 @@ void onTap(int16_t x, int16_t y) {
     return;
   }
 #if UI_V2
-  if (feedMenuUntil) {       // food picker: V2's bubble out of the bag
-    int foods = pet.canHaveCandy() ? 4 : 3, count = foods + (v2RepelSeat() ? 1 : 0);  // (then the Repel's seat)
-    int x0 = V2_FEED_X0;
-    if (timeLeft(feedMenuUntil) && y >= V2_FEED_Y0 && y <= V2_FEED_Y0 + V2_FEED_H && x >= x0 && x <= x0 + count * 66) {
-      int item = (x - x0) / 66;
-      if (item >= count) item = count - 1;
-      if (item >= foods) {
-        v2RepelUse();
-      } else {
-        if (item == 3) pet.feedCandy();
-        else pet.feedBerry(item);
-        sfxPlay(SFX_EAT);
-      }
+  if (feedMenuUntil) {       // food picker: V2's bubble out of the bag, four seats a row
+    int item = timeLeft(feedMenuUntil) ? v2FeedAt(x, y) : -1;
+    if (item >= v2FeedFoods()) {  // the Repel: it starts, and the bag closes
+      v2RepelUse();
+      feedMenuUntil = 0;
+    } else if (item >= 0) {  // a food: it drops onto your Pokemon, and the bag stays open for another (Fedor)
+      if (item == 3) pet.feedCandy();
+      else pet.feedBerry(item);
+      sfxPlay(SFX_EAT);
+      v2FoodDropStart(item);
+      feedMenuUntil = millis() + 6000;
+    } else {
+      feedMenuUntil = 0;  // anywhere else: it closes
     }
-    feedMenuUntil = 0;
     return;
   }
 #else
@@ -2098,6 +2104,11 @@ static uint32_t screenKey() {
                         (uint32_t)pet.fullness, (uint32_t)pet.joy, (uint32_t)pet.energy, (uint32_t)pet.hygiene,
                         (uint32_t)pet.berryKnown, (uint32_t)pet.battleWins, (uint32_t)pet.trainerMedals, (uint32_t)gLang })
       h = mixKey(h, v);
+#if UI_V2
+    for (uint32_t v : { (uint32_t)pet.masterBar, (uint32_t)pet.masterBalls, (uint32_t)pet.repelHeld, (uint32_t)pet.repelPlaySec,
+                        (uint32_t)pet.repelMinutesLeft() })  // V2: the Items page
+      h = mixKey(h, v);
+#endif
     for (const char *c = pet.nick; *c; c++) h = mixKey(h, (uint8_t)*c);
   }
   return h;
@@ -2306,7 +2317,7 @@ bool render() {
       // once the day's candies are used up, the menu stays at the three berries
       int count = pet.canHaveCandy() ? 4 : 3;
 #if UI_V2
-      v2DrawFoodPicker(count);  // a text-box bubble out of the bag
+      v2DrawFoodPicker(count);  // a text-box bubble out of the bag (its seats: scene_v2.h)
 #else
       int x0 = CX - count * 33;
       gfx->fillRoundRect(x0, FEED_Y, count * 66, 64, 14, UI_WHITE);
@@ -2317,6 +2328,10 @@ bool render() {
 #endif
     }
   }
+
+#if UI_V2
+  v2FoodDropDraw();  // V2: a food from the bag dropping onto it (repel_v2.h)
+#endif
 
   // "release?" dialog (long press on the pet)
   if (confirmUntil) {
@@ -3494,7 +3509,7 @@ void battleTap(int16_t x, int16_t y) {
   if (bPhase == BP_AIM) {
     if (y < BTL_BAND_Y) return;
 #if UI_V2
-    v2MasterThrow = v2MasterAiming() && x >= CX;  // V2: the right half is the Master Ball's
+    v2MasterThrow = v2MasterAiming() && x < CX;  // V2: the left half is the Master Ball's
 #endif
     sfxPlay(SFX_TAP);
     tiltZero();
@@ -3649,6 +3664,9 @@ void battleThrowStep(uint32_t now) {
     Serial.printf("catch: in the ball, %u%% ring (%s)\n", chance, bBreakAt ? "will break out" : "holds");
     battleSetPhase(BP_SHAKE);
   } else {
+#if UI_V2
+    if (!v2MasterThrow)  // V2: a missed Master Ball comes back, and isn't one of the three
+#endif
     bBalls--;
     Serial.printf("catch: miss, %u left\n", bBalls);
     sfxPlay(SFX_DENY);
@@ -3726,7 +3744,15 @@ void battleStep() {
     case BP_MISS:
       if (t > 2000) battleSetPhase(bBalls ? BP_AIM : BP_FLED);
       break;
-    case BP_BROKE: if (t > 3000) closeBattle(); break;  // it broke out and ran off: no more throws
+    case BP_BROKE:
+#if UI_V2
+      if (bBalls && t > 1800) {  // V2: out of the ball, it runs on: throw again (a Master Ball too)
+        battleSetPhase(BP_AIM);
+        break;
+      }
+#endif
+      if (t > 3000) closeBattle();  // it broke out and ran off: no more throws
+      break;
     case BP_SHAKE: {  // a rock and a tone per count; it may pop out halfway through one
       uint8_t shake = t / CATCH_SHAKE_MS;  // 0..2 while counting
       if (shake < CATCH_SHAKES && bShakesHeard <= shake) {
@@ -3736,6 +3762,9 @@ void battleStep() {
       if (bBreakAt && t > (bBreakAt - 1) * CATCH_SHAKE_MS + CATCH_SHAKE_MS * 3 / 5) {
         Serial.printf("catch: broke out on %u and got away\n", bBreakAt);
         sfxPlay(SFX_DENY);
+#if UI_V2
+        bBalls--;  // V2: that Poke Ball is used; with some left the catch goes on (Fedor)
+#endif
         battleSetPhase(BP_BROKE);
       } else if (!bBreakAt && t > CATCH_SHAKES * CATCH_SHAKE_MS + 250) {
         bCatchStars = Pet::rollStars();
@@ -3913,6 +3942,12 @@ void renderCatch() {
     int dir = bCatchX < CX ? -1 : 1;
     int x = (int)bCatchX + dir * (int)(t > 400 ? (t - 400) * 0.25f : 0);
     uint8_t act = dir > 0 ? PMD_WALKR : PMD_WALKL;
+#if UI_V2
+    if (bBalls) {  // V2: with balls left it stays, out of the ball, to be thrown at again
+      x = (int)bCatchX;
+      act = PMD_IDLE;
+    }
+#endif
     drawPmdActM(wildPmd, wildPmd.has(act) && t > 400 ? act : PMD_IDLE, x, CATCH_GROUND_Y, t, true, false, 3);
   } else if (bPhase != BP_CAUGHT && bPhase != BP_FLED && bPhase != BP_SHAKE) {
     // running, facing the way it goes, with its shadow and a little dust kicked up behind
@@ -4029,6 +4064,9 @@ void renderCatch() {
     }
     case BP_BROKE:
       snprintf(b, sizeof(b), T(S_GOT_AWAY_FMT), dexName(bFoe.dex));
+#if UI_V2
+      if (bBalls) snprintf(b, sizeof(b), T(S_BROKE_FREE_FMT), dexName(bFoe.dex));  // V2: and you throw again
+#endif
       catchBanner(b, C565(0x55, 0x55, 0x60));
       break;
     case BP_FLED:
@@ -9866,7 +9904,7 @@ void drawPetPMD() {
 #if UI_V2
   v2PetShadow(px, PET_GROUND - 4 + v2Bob, n ? 30 : 42);  // V2: a soft shadow on the grass under it
   bool walkD = act == PMD_WALKD;  // walking toward you: in step with the world (walk_v2.h)
-  drawPmdAct(act, px, PET_GROUND + v2Bob, walkD ? v2WalkT() : now - beh.t0, loop || act == PMD_IDLE || walkD, false,
+  drawPmdAct(act, px, PET_GROUND + v2Bob - v2FeedHop(), walkD ? v2WalkT() : now - beh.t0, loop || act == PMD_IDLE || walkD, false,
              partyScale(n, true));
 #else
   drawPmdAct(act, px, PET_GROUND, now - beh.t0, loop || act == PMD_IDLE, false, partyScale(n, true));
@@ -10366,13 +10404,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     static const char *const *const ICON[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
     int count = pet.canHaveCandy() ? 4 : 3;
 #if UI_V2
-    int x0 = V2_FEED_X0, foods = count;
-    count += v2RepelSeat() ? 1 : 0;  // the Repel's seat after the foods
-    if (y < V2_FEED_Y0 || y > V2_FEED_Y0 + V2_FEED_H || x < x0 || x > x0 + count * 66) return false;
-    int item = (x - x0) / 66;
-    if (item >= count) item = count - 1;
-    if (item >= foods) return pressSet(t, x0 + item * 66, V2_FEED_Y0, 66, V2_FEED_H, T(S_REPEL));
-    return pressSet(t, x0 + item * 66, V2_FEED_Y0, 66, V2_FEED_H, nullptr, ICON[item]);
+    (void)count;
+    int item = v2FeedAt(x, y);  // V2: four seats a row, a second row stacked on the left end
+    if (item < 0) return false;
+    int x0 = V2_FEED_X0 + (item % 4) * V2_FEED_CELL, y0 = v2FeedRowY(item / 4);
+    if (item >= v2FeedFoods()) return pressSet(t, x0, y0, V2_FEED_CELL, V2_FEED_H, T(S_REPEL));
+    return pressSet(t, x0, y0, V2_FEED_CELL, V2_FEED_H, nullptr, ICON[item]);
 #else
     int x0 = CX - count * 33;
     if (y < FEED_Y || y > FEED_Y + 64 || x < x0 || x > x0 + count * 66) return false;
