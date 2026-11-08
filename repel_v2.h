@@ -280,10 +280,6 @@ static void v2RepelBagBadge(int cx, int cy) {
   snprintf(b, sizeof(b), "%u", pet.repelMinutesLeft());
   gfx->fillCircle(cx, cy, 12, V2_RIM);
   gfx->fillCircle(cx, cy, 10, C565(0x8a, 0x5c, 0xc8));
-  bool cjk = classicFontBegin();
   gfx->setTextColor(UI_WHITE);
-  setSize(2);
-  setCur(cx - textW(b, 2) / 2 + 1, cy - 7);
-  printT(b);
-  classicFontEnd(cjk);
+  v2BadgeNum(cx, cy, b);  // centred on the disc (scene_v2.h)
 }

@@ -215,6 +215,9 @@ bool bathDuckLeft = true;   // the rubber duck on the ground, right beside the p
 #define BATH_DUCK_S 3       // the duck: its 14x14 map at 3x (42 px, still small beside the pet)...
 #define BATH_DUCK_GAP 44    // ...its near edge this far from the pet's centre
 uint32_t feedMenuUntil = 0;   // food picker open until this millis
+#if UI_V2
+uint32_t v2FeedOpenT = 0;     // V2: when the backpack's band last opened: it slides up out of the bag (scene_v2.h)
+#endif
 
 // Berry Drop (gameOpen): catch the falling berries
 bool gameOpen = false;
@@ -1767,7 +1770,14 @@ void onTap(int16_t x, int16_t y) {
     Serial.printf("BTN %d\n", i);
     sfxPlay(SFX_TAP);
     if (i == 0) {
+#if UI_V2
+      if (!pet.sleeping) {  // V2: opened from closed, the band slides up out of the bag
+        if (!feedMenuUntil || !timeLeft(feedMenuUntil)) v2FeedOpenT = millis();
+        feedMenuUntil = millis() + 6000;
+      }
+#else
       if (!pet.sleeping) feedMenuUntil = millis() + 6000;
+#endif
     } else if (i == 1) {
       openGamesMenu();
     } else if (i == 2) {
@@ -2329,10 +2339,20 @@ bool render() {
     setCur(centerX(reg, 2), HOME_PANEL_Y + 36);
     printT(reg);
   } else {
+#if UI_V2
+    // V2: while it evolves it's still the old form by name and colour (evoPmd, the form it was), until it has
+    // (Fedor: "during the evolution it said Venusaur is evolving")
+    int16_t shown = v2ShownSpecies();
+    const DexEntry &d = DEX_TBL[shown];
+    char name[28];
+    char lv[12];
+    const char *base = pet.nick[0] ? pet.nick : dexName(shown);
+#else
     const DexEntry &d = DEX_TBL[pet.speciesId];
     char name[28];
     char lv[12];
     const char *base = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
+#endif
     snprintf(name, sizeof(name), "%s%s", pet.shiny ? "*" : "", base);
     snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
 #if UI_V2
@@ -2460,7 +2480,7 @@ bool render() {
   if (pet.evolving()) {  // the evolution, over everything
     char en[28];
     char el[12];
-    snprintf(en, sizeof(en), "%s%s", pet.shiny ? "*" : "", pet.nick[0] ? pet.nick : dexName(pet.speciesId));
+    snprintf(en, sizeof(en), "%s%s", pet.shiny ? "*" : "", pet.nick[0] ? pet.nick : dexName(v2ShownSpecies()));
     snprintf(el, sizeof(el), T(S_LVL_FMT), pet.level());
     v2EvolveFX(evoPmd, pet.evolveT(), en, el);
   }
@@ -8052,8 +8072,12 @@ void drawCountBadge(int cx, int cy, int n) {
   gfx->fillCircle(cx, cy, 13, UI_BAR_BAD);
   gfx->drawCircle(cx, cy, 13, UI_WHITE);
   gfx->setTextColor(UI_WHITE);
+#if UI_V2
+  v2BadgeNum(cx, cy, b);  // V2: centred on the disc (scene_v2.h)
+#else
   setCur(cx - textW(b, 2) / 2 + 1, cy - 7);
   printT(b);
+#endif
 }
 
 void drawCandyCount(int x, int y, int n) { drawCountBadge(x + 52, y + 4, n); }

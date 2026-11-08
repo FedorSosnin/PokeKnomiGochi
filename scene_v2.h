@@ -293,6 +293,19 @@ static void v2Panel(int x0, int y0, int x1, int y1, int r) {
   gfx->drawRoundRect(x0 + 4, y0 + 4, w - 8, h - 8, ri > 1 ? ri - 1 : 1, V2_LINE);
 }
 
+// a badge's number, in the classic font in every language, centred on its disc as nearly as the 2 px grid lets
+// it: by the digits' ink (their advance less the gap after the last) and rounded toward the middle, where the
+// advance put them 1.5 px left and up of it (Fedor: "make sure the numbers above icons and balls are all
+// centered in their circle")
+static void v2BadgeNum(int cx, int cy, const char *b) {
+  bool cjk = classicFontBegin();
+  setSize(2);
+  int ink = textW(b, 2) - 2;
+  setCur((cx - ink / 2 + 1) & ~1, (cy - 6) & ~1);
+  printT(b);
+  classicFontEnd(cjk);
+}
+
 // a count on a red disc with a dark rim (the candies left today)
 static void v2CountBadge(int cx, int cy, int n) {
   char b[8];
@@ -300,9 +313,7 @@ static void v2CountBadge(int cx, int cy, int n) {
   gfx->fillCircle(cx, cy, 12, V2_RIM);
   gfx->fillCircle(cx, cy, 10, UI_BAR_BAD);
   gfx->setTextColor(UI_WHITE);
-  setSize(2);
-  setCur(cx - textW(b, 2) / 2 + 1, cy - 7);
-  printT(b);
+  v2BadgeNum(cx, cy, b);
 }
 
 // The backpack's seats: the foods (the candy while there are any left today), then the Repel's while you hold one
@@ -328,12 +339,72 @@ static int v2FeedAt(int16_t x, int16_t y) {  // the seat under a tap (within hal
 #ifdef BOARD_HOST
 void v2HostFeedSeat(int i, int *x, int *y) { v2FeedSeat(i, *x, *y); }  // (for the screenshot tool)
 #endif
+// is (px, py) inside the triangle a, b, c (either way round)?
+static bool v2InTri(float px, float py, float ax, float ay, float bx, float by, float cx, float cy) {
+  float d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+  float d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
+  float d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
+  return !(((d1 < 0) || (d2 < 0) || (d3 < 0)) && ((d1 > 0) || (d2 > 0) || (d3 > 0)));
+}
+
+#define V2_FEED_RISE_MS 300   // the band rises out of the bag, a little past its place...
+#define V2_FEED_SLIDE_MS 400  // ...settles back down onto it...
+#define V2_FEED_PIP_MS 120    // ...then its pip grows down into the bag
+#define V2_FEED_PIP_LEN 14
+// the band's pip, len px long: a speech bubble's tail from its lower edge to the bag, in its green with its rim
+// round it. It leaves the outer edge straight toward the bag, or the round end where the band stops short of it
+static void v2FeedPip(const V2Seg &band, float a1, int len) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  const uint16_t green = C565(0x58, 0xb8, 0x68);
+  float bx = buttons[0].cx, by = buttons[0].cy;
+  float th = atan2f(by - V2_FEED_CY, bx - CX) * 57.29578f, px, py, ux, uy;
+  if (th <= a1) {  // over the band's edge
+    ux = cosf(th * 0.01745329f), uy = sinf(th * 0.01745329f);
+    px = CX + ux * V2_FEED_ROUT, py = V2_FEED_CY + uy * V2_FEED_ROUT;
+  } else {  // past its first seat: off the round end
+    int ex, ey;
+    v2FeedSeat(0, ex, ey);
+    float dx = bx - ex, dy = by - ey, d = sqrtf(dx * dx + dy * dy);
+    ux = dx / d, uy = dy / d;
+    px = ex + ux * (V2_FEED_ROUT - V2_FEED_RIN) / 2, py = ey + uy * (V2_FEED_ROUT - V2_FEED_RIN) / 2;
+  }
+  float nx = -uy, ny = ux, hw = 9;
+  float b0x = px - ux * 2, b0y = py - uy * 2, tx = px + ux * len, ty = py + uy * len;  // its base, inside the band
+  float ia_x = b0x + nx * hw, ia_y = b0y + ny * hw, ib_x = b0x - nx * hw, ib_y = b0y - ny * hw;
+  float oa_x = b0x + nx * (hw + 4), oa_y = b0y + ny * (hw + 4), ob_x = b0x - nx * (hw + 4), ob_y = b0y - ny * (hw + 4);
+  float ot_x = tx + ux * 4, ot_y = ty + uy * 4;
+  int x0 = (int)fminf(fminf(oa_x, ob_x), ot_x) - 2, x1 = (int)fmaxf(fmaxf(oa_x, ob_x), ot_x) + 2;
+  int y0 = (int)fminf(fminf(oa_y, ob_y), ot_y) - 2, y1 = (int)fmaxf(fmaxf(oa_y, ob_y), ot_y) + 2;
+  for (int y = y0 & ~1; y <= y1 && y <= 464; y += 2)
+    for (int x = x0 & ~1; x <= x1 && x <= 464; x += 2) {
+      if (x < 0 || y < 0) continue;
+      float cx = x + 1, cy = y + 1;
+      if (v2InTri(cx, cy, ia_x, ia_y, ib_x, ib_y, tx, ty)) {
+        v2Cell(fb, x, y, green, 256);
+      } else if (v2InTri(cx, cy, oa_x, oa_y, ob_x, ob_y, ot_x, ot_y)) {
+        float fx = cx - CX, fy = cy - V2_FEED_CY;
+        if (!v2In(band, fx, fy, fx * fx + fy * fy)) v2Cell(fb, x, y, V2_RIM, 256);
+      }
+    }
+}
+
 // The food picker: a band in the bag's own green over the icons' band, curved as it is (Fedor: the straight
 // bubble covered your Pokemon), with the panels' dark rim and a lighter green line inside; each item on a soft
-// green seat (the candy with its count left today, the Repel with how many and its minutes while one runs)
+// green seat (the candy with its count left today, the Repel with how many and its minutes while one runs).
+// Opened, it slides up from below, a little past its place and back, and lands with a pip pointing down into
+// the bag (Fedor: "show that the menu holding the fruit, candy, and repel, all came from the backpack")
 static void v2DrawFoodPicker(int) {
   static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
   int foods = v2FeedFoods(), count = v2FeedCount();
+  uint32_t e = millis() - v2FeedOpenT;
+  int dy = 0;  // how far below its place it is
+  if (e < V2_FEED_RISE_MS) {  // up from 110 px below to 6 px over, slowing (ease out)
+    float u = 1 - e / (float)V2_FEED_RISE_MS;
+    dy = SNAP2((int)lroundf(-6 + 116 * u * u * u));
+  } else if (e < V2_FEED_SLIDE_MS) {  // and down onto its place: landed
+    float s = (e - V2_FEED_RISE_MS) / (float)(V2_FEED_SLIDE_MS - V2_FEED_RISE_MS);
+    dy = SNAP2((int)lroundf(-6 * (1 - s * s * (3 - 2 * s))));
+  }
   float a0 = v2FeedDeg(count - 1), a1 = v2FeedDeg(0);  // its round ends centred on the last seat and the first
   const uint16_t green = C565(0x58, 0xb8, 0x68), line = C565(0x8f, 0xd6, 0x9a), seat = C565(0xa6, 0xd9, 0xae);
   V2Seg rim = v2Seg(V2_FEED_RIN - 3, V2_FEED_ROUT + 3, a0, a1), band = v2Seg(V2_FEED_RIN, V2_FEED_ROUT, a0, a1);
@@ -345,20 +416,26 @@ static void v2DrawFoodPicker(int) {
   int x0 = (fx0 - 40) & ~1, y0 = ((fy0 < ly ? fy0 : ly) - 40) & ~1, x1 = lx + 40, y1 = V2_FEED_CY + V2_FEED_ROUT + 4;
   if (x0 < 0) x0 = 0;
   if (x1 > 464) x1 = 464;
-  if (y1 > 464) y1 = 464;
-  for (int y = y0; y <= y1; y += 2) {
+  for (int y = y0; y <= y1; y += 2) {  // (y where it rests; it's drawn dy lower while it slides)
+    if (y + dy < 0 || y + dy > 464) continue;
     float fy = y + 1 - V2_FEED_CY;
     for (int x = x0; x <= x1; x += 2) {
       float fx = x + 1 - CX, r2 = fx * fx + fy * fy;
       if (!v2In(rim, fx, fy, r2)) continue;
       uint16_t c = !v2In(band, fx, fy, r2) ? V2_RIM : v2In(lineOut, fx, fy, r2) && !v2In(lineIn, fx, fy, r2) ? line : green;
-      v2Cell(fb, x, y, c, 256);
+      v2Cell(fb, x, y + dy, c, 256);
     }
+  }
+  if (e >= V2_FEED_SLIDE_MS) {  // landed: the pip grows down into the bag
+    uint32_t p = e - V2_FEED_SLIDE_MS;
+    int len = p >= V2_FEED_PIP_MS ? V2_FEED_PIP_LEN : (int)(V2_FEED_PIP_LEN * p / V2_FEED_PIP_MS);
+    if (len >= 4) v2FeedPip(band, a1, len);
   }
   int candyX = 0, candyY = 0;
   for (int i = 0; i < count; i++) {
     int cx, cy;
     v2FeedSeat(i, cx, cy);
+    cy += dy;
     gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, seat);
     if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - 27, cy - 27, 3, false);
     else v2RepelSeatDraw(cx, cy);
@@ -879,6 +956,9 @@ static uint8_t v2HourTod() {
 }
 // the home's zone (an egg's is the meadow) and its time of day: night too while it sleeps
 static uint8_t v2HomeZone() { return pet.isEgg() ? Z_MEADOW : zoneOf(pet.speciesId); }
+// the species shown by name while it evolves: the form it's leaving (evoPmd), until it has evolved (Fedor: "during
+// the evolution it said Venusaur is evolving")
+static int16_t v2ShownSpecies() { return pet.evolving() && evoPmd.loaded && evoPmd.dex ? evoPmd.dex : pet.speciesId; }
 static uint8_t v2HomeTod() { return pet.sleeping ? 2 : v2HourTod(); }
 
 // a soft shadow under the pet, on the 4 px grid, wherever it stands
