@@ -22,6 +22,7 @@
 #include "rtcbat.h"
 #include "i18n.h"
 #include "pet.h"
+#include "power.h"
 #include <Preferences.h>
 
 static int gFails = 0, gChecks = 0;
@@ -732,6 +733,34 @@ static void testGame() {
     feedMenuUntil = 0;
     runTicks(200);
     CHECK(v2HostWalking());
+    // asleep, only the home is dim (Fedor): the sleep turns the brightness down at home, not over a menu
+    extern PowerCtx powerCtx(uint32_t now);
+    extern bool cardOpen;
+    uint8_t awake = brightnessFor(powerCtx(millis()));
+    pet.sleeping = true;
+    runTicks(100);
+    CHECK(brightnessFor(powerCtx(millis())) < awake);
+    cardOpen = true;
+    runTicks(100);
+    CHECK(brightnessFor(powerCtx(millis())) == awake);
+    cardOpen = false;
+    runTicks(100);
+    CHECK(brightnessFor(powerCtx(millis())) < awake);
+    pet.sleeping = false;
+    runTicks(100);
+    // the games' X clicks, as every X does (Fedor)
+    audioSetEnabled(true);
+    std::vector<int16_t> drain(HOST_AUDIO_RATE * 10);
+    hostAudioRender(drain.data(), (int)drain.size());  // what's queued so far, out of the way
+    gamesMenuOpen = true;
+    runTicks(200);
+    hostAudioRender(drain.data(), (int)drain.size());
+    hostPointer(233, 422, true);
+    runTicks(100);
+    hostPointer(233, 422, false);
+    runTicks(200);
+    CHECK(!gamesMenuOpen);
+    CHECK(anySound(HOST_AUDIO_RATE / 10));
   }
   // V2's game backgrounds, by day, as their mockups have them (games_px.py) where the game stands things
   {

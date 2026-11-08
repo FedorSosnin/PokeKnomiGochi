@@ -4,7 +4,8 @@
 // above, Medals to the right, Stats below and the Pokedex to the left, where the home's swipes put them. Its middle
 // is open, so the finger that opened it covers none of it. Slide onto one and lift to open it; lift in the middle
 // and the ring stays for a tap (in the middle or outside, it closes; left alone 8 s, too). Held on still in the
-// middle, the release question comes at 3 s, as before.
+// middle, the release question comes at 3 s, as before. The ring is see-through, as the icons' band is (Fedor),
+// so while it's open the home leaves out what it would show through: the header, the band, the icons, the pill.
 
 #define V2_RAD_IN 86    // the ring, from the screen's centre
 #define V2_RAD_OUT 204
@@ -147,18 +148,24 @@ static void v2RadialLift(int16_t x, int16_t y) {
     v2RadialClose();
   }
 }
-// an icon at 3x centred at (cx, cy), and its label (in capitals) centred under it or over it (labelY)
-static void v2RadialItem(const char *const *icon, int cx, int cy, const char *label, int labelY, bool hot) {
+// an icon at 3x centred at (cx, cy), and its label (in capitals) centred under it or over it (labelY): white on a
+// dark 2 px shadow, as the pages' numbers, so it reads on any scene through the ring
+static void v2RadialItem(const char *const *icon, int cx, int cy, const char *label, int labelY) {
   drawMap(icon, HOME_ICON_N, cx - 27, cy - 27, 3, false);
   char b[40];
   v2Caps(label, b, sizeof(b));
   setSize(2);
-  gfx->setTextColor(hot ? UI_WHITE : UI_INK);
-  setCur(centerX(b, 2) + (cx - CX), labelY);
+  int x = centerX(b, 2) + (cx - CX);
+  gfx->setTextColor(C565(0x1b, 0x1b, 0x25));
+  setCur(x + 2, labelY + 2);
+  printT(b);
+  gfx->setTextColor(UI_WHITE);
+  setCur(x, labelY);
   printT(b);
 }
-// The ring over the dimmed home (the panels' look: white, the dark rim; the section under the finger green), its
-// icons and words, the Pokemon seen through the middle
+// The ring over the dimmed home, see-through as the icons' band is (Fedor: "the same color as the area behind the
+// main screen icons"), with its fainter edge; the section under the finger green in the panels' dark rim. Its icons
+// and words, the Pokemon seen through the middle.
 static void v2RadialDraw() {
   if (v2RadialSticky && millis() - v2RadialT > 8000) {
     v2RadialClose();
@@ -168,6 +175,9 @@ static void v2RadialDraw() {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   const int ri = V2_RAD_IN, ro = V2_RAD_OUT, rr = ro + 3;
   const uint16_t green = C565(0x58, 0xb8, 0x68);
+  uint16_t col;
+  int ra, ta;
+  v2BandInk(col, ra, ta);
   for (int y = (CY - rr) & ~1; y <= CY + rr; y += 2)
     for (int x = (CX - rr) & ~1; x <= CX + rr; x += 2) {
       int fx = x + 1 - CX, fy = y + 1 - CY, r2 = fx * fx + fy * fy;
@@ -176,10 +186,15 @@ static void v2RadialDraw() {
       if (d < V2_RAD_GAP) continue;  // the gaps between them
       int s = abs(fy) > abs(fx) ? (fy < 0 ? 0 : 2) : (fx > 0 ? 1 : 3);
       bool rim = r2 < ri * ri || r2 > ro * ro || d < V2_RAD_GAP + 4;
-      v2Cell(fb, x, y, rim ? V2_RIM : s == v2RadialHover ? green : UI_WHITE, 256);
+      if (s == v2RadialHover) {
+        v2Cell(fb, x, y, rim ? V2_RIM : green, 256);
+      } else {
+        v2Cell(fb, x, y, col, ra);
+        if (!rim) v2Cell(fb, x, y, col, ta);
+      }
     }
-  v2RadialItem(SPR_V2_RAD_GEAR, CX, 74, T(S_SETTINGS), 106, v2RadialHover == 0);
-  v2RadialItem(SPR_V2_RAD_MEDAL, 378, 210, T(S_RAD_MEDALS), 244, v2RadialHover == 1);
-  v2RadialItem(SPR_V2_RAD_STATS, CX, 388, T(S_RAD_STATS), 340, v2RadialHover == 2);
-  v2RadialItem(SPR_V2_RAD_DEX, 88, 210, T(S_DEX_TITLE), 244, v2RadialHover == 3);
+  v2RadialItem(SPR_V2_RAD_GEAR, CX, 74, T(S_SETTINGS), 106);
+  v2RadialItem(SPR_V2_RAD_MEDAL, 378, 210, T(S_RAD_MEDALS), 244);
+  v2RadialItem(SPR_V2_RAD_STATS, CX, 388, T(S_RAD_STATS), 340);
+  v2RadialItem(SPR_V2_RAD_DEX, 88, 210, T(S_DEX_TITLE), 244);
 }

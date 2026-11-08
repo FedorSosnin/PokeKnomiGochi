@@ -184,15 +184,23 @@ static void v2MapFlat(const char *const *map, int n, int x, int y, int s, uint16
   }
 }
 
+// The band's see-through ink: white on a dark scene, the track on a light one; ra over all of it (its 3 px edge
+// has only that), ta more inside. The radial menu's ring has it too (radial_v2.h).
+static void v2BandInk(uint16_t &col, int &ra, int &ta) {
+  bool dark = v2DarkScene();
+  col = dark ? UI_WHITE : V2_TRACK;
+  ra = dark ? 26 : V2_RIM_A;  // white at 10% and 12%
+  ta = dark ? 31 : V2_TRACK_A;
+}
 // The band under the five icons: one curved see-through strip, its round ends on the bag and the drop.
 // It takes the place of the shadows under them.
 static void v2DrawBand() {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   V2Seg rim = v2Seg(V2_BAND_RIN - 3, V2_BAND_ROUT + 3, V2_BAND_A0, V2_BAND_A1);
   V2Seg band = v2Seg(V2_BAND_RIN, V2_BAND_ROUT, V2_BAND_A0, V2_BAND_A1);
-  bool dark = v2DarkScene();
-  uint16_t col = dark ? UI_WHITE : V2_TRACK;
-  int ra = dark ? 26 : V2_RIM_A, ta = dark ? 31 : V2_TRACK_A;  // white at 10% and 12%
+  uint16_t col;
+  int ra, ta;
+  v2BandInk(col, ra, ta);
   int x0, y0, x1, y1;
   v2SegBox(V2_BAND_ROUT + 3, V2_BAND_A0, V2_BAND_A1, (V2_BAND_ROUT - V2_BAND_RIN) / 2.0f + 3, x0, y0, x1, y1);
   for (int y = y0; y <= y1; y += 2) {

@@ -805,6 +805,11 @@ PowerCtx powerCtx(uint32_t now) {
   c.idleMs = idleSince(now, lastInteract);
   c.screenOff = screenOff;
   c.sleeping = pet.sleeping;
+#if UI_V2
+  // V2: asleep, only the home is dim; a menu opened over it (the radial menu too) is in full colour (Fedor). Left
+  // alone it still dims, as any screen does
+  if (v2RadialOpen || !onMainScreen()) c.sleeping = false;
+#endif
 #ifdef BOARD_HOST
   if (!c.sleeping) c.idleMs = 0;  // a desktop window has no panel to protect: only the pet's sleep dims it
 #endif
@@ -2327,15 +2332,19 @@ bool render() {
     snprintf(name, sizeof(name), "%s%s", pet.shiny ? "*" : "", base);
     snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
 #if UI_V2
-    drawHeader(name, gNight || gV2Dark ? v2LightAccent(d.accent) : d.accent, statusMsg(), lv);
-    // V2: the scene runs to the rim; the bars ride on it and the icons sit on their band
+    // V2: the scene runs to the rim; the bars ride on it and the icons sit on their band. The radial menu's ring
+    // is see-through (Fedor), so while it's open what it would show through stays out: the header, the band, the
+    // icons and the pill (radial_v2.h)
+    if (!v2RadialOpen) drawHeader(name, gNight || gV2Dark ? v2LightAccent(d.accent) : d.accent, statusMsg(), lv);
     drawPet();
     drawBath();
     drawPoops();
     v2DrawBars();
-    v2DrawBand();
-    v2DrawIcons();
-    drawBuddyTop();  // under the dialogs, and dimmed with the rest behind a medal or the evolve button
+    if (!v2RadialOpen) {
+      v2DrawBand();
+      v2DrawIcons();
+      drawBuddyTop();  // under the dialogs, and dimmed with the rest behind a medal or the evolve button
+    }
 #else
     drawHeader(name, gNight ? UI_INK_NIGHT : d.accent, statusMsg(), lv);
     drawStreakBadge();
@@ -3043,6 +3052,9 @@ void drawIntroCard() {
 void gamesMenuTap(int16_t x, int16_t y) {
   gamesMenuOpen = false;
   int g = gameAt(x, y);
+#if UI_V2
+  if (g < 0) sfxPlay(SFX_TAP);  // V2: its X (or a tap beside the cartridges) closes it with the click every X has (Fedor)
+#endif
   if (g < 0) return;  // outside = go back
   sfxPlay(SFX_TAP);
   if (g == 0) startGame();
