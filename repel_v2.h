@@ -109,75 +109,84 @@ static void v2RepelRow(int y, int x0, int x1) {
   classicFontEnd(cjk);
 }
 
-// ----- the card's item pages (Fedor): the Master Ball and the Repel, each with what it does, how it's earned, its bar -----
+// ----- the card's item pages (Fedor): the Ultra Ball, the Master Ball and the Repel, each with what it does, how
+// it's earned and its bar (the card's spacing: V2_CARD_* in menus_v2.h) -----
 // a bar across the panel, k of it filled in col, its words (a count, or a time) at its right
 static void v2ItemBar(int y, float k, const char *txt, uint16_t col) {
   bool cjk = classicFontBegin();
   setSize(2);
-  int tw = textW(txt, 2), bx = 116, bw = 350 - bx - tw - 10;
-  gfx->fillRoundRect(bx, y, bw, 15, 6, C565(0xd8, 0xd2, 0xbd));
-  int fw = (int)((bw - 4) * (k < 0 ? 0 : k > 1 ? 1 : k));
-  if (fw > 2) gfx->fillRoundRect(bx + 2, y + 2, fw, 11, 5, col);
+  int tw = textW(txt, 2);
+  v2CardBar(V2_CARD_L, V2_CARD_R - tw - 12, y, k, col);
   gfx->setTextColor(V2_INK_MUTED);
-  setCur(350 - tw, y);
+  setCur(V2_CARD_R - tw, y - 1);
   printT(txt);
   classicFontEnd(cjk);
 }
-// a text, wrapped at its spaces to w px, each line centred, from y down (pitch px apart), up to n lines
-static void v2Wrapped(const char *s, int y, int w, int pitch, int n) {
-  char line[96];
-  setSize(2);
-  for (int ln = 0; *s && ln < n; ln++, y += pitch) {
-    int e = 0, fit = 0;
-    for (;;) {  // the longest run of whole words that fits
-      int k = e;
-      while (s[k] == ' ') k++;
-      while (s[k] && s[k] != ' ') k++;
-      snprintf(line, sizeof(line), "%.*s", k, s);
-      if (fit && textW(line, 2) > w) break;
-      fit = e = k;
-      if (!s[k]) break;
+// the item hovering on its page (Fedor: "a slight bob up and down like they are hovering"): 6 px up and down, in
+// the Knomi's own pixels, every 1.8 s
+static int v2ItemBob() {
+  float s = sinf((millis() % 1800) * (6.2831853f / 1800));
+  return 2 * (int)lroundf(s * 3);
+}
+// a soft glow behind it, rings on the 2 px grid in its own colour, so a dark ball shows up in front of the room's
+// window (Fedor)
+static void v2ItemGlow(int cx, int cy, uint16_t col) {
+  static const uint8_t R[4] = { 50, 56, 62, 68 }, A[4] = { 150, 105, 66, 34 };  // each ring's reach, its strength /256
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  for (int y = (cy - 68) & ~1; y <= cy + 68; y += 2)
+    for (int x = (cx - 68) & ~1; x <= cx + 68; x += 2) {
+      int fx = x + 1 - cx, fy = y + 1 - cy, r2 = fx * fx + fy * fy;
+      for (int i = 0; i < 4; i++)
+        if (r2 <= R[i] * R[i]) {
+          v2Cell(fb, x, y, col, A[i]);
+          break;
+        }
     }
-    snprintf(line, sizeof(line), "%.*s", fit, s);
-    setCur(centerX(line, 2), y);
-    printT(line);
-    s += fit;
-    while (*s == ' ') s++;
-  }
 }
 // An item's own page of the card (Fedor: one each, so there's room to say what it does): 0 the Ultra Ball, 1 the
-// Master Ball, 2 the Repel. The item big with how many you hold, then in a panel what it does and how to use it, how
+// Master Ball, 2 the Repel. The item hovering in its glow with how many you hold, then in a panel what it does, how
 // to earn one, and how far along the next is (the Repel's, while one runs: its minutes left)
 static void v2CardItem(int which) {
   static const StrId NAME[3] = { S_ULTRA, S_MASTER, S_REPEL };
-  char b[200];
-  v2Sign(v2Caps(T(NAME[which]), b, sizeof(b)));
+  static const uint16_t GLOW[3] = { C565(0xff, 0xe0, 0x70), C565(0xff, 0xa8, 0xe8), C565(0xd0, 0xb8, 0xff) };
+  char does[200], earn[64], t[16];
+  if (which == 2) snprintf(does, sizeof(does), T(S_REPEL_DOES_FMT), (unsigned)REPEL_MIN);
+  else strlcpy(does, T(which ? S_MASTER_DOES : S_ULTRA_DOES), sizeof(does));
+  if (which == 2) snprintf(earn, sizeof(earn), T(S_REPEL_EARN_FMT), (unsigned)(REPEL_PLAY_S / 60));
+  else snprintf(earn, sizeof(earn), T(S_MASTER_EARN_FMT), (unsigned)(which ? MASTER_FIGHTS : ULTRA_FIGHTS));
+  const int w = V2_CARD_R - V2_CARD_L, pitch = 22;
+  int lines = v2Wrapped(does, 0, w, pitch, 5, -1, false);
+  int h = (lines - 1) * pitch + 16 + 18 + 16 + 12 + 14;  // what it does, how it's earned, the bar
+  // the item halfway between the board and the panel (no lower than 150, where the shorter panels leave it)
+  int cy = (V2_BOARD_Y + 32 + v2CardTop(h) - 3) / 2;
+  if (cy > 150) cy = 150;
+  cy += v2ItemBob();
+  v2ItemGlow(CX, cy, GLOW[which]);
+  if (which == 2) v2RepelIcon(CX - 37, cy - 40, 5);  // (the can in the middle)
+  else if (which == 1) v2MasterBall(CX - 45, cy - 45, 5);
+  else v2UltraBall(CX - 45, cy - 45, 5);
   int held = which == 0 ? pet.ultraBalls : which == 1 ? pet.masterBalls : pet.repelHeld;
-  if (which == 2) v2RepelIcon(CX - 37, 80, 5);  // (the can in the middle)
-  else if (which == 1) v2MasterBall(CX - 45, 76, 5);
-  else v2UltraBall(CX - 45, 76, 5);
-  if (held) drawCountBadge(CX + 44, 88, held);
-  v2Panel(84, 172, 382, 372, 10);
-  if (which == 2) snprintf(b, sizeof(b), T(S_REPEL_DOES_FMT), (unsigned)REPEL_MIN);
-  else strlcpy(b, T(which ? S_MASTER_DOES : S_ULTRA_DOES), sizeof(b));
+  if (held) drawCountBadge(CX + 44, cy - 33, held);
+  char nm[40];
+  v2Sign(v2Caps(T(NAME[which]), nm, sizeof(nm)));  // (over the glow's top)
+  int y = v2CardPanel(h);
   gfx->setTextColor(UI_INK);
-  v2Wrapped(b, 180, 280, 18, 6);
-  if (which == 2) snprintf(b, sizeof(b), T(S_REPEL_EARN_FMT), (unsigned)(REPEL_PLAY_S / 60));
-  else snprintf(b, sizeof(b), T(S_MASTER_EARN_FMT), (unsigned)(which ? MASTER_FIGHTS : ULTRA_FIGHTS));
+  v2Wrapped(does, y, w, pitch, 5);
+  y += (lines - 1) * pitch + 16 + 18;
   gfx->setTextColor(V2_INK_MUTED);
-  v2Wrapped(b, 300, 280, 20, 1);
-  char t[16];
+  v2Wrapped(earn, y, w, 20, 1);
+  y += 16 + 12;
   if (which < 2) {
     uint8_t bar = which ? pet.masterBar : pet.ultraBar, n = which ? MASTER_FIGHTS : ULTRA_FIGHTS;
     snprintf(t, sizeof(t), "%u/%u", bar, n);
-    v2ItemBar(332, bar / (float)n, t, which ? v2MasterInk('q') : C565(0xd0, 0xa0, 0x20));
+    v2ItemBar(y, bar / (float)n, t, which ? v2MasterInk('q') : C565(0xd0, 0xa0, 0x20));
   } else if (pet.repelOn()) {
     snprintf(t, sizeof(t), "%um", pet.repelMinutesLeft());
-    v2ItemBar(332, pet.repelMinutesLeft() / (float)REPEL_MIN, t, C565(0x5a, 0x3a, 0x8c));
+    v2ItemBar(y, pet.repelMinutesLeft() / (float)REPEL_MIN, t, C565(0x5a, 0x3a, 0x8c));
   } else {
     uint16_t sec = pet.repelPlaySec;
     snprintf(t, sizeof(t), "%u:%02u/%u:%02u", sec / 60, sec % 60, REPEL_PLAY_S / 60, REPEL_PLAY_S % 60);
-    v2ItemBar(332, sec / (float)REPEL_PLAY_S, t, C565(0x8a, 0x5c, 0xc8));
+    v2ItemBar(y, sec / (float)REPEL_PLAY_S, t, C565(0x8a, 0x5c, 0xc8));
   }
 }
 

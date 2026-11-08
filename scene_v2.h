@@ -1307,11 +1307,11 @@ static void v2Button(int x, int y, int w, int h, uint16_t col) {
 }
 
 // Berry Drop's lives: a small heart on the 2 px grid (18 x 16, centred on cx, cy), red while the life is
-// left, grey once it's gone
+// left, grey once it's gone (the card's bond has it in pink: fill and shade)
 static const char *const V2_LIFE_HEART[8] = {
   "..kk.kk..", ".krrkrrk.", "krwrrrrrk", "krrrrrrRk", ".krrrrRk.", "..krrRk..", "...krk...", "....k....",
 };
-static void v2LifeHeart(int cx, int cy, bool full) {
+static void v2LifeHeart(int cx, int cy, bool full, uint16_t fill = UI_BAR_BAD, uint16_t shade = C565(0xb5, 0x32, 0x24)) {
   int x0 = SNAP2(cx - 9), y0 = SNAP2(cy - 8);
   for (int r = 0; r < 8; r++)
     for (int c = 0; V2_LIFE_HEART[r][c]; c++) {
@@ -1320,8 +1320,8 @@ static void v2LifeHeart(int cx, int cy, bool full) {
       uint16_t col = ch == 'k'   ? UI_INK
                      : !full     ? C565(0xa9, 0xb2, 0xbe)
                      : ch == 'w' ? UI_WHITE
-                     : ch == 'R' ? C565(0xb5, 0x32, 0x24)
-                                 : UI_BAR_BAD;
+                     : ch == 'R' ? shade
+                                 : fill;
       gfx->fillRect(x0 + c * 2, y0 + r * 2, 2, 2, col);
     }
 }

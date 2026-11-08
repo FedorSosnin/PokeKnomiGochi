@@ -290,23 +290,105 @@ static void v2Settings() {
 #endif
 
 // ----- the card: profile, battle stats, training, progress -----
+// One spacing for every page (Fedor: "another pass of spacing and consistency"): each panel as wide as the others,
+// its words and bars 16 px in from its sides, as tall as what's in it plus 16 px above and below, and its bottom
+// just over the page's number, so the panels line up as the pages turn. Lines are V2_CARD_ROW apart.
+#define V2_CARD_X0 84
+#define V2_CARD_X1 382
+#define V2_CARD_L 100                // where the words and bars start
+#define V2_CARD_R 366                // and where they end
+#define V2_CARD_TX (V2_CARD_L + 26)  // the words after a line's icon
+#define V2_CARD_BOT 372
+#define V2_CARD_PAD 16
+#define V2_CARD_ROW 32
+// the top of a page's panel for h px of lines (the first one's top to the last one's bottom)
+static int v2CardTop(int h) { return V2_CARD_BOT - h - 2 * V2_CARD_PAD; }
+// that panel; it returns where the first line goes
+static int v2CardPanel(int h) {
+  int y0 = v2CardTop(h);
+  v2Panel(V2_CARD_X0, y0, V2_CARD_X1, V2_CARD_BOT, 10);
+  return y0 + V2_CARD_PAD;
+}
+// the card's one look for a bar: x0 to x1 at y, h tall, k of it filled in col
+static void v2CardBar(int x0, int x1, int y, float k, uint16_t col, int h = 14) {
+  gfx->fillRoundRect(x0, y, x1 - x0, h, 5, C565(0xd8, 0xd2, 0xbd));
+  int fw = (int)((x1 - x0 - 4) * (k < 0 ? 0 : k > 1 ? 1 : k));
+  if (fw > 2) gfx->fillRoundRect(x0 + 2, y + 2, fw, h - 4, 4, col);
+}
+// a text ending at the panel's inner edge
+static void v2CardRight(const char *s, int y, uint16_t col) {
+  setSize(2);
+  gfx->setTextColor(col);
+  setCur(V2_CARD_R - textW(s, 2), y);
+  printT(s);
+}
+// a line in its two halves, where the language leaves two spaces between them ("STREAK %u  best %u",
+// "%s   AGE %lud"): the first into a, the rest into b (b empty when there's no such gap)
+static void v2SplitPair(const char *s, char *a, char *b, size_t n) {
+  const char *gap = strstr(s, "  ");
+  if (!gap) {
+    strlcpy(a, s, n);
+    b[0] = 0;
+    return;
+  }
+  snprintf(a, n, "%.*s", (int)(gap - s), s);
+  while (*gap == ' ') gap++;
+  strlcpy(b, gap, n);
+}
+// a text wrapped at its spaces to w px, from y down (pitch px apart), up to n lines: each line centred, or from x
+// when x >= 0. It returns how many lines it took; with draw false it only counts them
+static int v2Wrapped(const char *s, int y, int w, int pitch, int n, int x = -1, bool draw = true) {
+  char line[96];
+  setSize(2);
+  int ln = 0;
+  for (; *s && ln < n; ln++, y += pitch) {
+    int e = 0, fit = 0;
+    for (;;) {  // the longest run of whole words that fits
+      int k = e;
+      while (s[k] == ' ') k++;
+      while (s[k] && s[k] != ' ') k++;
+      snprintf(line, sizeof(line), "%.*s", k, s);
+      if (fit && textW(line, 2) > w) break;
+      fit = e = k;
+      if (!s[k]) break;
+    }
+    snprintf(line, sizeof(line), "%.*s", fit, s);
+    if (draw) {
+      setCur(x >= 0 ? x : centerX(line, 2), y);
+      printT(line);
+    }
+    s += fit;
+    while (*s == ' ') s++;
+  }
+  return ln;
+}
 static const uint16_t V2_STAT_COL[4] = { C565(0xe8, 0x50, 0x3a), C565(0x4f, 0x93, 0xc4), C565(0xf0, 0xc0, 0x4a), C565(0x8e, 0x8c, 0x96) };
-// a stat in a panel: its name, a bar, the number on the right (stat_row()); a boosted number is green
-static void v2StatRow(int y, const char *lab, int v, int maxv, uint16_t col, bool boosted = false, bool maxed = false, bool unknown = false) {
+// the widest of a page's four stat names at size 2: the bars start after it, so a long name (Japanese) never runs
+// into its bar
+static int v2LabW(const char *a, const char *b, const char *c, const char *d) {
+  const char *s[4] = { a, b, c, d };
+  setSize(2);
+  int w = 0;
+  for (int i = 0; i < 4; i++) {
+    int t = textW(s[i], 2);
+    if (t > w) w = t;
+  }
+  return w;
+}
+// a stat in a panel: its name, a bar after the widest name (labW), the number at the right (stat_row()); a
+// boosted number is green
+static void v2StatRow(int y, const char *lab, int v, int maxv, uint16_t col, int labW, bool boosted = false, bool maxed = false,
+                      bool unknown = false) {
   setSize(2);
   gfx->setTextColor(UI_INK);
-  setCur(108, y);
+  setCur(V2_CARD_L, y);
   printT(lab);
-  gfx->fillRoundRect(162, y + 1, 139, 13, 4, C565(0xd8, 0xd2, 0xbd));
-  int fw = 134 * (v < maxv ? v : maxv) / maxv;
-  if (fw > 2) gfx->fillRoundRect(164, y + 3, fw, 9, 3, col);
+  v2CardBar(V2_CARD_L + labW + 12, V2_CARD_R - textW("888", 2) - 12, y + 1, (float)(v < maxv ? v : maxv) / maxv, col);
   char num[8];
   if (maxed) strlcpy(num, "MAX", sizeof(num));
   else if (unknown) strlcpy(num, "?", sizeof(num));  // a friend on an older version doesn't send it
   else snprintf(num, sizeof(num), "%d", v);
-  gfx->setTextColor(maxed ? col : unknown ? V2_INK_MUTED : boosted ? C565(0x1e, 0x7d, 0x3c) : UI_INK);
-  setCur(358 - textW(num, 2), y);
-  printT(num);
+  v2CardRight(num, y, maxed ? col : unknown ? V2_INK_MUTED : boosted ? C565(0x1e, 0x7d, 0x3c) : UI_INK);
 }
 // your Pokemon standing on the rug, its feet at y, as big as fits under the board (at most maxS)
 static void v2CardMon(int feet, int maxH, uint8_t maxS) {
@@ -317,6 +399,9 @@ static void v2CardMon(int feet, int maxH, uint8_t maxS) {
   drawPmdAct(PMD_IDLE, CX, feet, millis(), true, false, maxS);
   gPmdForceScale = 0;
 }
+// The Profile: your Pokemon big on the rug, and in the panel the streak by its flame (the best at the right), the
+// bond by a heart with its bar, the favourite berry by its icon (the age at the right, or on a line of its own when
+// the two would meet)
 static void v2CardProfile() {
   const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
   char head[32];
@@ -334,107 +419,122 @@ static void v2CardProfile() {
     printT(par);
     cardNameBottom = top = V2_BOARD_Y + 54;
   }
-  v2CardMon(262, 262 - top - 6, 4);
-  v2Panel(84, 272, 382, 374, 10);  // (Fedor: roomier, its three lines 26 px apart in the middle of it)
-  // the streak with its flame
-  gfx->fillTriangle(106, 291, 100, 303, 112, 303, UI_BAR_BAD);
-  gfx->fillTriangle(106, 296, 103, 303, 109, 303, UI_BAR_WARN);
-  char rl[40];
-  snprintf(rl, sizeof(rl), T(S_STREAK_FMT), pet.streak, pet.bestStreak);
+  char line[48], streak[48], best[48], berryName[48], age[48];
+  snprintf(line, sizeof(line), T(S_STREAK_FMT), pet.streak, pet.bestStreak);
+  v2SplitPair(line, streak, best, sizeof(streak));
+  const char *berry = !pet.berryKnown ? T(S_BERRY_UNK) : pet.lovesBerry(0) ? T(S_BERRY_RED) : pet.lovesBerry(1) ? T(S_BERRY_BLUE) : T(S_BERRY_GREEN);
+  snprintf(line, sizeof(line), T(S_INFO_FMT), berry, (unsigned long)(pet.ageMinutes / 1440));
+  v2SplitPair(line, berryName, age, sizeof(berryName));
+  setSize(2);
+  bool ageOwn = V2_CARD_TX + textW(berryName, 2) + 16 > V2_CARD_R - textW(age, 2);
+  int h = (ageOwn ? 3 : 2) * V2_CARD_ROW + 16, feet = v2CardTop(h) - 10;
+  v2CardMon(feet, feet - top - 6, 4);
+  int y = v2CardPanel(h);
+  gfx->fillTriangle(110, y + 1, 103, y + 14, 117, y + 14, UI_BAR_BAD);  // the streak, by its flame
+  gfx->fillTriangle(110, y + 6, 106, y + 14, 114, y + 14, UI_BAR_WARN);
+  gfx->setTextColor(UI_INK);
+  setCur(V2_CARD_TX, y);
+  printT(streak);
+  v2CardRight(best, y, V2_INK_MUTED);
+  y += V2_CARD_ROW;  // the bond, by a heart in its bar's pink
+  const uint16_t pink = C565(0xf0, 0x8a, 0xa4);
+  v2LifeHeart(110, y + 8, true, pink, C565(0xc8, 0x5a, 0x78));
   gfx->setTextColor(UI_INK);
   setSize(2);
-  setCur(120, 289);
-  printT(rl);
-  // the bond
-  setCur(100, 315);
+  setCur(V2_CARD_TX, y);
   printT(T(S_VIN));
-  int bx = 100 + textW(T(S_VIN), 2) + 12;
-  if (bx < 156) bx = 156;
-  gfx->fillRect(bx, 317, 362 - bx, 10, C565(0xd8, 0xd2, 0xbd));
-  int bw = (358 - bx) * (pet.bond > 100 ? 100 : pet.bond) / 100;
-  if (bw > 0) gfx->fillRect(bx + 2, 319, bw, 6, C565(0xf0, 0x8a, 0xa4));
-  // the favourite berry and the age
-  const char *berry = !pet.berryKnown ? T(S_BERRY_UNK) : pet.lovesBerry(0) ? T(S_BERRY_RED) : pet.lovesBerry(1) ? T(S_BERRY_BLUE) : T(S_BERRY_GREEN);
-  char info[48];
-  snprintf(info, sizeof(info), T(S_INFO_FMT), berry, (unsigned long)(pet.ageMinutes / 1440));
-  int x = 100;
+  v2CardBar(V2_CARD_TX + textW(T(S_VIN), 2) + 12, V2_CARD_R, y + 1, (pet.bond > 100 ? 100 : pet.bond) / 100.0f, pink);
+  y += V2_CARD_ROW;  // the favourite berry, by its icon, and the age
   if (pet.berryKnown) {
     static const char *const *const BERRY_ICON[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
-    drawMap(BERRY_ICON[pet.lovesBerry(0) ? 0 : pet.lovesBerry(1) ? 1 : 2], HOME_ICON_N, 96, 337, 1, false);
-    x = 120;
+    drawMap(BERRY_ICON[pet.lovesBerry(0) ? 0 : pet.lovesBerry(1) ? 1 : 2], HOME_ICON_N, 101, y - 1, 1, false);
   }
   gfx->setTextColor(UI_INK);
-  setCur(x, 341);
-  printT(info);
+  setSize(2);
+  setCur(V2_CARD_TX, y);
+  printT(berryName);
+  if (ageOwn) {
+    y += V2_CARD_ROW;
+    gfx->setTextColor(V2_INK_MUTED);
+    setCur(V2_CARD_TX, y);
+    printT(age);
+  } else {
+    v2CardRight(age, y, V2_INK_MUTED);
+  }
 }
+// Battle stats: your Pokemon, its four stats in bars, and its wins by the trophy
 static void v2CardStats() {
   v2Sign(T(S_BATTLE));
-  v2CardMon(184, 184 - V2_BOARD_Y - 34, 3);
-  v2Panel(92, 190, 374, 372, 10);
   int bon = partyBoostOn() ? PARTY_STAT_BONUS : 0;  // friends around: what wild battles use
+  int labW = v2LabW(T(S_STAT_ATK), T(S_STAT_DEF), T(S_STAT_SPE), T(S_STAT_WGT));
 #ifdef BOARD_KNOMI_V2
-  const int step = 33;
+  const int step = V2_CARD_ROW, h = 3 * step + 16 + 24 + 16;  // the four bars, then the wins
+  int feet = v2CardTop(h) - 10;
+  v2CardMon(feet, feet - V2_BOARD_Y - 34, 3);
+  int y = v2CardPanel(h), wy = y + 3 * step + 16 + 24;
 #else
-  const int step = 24;  // room for the battle button under the bars (the Knomi has its own button)
+  const int step = 24, y = 204, wy = 346;  // the battle button under the bars stays where it's pressed (300 to 340)
+  v2CardMon(184, 184 - V2_BOARD_Y - 34, 3);
+  v2Panel(V2_CARD_X0, 190, V2_CARD_X1, V2_CARD_BOT, 10);
 #endif
-  v2StatRow(204, T(S_STAT_ATK), pet.atkStat() + bon, 260, V2_STAT_COL[0], bon > 0);
-  v2StatRow(204 + step, T(S_STAT_DEF), pet.defStat() + bon, 260, V2_STAT_COL[1], bon > 0);
-  v2StatRow(204 + 2 * step, T(S_STAT_SPE), pet.speStat() + bon, 260, V2_STAT_COL[2], bon > 0);
-  v2StatRow(204 + 3 * step, T(S_STAT_WGT), pet.weight, 100, V2_STAT_COL[3]);
+  v2StatRow(y, T(S_STAT_ATK), pet.atkStat() + bon, 260, V2_STAT_COL[0], labW, bon > 0);
+  v2StatRow(y + step, T(S_STAT_DEF), pet.defStat() + bon, 260, V2_STAT_COL[1], labW, bon > 0);
+  v2StatRow(y + 2 * step, T(S_STAT_SPE), pet.speStat() + bon, 260, V2_STAT_COL[2], labW, bon > 0);
+  v2StatRow(y + 3 * step, T(S_STAT_WGT), pet.weight, 100, V2_STAT_COL[3], labW);
 #ifndef BOARD_KNOMI_V2
-  v2LabelButton(112, 300, 354, 334, T(S_BTL_START), UI_BAR_BAD);
+  v2LabelButton(112, 300, 354, 334, T(S_BTL_START), UI_BAR_BAD);  // (the Knomi has its own button)
 #endif
   char wins[40];
   snprintf(wins, sizeof(wins), T(S_WINS_FMT), pet.battleWins);
   setSize(2);
   int ww = textW(wins, 2), x0 = CX - (ww + 32) / 2;
-#ifdef BOARD_KNOMI_V2
-  const int wy = 344;
-#else
-  const int wy = 346;
-#endif
   drawMap(SPR_TROPHY, 12, x0, wy - 4, 2, false);
   gfx->setTextColor(UI_INK);
   setCur(x0 + 32, wy);
   printT(wins);
 }
+// Training: each stat's training in a bar, and how it's trained under it (a long line takes two: German, French)
 static void v2CardTraining() {
   v2Sign(T(S_TRAINING));
-  v2Panel(92, 70, 374, 372, 10);
   struct { const char *lab; uint8_t v; const char *how; bool maxes; } rows[4] = {
     { T(S_STAT_ATK), pet.trAtk, T(S_TRAIN_HOW_ATK), true }, { T(S_STAT_DEF), pet.trDef, T(S_TRAIN_HOW_DEF), true },
     { T(S_STAT_SPE), pet.trSpe, T(S_TRAIN_HOW_SPE), true }, { T(S_STAT_WGT), pet.weight, T(S_TRAIN_HOW_WGT), false } };
+  const int w = V2_CARD_R - V2_CARD_L;
+  int labW = v2LabW(rows[0].lab, rows[1].lab, rows[2].lab, rows[3].lab), lines[4], h = 3 * 16;  // (16 between them)
   for (int i = 0; i < 4; i++) {
-    int y = 84 + i * 70;
-    v2StatRow(y, rows[i].lab, rows[i].v, 100, V2_STAT_COL[i], false, rows[i].maxes && rows[i].v >= 100);
+    lines[i] = v2Wrapped(rows[i].how, 0, w, 20, 2, V2_CARD_L, false);
+    h += 22 + 16 + (lines[i] - 1) * 20;
+  }
+  int y = v2CardPanel(h);
+  for (int i = 0; i < 4; i++) {
+    v2StatRow(y, rows[i].lab, rows[i].v, 100, V2_STAT_COL[i], labW, false, rows[i].maxes && rows[i].v >= 100);
     gfx->setTextColor(V2_INK_MUTED);
-    setCur(108, y + 22);
-    printT(rows[i].how);
+    v2Wrapped(rows[i].how, y + 22, w, 20, 2, V2_CARD_L);
+    y += 22 + 16 + (lines[i] - 1) * 20 + 16;
   }
 }
-static void v2CardItem(int which);                         // (repel_v2.h: an item's own page: 0 the Master Ball, 1 the Repel)
+static void v2CardItem(int which);  // (repel_v2.h: an item's own page: 0 the Ultra Ball, 1 the Master Ball, 2 the Repel)
+// Progress: the level big, its bar and what's left to the next; then evolution: when, and the slip-ups holding it back
 static void v2CardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
   v2Sign(T(S_PROGRESS));
-  v2Panel(92, 70, 374, 372, 10);
+  int y = v2CardPanel(32 + 12 + 18 + 10 + 16 + 24 + 16 + 8 + 16 + 8 + 16);
   char lv[10];
   snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
   gfx->setTextColor(UI_INK);
   setSize(4);
-  v2Bold(lv, centerX(lv, 4) - 1, 88);
+  v2Bold(lv, centerX(lv, 4) - 1, y);
   bool top = pet.level() >= LEVEL_MAX;  // a level is an hour of play; full, and MAX, at the top
   uint8_t into = pet.ageMinutes % MINUTES_PER_LEVEL;
-  gfx->fillRoundRect(118, 136, 231, 17, 6, C565(0xd8, 0xd2, 0xbd));
-  int fw = top ? 226 : 226 * into / MINUTES_PER_LEVEL;
-  if (fw > 2) gfx->fillRoundRect(120, 138, fw, 13, 5, C565(0x58, 0xb8, 0x68));
+  v2CardBar(V2_CARD_L, V2_CARD_R, y + 44, top ? 1.0f : into / (float)MINUTES_PER_LEVEL, C565(0x58, 0xb8, 0x68), 18);
   char nx[32];
   if (top) strlcpy(nx, "MAX", sizeof(nx));
   else snprintf(nx, sizeof(nx), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, pet.level() + 1);
   gfx->setTextColor(V2_INK_MUTED);
   setSize(2);
-  setCur(centerX(nx, 2), 162);
+  setCur(centerX(nx, 2), y + 72);
   printT(nx);
-  setCur(centerX(T(S_EVO_LABEL), 2), 206);
+  setCur(centerX(T(S_EVO_LABEL), 2), y + 112);
   printT(T(S_EVO_LABEL));
   char evoBuf[32];
   const char *evo;
@@ -452,12 +552,12 @@ static void v2CardProgress() {
     }
   }
   gfx->setTextColor(evoCol);
-  setCur(centerX(evo, 2), 230);
+  setCur(centerX(evo, 2), y + 136);
   printT(evo);
   char ms[24];  // the slip-ups, which hold evolution back
   snprintf(ms, sizeof(ms), T(S_MISTAKES_FMT), pet.careMistakes);
   gfx->setTextColor(pet.careMistakes > 0 ? UI_BAR_BAD : C565(0x3c, 0x8a, 0x4c));
-  setCur(centerX(ms, 2), 286);
+  setCur(centerX(ms, 2), y + 160);
   printT(ms);
 }
 // the card's four pages (the medals' pages are still V1's: step 5b)
@@ -1641,11 +1741,12 @@ static void v2FriendStats(PmdMon &mon, const char *name, bool shiny, uint8_t lev
   snprintf(head, sizeof(head), T(S_NAME_FMT), shiny ? "*" : "", name, level);
   v2Sign(head);
   v2FriendMon(mon, 196);
-  v2Panel(92, 202, 374, 372, 10);
-  v2StatRow(214, T(S_STAT_HP), hp, 260, V2_HP_COL, false, false, !hp);
-  v2StatRow(244, T(S_STAT_ATK), atk, 260, V2_STAT_COL[0], false, false, !atk);
-  v2StatRow(274, T(S_STAT_DEF), def, 260, V2_STAT_COL[1], false, false, !def);
-  v2StatRow(304, T(S_STAT_SPE), spe, 260, V2_STAT_COL[2], false, false, !spe);
+  v2Panel(V2_CARD_X0, 202, V2_CARD_X1, 372, 10);  // (the card's width and its stat rows)
+  int labW = v2LabW(T(S_STAT_HP), T(S_STAT_ATK), T(S_STAT_DEF), T(S_STAT_SPE));
+  v2StatRow(214, T(S_STAT_HP), hp, 260, V2_HP_COL, labW, false, false, !hp);
+  v2StatRow(244, T(S_STAT_ATK), atk, 260, V2_STAT_COL[0], labW, false, false, !atk);
+  v2StatRow(274, T(S_STAT_DEF), def, 260, V2_STAT_COL[1], labW, false, false, !def);
+  v2StatRow(304, T(S_STAT_SPE), spe, 260, V2_STAT_COL[2], labW, false, false, !spe);
 }
 static void v2FriendLine(const char *s, int x = -1) {
   gfx->setTextColor(V2_INK_MUTED);

@@ -72,10 +72,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Huele un poco...", "Algo huele mal...", "Necesita una siesta...", "Quiere jugar...", "Est\240 lleno...",
     "Limpio y reluciente!", "Tiene sue\244o...", "Buenos d\241as!",
     "Est\240s seguro?", "No se puede deshacer.",
-    "La Master Ball asegura la captura si golpea a un Pok\202mon salvaje. T\242cala en la pantalla de captura para lanzarla.",
+    "Siempre atrapa al Pok\202mon que golpea.",
     "Durante %u minutos, los Pok\202mon salvajes m\240s d\202biles no aparecen. Se usa desde la mochila.",
     "MEDALLAS", "DATOS",
-    "Ultra Ball", "La Ultra Ball triplica la probabilidad de captura si golpea a un Pok\202mon salvaje. T\242cala en la pantalla de captura para lanzarla.", "Triplica la captura!",
+    "Ultra Ball", "Triplica la captura si acierta.", "Triplica la captura!",
 #endif
   },
   // ---------------- EN ----------------
@@ -143,10 +143,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "A bit smelly...", "Something stinks...", "Needs a nap...", "Wants to play...", "So full...",
     "Squeaky clean!", "Getting sleepy...", "Good morning!",
     "Are you sure?", "There's no going back.",
-    "Using the Master Ball guarantees a catch when it hits a wild Pok\202mon. Tap it on the catch screen to throw.",
+    "Always catches the Pok\202mon it hits.",
     "For %u minutes, weaker wild Pok\202mon stay away. Use it from the backpack.",
     "MEDALS", "STATS",
-    "Ultra Ball", "Using the Ultra Ball triples the chance of a catch when it hits a wild Pok\202mon. Tap it on the catch screen to throw.", "Triples the catch chance!",
+    "Ultra Ball", "Triples your catch chance when it hits.", "Triples the catch chance!",
 #endif
   },
   // ---------------- FR ----------------
@@ -214,10 +214,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Sent un peu...", "\200a sent mauvais...", "Besoin d'une sieste...", "Veut jouer...", "Le ventre plein...",
     "Tout propre!", "Il a sommeil...", "Bonjour!",
     "Tu es s\226r?", "Impossible de l\'annuler.",
-    "La Master Ball garantit la capture si elle touche un Pok\202mon sauvage. Touche-la sur l\'\202cran de capture pour la lancer.",
+    "Attrape toujours le Pok\202mon touch\202.",
     "Pendant %u minutes, les Pok\202mon sauvages plus faibles restent loin. S\'utilise depuis le sac.",
     "M\220DAILLES", "STATS",
-    "Hyper Ball", "L\'Hyper Ball triple les chances de capture si elle touche un Pok\202mon sauvage. Touche-la sur l\'\202cran de capture pour la lancer.", "Triple la capture!",
+    "Hyper Ball", "Triple la capture si elle touche.", "Triple la capture!",
 #endif
   },
   // ---------------- DE ----------------
@@ -290,10 +290,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Riecht etwas...", "Hier stinkt's...", "Will ein Nickerchen", "Will spielen...", "Pappsatt...",
     "Blitzsauber!", "Wird m\201de...", "Guten Morgen!",
     "Bist du sicher?", "Es gibt kein Zur\201ck.",
-    "Der Meisterball f\204ngt ein wildes Pok\202mon sicher, wenn er trifft. Tippe ihn beim Fangen an, um ihn zu werfen.",
+    "F\204ngt jedes Pok\202mon, das er trifft.",
     "%u Minuten lang bleiben schw\204chere wilde Pok\202mon fern. Im Rucksack einsetzen.",
     "MEDAILLEN", "WERTE",
-    "Hyperball", "Der Hyperball verdreifacht die Fangchance, wenn er ein wildes Pok\202mon trifft. Tippe ihn beim Fangen an, um ihn zu werfen.", "Dreifache Fangchance!",
+    "Hyperball", "Dreifache Fangchance, wenn er trifft.", "Dreifache Fangchance!",
 #endif
   },
   // ---------------- IT ----------------
@@ -361,10 +361,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Puzza un po'...", "Qualcosa puzza...", "Vuole un pisolino...", "Vuole giocare...", "Pieno zeppo...",
     "Pulito e splendente!", "Ha sonno...", "Buongiorno!",
     "Sei sicuro?", "Non si torna indietro.",
-    "La Master Ball cattura di sicuro un Pok\202mon selvatico se lo colpisce. Toccala nella schermata di cattura per lanciarla.",
+    "Cattura sempre il Pok\202mon che colpisce.",
     "Per %u minuti, i Pok\202mon selvatici pi\227 deboli stanno lontani. Si usa dallo zaino.",
     "MEDAGLIE", "STATISTICHE",
-    "Ultra Ball", "L\'Ultra Ball triplica la probabilit\205 di cattura se colpisce un Pok\202mon selvatico. Toccala nella schermata di cattura per lanciarla.", "Triplica la cattura!",
+    "Ultra Ball", "Triplica la cattura se colpisce.", "Triplica la cattura!",
 #endif
   },
   // ---------------- PT ----------------
@@ -432,10 +432,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Um pouco fedido...", "Algo est\240 fedendo...", "Precisa de um cochilo", "Quer brincar...", "Est\240 cheio...",
     "Limpinho!", "Com sono...", "Bom dia!",
     "Tens a certeza?", "Nao d\240 para desfazer.",
-    "A Master Ball garante a captura se atingir um Pok\202mon selvagem. Toca nela ao capturar para a lan\207ar.",
+    "Captura sempre o Pok\202mon que atinge.",
     "Durante %u minutos, os Pok\202mon selvagens mais fracos ficam longe. Usa-se na mochila.",
     "MEDALHAS", "DADOS",
-    "Ultra Ball", "A Ultra Ball triplica a hip\242tese de captura se atingir um Pok\202mon selvagem. Toca nela ao capturar para a lan\207ar.", "Triplica a captura!",
+    "Ultra Ball", "Triplica a captura se acertar.", "Triplica a captura!",
 #endif
   },
   // ---------------- JA ----------------
@@ -526,10 +526,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ちょっと におう...", "なにか におう...", "おひるね したい...", "あそびたいな...", "おなかいっぱい...",
     "ぴかぴか！", "ねむくなってきた...", "おはよう！",
     "ほんとうに いいの?", "もとに もどせません。",
-    "マスターボールは やせいの ポケモンに あたれば かならず つかまえる。 つかまえる がめんで タッチして なげよう。",
+    "あたれば かならず つかまえる。",
     "%u ふんの あいだ、 よわい やせいの ポケモンが でてこない。 リュックから つかう。",
     "メダル", "つよさ",
-    "ハイパーボール", "ハイパーボールは やせいの ポケモンに あたると つかまえやすさが 3ばいに なる。 つかまえる がめんで タッチして なげよう。", "つかまえやすさ 3ばい!",
+    "ハイパーボール", "あたると つかまえやすさが 3ばいに なる。", "つかまえやすさ 3ばい!",
 #endif
   },
   // ---------------- KO ----------------
@@ -602,10 +602,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "냄새가 조금 나요...", "뭔가 냄새가 나요...", "낮잠이 필요해요...", "놀고 싶어요...", "배불러요...",
     "반짝반짝 깨끗해요!", "졸려요...", "좋은 아침!",
     "정말 지울까요?", "되돌릴 수 없어요.",
-    "마스터볼은 야생 포켓몬에게 맞으면 반드시 잡혀요. 포획 화면에서 눌러서 던져요.",
+    "맞으면 반드시 잡혀요.",
     "%u분 동안 약한 야생 포켓몬이 나오지 않아요. 가방에서 써요.",
     "메달", "능력치",
-    "하이퍼볼", "하이퍼볼은 야생 포켓몬에게 맞으면 잡힐 확률이 3배가 돼요. 포획 화면에서 눌러서 던져요.", "포획률 3배!",
+    "하이퍼볼", "맞으면 잡힐 확률이 3배가 돼요.", "포획률 3배!",
 #endif
   },
 };

@@ -2119,6 +2119,9 @@ static bool staticScreen() {
   if (pet.awaitingStarter()) return true;
   if (pet.awaitingEggPick() || buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || surfOpen || dungeonOpen) return false;  // the gallery manages its own repainting
   if (kbOpen || clockOpen) return true;
+#if UI_V2
+  if (cardOpen && !cardAch && cardPage >= 4) return false;  // V2: an item's page: the item hovers (Fedor)
+#endif
   return cardOpen && (cardAch || cardPage != 0);  // the card's page 0 has the animated portrait
 }
 static uint32_t mixKey(uint32_t h, uint32_t v) { return (h ^ v) * 16777619u; }
