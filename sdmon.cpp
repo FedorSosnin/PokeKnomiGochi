@@ -103,8 +103,11 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
     // Ivysaur and Venusaur face you head down, the face lower than their feet: stood by the face, their legs were
     // in the air (Fedor: "His nose touches but his legs are in the air"). Facing you, each frame stands by its
     // legs instead, the lowest of its three outermost columns each side, and the face hangs over the ground in
-    // front. (Turned any other way a leg is what's lowest.)
-    if ((dexNum == 2 || dexNum == 3) && (id == PMD_IDLE || id == PMD_WALKD)) {
+    // front: standing, walking toward you, asleep, hopping, hurt and attacking (asleep, it was still on its chin:
+    // "Are you sure its fixed? It looks the same"). Turned any other way a leg is what's lowest, and Ivysaur
+    // sleeps curled up on its side, lying on what's lowest
+    bool facingYou = id == PMD_WALKD || (id < PMD_WALKD && id != PMD_WALKL && id != PMD_WALKR);
+    if ((dexNum == 3 || (dexNum == 2 && id != PMD_SLEEP)) && facingYou) {
       uint8_t legsBase = 0;
       for (uint8_t f = 0; f < nf; f++) {
         const uint8_t *fr = a.data + (uint32_t)f * w * h;

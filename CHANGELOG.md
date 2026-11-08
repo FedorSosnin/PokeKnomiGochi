@@ -22,7 +22,7 @@ A new look for every screen, on the Knomi, Mac, Windows and the web. Your Pokém
 - **The games:** cartridges in an old TV, **Play Again!** at every game's end, and new stairs in PokeDungeon.
 - **The trophy room:** all 25 medals as things in one room, a gleam sweeping over the ones you've won; tap one for its card.
 - **Who's That? counts down:** ten seconds for each silhouette, alone or in a Showdown; out of time counts as wrong, and the answer shows.
-- **Every Pokémon on its feet:** each one stands and walks on the ground instead of floating over its shadow (Venusaur and Ivysaur on their legs, their heads hanging in front), and big ones like Snorlax, Lapras and Dragonite come out bigger.
+- **Every Pokémon on its feet:** each one stands and walks on the ground instead of floating over its shadow (Venusaur and Ivysaur on their legs, their heads hanging in front, awake or asleep), and big ones like Snorlax, Lapras and Dragonite come out bigger.
 - **The hills in order:** the Forest's big pines and the Mansion's fence and graves stand behind the hill your Pokémon walks on, not over it.
 - **Evolving:** while your Pokémon evolves it still goes by its own name, and by the new one once it has.
 - **And more:** a new evolution scene, counts in the middle of their circles, more lines under your Pokémon's name, a new click sound, **ERASE EVERYTHING** asks twice, and while your Pokémon sleeps only the home screen dims.
