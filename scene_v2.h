@@ -297,33 +297,28 @@ static void v2CountBadge(int cx, int cy, int n) {
 }
 
 // The backpack's seats: the foods (the candy while there are any left today), then the Repel's while you hold one
-// or one runs; four a row at most (Fedor). The first row runs along the bag's bubble as it always has; a second row
-// stacks on it from the left end, upward, only as wide as what's in it, so your Pokemon stays in view to be fed
+// or one runs, right of the candy, in one row centred on the screen (Fedor), so what you tap is seen dropping onto
+// your Pokemon
 static int v2FeedFoods() { return pet.canHaveCandy() ? 4 : 3; }
 static int v2FeedCount() { return v2FeedFoods() + (v2RepelSeat() ? 1 : 0); }
-static int v2FeedRowLen(int row) {  // the seats in a row (0 the bag's own, 1 the one stacked on it)
-  int n = v2FeedCount() - row * 4;
-  return n < 0 ? 0 : n > 4 ? 4 : n;
-}
-static int v2FeedRowY(int row) { return V2_FEED_Y0 - row * V2_FEED_H; }  // a row's top
+static int v2FeedX0() { return CX - v2FeedCount() * V2_FEED_CELL / 2; }
 static int v2FeedAt(int16_t x, int16_t y) {  // the seat under a tap, or -1
-  if (x < V2_FEED_X0 || y > V2_FEED_Y0 + V2_FEED_H) return -1;
-  int row = y >= V2_FEED_Y0 ? 0 : (V2_FEED_Y0 - 1 - y) / V2_FEED_H + 1, col = (x - V2_FEED_X0) / V2_FEED_CELL;
-  return row <= 1 && col < v2FeedRowLen(row) ? row * 4 + col : -1;
+  int x0 = v2FeedX0();
+  if (y < V2_FEED_Y0 || y > V2_FEED_Y0 + V2_FEED_H || x < x0 || x >= x0 + v2FeedCount() * V2_FEED_CELL) return -1;
+  return (x - x0) / V2_FEED_CELL;
 }
 // The food picker: a text-box bubble out of the bag, its tail pointing at it, each item on a round seat (the candy
 // with its count left today, the Repel with how many and its minutes while one runs)
 static void v2DrawFoodPicker(int) {
   static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
   int foods = v2FeedFoods(), count = v2FeedCount();
-  int x0 = V2_FEED_X0, y0 = V2_FEED_Y0, x1 = x0 + v2FeedRowLen(0) * V2_FEED_CELL, y1 = y0 + V2_FEED_H;
-  if (v2FeedRowLen(1))  // the second row's box, stacked on the left end, tucked under the first's top edge
-    v2Panel(x0, v2FeedRowY(1), x0 + v2FeedRowLen(1) * V2_FEED_CELL, y0 + 14, 14);
-  gfx->fillTriangle(118, y1, 146, y1, 124, y1 + 16, V2_RIM);  // the tail's rim, under the box's
+  int x0 = v2FeedX0(), y0 = V2_FEED_Y0, x1 = x0 + count * V2_FEED_CELL, y1 = y0 + V2_FEED_H;
+  int tx = x0 + 14 > 118 ? x0 + 14 : 118;  // the tail's base, along the box's bottom, its tip at the bag
+  gfx->fillTriangle(tx, y1, tx + 28, y1, 124, y1 + 16, V2_RIM);  // the tail's rim, under the box's
   v2Panel(x0, y0, x1, y1, 14);
-  gfx->fillTriangle(121, y1 - 3, 143, y1 - 3, 125, y1 + 10, UI_WHITE);  // its inside, over the rim
+  gfx->fillTriangle(tx + 3, y1 - 3, tx + 25, y1 - 3, 125, y1 + 10, UI_WHITE);  // its inside, over the rim
   for (int i = 0; i < count; i++) {
-    int cx = x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * (i % 4), cy = v2FeedRowY(i / 4) + 36;
+    int cx = x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * i, cy = y0 + 36;
     gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, V2_SEAT);
     if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - 27, cy - 27, 3, false);
     else v2RepelSeatDraw(cx, cy);

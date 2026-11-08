@@ -3745,12 +3745,6 @@ void battleStep() {
       if (t > 2000) battleSetPhase(bBalls ? BP_AIM : BP_FLED);
       break;
     case BP_BROKE:
-#if UI_V2
-      if (bBalls && t > 1800) {  // V2: out of the ball, it runs on: throw again (a Master Ball too)
-        battleSetPhase(BP_AIM);
-        break;
-      }
-#endif
       if (t > 3000) closeBattle();  // it broke out and ran off: no more throws
       break;
     case BP_SHAKE: {  // a rock and a tone per count; it may pop out halfway through one
@@ -3762,9 +3756,6 @@ void battleStep() {
       if (bBreakAt && t > (bBreakAt - 1) * CATCH_SHAKE_MS + CATCH_SHAKE_MS * 3 / 5) {
         Serial.printf("catch: broke out on %u and got away\n", bBreakAt);
         sfxPlay(SFX_DENY);
-#if UI_V2
-        bBalls--;  // V2: that Poke Ball is used; with some left the catch goes on (Fedor)
-#endif
         battleSetPhase(BP_BROKE);
       } else if (!bBreakAt && t > CATCH_SHAKES * CATCH_SHAKE_MS + 250) {
         bCatchStars = Pet::rollStars();
@@ -3942,12 +3933,6 @@ void renderCatch() {
     int dir = bCatchX < CX ? -1 : 1;
     int x = (int)bCatchX + dir * (int)(t > 400 ? (t - 400) * 0.25f : 0);
     uint8_t act = dir > 0 ? PMD_WALKR : PMD_WALKL;
-#if UI_V2
-    if (bBalls) {  // V2: with balls left it stays, out of the ball, to be thrown at again
-      x = (int)bCatchX;
-      act = PMD_IDLE;
-    }
-#endif
     drawPmdActM(wildPmd, wildPmd.has(act) && t > 400 ? act : PMD_IDLE, x, CATCH_GROUND_Y, t, true, false, 3);
   } else if (bPhase != BP_CAUGHT && bPhase != BP_FLED && bPhase != BP_SHAKE) {
     // running, facing the way it goes, with its shadow and a little dust kicked up behind
@@ -4026,7 +4011,11 @@ void renderCatch() {
   char b[48];
   switch (bPhase) {
     case BP_AIM:
+#if UI_V2
+      v2ThrowHint();  // V2: higher, clear of the balls; the arrow keys too, where they aim (master_v2.h)
+#else
       battleCenterLine(T(S_THROW_HINT), 350);
+#endif
 #if UI_V2
       if (v2MasterAiming()) {  // V2: the Master Ball beside it (master_v2.h)
         v2MasterAimBalls(bBalls);
@@ -4065,7 +4054,9 @@ void renderCatch() {
     case BP_BROKE:
       snprintf(b, sizeof(b), T(S_GOT_AWAY_FMT), dexName(bFoe.dex));
 #if UI_V2
-      if (bBalls) snprintf(b, sizeof(b), T(S_BROKE_FREE_FMT), dexName(bFoe.dex));  // V2: and you throw again
+      snprintf(b, sizeof(b), T(S_BROKE_FREE_FMT), dexName(bFoe.dex));  // V2: "broke free!", as high as the hint
+      catchBannerAt(b, C565(0x55, 0x55, 0x60), V2_HINT_Y - 7, 3);
+      break;
 #endif
       catchBanner(b, C565(0x55, 0x55, 0x60));
       break;
@@ -10405,9 +10396,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     int count = pet.canHaveCandy() ? 4 : 3;
 #if UI_V2
     (void)count;
-    int item = v2FeedAt(x, y);  // V2: four seats a row, a second row stacked on the left end
+    int item = v2FeedAt(x, y);  // V2: one row centred on the screen
     if (item < 0) return false;
-    int x0 = V2_FEED_X0 + (item % 4) * V2_FEED_CELL, y0 = v2FeedRowY(item / 4);
+    int x0 = v2FeedX0() + item * V2_FEED_CELL, y0 = V2_FEED_Y0;
     if (item >= v2FeedFoods()) return pressSet(t, x0, y0, V2_FEED_CELL, V2_FEED_H, T(S_REPEL));
     return pressSet(t, x0, y0, V2_FEED_CELL, V2_FEED_H, nullptr, ICON[item]);
 #else

@@ -5,9 +5,9 @@
 // count), fills a bar a step; 25 earn a Master Ball (pet.masterFight()), which always catches what it hits. They
 // stack. The bar shows at a fight's end and on the card's Progress page; the fight that fills it brings a moment of
 // its own, on the Caught screen's gold burst. On the catch, with one in hand, the Master Ball sits left of the Poke
-// Ball: tap it to throw it. A hit always holds and uses it up; a miss doesn't use it (it comes back). Only the three
-// Poke Balls count (Fedor): the catch ends when the third one fails (a miss, or it breaks out) or anything catches it,
-// so a Master Ball can be thrown any time before then, even after a Poke Ball it broke out of.
+// Ball: tap it to throw it. A hit always holds and uses it up; a miss doesn't use it (it comes back). Any ball that
+// hits ends the catch, caught or not (a Poke Ball it breaks out of: it runs off, as in V1); the third Poke Ball
+// missing ends it too, Master Balls being optional (Fedor).
 
 // ----- the ball: purple, two pink spots, a white M, as the Poke Ball's 18 x 18 sprite -----
 static const char *const SPR_V2_MASTER_BALL[18] = {
@@ -120,6 +120,32 @@ static void v2MasterEnd(uint32_t t) {
 }
 
 // ----- the throw -----
+// the hint over the band, higher than V1's so it clears the balls (Fedor); a computer or the web aims with the arrow
+// keys too, and says so, on two lines
+#define V2_HINT_Y 318
+static void v2ThrowHint() {
+#ifdef BOARD_HOST
+  const char *p = T(S_THROW_HINT_KEYS);
+  char l[2][48];
+  int n = 0, w = 0;
+  for (; *p && n < 2; n++) {
+    int skip, k = wrapNext(p, 24, skip);
+    snprintf(l[n], sizeof(l[n]), "%.*s", k, p);
+    setSize(2);
+    if (textW(l[n], 2) > w) w = textW(l[n], 2);
+    p += skip;
+  }
+  int y0 = V2_HINT_Y - 22 * (n - 1);
+  v2Panel(CX - (w + 28) / 2, y0 - 7, CX + (w + 28) / 2, y0 + 22 * (n - 1) + 20, 8);
+  gfx->setTextColor(UI_INK);
+  for (int i = 0; i < n; i++) {
+    setCur(centerX(l[i], 2), y0 + 22 * i);
+    printT(l[i]);
+  }
+#else
+  battleCenterLine(T(S_THROW_HINT), V2_HINT_Y);
+#endif
+}
 // the band under the running Pokemon, with one in hand: the Master Ball (how many) on the left and the Poke Ball (its
 // throws left) on the right (Fedor), each the button for its throw: a tap on the left half throws the Master Ball
 static bool v2MasterAiming() { return pet.masterBalls > 0; }

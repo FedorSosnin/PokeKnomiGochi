@@ -67,6 +67,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repelente", "Repelente: %u min",
     "%s se solt\242!",
     "Objetos", "Master Ball", "Termina %u combates", "%u min de minijuegos",
+    "Toca y apunta inclinando o con las flechas",
 #endif
   },
   // ---------------- EN ----------------
@@ -129,6 +130,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repel", "Repel: %u min",
     "%s broke free!",
     "Items", "Master Ball", "Finish %u battles", "%u min of minigames",
+    "Tap ball, lean or use arrow keys to aim",
 #endif
   },
   // ---------------- FR ----------------
@@ -191,6 +193,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repousse", "Repousse: %u min",
     "%s s'est lib\202r\202!",
     "Objets", "Master Ball", "Finis %u combats", "%u min de mini-jeux",
+    "Touche, penche ou utilise les fl\212ches pour viser",
 #endif
   },
   // ---------------- DE ----------------
@@ -258,6 +261,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Schutz", "Schutz: %u Min.",
     "%s hat sich befreit!",
     "Gegenst\204nde", "Meisterball", "Beende %u K\204mpfe", "%u Min. Minispiele",
+    "Tippen, neigen oder Pfeiltasten zum Zielen",
 #endif
   },
   // ---------------- IT ----------------
@@ -320,6 +324,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repellente", "Repellente: %u min",
     "%s si \212 liberato!",
     "Strumenti", "Master Ball", "Finisci %u lotte", "%u min di minigiochi",
+    "Tocca, inclina o usa le frecce per mirare",
 #endif
   },
   // ---------------- PT ----------------
@@ -382,6 +387,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repelente", "Repelente: %u min",
     "%s se soltou!",
     "Itens", "Master Ball", "Termina %u combates", "%u min de minijogos",
+    "Toca e inclina ou usa as setas para mirar",
 #endif
   },
   // ---------------- JA ----------------
@@ -467,6 +473,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "むしよけスプレー", "むしよけ: あと %u ふん",
     "%sが とびだした!",
     "どうぐ", "マスターボール", "バトルを %uかい さいごまで", "ミニゲーム %uふん",
+    "タッチして かたむけるか やじるしキーで ねらう",
 #endif
   },
   // ---------------- KO ----------------
@@ -534,6 +541,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "벌레회피스프레이", "벌레회피: %u분",
     "%s 빠져나왔다!",
     "도구", "마스터볼", "배틀 %u번 끝내기", "미니게임 %u분",
+    "눌러서 기울이거나 화살표 키로 조준",
 #endif
   },
 };

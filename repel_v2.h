@@ -192,11 +192,12 @@ static void v2FoodDropDraw() {  // over everything, the bag too
     v2DropT = 0;
     return;
   }
-  if (e >= V2_DROP_MS || !pmd.loaded) return;  // landed: eaten
+  if (e >= V2_DROP_MS || !pmd.loaded) return;  // landed: eaten (or sprayed)
   static const char *const *const FOOD[4] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP, SPR_CANDY };
   float k = e / (float)V2_DROP_MS;
-  int head = PET_GROUND - pmd.acts[PMD_IDLE].h * v2HomeScale(pmd) + 12;
-  drawMap(FOOD[v2DropItem], HOME_ICON_N, v2DropX - 27, 30 + (int)((head - 84) * k * k), 3, false);  // falling faster and faster
+  int head = PET_GROUND - pmd.acts[PMD_IDLE].h * v2HomeScale(pmd) + 12, y = 30 + (int)((head - 84) * k * k);  // faster and faster
+  if (v2DropItem < 4) drawMap(FOOD[v2DropItem], HOME_ICON_N, v2DropX - 27, y, 3, false);
+  else v2RepelIcon(v2DropX - 27, y, 3);  // the Repel, dropping too (Fedor)
 }
 
 // used from the backpack: it starts, and the home says for how long; one already running can't be doubled
@@ -208,6 +209,7 @@ static void v2RepelUse() {
   sfxPlay(SFX_MEDAL);
   snprintf(buddyNote, sizeof(buddyNote), T(S_REPEL_ON_FMT), (unsigned)REPEL_MIN);
   buddyNoteUntil = millis() + 3000;
+  v2FoodDropStart(4);  // it drops onto your Pokemon as the berries do
 }
 // the bag on the home screen, while one runs: a purple badge with the minutes left
 static void v2RepelBagBadge(int cx, int cy) {

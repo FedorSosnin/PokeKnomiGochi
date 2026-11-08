@@ -114,6 +114,7 @@ enum StrId : uint8_t {
   S_REPEL, S_REPEL_ON_FMT,  // V2: the Repel's name, and "Repel: 3 min" when one is used
   S_BROKE_FREE_FMT,  // V2: it broke out of a Poke Ball, and there are more to throw
   S_ITEMS, S_MASTER, S_MASTER_EARN_FMT, S_REPEL_EARN_FMT,  // V2: the card's Items page, and how to earn each
+  S_THROW_HINT_KEYS,  // V2: the catch's hint where the arrow keys aim too (a computer, the web)
 #endif
   STR_COUNT
 };
