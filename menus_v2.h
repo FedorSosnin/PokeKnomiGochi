@@ -2141,13 +2141,13 @@ static void v2DimFrame(int a256) {  // everything a256/256 of the way to the nig
 #define V2_AGAIN_X1 350
 #define V2_AGAIN_H 46
 #define V2_AGAIN_Y 264   // on a game of yours (v2GameResult())
-#define V2_AGAIN_YB 312  // after a game with a buddy (v2BuddyResult())
+#define V2_AGAIN_YB 302  // after a game with a buddy (v2BuddyResult()), the Repel row between it and the X
 static void v2AgainButton(int y) {
   char b[32];
   v2LabelButton(V2_AGAIN_X0, y, V2_AGAIN_X1, y + V2_AGAIN_H, v2Caps(T(S_PLAY_AGAIN), b, sizeof(b)), C565(0x58, 0xb8, 0x68));
   v2CloseX();
 }
-static void v2RepelRow(int y);  // (repel_v2.h: how far along the next Repel is)
+static void v2RepelRow(int y, int x0, int x1);  // (repel_v2.h: how far along the next Repel is)
 // a game's result (rooms2_px.py game_over()): the game behind, dimmed 45%, its name on a board; in a panel a
 // line on what happened (the dungeon's faint), the score big, the record (or NEW RECORD! in gold) and the
 // happiness it brought, in green, all of it in the room over PLAY AGAIN!, which is at the panel's foot
@@ -2182,7 +2182,7 @@ static void v2GameResult(const char *title, const char *top, const char *big, bo
   setCur(centerX(joy, 2), y);
   printT(joy);
   v2AgainButton(V2_AGAIN_Y);
-  v2RepelRow(338);  // the Repel this play counts toward, between the panel and the X
+  v2RepelRow(338, 96, 370);  // the Repel this play counts toward, between the panel and the X, as wide as the panel
 }
 
 // a game's how-to card (rooms2_px.py howto()): its name on a board, how to play in a panel, READY, GO! where
@@ -2318,14 +2318,14 @@ static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, 
     int x = k ? 330 : 140;
     uint8_t s = pmdFitScale(m, PMD_IDLE, 150, 120);
     gPmdForceScale = s < 4 ? s : 4;
-    v2PetShadow(x, 218, 40);
+    v2PetShadow(x, 208, 40);
     bool shiny = m.shiny;
     m.shiny = false;  // (no sparkles over the ribbon)
-    drawPmdActM(m, PMD_IDLE, x, 222, millis(), true, false, 4);
+    drawPmdActM(m, PMD_IDLE, x, 212, millis(), true, false, 4);
     m.shiny = shiny;
     gPmdForceScale = 0;
   }
-  v2Panel(104, 230, 362, 300, 12);
+  v2Panel(104, 220, 362, 290, 12);
   char l[12];
   char r[12];
   char b[28];
@@ -2335,12 +2335,12 @@ static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, 
   bool cjk = classicFontBegin();  // VS and the numbers in the pixel font in every language
   gfx->setTextColor(UI_WHITE);
   setSize(3);
-  v2Bold("VS", centerX("VS", 3), 140);
+  v2Bold("VS", centerX("VS", 3), 130);
   int ss = textW(b, 4) <= 230 ? 4 : 3;  // a long time a size down
   gfx->setTextColor(UI_INK);
   setSize(ss);
   int sx = centerX(b, ss), lx = sx + textW(l, ss) / 2, rx = sx + textW(b, ss) - textW(r, ss) / 2;
-  setCur(sx, 240 + (4 - ss) * 4);
+  setCur(sx, 230 + (4 - ss) * 4);
   printT(b);
   classicFontEnd(cjk);
   v2Caps(T(S_SD_YOU_LBL), c, sizeof(c));  // who's who, under each number, kept inside the panel
@@ -2350,12 +2350,12 @@ static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, 
   int cw = textW(c, 2), nw = textW(nm, 2), cx0 = lx - cw / 2, nx0 = rx - nw / 2;
   if (cx0 < 116) cx0 = 116;
   if (nx0 + nw > 350) nx0 = 350 - nw;
-  setCur(cx0, 278);
+  setCur(cx0, 268);
   printT(c);
-  setCur(nx0, 278);
+  setCur(nx0, 268);
   printT(nm);
   v2AgainButton(V2_AGAIN_YB);
-  v2RepelRow(362);  // the Repel this play counts toward
+  v2RepelRow(357, 104, 362);  // the Repel this play counts toward, as wide as the score panel, clear of the X
 }
 // PikaSurf with a buddy, both out (V1's words over the water): as the other games with a buddy, the times
 // for the score

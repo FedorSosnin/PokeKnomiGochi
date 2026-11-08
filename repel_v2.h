@@ -61,12 +61,15 @@ static void v2RepelTick(uint32_t now) {  // once a loop
 static bool v2RepelFresh() { return v2RepelNewT && millis() - v2RepelNewT < 60000; }  // earned in this game
 
 // ----- a game's end: the spray, how many you hold, the time to the next; or "REPEL!" for the one just earned -----
-static void v2RepelRow(int y) {
-  v2Panel(126, y, 340, y + 32, 10);
-  v2RepelIcon(132, y - 2, 2);
+// as wide as the panel above it (x0..x1): the bar takes the rest of the row, the time on it (Fedor: it was too short
+// to see fill)
+static void v2RepelRow(int y, int x0, int x1) {
+  v2Panel(x0, y, x1, y + 32, 10);
+  v2RepelIcon(x0 + 6, y - 2, 2);
   bool fresh = v2RepelFresh();
   uint8_t held = pet.repelHeld;
-  if (held) drawCountBadge(164, y + 2, held);
+  if (held) drawCountBadge(x0 + 38, y + 2, held);
+  int bx = x0 + 58, bw = x1 - 9 - bx;  // the bar: past the badge to the panel's inner line
   setSize(2);
   if (fresh) {  // it's yours: its name, gold, with sparkles beside
     char b[32];
@@ -74,25 +77,24 @@ static void v2RepelRow(int y) {
     char c[32];
     v2Caps(b, c, sizeof(c));
     gfx->setTextColor(C565(0xc0, 0x84, 0x10));
-    setCur(190 + (146 - textW(c, 2)) / 2, y + 9);
+    setCur(bx + (bw - textW(c, 2)) / 2, y + 9);
     printT(c);
     if ((millis() / 300) % 2) {
-      scGridRect(330, y - 8, 334, y + 4, 0xFFD95E);
-      scGridRect(326, y - 4, 338, y, 0xFFD95E);
+      scGridRect(x1 - 10, y - 8, x1 - 6, y + 4, 0xFFD95E);
+      scGridRect(x1 - 14, y - 4, x1 - 2, y, 0xFFD95E);
     }
     return;
   }
   uint16_t sec = pet.repelPlaySec;
+  gfx->fillRoundRect(bx, y + 6, bw, 20, 7, C565(0xd8, 0xd2, 0xbd));
+  int fw = (bw - 4) * sec / REPEL_PLAY_S;
+  if (fw > 2) gfx->fillRoundRect(bx + 2, y + 8, fw, 16, 6, C565(0xa8, 0x88, 0xe0));
   char b[16];
   snprintf(b, sizeof(b), "%u:%02u/%u:%02u", sec / 60, sec % 60, REPEL_PLAY_S / 60, REPEL_PLAY_S % 60);
   bool cjk = classicFontBegin();
   setSize(2);
-  int tw = textW(b, 2), bx = 182, bw = 334 - bx - tw - 8;
-  gfx->fillRoundRect(bx, y + 9, bw, 15, 6, C565(0xd8, 0xd2, 0xbd));
-  int fw = (bw - 4) * sec / REPEL_PLAY_S;
-  if (fw > 2) gfx->fillRoundRect(bx + 2, y + 11, fw, 11, 5, C565(0x8a, 0x5c, 0xc8));
-  gfx->setTextColor(V2_INK_MUTED);
-  setCur(334 - tw, y + 9);
+  gfx->setTextColor(UI_INK);
+  setCur(bx + (bw - textW(b, 2)) / 2 + 1, y + 9);
   printT(b);
   classicFontEnd(cjk);
 }
