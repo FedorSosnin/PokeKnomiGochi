@@ -2,34 +2,75 @@
 
 [![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](relay/README.md)
 
-A Pokémon tamagotchi for the **BTT Knomi V2**, the little round screen made for 3D printers. Raise any of the original 151, battle wild Pokémon, catch them to fill your Pokédex, and play mini games by tapping and tilting.
+A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made for 3D printers, and for your Mac, your Windows PC and your browser. Raise any of the original 151 as it walks through its own pixel world, battle and catch wild Pokémon, fill your Pokédex, and play mini games by tapping and tilting.
 
-<p align="center"><img src="docs/images/knomi-updated.jpg" alt="PokeKnomiGochi on a Knomi in its printed Poké Ball case on a desk: a level 99 Venusaur with Party Boost and three buddies, at night" width="720"></p>
+<p align="center"><img src="docs/images/v2/walk-forest.gif" alt="Pikachu walking toward you through the Forest by day while the grass, flowers and pines slide by" width="360"></p>
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows).
 
+## What's in it
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **A world that walks with you.** Your Pokémon walks toward you while its home slides by: grass and flowers stream past, the hills sway, clouds drift and birds fly over. Five hand-drawn zones, the Field, Forest, Beach, Cave and Mansion, and outdoors the light goes from day to dusk to night.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Choose your partner.** Bulbasaur, Charmander, Squirtle and Pikachu walk up to meet you. Later, choose any first form you've caught, shinies included.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Battle wild Pokémon.** Turn-based fights with each Pokémon's own moves from Red and Blue, learned as it levels up, in the scene of the zone you're hunting.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Catch them.** Throw a Poké Ball at the Pokémon running back and forth: it hits, drops to the ground and shakes, one, two, three...
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Ultra Balls and Master Balls.** Every battle you see through fills two bars: an Ultra Ball every 25, which triples your catch chance, and a Master Ball every 100, which always catches.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **The Repel.** Twenty minutes of mini games earn a Repel. Spray it from the backpack and weaker wild Pokémon stay away for 3 minutes, so the ones you're hunting turn up.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Fill the Pokédex.** All 151, with their shiny forms, each caught with 1 to 3 stars. Every entry turns round to show its Pokémon from all sides.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Travel the island.** Five zones on a round island that's alive: foam runs round the coast, the pines sway and the Mansion's windows light up and go dark. See what's still missing in each.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Five mini games.** Berry Drop, PokeRun, PikaSurf, PokeDungeon and Who's That Pokémon?, on cartridges in an old TV. **Play Again!** at the end.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Buddies.** Knomis, Macs, PCs and browsers on the same Wi-Fi visit each other. Their Pokémon walk beside yours, give it a Party Boost, and battle, trade and play games for two.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **A trophy room.** All 25 medals as things in one room: badges in a case, statues, cups, a shiny gem. Tap one to see how to earn it.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Care for it.** Feed it berries from the backpack, give it a bath and turn the lights off for bed. It evolves when it's ready, and one day it says goodbye and walks off over the hill.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Hold it for a menu.** Hold your finger on your Pokémon for a ring of Settings, Medals, Stats and the Pokédex.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Everywhere, in 8 languages.** The Knomi, Mac, Windows and the web, in English, Spanish, French, German, Italian, Portuguese, Japanese and Korean. Updates install themselves, and your Pokémon is kept.
+
+## See it move
+
 | | | |
 |:--:|:--:|:--:|
-| ![Gengar at home](docs/images/home.png) | ![Charizard's fire attack on a wild Pikachu](docs/images/battle.png) | ![Aiming a Poké Ball inside the catch rings](docs/images/catch.png) |
-| **Raise your Pokémon** | **Battle wild Pokémon** | **Aim for the green circle** |
-| ![A new catch on its own screen, with its stars](docs/images/caught.png) | ![The Pokédex](docs/images/pokedex.png) | ![A Pokédex entry](docs/images/pokedex-entry.png) |
-| **Catch what you beat, 1 to 3 ★** | **Fill the Pokédex** | **Read about what you've caught** |
-| ![Games menu](docs/images/games.png) | ![PokeRun](docs/images/pokerun.png) | ![Who's That Pokémon?](docs/images/quiz.png) |
-| **Play mini games** | **PokeRun** | **Who's That Pokémon?** |
-| ![PikaSurf: Gengar and Pikachu on their boards, a rock coming up](docs/images/pikasurf.png) | ![How to play, on a card over the game](docs/images/howto.png) | ![A medal's card: how to earn it](docs/images/medal.png) |
-| **PikaSurf: dodge the rocks** | **How to play, before each game** | **Tap a medal to see how to earn it** |
-| ![Five zones to hunt in](docs/images/zones.png) | ![What's missing in a zone](docs/images/zone.png) | ![A battle in the Forest](docs/images/zone-battle.png) |
-| **Choose where to hunt** | **See what's missing** | **Battle in that zone** |
-| ![The answer revealed](docs/images/quiz-reveal.png) | ![Berry Drop](docs/images/tilt-catch.png) | ![A daily visitor](docs/images/visitor.png) |
-| **Guess the silhouette** | **Berry Drop** | **A visitor drops by each day** |
-| ![Pikachu and Charizard visiting Gengar](docs/images/buddy.png) | ![Battle or trade with a buddy](docs/images/buddy-menu.png) | ![The button under your finger, shown large](docs/images/press.png) |
-| **Buddies come to visit** | **Battle or trade with them** | **Press and slide to choose** |
-| ![Play together](docs/images/play.png) | ![Who's That? Showdown](docs/images/showdown.png) | ![Poké Ball Volley](docs/images/volley.png) |
-| **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
-| ![Razz, Oran and Pinap Berries and a candy](docs/images/food.png) | ![The card, with the favorite berry](docs/images/card.png) | ![Pikachu and shiny Pikachu side by side](docs/images/shiny.png) |
-| **Feed it berries and candy** | **Its card and favorite berry** | **Catch the shiny ones too** |
-| ![Every medal, 6 to a page](docs/images/achievements.png) | ![Stats, training and battle wins](docs/images/stats.png) | ![Level and evolution progress](docs/images/progress.png) |
-| **Achievements, a swipe away** | **Stats, training and battle wins** | **How close it is to evolving** |
+| ![Squirtle walking along the Beach at dusk](docs/images/v2/walk-beach.gif) | ![Charmander walking through the Field at night, the house's windows lit](docs/images/v2/walk-field.gif) | ![Gengar walking past the haunted Mansion](docs/images/v2/walk-mansion.gif) |
+| **Day, dusk and night** | **The Field after dark** | **The Mansion, always night** |
+| ![Bulbasaur, Charmander, Squirtle and Pikachu walking toward you; a tap on Pikachu dims the others and asks](docs/images/v2/starters.gif) | ![An Ultra Ball thrown at a running Pikachu: it hits, drops to the ground, counts to three and holds](docs/images/v2/catch.gif) | ![Charmander evolving into Charmeleon in a burst of light](docs/images/v2/evolve.gif) |
+| **Choose your starter** | **Throw, drop, one, two, three** | **Evolution** |
+| ![A hold on Pikachu opens a ring of Settings, Medals, Stats and the Pokédex; sliding to Medals opens the trophy room](docs/images/v2/radial.gif) | ![The backpack opens over the icons and berries drop onto Pikachu, who hops](docs/images/v2/feed.gif) | ![Charizard's Pokédex entry, the Pokémon turning round](docs/images/v2/pokedex-spin.gif) |
+| **Hold it for a menu** | **Berries from the backpack** | **Every entry turns round** |
+| ![PikaSurf: Squirtle surfing down the rushing water beside Pikachu, dodging rocks](docs/images/v2/pikasurf.gif) | ![PokeDungeon: Squirtle exploring the cave, meeting wild Pokémon](docs/images/v2/dungeon.gif) | ![PokeRun: Charmander jumping over logs and rocks in the forest](docs/images/v2/pokerun.gif) |
+| **PikaSurf** | **PokeDungeon** | **PokeRun** |
+
+## Screens
+
+| | | |
+|:--:|:--:|:--:|
+| ![The card's profile: Pikachu on the rug, its streak, bond, favorite berry and age](docs/images/v2/card-profile.png) | ![Battle stats: ATK, DEF, SPD and weight in bars, and the battle wins](docs/images/v2/card-battle.png) | ![Progress: the level, the time to the next, and when it evolves](docs/images/v2/card-progress.png) |
+| **Its card** | **Battle stats** | **How close it is to evolving** |
+| ![Charizard using a fire attack on a wild Pikachu](docs/images/v2/battle.png) | ![The catch: Master, Ultra and Poké Balls along the bottom, a Pokémon running](docs/images/v2/catch-aim.png) | ![Caught GENGAR! with three stars, new in the Pokédex](docs/images/v2/caught.png) |
+| **Battle wild Pokémon** | **Pick a ball and throw** | **Catch them, 1 to 3 ★** |
+| ![The Pokédex at 55 of 151, with stars and sparkling shinies](docs/images/v2/pokedex.png) | ![Travel: the round island with five zones, the coast's foam and waves moving](docs/images/v2/travel.gif) | ![The Forest's Pokémon: 23 of 41, with Search](docs/images/v2/zone.png) |
+| **Fill the Pokédex** | **Travel the island** | **See what's missing** |
+| ![The games: five cartridges in an old TV](docs/images/v2/games-tv.png) | ![PokeRun's how-to card over the game](docs/images/v2/howto.png) | ![Berry Drop's end: the score, Play Again! and the Repel bar](docs/images/v2/game-end.png) |
+| **Five mini games** | **How to play, before each game** | **Play Again!** |
+| ![Who's That Pokémon? A silhouette and three names](docs/images/v2/quiz.png) | ![The trophy room: 14 of 25 medals](docs/images/v2/trophy-room.png) | ![The shiny medal's card: a gem under a spotlight, earned](docs/images/v2/medal-card.png) |
+| **Who's That Pokémon?** | **The trophy room** | **How to earn each medal** |
+| ![The backpack open over the icons: three berries, a candy and a Repel](docs/images/v2/backpack.png) | ![Gengar in the bath, with bubbles and a duck](docs/images/v2/bath.png) | ![A new medal dropping in on a ribbon](docs/images/v2/medal-banner.png) |
+| **The backpack** | **Bath time** | **New medals** |
+| ![Pikachu walking with Eevee and Squirtle visiting, and the Party Boost button](docs/images/v2/buddies.png) | ![A buddy's menu over the home: Battle, Trade, Play](docs/images/v2/buddy-menu.png) | ![Play together: Poké Ball Volley, Showdown and PikaSurf for two](docs/images/v2/play-together.png) |
+| **Buddies visit** | **Battle, trade or play** | **Games for two** |
+| ![Say goodbye? Goodbye or Stay together](docs/images/v2/goodbye.png) | ![Release GENGAR? It goes back to the wild](docs/images/v2/release.png) | ![Settings: Wi-Fi, Check for update and Auto-update](docs/images/v2/settings.png) |
+| **One day, a goodbye** | **Let it go** | **Updates over Wi-Fi** |
 
 ## Install
 
@@ -66,22 +107,26 @@ esptool --port YOUR_PORT write-flash 0x0 bootloader.bin 0x8000 partitions.bin 0x
 
 The screen turns to follow however you hold the Knomi. It starts ready for your right hand with the cable going off to the left, so the button is under your finger.
 
-See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game and zone does, and [Moves](docs/MOVES.md) for when every Pokémon learns each move, and how strong each one is. [Evolution stats](docs/EVOLUTION.md) lists every evolution and the HP, ATK, DEF and SPD it adds.
+See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game, item and zone does, and [Moves](docs/MOVES.md) for when every Pokémon learns each move, and how strong each one is. [Evolution stats](docs/EVOLUTION.md) lists every evolution and the HP, ATK, DEF and SPD it adds.
 
 | Do this | What happens |
 |---|---|
 | **Tap the Pokémon** | Pet it |
-| **Tap the bottom icons** | From left to right: open your bag to feed it (a candy refills its energy: 2 a day, 3 when the visitor brings one, and a red number shows how many are left), play mini games, battle, turn the light off for bed, or give it a bath |
+| **Hold your finger on it** | A ring opens round it: Settings, Medals, Stats and the Pokédex. Slide onto one and lift, or let go and tap one. Keep holding still for 3 seconds to let your Pokémon go (or bring back its goodbye, if you chose to stay together) |
+| **Tap the icons along the bottom** | From left to right: open the backpack (berries, candy and your Repels), play mini games, Travel to hunt, turn the light off for bed, or give it a bath |
+| **Swipe up** | Its card: profile, battle stats, training, progress, and a page for each item |
+| **Tap its name on the card** (✏️) | Rename it |
+| **Swipe from left to right** | The Pokédex. Tap a Pokémon for its page, where it turns round, and tap it there to give it a pat |
+| **Swipe from right to left** | The trophy room: every medal. Tap anywhere to see how to earn each one |
+| **Swipe down** | The clock and your time zone (or set the time, without Wi-Fi), then swipe left for settings |
+| **The arrows at the sides** | Turn the pages, the same as a swipe. "Page 2 of 7" shows where you are |
 | **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
-| **Swipe up** | See its card: profile, battle stats, training and progress |
-| **Tap its name on the card** (✏️) | Rename it |
-| **Swipe from left to right** | Open the Pokédex. The arrows at its sides, or a swipe, turn the pages; tap a Pokémon for its page, and tap it there to give it a pat |
-| **Swipe from right to left** | See your achievements: every medal, 6 to a page. A new medal drops in from the top; tap it to see it there |
-| **Swipe down** | The clock and your time zone (or set the time, without Wi-Fi), then swipe left for settings |
 | **Press the button** | Start a wild battle |
 | **Hold the button for 1–3 seconds** | Turn the screen on or off |
 | **Hold the button for 10 seconds** | Asks whether to erase the game and start over |
+
+While your Pokémon sleeps, the home screen dims; menus you open over it stay bright.
 
 ### Evolution Stats
 
@@ -95,23 +140,43 @@ Evolving makes your Pokémon stronger. Its stats come from its species' base HP,
 
 **[Every Pokémon's evolutions and stats](docs/EVOLUTION.md)** has all 151, line by line, with what each evolution adds.
 
-### Raising your next Pokémon
+### Your first Pokémon, and the next
 
-When your Pokémon is ready to evolve, a red **Evolve** button appears: tap it to evolve, or **Keep** to stay as it is, and the button comes back an hour later. [Moves](docs/MOVES.md) shows the level each species evolves at.
+The first time, Bulbasaur, Charmander, Squirtle and Pikachu walk toward you through the Field. Tap one to stop them and choose it.
 
-A fully evolved Pokémon that is at least 3 days old offers a goodbye. If you choose to stay together, it won't ask again: whenever you're ready, hold your finger on it to bring the goodbye back. You can also let any Pokémon go by holding your finger on it. Either way, you then choose your next one from your Pokédex. It hatches from an egg, so only first forms can be chosen: Pikachu, not Raichu. A shiny you have shows as its own square with sparkles, and picking it hatches a shiny for sure; a regular one has a 1 in 4 chance of hatching shiny. If you neglect a Pokémon until it runs away, you get a random common egg instead.
+When your Pokémon is ready to evolve, a red **Evolve** button appears under it: tap it to evolve, or **Keep** to stay as it is, and the button comes back an hour later. [Moves](docs/MOVES.md) shows the level each species evolves at.
 
-Levels stop at **100**, since a Pokémon past that would be too strong to battle; one that is already older stays at 100. For the end game, raising 3, 5 and 10 different Pokémon to level 100 earns the **Level 100 ×3**, **×5** and **×10** medals, on their own page of achievements.
+A fully evolved Pokémon that is at least 3 days old offers a goodbye. If you choose to stay together, it won't ask again: whenever you're ready, hold your finger on it for 3 seconds to bring the goodbye back. You can also let any Pokémon go the same way. Either way, it turns, walks off up the hill and over it, and you choose your next one, who walks in from the distance.
+
+Until a Pokémon has been offered its goodbye, the next one is one of the four starters again. After that, you choose from your Pokédex: any first form you've caught, so Pikachu, not Raichu, with that form's stars. A shiny you have is its own square with sparkles, and picking it gives you that shiny. If you neglect a Pokémon until it runs away, you choose the same way.
+
+Levels stop at **100**, since a Pokémon past that would be too strong to battle; one that is already older stays at 100. For the end game, raising 3, 5 and 10 different Pokémon to level 100 earns the **Level 100 ×3**, **×5** and **×10** medals.
 
 ### Battles and catching
 
-Press the button to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up, and each move shows a little of its type: flames, splashing water, leaves, sparks, ice and more.
+Press the button, or tap **Wild Encounter** in Travel, to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up, and each move shows a little of its type: flames, splashing water, leaves, sparks, ice and more.
 
-Winning trains your Pokémon. Losing earns nothing and leaves it nearly out of energy, so it has to sleep before it can fight again.
+Winning trains your Pokémon. Losing earns nothing and leaves it nearly out of energy, so it has to sleep before it can fight again. **RUN** leaves a wild battle, but 1 time in 20 it fails: the button turns red and says **Couldn't get away!**, and you have to fight it out. A battle with a buddy can always be left.
 
-**RUN** leaves a wild battle, but 1 time in 20 it fails: the button turns red and says **Couldn't get away!**, and you have to fight it out. A battle with a buddy can always be left.
+Every wild Pokémon you beat can be caught, even one you already have. It runs back and forth across the field trying to get away, at its own speed: a Slowpoke ambles, an Electrode darts, and the quick ones sometimes turn back halfway. Your balls sit along the bottom: tap one to throw it, and lean the Knomi left and right to steer (on a computer, the arrow keys). Rings show around the Pokémon as it runs: land the ball in the small green circle and it always holds, in the next ring three times in four, and in the outer ring one time in four. A ball that hits bounces off, drops to the ground and shakes, one, two, three, then the Pokémon joins your Pokédex or breaks free and runs away. You get three Poké Balls a catch.
 
-<p align="center"><img src="docs/images/run-fail.png" alt="A wild battle where running failed: the RUN button now says Couldn't get away!" width="240"></p>
+**Stars:** every Pokémon in your Pokédex has 1 to 3 ★, its genes kept simple, and the regular and shiny forms each have their own. Once the ball holds, a screen of its own shows the catch and its stars. A new one goes into your Pokédex; if you already have it and the new one has more stars, it replaces yours. A 3★ form gets three small gold stars under it in the Pokédex grid, and choosing a 3★ form as your next Pokémon gives it better stats.
+
+About 1 wild Pokémon in 100 is **shiny**: official shiny colors with gold sparkles around it. The Pokédex keeps shiny and regular forms apart and shows both side by side once you have both, and each can be traded on its own.
+
+### Items
+
+Three items you earn by playing, kept with you from one Pokémon to the next (up to 99 of each). Each has its own page on the card, with how far along the next one is.
+
+| Item | How to earn it | What it does |
+|---|---|---|
+| **Ultra Ball** | Every 25 battles you fight to the end, won or lost | Triples your catch chance when it hits. |
+| **Master Ball** | Every 100 battles you fight to the end, won or lost | Always catches the Pokémon it hits. |
+| **Repel** | Every 20 minutes of mini games | Spray it from the backpack: for 3 minutes, weaker wild Pokémon stay away. |
+
+Running away, battles with buddies and PokeDungeon don't count toward the balls. Ultra and Master Balls sit beside your Poké Balls on the catch screen while you have them; one that misses isn't used up. While a Repel works, wild Pokémon below your Pokémon's level, or with lower base stats, stay away, and in a zone you haven't finished, every Pokémon there except its legendary is equally likely; shiny odds don't change. The backpack shows a badge with its minutes left. Only time spent actually playing counts toward a Repel: sitting in a game without touching it earns nothing.
+
+<p align="center"><img src="docs/images/v2/card-ultra.png" width="240" alt="The card's Ultra Ball page: the ball hovering in a gold glow, what it does, and 9 of 25 battles toward the next"> <img src="docs/images/v2/card-master.png" width="240" alt="The card's Master Ball page"> <img src="docs/images/v2/card-repel.png" width="240" alt="The card's Repel page"></p>
 
 ### Moves
 
@@ -137,31 +202,29 @@ Your Pokémon's ATK, DEF and SPD grow as it levels up, and training adds more on
 
 Each kind of training stops at 100. The card's **Training** page (swipe up, then left twice) shows how far along each one is, with **MAX** when it's full, and your Pokémon's weight. Once attack training is maxed, a win says so instead of adding more. A new Pokémon starts training from zero.
 
-<img src="docs/images/training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each">
+<img src="docs/images/v2/card-training.png" width="240" alt="The Training page: ATK, DEF and SPD training, what trains each, and weight">
 
-About 1 wild Pokémon in 100 is **shiny**: official shiny colors with gold sparkles around it. The Pokédex keeps shiny and regular forms apart, shows both side by side once you have both, and each can be traded on its own. In the Pokédex grid, a shiny you have moves with its sparkles. Catching everything in a zone earns that zone's medal.
+### Travel
 
-Every wild Pokémon you beat can be caught, even one you already have: you get three Poké Balls, and it runs back and forth across the field trying to get away, at its own speed: a Slowpoke ambles, an Electrode darts, and the quick ones sometimes turn back halfway. Tap to throw, then lean the Knomi left and right to steer. Rings show around the Pokémon as it runs: land the ball in the small green circle and it always holds, in the next ring three times in four, and in the outer ring only one time in four. The ball spins all the way there, then tips over to one side on each count to 3, as if the Pokémon is trying to get out, then the Pokémon joins your Pokédex or breaks out and runs away.
-
-**Stars:** every Pokémon in your Pokédex has 1 to 3 ★, its genes kept simple, and the regular and shiny forms each have their own. Once the ball holds, a screen of its own shows the catch and its stars. A new one goes into your Pokédex; if you already have it and the new one has more stars, it replaces yours. Stars show on each Pokémon's Pokédex page and in trades, a 3★ form gets three small gold stars under it in the Pokédex grid, and they matter when you choose your next Pokémon: picking a 3★ form hatches a 3★ Pokémon, with better stats.
-
-### Battles
-
-Tap the **map** icon in the middle of the home screen to open **Travel** and go to a zone (Forest, Beach, Cave, Mansion or Field) and hunt the Pokémon that live there. Each zone shows what you've caught and what's still a silhouette. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. **Wild Encounter**, the last circle, meets a wild Pokémon from anywhere at your Pokémon's home, in the scene of the main screen, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
+Tap the **map** icon in the middle of the bottom to open **Travel**: a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
 
 ### Games
 
-Tap the **handheld** icon, second from the left, to open the mini games: each has a round window onto the game, with your Pokémon in it. When one opens, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
+Tap the **handheld** icon, second from the left, for the mini games: cartridges in an old TV, each label a little scene from its game. When one starts, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed, and the time you play counts toward your next Repel. At the end, **Play Again!** starts it again and the ✕ goes back to the games. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
-- **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs. A better-trained Pokémon gets deeper.
+- **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs down. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?
 - **PikaSurf:** your Pokémon surfs down the rushing water on a board; tilt, drag it or use the arrow keys to dodge the rocks coming up in three lanes. Pikachu surfs alongside and never hits one, until he pulls ahead out of sight. It keeps speeding up, and one rock ends the run.
 - **Who's That Pokémon?:** name the silhouette, ten rounds per game, never the same Pokémon twice.
 - **Berry Drop:** in the woods under two tall berry trees, tilt left and right, or drag your Pokémon with a finger, to catch falling berries. They fall faster with every catch, with no top speed, so every game ends.
 
+### Medals
+
+Swipe from right to left for the trophy room: all 25 medals as things in one room, the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes. One you haven't won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, and how far along you are where the game counts it. A new medal drops in on a ribbon; tap it to see its card.
+
 ### Buddies
 
-If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over to play and a green **PARTY BOOST** button appears at the top. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
+If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over and walks beside yours, and a green **PARTY BOOST** button appears at the top. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
 
 - **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, you swap: the one you gave leaves your Pokédex. A shiny is its own square, so you can trade it and keep the regular one. Your own partner can't be traded, so with only one Pokémon, Trade is greyed out. Changed your mind? The **✕** backs out at any point before the swap, and nothing changes hands.
@@ -179,7 +242,7 @@ Your Pokémon does better with company. While at least one buddy or the daily vi
 
 It's the same boost however many friends are around. Tap **PARTY BOOST** to see who's here and what you get. Tap a friend there to see its stats: level, HP, ATK, DEF and SPD, and a buddy's Pokédex count. Swipe from there to a buddy's Battle, Trade and Play menu, and the ✕ goes back to Party Boost. Tapping a buddy's Pokémon on the main screen still opens its menu first, with its stats a swipe away. While the boost is on, the Battle Stats page shows each stat with its **+2**. Battles between buddies don't use it, since both sides would have it.
 
-| ![The Party Boost screen: Pikachu and Charizard as buddies, Eevee visiting for 60 more minutes, energy drain -25% and ATK DEF SPD +2](docs/images/party.png) | ![Pikachu's stats: level, HP, ATK, DEF, SPD and its Pokédex, with a dot for the Battle, Trade and Play page](docs/images/friend-stats.png) | ![The visitor's stats, its minutes left and the candy it brought](docs/images/visitor-stats.png) |
+| ![The Party Boost screen: Eevee and Squirtle visiting, energy drain -25% and ATK DEF SPD +2](docs/images/v2/party-boost.png) | ![A buddy's Pikachu: its level, HP, ATK, DEF and SPD and its Pokédex, with Battle, Trade and Play a page on](docs/images/v2/friend-stats.png) | ![The visitor's stats: a Magikarp, the candy it brought and its 60 minutes](docs/images/v2/visitor-stats.png) |
 |:---:|:---:|:---:|
 | **Who's here, and the boost** | **A buddy's stats, then swipe to play** | **The visitor, and its candy** |
 
@@ -187,7 +250,7 @@ To find each other, PokeKnomiGochis share their Pokémon's species, level and ni
 
 ### Daily visitor
 
-Once a day, a wild Pokémon drops by with a candy, a third one for that day, and stays for an hour. It joins any buddies in the row, counts for the Party Boost, and shows how many minutes it has left on the Party Boost screen. While your Pokémon sleeps it steps out, and it comes back when yours wakes up, the same day. It remembers its time even if the Knomi is unplugged. When its hour is up, it says goodbye and cheers yours up.
+Once a day, a wild Pokémon drops by with a candy, a third one for that day, and stays for an hour. It joins any buddies in the row, counts for the Party Boost, and shows how many minutes it has left on the Party Boost screen. It only arrives while yours is awake, but once it's here it stays its hour, even if yours goes to sleep. It remembers its time even if the Knomi is unplugged. When its hour is up, it says goodbye and cheers yours up.
 
 ### Wi-Fi and the clock
 
@@ -205,7 +268,7 @@ Changing the clock doesn't speed anything up. Time away only counts by network t
 
 Once it's on Wi-Fi, the Knomi looks for a new version two minutes after it starts and then once a day, while the screen is dimmed. With **Auto-update** on (the switch on the settings page: swipe down, then left; it's on unless you turn it off), it installs the new version by itself the next time nobody is using it during the day: the home screen showing and dimmed, your Pokémon awake, nothing being played with a buddy. To update by hand, swipe down, swipe left, and tap **Check for update**. If a new version is out, the button changes to **Update to v…**: tap it and wait about a minute while it downloads and restarts. Your Pokémon, Pokédex and Wi-Fi are kept. If the new version ever fails to start, the Knomi goes back to the one it had.
 
-<p align="center"><img src="docs/images/settings.png" alt="The settings page: Change Wi-Fi, Check for update, and the Auto-update switch, on" width="240"></p>
+<p align="center"><img src="docs/images/v2/settings.png" alt="The settings page: Change Wi-Fi, Check for update, and the Auto-update switch, on" width="240"></p>
 
 On version 1.30 or older, **Update** could fail while buddies were connected through the internet relay: the two secure connections didn't fit in memory together. If yours says "Update failed", install 1.31 or newer once with the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/) and a USB cable, without ticking "Erase device". It keeps your Pokémon, and from then on updates over Wi-Fi work.
 

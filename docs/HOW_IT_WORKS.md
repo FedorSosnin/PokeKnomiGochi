@@ -27,7 +27,7 @@ Everything your Pokémon needs, what each action does, and how to fill the Poké
 | 🛁 **Bath** | | | | Full | +1 | | Also clears every poop |
 | 🌙 **Sleep** | | | +6 a minute | | | | Turn the light off, then back on to wake it |
 
-There are three berries, a Razz, an Oran and a Pinap Berry, and each Pokémon has one favorite. Try them to find out which: once found, it shows on the Pokémon's card.
+There are three berries, a Razz, an Oran and a Pinap Berry, and each Pokémon has one favorite. Try them to find out which: once found, it shows on the Pokémon's card. Berries and candy are in the backpack, the first icon: tap one and it drops onto your Pokémon, and the backpack stays open for another. Your Repels are in there too (see [Items](#items)).
 
 ## Games
 
@@ -42,6 +42,8 @@ Games don't raise anything if you quit by swiping up.
 | ❓ **Who's That?** | +3, plus 3 per right answer | | | | +1 | |
 
 Berry Drop, PokeRun, PikaSurf and PokeDungeon each add at most +35 joy per game. Who's That? adds at most +33. Energy and food won't drop below 5 from a game.
+
+At the end, **Play Again!** starts the same game again and the ✕ goes back to the games. Every second you actually play counts toward a Repel (see [Items](#items)): not the how-to card or the end, and only while you're touching, tilting or pressing keys, so sitting in the dungeon earns nothing. The games with a buddy count too.
 
 ## Battles
 
@@ -71,7 +73,7 @@ Ditto copies the wild Pokémon's moves. **[Every Pokémon's moves and levels](MO
 
 ### Results
 
-A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Beat any wild Pokémon, even one you have, and you get 3 Poké Balls to catch it while it runs back and forth trying to get away. It runs at its own speed (its base speed: a Slowpoke takes about 6 s there and back, an Electrode under 3), speeds up and slows down on the way, and the quick ones sometimes turn back early. Where the ball lands, against the rings that run with it, decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away.
+A loss earns nothing: no training and no bond. After a loss, your Pokémon has to sleep before it can fight again. Every wild or Travel battle you fight to the end, won or lost, counts toward your next Ultra and Master Ball (see [Items](#items)). Beat any wild Pokémon, even one you have, and you get 3 Poké Balls to catch it while it runs back and forth trying to get away, with any Ultra and Master Balls you hold beside them: tap a ball to throw it. It runs at its own speed (its base speed: a Slowpoke takes about 6 s there and back, an Electrode under 3), speeds up and slows down on the way, and the quick ones sometimes turn back early. Where the ball lands, against the rings that run with it, decides how likely it is to hold: in the small green circle 100%, in the bold second ring 75%, in the faint outer ring 25%. A ball that hits drops to the ground before the count. If it doesn't hold, the Pokémon breaks out on one of the three shakes and runs away. Any ball that hits ends the catch, held or not; an Ultra or Master Ball that misses isn't used up.
 
 ### Stars
 
@@ -84,8 +86,8 @@ Every form in the Pokédex (regular and shiny count apart) has 1–3 ★: its ge
 | ★★★ | 15% | 104–110 |
 
 - **Catching:** once the ball holds, a screen of its own shows the Pokémon and its stars, and stays until you tap its ✕. A new form joins with them ("New in your Pokédex!"). If you have that form and the catch has more stars, it replaces your weaker one at once ("New best!"); otherwise yours stays and the catch goes back to the wild.
-- **Raising:** hatching or evolving registers the form with your Pokémon's own stars, and never lowers a form you have.
-- **Choosing your next Pokémon:** its genes are rolled inside the band of the form you pick, so a 3★ form hatches a 3★ Pokémon. A random egg rolls 90–110.
+- **Raising:** choosing or evolving registers the form with your Pokémon's own stars, and never lowers a form you have.
+- **Choosing your next Pokémon:** its genes are rolled inside the band of the form you pick, so a 3★ form gives a 3★ Pokémon. A starter you've caught comes with that form's stars; one you haven't rolls 90–110.
 - **Trading:** the stars go with the Pokémon. If you already have the form you get, you keep the higher. From a buddy on an older version, the stars are rolled.
 - **Where:** each Pokémon's Pokédex page, under its sprite (each form its own row), the trade screen and the next-Pokémon choice. In the Pokédex and zone grids, a Pokémon with a 3★ form (regular or shiny) has three small gold stars under it.
 
@@ -111,12 +113,26 @@ It's the same with one friend or five, so extra devices don't stack it. Tap the 
 
 The **daily visitor** brings a candy (a third one that day) and stays 60 minutes. It only arrives while yours is awake, but once it's there it stays even if yours goes to sleep, its minutes still running. It steps out while four buddies fill the row and comes back the same day, and its time survives a restart. Leftover minutes end at midnight. Tap it to see its stats.
 
+## Items
+
+Kept with you from one Pokémon to the next, up to 99 of each. Each has its own page on the card (swipe up, then left), with how far along the next one is.
+
+| Item | Earned | What it does |
+|---|---|---|
+| 🟡 **Ultra Ball** | Every 25 wild or Travel battles fought to the end, won or lost | Triples the catch chance when it hits (it can still break out) |
+| 🟣 **Master Ball** | Every 100 of those battles | Always catches the Pokémon it hits |
+| 🧴 **Repel** | Every 20 minutes of mini games actually played | Spray it from the backpack: for 3 of the game's minutes, weaker wild Pokémon stay away |
+
+Running away, battles with buddies and PokeDungeon don't count toward the balls. On the catch screen, the balls you hold sit in a row (Master, Ultra and Poké), each the button for its throw.
+
+While a Repel works, wild encounters, and zones you've caught everything in, bring no Pokémon below your Pokémon's level and no species whose base stats add up to less than yours (if that leaves nobody, the usual pick). In a zone you haven't finished, every Pokémon there except its legendary is equally likely, and the legendary keeps its 1 in 100. Shiny odds don't change. It runs out while the Knomi is off, too. The backpack shows a badge with its minutes left, and a Repel used while one runs does nothing.
+
 ## Zones
 
 There are two ways to start a battle:
 
 - 🔘 **The physical button, or Wild Encounter (the last circle, after the zones):** a random wild Pokémon from anywhere, met at your Pokémon's home. The Mac, Windows and web versions have no button, so Wild Encounter is the way there (or Space on a keyboard).
-- 🗺️ **The map icon on the home screen:** pick a zone and hunt there. Missing Pokémon show as silhouettes. Each Search leans a little toward the common ones you're missing, never toward the rare ones or the legendary.
+- 🗺️ **Travel, the map icon on the home screen:** tap a zone on the island and hunt there. Missing Pokémon show as silhouettes. Each Search leans a little toward the common ones you're missing, never toward the rare ones or the legendary.
 
 | Zone | Pokémon | Who lives there | Rare 💎 | Legendary ⭐ |
 |---|---|---|---|---|
@@ -163,12 +179,12 @@ The game counts its own minutes, and only a clock nobody can set adds time away.
 | ⚠️ **Care mistake** | A need at 10 or below counts as a mistake, at most once an hour, and costs 1 💞 |
 | 🏃 **Running away** | With all four needs at 0 for an hour, it's ready to leave. One bit of care resets the clock. |
 | 🔄 **Evolving** | At its evolution level (one level later for each care mistake), with all four needs at 40 or more, a red **Evolve** button appears. Tap it to evolve, or **Keep** to stay as it is: the button comes back an hour later. Tapping away from the question leaves the button there. Every species' level is in [Moves](MOVES.md), and [Evolution stats](EVOLUTION.md) shows what each evolution adds. |
-| 👋 **Goodbye** | A fully evolved Pokémon offers a goodbye from 3 days old. Choose to stay together and it won't ask again; hold your finger on it whenever you're ready. |
-| 🥚 **Next Pokémon** | After a goodbye or letting one go, choose a first form from your Pokédex (Pikachu, not Raichu). A shiny one you have is its own square and always hatches shiny ✨; a regular one has a 25% chance |
+| 👋 **Goodbye** | A fully evolved Pokémon offers a goodbye from 3 days old. Choose to stay together and it won't ask again; hold your finger on it for 3 seconds whenever you're ready (a shorter hold opens the ring menu). It walks off over the hill. |
+| 🐾 **Next Pokémon** | The four starters (Bulbasaur, Charmander, Squirtle and Pikachu) until a Pokémon has been offered its goodbye. After that, after a goodbye, letting one go or a runaway, choose any first form from your Pokédex (Pikachu, not Raichu), with its stars. A shiny you have is its own square, and picking it gives you that shiny ✨; there's no random shiny. It walks in from the distance. |
 
 ## Medals
 
-Swipe from right to left on the home screen to see them all, 6 to a page; the ones you have earned are green with a check mark. Tap any of them to see how to earn it. A new medal drops in from the top of the screen on a ribbon; tap it to jump to its page and see it turn green.
+Swipe from right to left on the home screen for the trophy room: all 25 medals as things in one room (the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes), and one not won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, "Earned!" or how far along you are, and the side arrows step through all 25. A new medal drops in from the top of the screen on a ribbon; tap it to see its card.
 
 | Medal | How to earn it |
 |---|---|
