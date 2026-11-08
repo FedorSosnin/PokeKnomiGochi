@@ -271,7 +271,6 @@ static void v2Header(const char *name, uint16_t nameColor, const char *msg, cons
 
 #define V2_RIM C565(0x3a, 0x4a, 0x5a)   // panels' and buttons' dark rim
 #define V2_LINE C565(0xa8, 0xd8, 0xe8)  // the soft line inside a panel
-#define V2_SEAT C565(0xe4, 0xea, 0xf2)  // a round seat for something to pick
 
 // The V2 panel, a Pokemon-style text box: white, a 3 px dark rim, a soft 2 px line inside. x1 and y1 are
 // inside it, as in the mockups.
@@ -315,11 +314,18 @@ static void v2DrawFoodPicker(int) {
   int x0 = v2FeedX0(), y0 = V2_FEED_Y0, x1 = x0 + count * V2_FEED_CELL, y1 = y0 + V2_FEED_H;
   int tx = x0 + 14 > 118 ? x0 + 14 : 118;  // the tail's base, along the box's bottom, its tip at the bag
   gfx->fillTriangle(tx, y1, tx + 28, y1, 124, y1 + 16, V2_RIM);  // the tail's rim, under the box's
-  v2Panel(x0, y0, x1, y1, 14);
-  gfx->fillTriangle(tx + 3, y1 - 3, tx + 25, y1 - 3, 125, y1 + 10, UI_WHITE);  // its inside, over the rim
+  // the bubble in the bag's own green (Fedor), the panel's dark rim and a lighter green inner line; the seats a
+  // pale green, not white (Fedor)
+  const uint16_t green = C565(0x58, 0xb8, 0x68), line = C565(0x8f, 0xd6, 0x9a), seat = C565(0xc4, 0xe6, 0xca);
+  int w = x1 - x0 + 1, h = y1 - y0 + 1;
+  gfx->fillRoundRect(x0 - 3, y0 - 3, w + 6, h + 6, 16, V2_RIM);
+  gfx->fillRoundRect(x0, y0, w, h, 14, green);
+  gfx->drawRoundRect(x0 + 3, y0 + 3, w - 6, h - 6, 11, line);
+  gfx->drawRoundRect(x0 + 4, y0 + 4, w - 8, h - 8, 10, line);
+  gfx->fillTriangle(tx + 3, y1 - 3, tx + 25, y1 - 3, 125, y1 + 10, green);  // its inside, over the rim
   for (int i = 0; i < count; i++) {
     int cx = x0 + V2_FEED_CELL / 2 + V2_FEED_CELL * i, cy = y0 + 36;
-    gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, V2_SEAT);
+    gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, seat);
     if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - 27, cy - 27, 3, false);
     else v2RepelSeatDraw(cx, cy);
   }
