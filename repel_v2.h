@@ -195,17 +195,17 @@ static void v2CardItem(int which) {
 static bool v2RepelSeat() { return pet.repelHeld || pet.repelOn(); }
 // its seat (the bubble's own, centre (cx, cy)): the spray, how many you hold, and the minutes left while one runs
 static void v2RepelSeatDraw(int cx, int cy) {
-  v2RepelIcon(cx - 22, cy - 24, 3);  // the can in the middle of its seat (Fedor)
-  if (pet.repelHeld) v2CountBadge(cx + 22, cy - 28, pet.repelHeld);
+  v2RepelIcon(cx - 30, cy - 32, V2_ICON_S);  // the can in the middle of its seat (Fedor), at 4x as the foods
+  if (pet.repelHeld) v2CountBadge(cx + 30, cy - 37, pet.repelHeld);
   if (pet.repelOn()) {
     char b[8];
     snprintf(b, sizeof(b), "%um", pet.repelMinutesLeft());
     bool cjk = classicFontBegin();
     setSize(2);
     int w = textW(b, 2) + 10;
-    gfx->fillRoundRect(cx - w / 2, cy + 18, w, 18, 8, C565(0x5a, 0x3a, 0x8c));
+    gfx->fillRoundRect(cx - w / 2, cy + 24, w, 18, 8, C565(0x5a, 0x3a, 0x8c));
     gfx->setTextColor(UI_WHITE);
-    setCur(cx - textW(b, 2) / 2 + 1, cy + 20);
+    setCur(cx - textW(b, 2) / 2 + 1, cy + 26);
     printT(b);
     classicFontEnd(cjk);
   }

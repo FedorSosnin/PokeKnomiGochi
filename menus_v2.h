@@ -134,26 +134,53 @@ static int v2SignIn(const char *s, int y, uint16_t wood, uint16_t lit) {
   return x0 + w + 3;  // its right edge
 }
 static int v2Sign(const char *s, int y = V2_BOARD_Y) { return v2SignIn(s, y, C565(0x8a, 0x5a, 0x30), C565(0xb0, 0x7a, 0x45)); }
-// the red pixel X, always at (233, 422): a disc on the 4 px grid, a dark rim, a lit top row, an X of cells
-static void v2CloseX() {
-  static const char *const X[5] = { "xx...xx", ".xx.xx.", "..xxx..", ".xx.xx.", "xx...xx" };
-  static const ScKey K[1] = { { 'x', 0xFFFFFF } };
-  scScreen();
-  scGradeTod = 0;
-  scOval(scE(CX - 26, V2_CLOSE_Y - 26, CX + 26, V2_CLOSE_Y + 26), 0x3A4A5A);
-  scOval(scE(CX - 22, V2_CLOSE_Y - 22, CX + 22, V2_CLOSE_Y + 22), 0xE8503A, 0xF08070, 0xC03A28);
-  scSprite(X, 5, CX - 14, V2_CLOSE_Y - 10, 4, K, 1);
+// a round button at (cx, cy), 2 px a pixel (one Knomi pixel each: its edge as round as the screen shows; they were
+// 4 px cells, Fedor: "They dont look perfectly round and are a bit more pixelated that some of the other art"): a
+// black ring all round (the X had a grey one: "The x button needs to have black surround, like the left and right
+// arrows"), the disc lit along its top and shaded along its bottom, a glint, its white mark with a shadow under it.
+// mark 0: an X; -1, 1: an arrow left, right. 52 px across, as before
+static bool v2BtnMark(int mark, int dx, int dy) {
+  if (mark == 0) return dx >= -11 && dx <= 11 && dy >= -11 && dy <= 11 && (abs(dx - dy) <= 3 || abs(dx + dy) <= 3);
+  int x = (mark > 0 ? dx : -dx) - 1;  // pointing right, a pixel right of the middle: it looks centred
+  return x >= -7 && x <= 9 && abs(dy) * 16 <= (9 - x) * 11 + 2;
 }
-// a page button: a blue pixel disc, a lit top row, a stepped arrow (dir -1 left, 1 right)
-static void v2PageArrow(int x, int y, int dir) {
-  static const char *const L[5] = { "...x", "..xx", ".xxx", "..xx", "...x" }, *const R[5] = { "x...", "xx..", "xxx.", "xx..", "x..." };
-  static const ScKey K[1] = { { 'x', 0xFFFFFF } };
-  scScreen();
-  scGradeTod = 0;
-  scOval(scE(x - 24, y - 24, x + 24, y + 24), 0x1B1B25);
-  scOval(scE(x - 20, y - 20, x + 20, y + 20), 0x4F93C4, 0x7CC4EA, 0x3A78A8);
-  scSprite(dir < 0 ? L : R, 5, x - 8 + (dir > 0 ? 2 : -2), y - 10, 4, K, 1);
+static void v2RoundBtn(int cx, int cy, int mark, Rgb base, Rgb lite, Rgb dark) {
+  cx = SNAP2(cx);
+  cy = SNAP2(cy);
+  const uint16_t cRing = sc565(0x1B1B25), cBase = sc565(base), cLite = sc565(lite), cDark = sc565(dark),
+                 cGlint = sc565(scMix(lite, 0xFFFFFF, .7)), cMark = sc565(0xFFFFFF), cShadow = sc565(scMix(dark, 0x1B1B25, .35));
+  for (int j = -13; j < 13; j++) {
+    int dy = 2 * j + 1, runX = 0;
+    uint16_t runC = 0;
+    bool on = false;
+    for (int i = -13; i <= 13; i++) {
+      bool have = false;
+      uint16_t c = 0;
+      if (i < 13) {
+        int dx = 2 * i + 1, rr = dx * dx + dy * dy;
+        if (rr <= 26 * 26) {
+          have = true;
+          if (rr > 22 * 22) c = cRing;
+          else if (v2BtnMark(mark, dx, dy)) c = cMark;
+          else if (v2BtnMark(mark, dx - 2, dy - 2)) c = cShadow;
+          else if ((dx == -9 && dy == -15) || (dx == -11 && dy == -13) || (dx == -13 && dy == -11) || (dx == -11 && dy == -11)) c = cGlint;
+          else if (dy < -11 || (dy < -5 && rr > 18 * 18)) c = cLite;
+          else if (dy > 11 || (dy > 5 && rr > 18 * 18)) c = cDark;
+          else c = cBase;
+        }
+      }
+      if (on && (!have || c != runC)) {
+        gfx->fillRect(cx + 2 * runX, cy + 2 * j, 2 * (i - runX), 2, runC);
+        on = false;
+      }
+      if (have && !on) on = true, runX = i, runC = c;
+    }
+  }
 }
+// the red X, always at (233, 422)
+static void v2CloseX() { v2RoundBtn(CX, V2_CLOSE_Y, 0, 0xE8503A, 0xF58C78, 0xB8321F); }
+// a page button: blue, an arrow (dir -1 left, 1 right)
+static void v2PageArrow(int x, int y, int dir) { v2RoundBtn(x, y, dir < 0 ? -1 : 1, 0x4F93C4, 0x86CAEE, 0x336E9E); }
 // which page this is, in words above the X (Fedor: dots didn't say how many there are): "Page 2 of 5", white with
 // a dark shadow so it reads on whatever is behind, its top no lower than y 380 so it clears the X
 static void v2PageOf(int n, int cur, int y = 386) {
@@ -177,9 +204,14 @@ static void v2LabelButton(int x0, int y0, int x1, int y1, const char *lab, uint1
   printT(lab);
 }
 // a switch: green with the knob to the right when on
+// (72 x 36, the auto-update row's height; Fedor: "The auto-update button is too small"; it was 48 x 24): a dark
+// rim, the knob white with a soft shadow under it
 static void v2Switch(int x, int y, bool on) {
-  gfx->fillRoundRect(x, y, 48, 24, 12, on ? C565(0x58, 0xb8, 0x68) : C565(0xd8, 0xd2, 0xbd));
-  gfx->fillCircle(on ? x + 36 : x + 12, y + 12, 10, UI_WHITE);
+  gfx->fillRoundRect(x, y, 72, 36, 18, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(x + 2, y + 2, 68, 32, 16, on ? C565(0x58, 0xb8, 0x68) : C565(0xd8, 0xd2, 0xbd));
+  int kx = on ? x + 54 : x + 18;
+  gfx->fillCircle(kx, y + 20, 14, on ? C565(0x3c, 0x8a, 0x4c) : C565(0xb0, 0xa8, 0x94));
+  gfx->fillCircle(kx, y + 18, 14, UI_WHITE);
 }
 // text twice, a Knomi pixel apart: bold (not for the CJK font, which has its own weight)
 static void v2Bold(const char *s, int x, int y) {
@@ -271,11 +303,11 @@ static void v2Settings() {
   else if (os == OTA_AVAILABLE) snprintf(ub, sizeof(ub), T(S_UPD_TO_FMT), otaNewVersion());
   else strlcpy(ub, T(S_UPD_CHECK), sizeof(ub));
   v2LabelButton(99, UPD_BTN_Y + 3, 367, UPD_BTN_Y + SET_BTN_H - 3, ub, os == OTA_AVAILABLE ? green : blue);
-  int lw = textW(T(S_AUTO_UPDATE), 2), x0 = CX - (lw + 14 + 48) / 2;
+  int lw = textW(T(S_AUTO_UPDATE), 2), x0 = CX - (lw + 14 + 72) / 2;
   gfx->setTextColor(UI_INK);
   setCur(x0, AUTO_ROW_Y + (AUTO_ROW_H - 16) / 2);
   printT(T(S_AUTO_UPDATE));
-  v2Switch(x0 + lw + 14, AUTO_ROW_Y + (AUTO_ROW_H - 24) / 2, autoUpdate);
+  v2Switch(SNAP2(x0 + lw + 14), AUTO_ROW_Y, autoUpdate);
   if (!otaChecking && (os == OTA_LATEST || os == OTA_FAILED)) {
     const char *m = os == OTA_LATEST ? T(S_UPD_LATEST) : T(S_UPD_FAILED);
     gfx->setTextColor(os == OTA_LATEST ? C565(0x3c, 0x8a, 0x4c) : UI_BAR_BAD);
@@ -626,7 +658,7 @@ static void v2Clock(const char *langCode) {
   v2LabelButton(LANG_PILL_X + 3, LANG_PILL_Y + 3, LANG_PILL_X + LANG_PILL_W - 3, LANG_PILL_Y + LANG_PILL_H - 3, lp,
                 C565(0x4f, 0x93, 0xc4));
   if (!locked) {
-    v2LabelButton(136, 343, 330, 385, "OK", C565(0x58, 0xb8, 0x68), UI_WHITE, 3);
+    v2LabelButton(136, 343, 330, 385, "OK", C565(0x58, 0xb8, 0x68), UI_WHITE, 4);  // (size 4: crisp on the Knomi)
   } else {
 #ifdef BOARD_KNOMI_V2
     v2LabelButton(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1, V2_RESET_Y1, T(S_RESET_BTN), UI_BAR_BAD);  // asks first
@@ -651,8 +683,10 @@ static void v2TzPicker() {
   gfx->setTextColor(UI_INK);
   drawBigTime((l / 3600) % 24, (l / 60) % 60);
   const char *city = TIME_ZONES[tzPickIdx].city;
-  setSize(3);
-  setCur(centerX(city, 3), TZ_CITY_Y);
+  setSize(4);
+  int cs = textW(city, 4) <= 300 ? 4 : 2;  // (an even size: on the Knomi each font pixel lands whole; 3 spread over a pixel and a half, Fedor: crisp as the battles)
+  setSize(cs);
+  setCur(centerX(city, cs), TZ_CITY_Y + (cs == 4 ? -4 : 4));
   printT(city);
   char off[16];
   fmtUtcOffset(off, sizeof(off), (int32_t)(l - utc));
@@ -661,7 +695,7 @@ static void v2TzPicker() {
   setCur(centerX(off, 2), TZ_CITY_Y + 40);
   printT(off);
   drawPageArrows(tzPickIdx, TIME_ZONE_COUNT, TZ_ARROW_Y);
-  v2LabelButton(136, 343, 330, 385, "OK", C565(0x58, 0xb8, 0x68), UI_WHITE, 3);
+  v2LabelButton(136, 343, 330, 385, "OK", C565(0x58, 0xb8, 0x68), UI_WHITE, 4);  // (size 4: crisp on the Knomi)
   v2CloseX();
 }
 #endif
@@ -708,20 +742,26 @@ static void v2TypeChip(int16_t dex) {
   printT(ty);
 }
 // under the art: the type chip on the room, then the next form and the fact in a panel (dex_entry())
+static const char *v2Caps(const char *s, char *buf, int n);  // (further down)
+// (in capitals, as the Game Boy's Pokedex wrote them: on the Knomi a lowercase letter is 5 of its pixels high, and
+// it read soft beside the battles' capitals; Fedor: "make sure the text and buttons elsewhere is also as crisp. For
+// example the text for Pokedex entries")
 static void v2DexInfo(int16_t dex, bool withFact) {
   const DexEntry &d = DEX_TBL[dex];
   v2TypeChip(dex);
   setSize(2);
   v2Panel(60, 280, 406, withFact ? 386 : 306, 10);
-  char line[40];
+  char line[40], caps[40];
   gfx->setTextColor(V2_INK_MUTED);
   if (d.evolvesTo) {  // the next form isn't shown until it's found
     snprintf(line, sizeof(line), "Lv.%u > %s", d.evolveLevel, pet.isRegistered(d.evolvesTo) ? dexName(d.evolvesTo) : "???");
-    setCur(centerX(line, 2), 286);
-    printT(line);
+    v2Caps(line, caps, sizeof(caps));
+    setCur(centerX(caps, 2), 286);
+    printT(caps);
   } else {
-    setCur(centerX(T(S_FINAL_FORM), 2), 286);
-    printT(T(S_FINAL_FORM));
+    v2Caps(T(S_FINAL_FORM), caps, sizeof(caps));
+    setCur(centerX(caps, 2), 286);
+    printT(caps);
   }
   if (!withFact) return;
   gfx->setTextColor(UI_INK);
@@ -729,8 +769,9 @@ static void v2DexInfo(int16_t dex, bool withFact) {
   for (int y = 308; *p && y <= 368; y += 20) {
     int skip, n = wrapNext(p, 28, skip);
     snprintf(line, sizeof(line), "%.*s", n, p);
-    setCur(centerX(line, 2), y);
-    printT(line);
+    v2Caps(line, caps, sizeof(caps));
+    setCur(centerX(caps, 2), y);
+    printT(caps);
     p += skip;
   }
 }
@@ -966,6 +1007,16 @@ static void v2NamePlate(const TrPlate &p, int cx, int y, int w, int h, bool won)
     printT(p.b);
   }
 }
+// a group's name and how many of it you have: "ZONES 3/5" (its shelf's board, the room's press); how many it has
+static int v2ShelfTitle(int g, char *b, int len) {
+  int first = V2_TR_GROUP_FIRST[g], n = v2TrophyGroupSize(g), got = 0;
+  for (int k = 0; k < n; k++)
+    if (pet.hasMedal(1UL << V2_TROPHY_ORDER[first + k])) got++;
+  static const StrId TITLE[V2_TR_GROUPS] = { S_ZONE_MEDALS_FMT, S_DEX_TITLE, S_LV100_FMT, S_TRG_BUDDIES_FMT, S_TRG_CARE_FMT };
+  if (g == 1) snprintf(b, len, "%s %d/%d", T(S_DEX_TITLE), got, n);  // ("POKEDEX" has no count of its own)
+  else snprintf(b, len, T(TITLE[g]), got, n);
+  return got;
+}
 static void v2TrophyShelf(int g) {
   int first = V2_TR_GROUP_FIRST[g], n = v2TrophyGroupSize(g), got = 0;
   uint32_t won = 0;
@@ -993,9 +1044,7 @@ static void v2TrophyShelf(int g) {
     }
   }
   char b[48];
-  static const StrId TITLE[V2_TR_GROUPS] = { S_ZONE_MEDALS_FMT, S_DEX_TITLE, S_LV100_FMT, S_TRG_BUDDIES_FMT, S_TRG_CARE_FMT };
-  if (g == 1) snprintf(b, sizeof(b), "%s %d/%d", T(S_DEX_TITLE), got, n);  // ("POKEDEX" has no count of its own)
-  else snprintf(b, sizeof(b), T(TITLE[g]), got, n);
+  v2ShelfTitle(g, b, sizeof(b));
   if (got == n) v2SignIn(b, V2_BOARD_Y, C565(0xc0, 0x84, 0x10), C565(0xf0, 0xc0, 0x4a));
   else v2Sign(b);
   drawPageArrows(g, V2_TR_GROUPS, V2_PAGE_ARROW_Y);
@@ -1452,75 +1501,66 @@ static void v2ZoneBack(uint8_t zone) {
   v2Cached(0x3C000000 | (zone * 4 + tod), v2PaintZoneBack, zone * 4 + tod);
 }
 
-// ----- the games TV: Games and Play together (labels.py games_tv4(), batch3.py play_together()) -----
-// An old CRT TV, dimmed half way (v2g.py tv_round()): a rounded wooden cabinet, the tube's glass with a soft
-// glare and scanlines, rabbit ears. Grey snow on the glass with a brighter band rolling down, new every
-// second (static2() had 200 ms: too busy behind the cartridges, Fedor). The board on top, then Game Boy style cartridges at 5 px cells, each label a little
-// scene from its game: the game's own V2 background at exactly half size (its 4 px cells become 2 px) with
-// your Pokemon in it at 1x (the mockups have a fixed cast: Bulbasaur, Pikachu, Charmander, Gengar; V1's
-// windows showed your own). One tap on a cartridge starts its game, as V1's windows did.
-#define V2_TV_X0 34  // the glass (SCREEN2)
-#define V2_TV_Y0 54
-#define V2_TV_X1 432
-#define V2_TV_Y1 398
-#define V2_TV_R 48
+// ----- the Game Boy: Games and Play together (Fedor: "maybe it needs to be a gameboy in the background instead of a
+// TV. Pokemon blue and red were gameboy games and that screen has a distinct color. The cartridges would also make
+// more sense"; it was an old TV with snow) -----
+// A Game Boy filling the round screen, close up: its grey body, the dark bezel with the two coloured lines and the
+// red power light, the big olive screen with its dot matrix faint on it, and at the bottom the D-pad and the A and B
+// buttons either side of the X. Painted once and kept (the TV's snow, new every second, is gone). On its screen, the
+// cartridges in the colours the games came in, each label a little picture from its game: its colours and a
+// starter, quick to draw (they were the games' own scenes at half size, and opening took seconds on the Knomi).
+// One tap on a cartridge starts its game, as V1's windows did.
+#define V2_GB_X0 56  // its screen
+#define V2_GB_Y0 80
+#define V2_GB_X1 410
+#define V2_GB_Y1 374
 #define V2_LBL_W 79  // a label's picture (AW x AH)
 #define V2_LBL_H 42
-#define V2_TV_KEY 0x3A000000
-static inline uint16_t v2TvC(Rgb c) { return sc565(scMix(c, 0x120E22, .5)); }  // everything on it dimmed half way (QUIET)
-static bool v2InGlass(int x, int y) {  // inside the tube's rounded glass
-  if (x < V2_TV_X0 || x > V2_TV_X1 || y < V2_TV_Y0 || y > V2_TV_Y1) return false;
-  int cx = x < V2_TV_X0 + V2_TV_R ? V2_TV_X0 + V2_TV_R : x > V2_TV_X1 - V2_TV_R ? V2_TV_X1 - V2_TV_R : x;
-  int cy = y < V2_TV_Y0 + V2_TV_R ? V2_TV_Y0 + V2_TV_R : y > V2_TV_Y1 - V2_TV_R ? V2_TV_Y1 - V2_TV_R : y;
-  return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= V2_TV_R * V2_TV_R;
-}
-static void v2PaintTv(int) {
-  gfx->fillScreen(v2TvC(0x1A100A));
-  static const int16_t EAR[2][4] = { { 206, 26, 168, -10 }, { 260, 26, 298, -10 } };  // the rabbit ears
-  for (auto &e : EAR)
-    for (int i = 0; i < 12; i++) {
-      int x = (int)(e[0] + (e[2] - e[0]) * i / 12.0), y = (int)(e[1] + (e[3] - e[1]) * i / 12.0);
-      gfx->fillRect(scFl4(x) * 4, scFl4(y) * 4, 4, 4, v2TvC(0xAAB0BC));
-    }
-  gfx->fillRoundRect(8, 22, 451, 399, 64, v2TvC(0x3A2414));  // the cabinet, well rounded
-  gfx->fillRoundRect(12, 26, 443, 391, 60, v2TvC(0x8A5A30));
-  for (int x = 16; x < 452; x += 12) gfx->fillRect(x, 30, 4, 383, v2TvC(0x7A4C28));  // its grain
-  for (int i = 0; i < 4; i++) gfx->drawRoundRect(12 + i, 26 + i, 443 - 2 * i, 391 - 2 * i, 60 - i, v2TvC(0x3A2414));
-  gfx->fillRoundRect(V2_TV_X0 - 6, V2_TV_Y0 - 6, V2_TV_X1 - V2_TV_X0 + 13, V2_TV_Y1 - V2_TV_Y0 + 13, 54, v2TvC(0x0D0B20));  // the bezel
-  // the glass: lighter in the middle, scanlines on every other pair of rows, a curved glare of faint dots
-  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
-  for (int y = V2_TV_Y0; y <= V2_TV_Y1; y++)
-    for (int x = V2_TV_X0; x <= V2_TV_X1; x++) {
-      if (!v2InGlass(x, y)) continue;
-      float dx = (x - 233) / 200.0f, dy = (y - 226) / 175.0f, r = sqrtf(dx * dx + dy * dy);
-      Rgb c = scMix(0x2A4C70, 0x14223A, r < 1 ? r : 1);
-      if ((y / 2) % 2) c = scMix(c, 0x0D0B20, .2);
-      bool glare = (y >= 70 && y < 76 && x >= 70 && x < 150) || (y >= 80 && y < 130 && x >= 62 && x < 70);
-      if (glare && (x - 62) % 4 == 0 && (y - 70) % 4 == 0) c = scMix(c, 0xFFFFFF, .10);
-      fb[y * V2_W + x] = v2TvC(c);
-    }
-}
-// the snow: a 4 px cell here and there lit grey, more of them in the band rolling down the glass
-static void v2TvStatic(uint32_t now) {
-  uint32_t f = now / 1000, r = 500 + f * 2654435761u;
-  int band = V2_TV_Y0 + (int)(f % 10) * (V2_TV_Y1 - V2_TV_Y0) / 10;
-  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
-  static const uint8_t G[3] = { 200, 230, 255 }, A[3] = { 41, 61, 87 };  // .16, .24, .34 of 256
-  for (int cy = V2_TV_Y0; cy < V2_TV_Y1; cy += 4) {
-    bool roll = abs(cy - band) < 16;
-    for (int cx = V2_TV_X0; cx < V2_TV_X1; cx += 4) {
-      if (!v2InGlass(cx + 2, cy + 2)) continue;
-      r = r * 1664525u + 1013904223u;
-      if ((r >> 16) % 100 >= (roll ? 24u : 12u)) continue;
-      int g = G[(r >> 8) % 3];
-      uint16_t col = sc565(scRgb(g, g, g + 8));
-      int a = A[(r >> 4) % 3];
-      for (int y = cy; y < cy + 4; y++)
-        for (int x = cx; x < cx + 4; x++) fb[y * V2_W + x] = v2Blend(fb[y * V2_W + x], col, a);
-    }
+#define V2_GB_KEY 0x3A000000
+static void v2PaintGb(int) {
+  const uint16_t body = sc565(0xCDC9C2), bodyL = sc565(0xE2DED8), bodyD = sc565(0xA39E97), ink = sc565(0x1B1B25);
+  gfx->fillScreen(body);
+  gfx->fillRect(0, 0, V2_W, 14, bodyL);  // its top edge, lit, and the ridge under it
+  gfx->fillRect(0, 14, V2_W, 4, bodyD);
+  // the bezel: dark, its bottom right corner rounder, as the Game Boy's is
+  const int bx0 = 28, by0 = 50, bx1 = 438, by1 = 392;
+  gfx->fillRoundRect(bx0 - 4, by0 - 4, bx1 - bx0 + 8, by1 - by0 + 8, 26, ink);
+  gfx->fillRoundRect(bx0, by0, bx1 - bx0, by1 - by0, 22, sc565(0x5E5C74));
+  gfx->fillCircle(bx1 - 60, by1 - 60, 60, sc565(0x5E5C74));  // (the round corner's fill, then its rim)
+  gfx->fillRect(bx1 - 60, by0 + 22, 60, by1 - by0 - 82, sc565(0x5E5C74));
+  gfx->fillRect(bx0 + 22, by1 - 60, bx1 - bx0 - 82, 60, sc565(0x5E5C74));
+  gfx->fillRect(bx0, by0, bx1 - bx0, 4, sc565(0x7A7890));  // lit along its top
+  // the two lines across its top, a gap where the words would be
+  for (int k = 0; k < 2; k++) {
+    uint16_t c = k ? sc565(0x2A2A6E) : sc565(0xB83A78);
+    gfx->fillRect(60, 60 + k * 6, 110, 4, c);
+    gfx->fillRect(296, 60 + k * 6, 110, 4, c);
+  }
+  gfx->fillCircle(42, 172, 6, ink);  // the power light
+  gfx->fillCircle(42, 172, 4, sc565(0xE0463A));
+  gfx->fillRect(40, 168, 2, 2, sc565(0xFFB0A0));
+  // the screen: olive, its dot matrix faint, a shadow along its top and left
+  const uint16_t lcd = sc565(0xA6BA3C), dot = sc565(0x9CB036), sh = sc565(0x869C2C);
+  gfx->fillRect(V2_GB_X0, V2_GB_Y0, V2_GB_X1 - V2_GB_X0, V2_GB_Y1 - V2_GB_Y0, lcd);
+  for (int y = V2_GB_Y0; y < V2_GB_Y1; y += 4) gfx->fillRect(V2_GB_X0, y + 2, V2_GB_X1 - V2_GB_X0, 2, dot);
+  for (int x = V2_GB_X0; x < V2_GB_X1; x += 4) gfx->fillRect(x + 2, V2_GB_Y0, 2, V2_GB_Y1 - V2_GB_Y0, dot);
+  gfx->fillRect(V2_GB_X0, V2_GB_Y0, V2_GB_X1 - V2_GB_X0, 4, sh);
+  gfx->fillRect(V2_GB_X0, V2_GB_Y0, 4, V2_GB_Y1 - V2_GB_Y0, sh);
+  // the D-pad, the A and B buttons, under the screen either side of the X
+  const uint16_t pad = sc565(0x2C2C3A), padL = sc565(0x4A4A5C);
+  gfx->fillRoundRect(130, 398, 48, 16, 3, pad);
+  gfx->fillRoundRect(146, 382, 16, 48, 3, pad);
+  gfx->fillRect(146, 382, 16, 4, padL);
+  gfx->fillRect(130, 398, 4, 16, padL);
+  gfx->fillCircle(154, 406, 4, padL);
+  const uint16_t btn = sc565(0xB83A78), btnD = sc565(0x7E2452), btnL = sc565(0xE070A8);
+  static const int16_t AB[2][2] = { { 314, 412 }, { 352, 394 } };
+  for (auto &b : AB) {
+    gfx->fillCircle(b[0], b[1] + 2, 15, btnD);
+    gfx->fillCircle(b[0], b[1], 14, btn);
+    gfx->fillRect(b[0] - 6, b[1] - 10, 6, 4, btnL);
   }
 }
-
 // a cartridge's title in capitals on up to three lines, each no wider than its label: broken at a line break
 // in the title ("\n"), or at the space nearest the middle, or where two joined words meet ("Poke" "Dungeon"),
 // or in Japanese where the kana change (hiragana to katakana); a part still too wide is broken again, and a
@@ -1588,8 +1628,12 @@ static void v2CartRun(int x, int y, int cy, int cx0, int cx1, uint16_t c) {
   if (cx1 >= cx0) gfx->fillRect(x + cx0 * 5, y + cy * 5, (cx1 - cx0 + 1) * 5, 5, c);
 }
 static bool v2CartIn(int cx, int cy) { return cx >= 0 && cx < 23 && cy >= 0 && cy < 27 && cx - 19 <= cy; }
-static void v2Cart(int x, int y, const uint16_t *pic, const char *title, Rgb col) {
-  const uint16_t body = sc565(0xB9B9C2), shade = sc565(0x8E8E9A), lite = sc565(0xDCDCE4), groove = sc565(0x9A9AA6), ink = sc565(0x1B1B25);
+static void v2Cart(int x, int y, const uint16_t *pic, const char *title, Rgb shell) {
+  // the shell in its game's colour (Fedor: "edit the colors of each cartridge to make them different colors like they
+  // were"), its label a darker shade of it
+  const Rgb col = scMix(shell, 0x1B1B25, .32);
+  const uint16_t body = sc565(shell), shade = sc565(scMix(shell, 0x1B1B25, .22)), lite = sc565(scMix(shell, 0xFFFFFF, .35)),
+                 groove = sc565(scMix(shell, 0x1B1B25, .12)), ink = sc565(0x1B1B25);
   for (int cy = -1; cy <= 27; cy++) {  // the shell and its dark outline, row by row in runs
     int run = 0;
     uint16_t runC = 0;
@@ -1643,13 +1687,6 @@ static bool v2LblStart() {
   if (!v2LblArt) v2LblArt = (uint16_t *)ps_malloc(8 * V2_LBL_W * V2_LBL_H * sizeof(uint16_t));
   return v2LblArt != nullptr;
 }
-// the background's piece at exactly half size, the 158 x 84 box from (x0, y0): every other pixel, as PIL's
-// NEAREST picks them, so its 4 px cells become crisp 2 px ones
-static void v2LblBack(int x0, int y0) {
-  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
-  for (int j = 0; j < V2_LBL_H; j++)
-    for (int i = 0; i < V2_LBL_W; i++) fb[j * V2_W + i] = fb[(y0 + 2 * j + 1) * V2_W + x0 + 2 * i + 1];
-}
 static void v2LblKeep(int i) {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer(), *a = v2Lbl(i);
   for (int j = 0; j < V2_LBL_H; j++) memcpy(a + j * V2_LBL_W, fb + j * V2_W, V2_LBL_W * sizeof(uint16_t));
@@ -1678,129 +1715,121 @@ static void v2LblOval(int x0, int y0, int x1, int y1, Rgb col) {  // PIL's ellip
       if (dx * dx + dy * dy <= 1.0f && x >= 0 && y >= 0) ((uint16_t *)gfx->getFramebuffer())[y * V2_W + x] = sc565(col);
     }
 }
-// PokeRun's Charmander mid-leap, facing the way it runs: its walk's second frame (label_run()), the one picture
-// a thumbnail can't give
-static void v2LblRunner(int cx, int feet) {
-  PmdMon *m = new PmdMon;  // (only for this: not kept)
-  if (!m->load(4)) {
-    delete m;
-    v2LblThumb(4, cx, feet, false);
-    return;
-  }
-  uint8_t act = m->has(PMD_WALKR) ? PMD_WALKR : PMD_IDLE;
-  gPmdForceScale = 1;
-  drawPmdActM(*m, act, cx, feet, m->acts[act].frames > 1 ? m->acts[act].ms[0] + 1 : 0, true, false, 1);
-  gPmdForceScale = 0;
-  m->unload();
-  delete m;
+// a label's backdrop, at its own size at the canvas's top left: a sky over the ground (ground 0: none), in 2 px steps
+static void v2LblSky(Rgb top, Rgb bot, int groundY, Rgb ground, Rgb groundD) {
+  for (int y = 0; y < V2_LBL_H; y += 2)
+    gfx->fillRect(0, y, V2_LBL_W + 1, 2, sc565(y >= groundY && groundY ? (y < groundY + 4 ? ground : groundD) : scMix(top, bot, y / (float)V2_LBL_H)));
 }
-// PikaSurf's: the water, Pikachu on his board, a wake behind (label_surf())
-static void v2LblSurf() {
-  v2SurfWater(0, v2HourTod());
-  v2LblBack(152, 188);
-  v2LblOval(22, 33, 56, 40, 0xF5863D);  // the board
-  v2LblOval(24, 33, 54, 36, 0xFFB070);
-  v2LblThumb(25, 39, 36, false);
-  for (int k = 0; k < 4; k++) gfx->fillRect(6 + k * 3, 38 - k, 5, 2, UI_WHITE);
+// rays from behind (Who's That?): a burst of lighter wedges
+static void v2LblBurst(Rgb base, Rgb ray) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  for (int y = 0; y < V2_LBL_H; y += 2)
+    for (int x = 0; x < V2_LBL_W; x += 2) {
+      float a = atan2f(y - 24.0f, x - 36.0f);
+      uint16_t c = sc565(((int)((a + 3.1416f) * 2.55f)) % 2 ? ray : base);
+      fb[y * V2_W + x] = fb[y * V2_W + x + 1] = fb[(y + 1) * V2_W + x] = fb[(y + 1) * V2_W + x + 1] = c;
+    }
 }
 static int16_t v2LblKey[2] = { -1, -1 };  // what each set was painted for (-1: not yet)
 static void v2PaintGameLabels() {
   if (!v2LblStart()) return;
-  // Berry Drop: the clearing, Bulbasaur under three falling berries. A title on three lines leaves room for the
+  // Berry Drop: a clearing, Bulbasaur under three falling berries. A title on three lines leaves room for the
   // picture's bottom 30 rows only: two berries, lower down
   char l[3][32];
   bool cjk = v2CartFont(gameLabel(0));
   int lo = v2CartLines(gameLabel(0), l) == 3 ? 13 : 0;
   classicFontEnd(cjk);
-  int16_t key = v2HourTod() * 2 + (lo ? 1 : 0);
+  int16_t key = lo ? 1 : 0;
   if (key == v2LblKey[0]) return;
   v2LblKey[0] = thumbs.loaded ? key : -1;  // (no thumbnails yet: painted again next time)
-  v2TiltScene();
-  v2LblBack(152, 288);
+  v2LblSky(0x7FBDE6, 0xD8EEE8, 32, 0x79BD4F, 0x5A9A3A);
   v2LblThumb(1, 40, 41, false);
   static const char *const *const BERRY[3] = { SPR_HOME_FOOD, SPR_BERRY_ORAN, SPR_BERRY_PINAP };
   static const int8_t BXY[3][2] = { { 14, 2 }, { 58, 8 }, { 30, -4 } };
   for (int k = 0; k < (lo ? 2 : 3); k++) drawMap(BERRY[k], HOME_ICON_N, BXY[k][0], BXY[k][1] + lo, 1, false);
   v2LblKeep(0);
   // Who's That?: Pikachu's silhouette and a "?" on the blue burst
-  v2BurstScene(false);
-  v2LblBack(152, 156);
+  v2LblBurst(0x2A7AD8, 0x4F9EEA);
   v2LblThumb(25, 36, 40, true);
   cjk = classicFontBegin();
   gfx->setTextColor(UI_WHITE);
-  setSize(3);
-  setCur(58, 10);
+  setSize(4);  // (even: crisp on the Knomi)
+  setCur(56, 8);
   printT("?");
   classicFontEnd(cjk);
   v2LblKeep(1);
-  // PokeRun: the forest run, Charmander leaping a log, speed lines behind it (its land is 18 px lower)
-  v2RunScene(0);
-  v2LblBack(120, 256 + V2_RUN_DY);
-  gfx->fillRect(50, 30, 19, 7, sc565(0x8A5A34));
-  gfx->fillRect(50, 30, 19, 2, sc565(0xA87048));
-  gfx->fillRect(66, 30, 3, 7, sc565(0x6E4428));
-  v2LblRunner(34, 26);
-  for (int k = 0; k < 3; k++) gfx->fillRect(8 + k * 4, 14 + k * 4, 11, 2, UI_WHITE);
+  // PokeRun: the forest's edge, Charmander over a log, speed lines behind it
+  v2LblSky(0x9FD6F0, 0xD8EEE8, 30, 0x8A6A44, 0x6E5034);
+  for (int x = 0; x < V2_LBL_W; x += 10) gfx->fillRect(x, 22 + (x / 10) % 2 * 2, 8, 8, sc565(0x3C8A4C));  // the pines' feet
+  gfx->fillRect(50, 26, 19, 6, sc565(0x8A5A34));
+  gfx->fillRect(50, 26, 19, 2, sc565(0xA87048));
+  v2LblThumb(4, 32, 28, false);
+  for (int k = 0; k < 3; k++) gfx->fillRect(4 + k * 4, 12 + k * 4, 10, 2, UI_WHITE);
   v2LblKeep(2);
-  // PikaSurf
-  v2LblSurf();
+  // PikaSurf: the sea, Pikachu on his board, a wake behind
+  v2LblSky(0x7FBDE6, 0xBFE6F5, 20, 0x4F93C4, 0x3A78A8);
+  for (int k = 0; k < 4; k++) gfx->fillRect(6 + k * 18, 28 + (k % 2) * 6, 10, 2, sc565(0x9FD6F0));
+  v2LblOval(22, 33, 56, 40, 0xF5863D);  // the board
+  v2LblOval(24, 33, 54, 36, 0xFFB070);
+  v2LblThumb(25, 39, 36, false);
+  for (int k = 0; k < 4; k++) gfx->fillRect(6 + k * 3, 38 - k, 5, 2, UI_WHITE);
   v2LblKeep(3);
-  // PokeDungeon: a room's wall and its flagstones, Squirtle by a berry
-  static const uint8_t ROOM[3][4] = { { DN_WALL, DN_WALL, DN_WALL, DN_WALL }, { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR }, { DN_FLOOR, DN_FLOOR, DN_FLOOR, DN_FLOOR } };
-  for (int ty = 0; ty < 3; ty++)
-    for (int tx = 0; tx < 4; tx++) dnDrawTileKind(ROOM[ty][tx], ty == 0, tx + 3, ty + 5, 137 + tx * DN_TILE, 73 + ty * DN_TILE);
-  v2LblBack(152, 108);
+  // PokeDungeon: a stone wall over flagstones, Squirtle by a berry
+  v2LblSky(0x55516E, 0x55516E, 18, 0x9A94B0, 0x847E9C);
+  for (int x = 0; x < V2_LBL_W; x += 12) gfx->fillRect(x, 6 + (x / 12) % 2 * 6, 10, 4, sc565(0x6E6A84));  // the wall's stones
+  for (int x = 6; x < V2_LBL_W; x += 16) gfx->fillRect(x, 18, 2, 24, sc565(0x6E6A84));                  // the floor's joints
   v2LblThumb(7, 40, 40, false);
   drawMap(SPR_BERRY_ORAN, HOME_ICON_N, 60, 24, 1, false);
   v2LblKeep(4);
 }
 static void v2PaintPlayLabels() {
   if (!v2LblStart()) return;
-  int16_t key = v2HourTod();
-  if (key == v2LblKey[1]) return;
-  v2LblKey[1] = thumbs.loaded ? key : -1;
+  if (v2LblKey[1] == 0) return;
+  v2LblKey[1] = thumbs.loaded ? 0 : -1;
   // Poke Ball Volley: the court, the ball over Charmander
-  v2CourtScene();
-  v2LblBack(152, 208);
-  drawMap(SPR_HOME_BALL, HOME_ICON_N, 30, 12, 1, false);
+  v2LblSky(0x7FBDE6, 0xD8EEE8, 30, 0x79BD4F, 0x5A9A3A);
+  gfx->fillRect(38, 14, 2, 18, UI_WHITE);  // the net
+  drawMap(SPR_HOME_BALL, HOME_ICON_N, 22, 4, 1, false);
   v2LblThumb(4, 60, 40, false);
   v2LblKeep(5);
   // Who's That? Showdown: Bulbasaur and Squirtle face to face on the pink burst
-  v2BurstScene(true);
-  v2LblBack(152, 156);
+  v2LblBurst(0xC75F80, 0xE58AA8);
   v2LblThumb(1, 22, 40, false);
   v2LblThumb(7, 60, 40, false);
   v2LblKeep(6);
   // PikaSurf together: Squirtle alongside Pikachu
-  v2LblSurf();
+  v2LblSky(0x7FBDE6, 0xBFE6F5, 20, 0x4F93C4, 0x3A78A8);
+  v2LblOval(22, 33, 56, 40, 0xF5863D);
+  v2LblOval(24, 33, 54, 36, 0xFFB070);
+  v2LblThumb(25, 39, 36, false);
   v2LblThumb(7, 62, 38, false);
   v2LblKeep(7);
 }
 
-// ----- the two TVs -----
+// ----- the two Game Boys -----
 static const int16_t V2_CART_XY[5][2] = { { 52, 100 }, { 176, 100 }, { 300, 100 }, { 114, 246 }, { 238, 246 } };
 static const uint8_t V2_CART_GAME[5] = { 0, 1, 2, 4, 3 };  // V1's games in the cartridges' order (Berry Drop, Who's That?, PokeRun, PikaSurf, PokeDungeon)
-static const Rgb V2_CART_COL[5] = { 0x3C8A4C, 0xC75F80, 0xD65F28, 0x2A7AD8, 0x6F5AA8 };
+// the colours the games came in: Green, Silver, Red, Yellow, Blue; Play together's Gold, Crystal, Yellow
+static const Rgb V2_CART_COL[5] = { 0x3E9A52, 0xB4BAC8, 0xD8403A, 0xF2C230, 0x3A6FC8 };
 static const int16_t V2_PLAY_XY[3][2] = { { 52, 150 }, { 176, 150 }, { 300, 150 } };
-static const Rgb V2_PLAY_COL[3] = { 0x3C8A4C, 0xC75F80, 0x2A7AD8 };
-static void v2TvBack(const char *title) {
+static const Rgb V2_PLAY_COL[3] = { 0xC9A43C, 0x5AC8D8, 0xF2C230 };
+static void v2GbBack(const char *title) {
   char b[40];
-  v2Cached(V2_TV_KEY, v2PaintTv, 0);
-  v2TvStatic(millis());
-  v2Sign(v2Caps(title, b, sizeof(b)), 62);
+  v2Cached(V2_GB_KEY, v2PaintGb, 0);
+  v2Sign(v2Caps(title, b, sizeof(b)), 24);
 }
 static void v2GamesTv() {
-  v2TvBack(T(S_GAMES));
+  v2GbBack(T(S_GAMES));
   for (int k = 0; k < 5; k++) v2Cart(V2_CART_XY[k][0], V2_CART_XY[k][1], v2Lbl(k), gameLabel(V2_CART_GAME[k]), V2_CART_COL[k]);
   v2CloseX();
 }
 static void v2PlayTv() {
-  v2TvBack(T(S_PLAY_TOGETHER));
+  v2GbBack(T(S_PLAY_TOGETHER));
   char w[48];
   snprintf(w, sizeof(w), T(S_PLAY_WITH_FMT), buddyName());
-  gfx->setTextColor(sc565(0x9FD6F0));
+  gfx->setTextColor(sc565(0x2C4A18));  // dark green on the olive screen
   setSize(2);
-  setCur(centerX(w, 2), 96);
+  setCur(centerX(w, 2), 100);
   printT(w);
   static const StrId TITLE[3] = { S_CART_VOLLEY, S_CART_SHOWDOWN, S_GAME_SURF };
   for (int k = 0; k < 3; k++) v2Cart(V2_PLAY_XY[k][0], V2_PLAY_XY[k][1], v2Lbl(5 + k), T(TITLE[k]), V2_PLAY_COL[k]);
@@ -2018,9 +2047,9 @@ static void v2TradeSide(int cx, const char *label, int16_t dex, bool shiny, uint
   setCur(cx - textW(label, 2) / 2, 68);
   printT(label);
   if (!dex) {  // not known yet
-    setSize(5);
+    setSize(6);  // (an even size: on the Knomi each font pixel lands whole; 3 spread over a pixel and a half, Fedor: crisp as the battles)
     gfx->setTextColor(UI_WHITE);
-    setCur(cx - textW("?", 5) / 2, 118);
+    setCur(cx - textW("?", 6) / 2, 114);
     printT("?");
     return;
   }
@@ -2161,8 +2190,10 @@ static void v2Keyboard(int L, const char *title, const char *typed, int hot, boo
   char line[20];
   snprintf(line, sizeof(line), "%s_", show);
   gfx->setTextColor(UI_INK);
-  setSize(3);
-  setCur(100, 70);
+  setSize(4);
+  int ts = textW(line, 4) <= 266 ? 4 : 2;  // (an even size: on the Knomi each font pixel lands whole; 3 spread over a pixel and a half, Fedor: crisp as the battles)
+  setSize(ts);
+  setCur(100, ts == 4 ? 66 : 74);
   printT(line);
   classicFontEnd(cjk);
   V2Key k[40];
@@ -2567,9 +2598,9 @@ static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, 
   snprintf(b, sizeof(b), "%s : %s", l, r);
   bool cjk = classicFontBegin();  // VS and the numbers in the pixel font in every language
   gfx->setTextColor(UI_WHITE);
-  setSize(3);
-  v2Bold("VS", centerX("VS", 3), 130);
-  int ss = textW(b, 4) <= 230 ? 4 : 3;  // a long time a size down
+  setSize(4);
+  v2Bold("VS", centerX("VS", 4), 126);  // (an even size: on the Knomi each font pixel lands whole; 3 spread over a pixel and a half, Fedor: crisp as the battles)
+  int ss = textW(b, 4) <= 230 ? 4 : 2;  // a long time a size down
   gfx->setTextColor(UI_INK);
   setSize(ss);
   int sx = centerX(b, ss), lx = sx + textW(l, ss) / 2, rx = sx + textW(b, ss) - textW(r, ss) / 2;
@@ -2853,11 +2884,118 @@ static void v2EvolveFX(PmdMon &oldForm, float t, const char *name, const char *l
   setSize(2);
   setCur(centerX(lv, 2), V2_LEVEL_Y);
   printT(lv);
-  setSize(3);
-  v2Bold(name, centerX(name, 3), V2_NAME_Y);
+  v2NameText(name, V2_NAME_Y);  // as at home
   gfx->setTextColor(C565(0xff, 0xf0, 0xb0));
   setSize(2);
   setCur(centerX(T(S_EVOLVING), 2), V2_STATUS_Y);
   printT(T(S_EVOLVING));
   if (t > 0.9f) gfx->fillCircle(cx, cy, (int)(300 * (t - 0.9f) / 0.1f), UI_WHITE);  // the flash
 }
+
+// ----- the side buttons' and the X's press previews, the Pokedex entries' side buttons, the trophy room's previews -----
+// (the sketch's press preview asks these, pressTargetAt())
+static bool v2PressSet(PressTarget &t, int x, int y, int w, int h, const char *label) {
+  t = { (int16_t)x, (int16_t)y, (int16_t)w, (int16_t)h, label, nullptr };
+  return true;
+}
+// V2: the side buttons and the X, where a screen has them: a preview like every other button's (Fedor: "some of the
+// buttons, like the left and right keys and the x button in some screens doesnt have an overlay that pops up on
+// click"). pages < 2: no side buttons; cy: where its X is
+bool v2PressNav(int16_t x, int16_t y, PressTarget &t, int page, int pages, int arrowY, bool hasX, int cy) {
+  if (pages > 1)
+    if (int d = pageArrowAt(x, y, page, pages, arrowY))
+      return v2PressSet(t, CX + d * pageArrowDx(arrowY) - CLOSE_R, arrowY - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+  return hasX && closeHitAt(x, y, cy) && v2PressSet(t, CX - CLOSE_R, V2_CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+}
+static char v2PressBuf[52];
+// V2: an entry's side buttons step through the entries its grid shows (Fedor: "Add left and right arrows to pokedex
+// entries on the main pokedex and zone pokedex's. That way a player can go through all the pokemon one by one"): the
+// Pokedex's 151 in order, or its zone's own; the grid behind follows to the entry's page, so going back lands there
+void v2DexEntryPos(int16_t dex, int &pos, int &n) {
+  if (zoneScreen && zoneDetail) {
+    n = zoneSize(zoneCur);
+    for (pos = 0; pos < n && zoneMember(zoneCur, pos) != dex; pos++) {}
+    if (pos >= n) pos = 0;
+  } else {
+    n = 151;
+    pos = dex - 1;
+  }
+}
+void v2DexEntryStep(int d) {
+  bool z = zoneScreen && zoneDetail;
+  int pos, n;
+  v2DexEntryPos(z ? zoneDetail : galleryDetail, pos, n);
+  if (pos + d < 0 || pos + d >= n) return;
+  int16_t dex = z ? zoneMember(zoneCur, pos + d) : pos + d + 1;
+  if (!dex) return;
+  if (z) {
+    zoneDetail = dex;
+    zonePage = (pos + d) / DEXG_PAGE;  // (ZONE_PAGE, as the sketch has it further down)
+  } else {
+    galleryDetail = dex;
+    galleryPage = (dex - 1) / DEXG_PAGE;
+    galleryDirty = true;
+  }
+  dexDetailLoad(dex);
+}
+bool v2DexEntryArrowTap(int16_t x, int16_t y) {
+  int pos, n;
+  v2DexEntryPos(zoneScreen && zoneDetail ? zoneDetail : galleryDetail, pos, n);
+  int d = pageArrowAt(x, y, pos, n, V2_PAGE_ARROW_Y);
+  if (!d) return false;
+  sfxPlay(SFX_TAP);
+  v2DexEntryStep(d);
+  return true;
+}
+// V2: an entry's side buttons and its X
+bool v2PressDexEntry(int16_t x, int16_t y, PressTarget &t) {
+  int pos, n;
+  v2DexEntryPos(zoneScreen && zoneDetail ? zoneDetail : galleryDetail, pos, n);
+  return v2PressNav(x, y, t, pos, n, V2_PAGE_ARROW_Y, true);
+}
+// V2: the trophy room's (Fedor: "The medal room needs to have hover states since they are buttons. Its hard to know
+// what is clickable"). A medal's card: its side buttons, its X. A shelf: its side buttons, its X, each thing with its
+// name. The room: its X, each of its five groups outlined where it stands, its name and how many of it you have
+bool v2PressTrophies(int16_t x, int16_t y, PressTarget &t) {
+  if (achDetail >= 0) {
+    int g = v2TrophyGroup(achDetail);
+    return v2PressNav(x, y, t, v2TrophyPos(achDetail) - V2_TR_GROUP_FIRST[g], v2TrophyGroupSize(g), V2_PAGE_ARROW_Y, true);
+  }
+  if (achGroup >= 0) {
+    if (v2PressNav(x, y, t, achGroup, V2_TR_GROUPS, V2_PAGE_ARROW_Y, true)) return true;
+    int m = v2ShelfAt(achGroup, x, y), x0, y0, w, h;
+    if (m < 0) return false;
+    v2ShelfCell(achGroup, v2TrophyPos(m) - V2_TR_GROUP_FIRST[achGroup], x0, y0, w, h);
+    return v2PressSet(t, x0 + 4, y0 + 2, w - 8, h - 6, medalName(m));
+  }
+  if (v2PressNav(x, y, t, 0, 0, 0, true)) return true;
+  int g = v2TrophyGroupAt(x, y), bx, by, bw, bh;
+  if (g < 0) return false;
+  v2TrophyGroupBox(g, bx, by, bw, bh);
+  v2ShelfTitle(g, v2PressBuf, sizeof(v2PressBuf));
+  return v2PressSet(t, bx, by, bw, bh, v2PressBuf);
+}
+
+#ifdef BOARD_HOST
+// ----- hover: on a computer and the web, the control under the mouse is outlined, as a finger's press is, so what can
+// be tapped shows (Fedor: "The medal room needs to have hover states since they are buttons. Its hard to know what is
+// clickable"). Every control the press preview knows (pressTargetAt()); the outline only, thinner, no copy
+extern volatile int16_t gHostHoverX, gHostHoverY;  // (host_runtime.cpp; -1: not over the screen)
+static PressTarget v2HoverT;
+static bool v2HoverOn = false;
+void v2HoverUpdate() {
+  int16_t x = gHostHoverX, y = gHostHoverY;
+  PressTarget t;
+  bool on = x >= 0 && !pressOn && !wasPressed && pressTargetAt(x, y, t);
+  if (on == v2HoverOn && (!on || (t.x == v2HoverT.x && t.y == v2HoverT.y && t.w == v2HoverT.w && t.h == v2HoverT.h))) return;
+  v2HoverOn = on;
+  if (on) v2HoverT = t;
+  pressRepaint();
+}
+void v2HoverOverlay() {
+  if (!v2HoverOn || pressOn) return;
+  const PressTarget &t = v2HoverT;
+  const uint16_t ring = C565(0x7c, 0xc4, 0xea);
+  for (int i = 0; i < 2; i++) gfx->drawRoundRect(t.x - 3 - i, t.y - 3 - i, t.w + 6 + 2 * i, t.h + 6 + 2 * i, 12 + i, ring);
+}
+#endif

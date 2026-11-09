@@ -193,8 +193,11 @@ canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (down) { const [x, y] = point(e); Module._webPointer(x, y, 1); } else Module._webHover();
+  if (down) { const [x, y] = point(e); Module._webPointer(x, y, 1); return; }
+  Module._webHover();
+  if (e.pointerType === 'mouse' && Module._webHoverAt) { const [x, y] = point(e); Module._webHoverAt(x, y); }  // its control outlined
 });
+canvas.addEventListener('pointerleave', () => { if (Module._webHoverAt) Module._webHoverAt(-1, -1); });
 for (const ev of ['pointerup', 'pointercancel']) {
   canvas.addEventListener(ev, (e) => {
     if (!down) return;

@@ -441,8 +441,14 @@ static NSCursor *fingerCursor(bool pressed) {
   hostPointer((int)p.x, (int)p.y, false);
 }
 
-- (void)mouseEntered:(NSEvent *)event { hostPointerHover(); }
-- (void)mouseMoved:(NSEvent *)event { hostPointerHover(); }  // the frame's tracking sets the cursor
+- (void)mouseEntered:(NSEvent *)event { [self mouseMoved:event]; }
+- (void)mouseMoved:(NSEvent *)event {  // the frame's tracking sets the cursor
+  hostPointerHover();
+  NSPoint p = [self canvasPoint:event];
+  bool in = p.x >= 0 && p.y >= 0 && p.x < HOST_CANVAS_SIZE && p.y < HOST_CANVAS_SIZE;
+  hostPointerHoverAt(in ? (int)p.x : -1, (int)p.y);  // V2 outlines the control under it
+}
+- (void)mouseExited:(NSEvent *)event { hostPointerHoverAt(-1, -1); }
 
 // The same menu on right-click and in the menu bar
 - (void)fillMenu:(NSMenu *)menu {

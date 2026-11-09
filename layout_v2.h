@@ -25,16 +25,28 @@ static const V2Bar V2_BARS[4] = {
   { 342, 390, false },  // HYG   (lower right; 390 = 30)
 };
 
-// icons: a circle round the screen's own centre, so each is the same distance from the edge
-#define V2_ICON_R 180
-#define V2_ICON_STEP_DEG 19.32   // keeps 60 px between centres
-static const int16_t V2_BTN[5][2] = { {121, 374}, {173, 403}, {233, 413}, {293, 403}, {345, 374} };  // bag, games, map, moon, drop
+// icons: a circle round the screen's own centre, so each is the same distance from the edge. At 4x, 72 px (Fedor:
+// "make the icons on the main screen and their surround, including the backpack popup, a bit larger. They some times
+// take extra clicks and effort to press on the tiny knomi"; they were 3x on a circle of 180, 60 px apart), on a
+// circle of 176 from 41.5 to 138.5 degrees, so the band's round ends stay 6 px clear of the ENE and HYG bars (Fedor:
+// "a few pixels of gap ... I dont want those touching"). Equal gaps between what each draws, not between centres:
+// the map and the moon are 72 px wide, the drop 48, so the map sits 3 px left of the middle. Each centre on even
+// pixels, so the 4 px cells land whole on the Knomi
+#define V2_ICON_S 4
+#define V2_ICON_HALF 36
+#define V2_ICON_R 176
+static const int16_t V2_BTN[5][2] = { {102, 350}, {158, 392}, {230, 408}, {308, 392}, {364, 350} };  // bag, games, map, moon, drop
 
 // the icon band (the "holder"): one curved band under all five, ends centred on the bag and the drop
-#define V2_BAND_RIN 153
-#define V2_BAND_ROUT 207
-#define V2_BAND_A0 51.4
-#define V2_BAND_A1 128.6
+#define V2_BAND_RIN 138
+#define V2_BAND_ROUT 214
+#define V2_BAND_A0 41.5
+#define V2_BAND_A1 138.5
+
+// the home's scene sits this much higher than it's painted, the Pokemon with it (PET_GROUND 256 where it was 288;
+// Fedor: "move up the entire scene. So the pokemon and its background are always above the center line"), so the
+// food over the icons doesn't cover it
+#define V2_SCENE_UP 32
 // band: V2_TRACK 22%, plus a rim 150..210 at 18%. Round ends. On dark zones (cave, mansion, night) use white at ~12% instead.
 
 // the close X: one place on every screen. Nothing else is drawn below y 394.
@@ -75,12 +87,17 @@ static const int16_t V2_MANSION_RISE[4] = { 20, 226, 446, 330 };   // added to t
 // the food picker (Fedor): a green band just above the icons' band and curved as it is (the icons' circle raised
 // 72 px), its round ends on the first and last seats; the foods on round seats V2_FEED_STEP px apart along it, so
 // your Pokemon stays in view
-#define V2_FEED_CY (CY - 72)  // the seats' circle: its centre, and its radius, the icons' V2_ICON_R
-#define V2_FEED_R 180
-#define V2_FEED_RIN 147       // the band, from that centre (its rim reaches 377 under the middle: 6 px over the
-#define V2_FEED_ROUT 213      // icons' band's)
-#define V2_FEED_STEP 62       // from one seat to the next, along it
-#define V2_FEED_SEAT_R 28
+// With the foods at 4x as the icons (they were 3x, 62 px apart), centred (Fedor: "keep the berry pop up centered"),
+// on a circle round the icons' own centre, so it follows their band's arch at an even distance, and 10 px over it
+// (Fedor: "It can also be moved down slightly to cover the menu under it a bit. Since both cant be used at the same
+// time"). Three or four seats clear the bag; five (the Repel's) reach up beside your Pokemon's feet
+#define V2_FEED_CX CX         // the seats' circle: its centre, and its radius
+#define V2_FEED_CY CY
+#define V2_FEED_R 104
+#define V2_FEED_RIN 64        // the band, from that centre
+#define V2_FEED_ROUT 148
+#define V2_FEED_STEP 72       // from one seat to the next, along it
+#define V2_FEED_SEAT_R 34
 
 // the time page's START OVER (menus_v2.h): its box, which is also its tap
 #define V2_RESET_X0 113
@@ -134,10 +151,17 @@ static inline int v2ShelfAt(int g, int x, int y) {
 // the group under a tap in the room (menus_v2.h trRoom()): the badges' case, the top shelf, the cups' shelf, then on
 // the lower wall the photos to the left and the rosettes to the right
 static inline int v2TrophyGroupAt(int x, int y) {
+  if (y >= 344) return -1;  // the carpet, the count's board, the X
   if (y < 108) return 0;
   if (y < 180) return 1;
   if (y < 256) return 2;
   return x < 240 ? 3 : 4;
+}
+// ...and where each group stands in the room, which its press and hover outline
+static inline void v2TrophyGroupBox(int g, int &x, int &y, int &w, int &h) {
+  static const int16_t B[V2_TR_GROUPS][4] = { { 122, 52, 222, 56 }, { 84, 108, 298, 74 }, { 84, 182, 298, 76 },
+                                              { 40, 258, 182, 56 }, { 246, 252, 176, 86 } };
+  x = B[g][0], y = B[g][1], w = B[g][2], h = B[g][3];
 }
 
 // the radial menu (radial_v2.h): how long a still finger on the Pokemon takes to open it (the taps need it early)

@@ -236,6 +236,11 @@ static void v2Stream(uint8_t zone, const ScPal &p, double f) {
 
 // The home's scene for the five zones, put together for this frame. False without the memory for the strips
 // (the caller then draws the still scene).
+// the sky, V2_SCENE_UP higher as the rest of it
+static void v2PaintSkyUp(int key) {
+  v2PaintSky(key);
+  v2SceneUp(V2_W);
+}
 static bool v2DrawWalkScene(uint8_t zone, uint8_t tod) {
   if (zone == Z_CAVE || zone == Z_MANSION) tod = 0;
   int key = zone * 4 + tod;
@@ -246,8 +251,9 @@ static bool v2DrawWalkScene(uint8_t zone, uint8_t tod) {
       return false;
     v2StripKey = key;
   }
-  v2Cached(700 + key, v2PaintSky, key, V2_WALK_SKY_ROWS);  // the sky, from the buffer
+  v2Cached(700 + key, v2PaintSkyUp, key, V2_WALK_SKY_ROWS);  // the sky, from the buffer
   scScreen();
+  scDY = -V2_SCENE_UP;  // all of it V2_SCENE_UP higher, as the still scene (scene_v2.h v2SceneUp())
   ScPal p = scZonePal(zone);
   double f = v2WalkMs / 100.0, th = 6.283185307179586 * f / 84;  // in the mockup's frames
   int fi = (int)(v2WalkMs / 100), bob = v2Bob;
@@ -290,8 +296,8 @@ static bool v2DrawWalkScene(uint8_t zone, uint8_t tod) {
       scRect(x, y, x + 11, y + 3, y < 260 ? SC_SEA_HI : scMix(SC_SEA_HI, SC_SEA, .4));
     }
   }
-  v2StripBlit(v2Far, fdx, 0);  // (the far and middle hills sway, but only the near land bobs)
-  v2StripBlit(v2Mid, mdx, 0);
+  v2StripBlit(v2Far, fdx, -V2_SCENE_UP);  // (the far and middle hills sway, but only the near land bobs)
+  v2StripBlit(v2Mid, mdx, -V2_SCENE_UP);
   // what stands on the middle hills sways with them, behind the near hill's edge (Fedor: the Forest's big pines
   // and the Mansion's fence and graves hung over the hill the Pokemon walks on)
   if (zone == Z_BEACH) {  // palms on the dunes, under the shore's edge, their fronds leaning on alternate beats
@@ -305,10 +311,13 @@ static bool v2DrawWalkScene(uint8_t zone, uint8_t tod) {
   } else if (zone == Z_MANSION) {
     scGraveyard(mdx, 0);
   }
-  v2StripBlit(v2Near, 0, bob);
+  v2StripBlit(v2Near, 0, bob - V2_SCENE_UP);
   if (zone == Z_CAVE) scCaveGlints();  // glints in the dark, over it all
   v2Stream(zone, p, f);
   scGradeTod = 0;
+  scDY = 0;
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();  // the rows the near land leaves at the bottom: those over them
+  for (int y = V2_W - V2_SCENE_UP; y < V2_W; y++) memcpy(fb + y * V2_W, fb + (y - V2_SCENE_UP) * V2_W, V2_W * sizeof(uint16_t));
   return true;
 }
 

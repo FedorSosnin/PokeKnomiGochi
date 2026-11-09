@@ -556,6 +556,7 @@ static HBITMAP gBitmap = NULL;
 static HDC gDC = NULL;
 static uint8_t gCanvas[HOST_CANVAS_SIZE * HOST_CANVAS_SIZE * 4];
 static int gTouchX, gTouchY;  // where the finger is, in canvas coordinates
+static bool gHoverWatch = false;  // asked to be told when the mouse leaves the window (TrackMouseEvent)
 static bool gTouching = false;
 static POINT gLastCursor = {-1, -1};
 
@@ -1245,7 +1246,23 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
       if (gTouching) {
         canvasPoint((short)LOWORD(lp), (short)HIWORD(lp), gTouchX, gTouchY);
         hostPointer(gTouchX, gTouchY, true);
+      } else {  // no button: V2 outlines the control under it; told when it leaves the window
+        if (zoneAt((short)LOWORD(lp), (short)HIWORD(lp)) == ZONE_SCREEN) {
+          int hx, hy;
+          canvasPoint((short)LOWORD(lp), (short)HIWORD(lp), hx, hy);
+          hostPointerHoverAt(hx, hy);
+        } else {
+          hostPointerHoverAt(-1, -1);
+        }
+        if (!gHoverWatch) {
+          TRACKMOUSEEVENT tme = { sizeof(tme), TME_LEAVE, w, 0 };
+          gHoverWatch = TrackMouseEvent(&tme) != 0;
+        }
       }
+      return 0;
+    case WM_MOUSELEAVE:
+      gHoverWatch = false;
+      hostPointerHoverAt(-1, -1);
       return 0;
     case WM_LBUTTONUP:
       if (gTouching) {

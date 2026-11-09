@@ -162,6 +162,12 @@ void hostPointer(int x, int y, bool down) {
   gPointerDown = down;
 }
 void hostPointerHover(void) { hostGameWake(); }
+volatile int16_t gHostHoverX = -1, gHostHoverY = -1;  // (the sketch's V2 reads them: menus_v2.h v2HoverUpdate())
+void hostPointerHoverAt(int x, int y) {
+  if (x >= 0) hostGameWake();
+  gHostHoverX = (int16_t)(x < 0 ? -1 : x);
+  gHostHoverY = (int16_t)(x < 0 ? -1 : y);
+}
 void hostTiltKeys(bool left, bool right) {
   if (left && !gTiltLeft) gArrowLast = 1;
   if (right && !gTiltRight) gArrowLast = 2;

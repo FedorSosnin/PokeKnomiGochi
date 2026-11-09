@@ -32,6 +32,9 @@ void hostFrameRGBA(uint8_t *out);
 void hostPointer(int x, int y, bool down);
 // The mouse hovers over the window: wakes the dimmed screen, as approaching the device would.
 void hostPointerHover(void);
+// ...and where over the screen, in canvas coordinates, with no button down (x < 0: it left the screen): V2 outlines
+// the control under it, as a finger's press does
+void hostPointerHoverAt(int x, int y);
 // Tilt keys; the game sees a ramp, not a jump, so it can be fine-tuned
 void hostTiltKeys(bool left, bool right);
 // Up and down arrows: with left and right (hostTiltKeys), PokeDungeon walks with all four

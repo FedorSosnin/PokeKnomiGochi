@@ -219,17 +219,62 @@ static void v2DrawBand() {
 static void v2RepelBagBadge(int cx, int cy);  // (repel_v2.h, below: the Repel)
 static bool v2RepelSeat();
 static void v2RepelSeatDraw(int cx, int cy);
+// the games icon, the Game Boy (sprites_v2.h), in its own colours: its top left at (x, y), cells of s px
+static void v2GbIcon(int x, int y, int s) {
+  for (int j = 0; j < HOME_ICON_N; j++) {
+    const char *row = SPR_V2_HOME_GB[j];
+    for (int i = 0; row[i]; i++) {
+      if (row[i] == '.') continue;
+      uint32_t c = 0x1B1B25;
+      for (const V2GbKey &k : V2_GB_KEY)
+        if (k.ch == row[i]) c = k.rgb;
+      int n = 1;
+      while (row[i + n] == row[i]) n++;
+      gfx->fillRect(x + i * s, y + j * s, n * s, s, (uint16_t)(((c >> 8) & 0xF800) | ((c >> 5) & 0x07E0) | ((c >> 3) & 0x1F)));
+      i += n - 1;
+    }
+  }
+}
 static void v2DrawIcons() {
   bool bag = feedMenuUntil != 0;  // the backpack open: all but the bag go dim, as they do while it sleeps (Fedor)
   for (int i = 0; i < BTN_COUNT; i++) {
     int x = buttons[i].cx - BTN_HALF, y = buttons[i].cy - BTN_HALF;
-    if ((pet.sleeping && i != BTN_LIGHT) || (bag && i != 0)) v2MapFlat(buttons[i].icon, HOME_ICON_N, x, y, 3, C565(0x3a, 0x4a, 0x5a));
-    else drawMap(buttons[i].icon, HOME_ICON_N, x, y, 3, false);
+    if ((pet.sleeping && i != BTN_LIGHT) || (bag && i != 0)) v2MapFlat(buttons[i].icon, HOME_ICON_N, x, y, V2_ICON_S, C565(0x3a, 0x4a, 0x5a));
+    else if (buttons[i].icon == SPR_V2_HOME_GB) v2GbIcon(x, y, V2_ICON_S);
+    else drawMap(buttons[i].icon, HOME_ICON_N, x, y, V2_ICON_S, false);
   }
-  v2RepelBagBadge(buttons[0].cx + 22, buttons[0].cy - 22);  // a Repel running: the minutes left, on the bag
+  v2RepelBagBadge(buttons[0].cx + 30, buttons[0].cy - 30);  // a Repel running: the minutes left, on the bag
 }
 
 // ---------- the header ----------
+
+// The Pokemon's name, big: size 4 (it was 3 in bold: on the Knomi a size 3 pixel is a pixel and a half wide, its
+// strokes 2 and 3 Knomi pixels by turns; Fedor: as crisp as the battles). It must stay 240 px wide to clear the FOOD
+// and JOY bars: an 11-letter nickname has its letters a Knomi pixel closer (22 px apart, not 24). Japanese and
+// Korean as they were: size 4 where it fits, else 3
+static void v2NameText(const char *name, int y) {
+  setSize(4);
+  int w = textW(name, 4);
+  if (gCjkFont) {
+    int ns = w <= 260 ? 4 : 3;
+    setSize(ns);
+    setCur(centerX(name, ns), ns == 4 ? y - 4 : y);
+    printT(name);
+    return;
+  }
+  if (w <= 240) {
+    setCur(centerX(name, 4), y);
+    printT(name);
+    return;
+  }
+  int n = (int)strlen(name), step = 22, x = CX - (n * step - 6) / 2;  // (a letter's ink is 20 px)
+  char c[2] = { 0, 0 };
+  for (int i = 0; i < n; i++) {
+    c[0] = name[i];
+    setCur(x + i * step, y);
+    printT(c);
+  }
+}
 
 // The clock on top, then the level, the name (big and bold) and the status. No battery (the Knomi has none)
 // and no streak flame (it's on the card).
@@ -258,19 +303,7 @@ static void v2Header(const char *name, uint16_t nameColor, const char *msg, cons
     printT(level);
   }
   gfx->setTextColor(nameColor);
-  int ns = 3;
-  if (gCjkFont) {  // as V1: Japanese and Korean draw sizes 2 and 3 alike, so the name goes up a size
-    setSize(4);
-    if (textW(name, 4) <= 260) ns = 4;
-  }
-  setSize(ns);
-  int nx = centerX(name, ns), ny = ns == 4 ? V2_NAME_Y - 4 : V2_NAME_Y;
-  setCur(nx, ny);
-  printT(name);
-  if (!gCjkFont) {  // twice, a Knomi pixel apart: bold (setCur snaps to even x, so nx + 1 could land on nx)
-    setCur(SNAP2(nx) + 2, ny);
-    printT(name);
-  }
+  v2NameText(name, V2_NAME_Y);
   gfx->setTextColor(inkColor());
   setSize(2);
   setCur(centerX(msg, 2), V2_STATUS_Y);
@@ -325,7 +358,7 @@ static int v2FeedCount() { return v2FeedFoods() + (v2RepelSeat() ? 1 : 0); }
 static float v2FeedDeg(int i) { return 90 + (v2FeedCount() - 1 - 2 * i) * (V2_FEED_STEP * 28.64789f / V2_FEED_R); }
 static void v2FeedSeat(int i, int &cx, int &cy) {  // seat i's centre, on the 2 px grid
   float a = v2FeedDeg(i) * 0.01745329f;
-  cx = SNAP2(CX + (int)lroundf(V2_FEED_R * cosf(a)));
+  cx = SNAP2(V2_FEED_CX + (int)lroundf(V2_FEED_R * cosf(a)));
   cy = SNAP2(V2_FEED_CY + (int)lroundf(V2_FEED_R * sinf(a)));
 }
 static int v2FeedAt(int16_t x, int16_t y) {  // the seat under a tap (within half a step of its centre), or -1
@@ -357,10 +390,10 @@ static void v2FeedPip(const V2Seg &band, float a1, int len) {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   const uint16_t green = C565(0x58, 0xb8, 0x68);
   float bx = buttons[0].cx, by = buttons[0].cy;
-  float th = atan2f(by - V2_FEED_CY, bx - CX) * 57.29578f, px, py, ux, uy;
+  float th = atan2f(by - V2_FEED_CY, bx - V2_FEED_CX) * 57.29578f, px, py, ux, uy;
   if (th <= a1) {  // over the band's edge
     ux = cosf(th * 0.01745329f), uy = sinf(th * 0.01745329f);
-    px = CX + ux * V2_FEED_ROUT, py = V2_FEED_CY + uy * V2_FEED_ROUT;
+    px = V2_FEED_CX + ux * V2_FEED_ROUT, py = V2_FEED_CY + uy * V2_FEED_ROUT;
   } else {  // past its first seat: off the round end
     int ex, ey;
     v2FeedSeat(0, ex, ey);
@@ -382,7 +415,7 @@ static void v2FeedPip(const V2Seg &band, float a1, int len) {
       if (v2InTri(cx, cy, ia_x, ia_y, ib_x, ib_y, tx, ty)) {
         v2Cell(fb, x, y, green, 256);
       } else if (v2InTri(cx, cy, oa_x, oa_y, ob_x, ob_y, ot_x, ot_y)) {
-        float fx = cx - CX, fy = cy - V2_FEED_CY;
+        float fx = cx - V2_FEED_CX, fy = cy - V2_FEED_CY;
         if (!v2In(band, fx, fy, fx * fx + fy * fy)) v2Cell(fb, x, y, V2_RIM, 256);
       }
     }
@@ -420,7 +453,7 @@ static void v2DrawFoodPicker(int) {
     if (y + dy < 0 || y + dy > 464) continue;
     float fy = y + 1 - V2_FEED_CY;
     for (int x = x0; x <= x1; x += 2) {
-      float fx = x + 1 - CX, r2 = fx * fx + fy * fy;
+      float fx = x + 1 - V2_FEED_CX, r2 = fx * fx + fy * fy;
       if (!v2In(rim, fx, fy, r2)) continue;
       uint16_t c = !v2In(band, fx, fy, r2) ? V2_RIM : v2In(lineOut, fx, fy, r2) && !v2In(lineIn, fx, fy, r2) ? line : green;
       v2Cell(fb, x, y + dy, c, 256);
@@ -437,11 +470,11 @@ static void v2DrawFoodPicker(int) {
     v2FeedSeat(i, cx, cy);
     cy += dy;
     gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, seat);
-    if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - 27, cy - 27, 3, false);
+    if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - V2_ICON_HALF, cy - V2_ICON_HALF, V2_ICON_S, false);
     else v2RepelSeatDraw(cx, cy);
     if (i == 3) candyX = cx, candyY = cy;
   }
-  if (foods == 4) v2CountBadge(candyX + 22, candyY - 28, pet.candiesLeft());
+  if (foods == 4) v2CountBadge(candyX + 30, candyY - 37, pet.candiesLeft());
 }
 
 // ---------- the scenes: the home's backdrop, in the Pokemon's Travel zone ----------
@@ -940,8 +973,17 @@ static void v2Cached(int key, void (*paint)(int), int arg, int rows = V2_W) {
   }
 }
 
-// the home's scene
-static void scPaintKey(int key) { scPaint(key / 4, key % 4); }
+// the home's scene, V2_SCENE_UP higher than it's painted: that many rows off its top, the rows over its bottom again
+// in the rows it leaves (the near ground, under the icons)
+static void v2SceneUp(int rows) {
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  memmove(fb, fb + V2_SCENE_UP * V2_W, (size_t)(rows - V2_SCENE_UP) * V2_W * sizeof(uint16_t));
+  for (int y = rows - V2_SCENE_UP; y < rows; y++) memcpy(fb + y * V2_W, fb + (y - V2_SCENE_UP) * V2_W, V2_W * sizeof(uint16_t));
+}
+static void scPaintKey(int key) {
+  scPaint(key / 4, key % 4);
+  v2SceneUp(V2_W);
+}
 static void v2DrawScene(uint8_t zone, uint8_t tod) {
   if (zone == Z_CAVE || zone == Z_MANSION) tod = 0;
   v2Cached(zone * 4 + tod, scPaintKey, zone * 4 + tod);

@@ -53,6 +53,7 @@ EMSCRIPTEN_KEEPALIVE uint8_t *webFrame(void) {
 EMSCRIPTEN_KEEPALIVE void webNetTime(uint32_t utc) { hostNetTime(utc); }
 EMSCRIPTEN_KEEPALIVE void webPointer(int x, int y, int down) { hostPointer(x, y, down != 0); }
 EMSCRIPTEN_KEEPALIVE void webHover(void) { hostPointerHover(); }
+EMSCRIPTEN_KEEPALIVE void webHoverAt(int x, int y) { hostPointerHoverAt(x, y); }  // a mouse over it, no button (-1: gone)
 EMSCRIPTEN_KEEPALIVE void webTilt(int left, int right) { hostTiltKeys(left != 0, right != 0); }
 EMSCRIPTEN_KEEPALIVE void webArrows(int up, int down) { hostArrowKeys(up != 0, down != 0); }
 EMSCRIPTEN_KEEPALIVE void webButton(int down) { hostButton(down != 0); }

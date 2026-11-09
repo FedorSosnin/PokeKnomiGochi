@@ -117,7 +117,11 @@ struct {
   float x = 233, targetX = 233;
 } beh;
 uint32_t walkLast = 0;  // time of the last walk step (0 = none yet)
+#if UI_V2
+#define PET_GROUND 256  // V2: the home's scene is V2_SCENE_UP (32) higher, its Pokemon with it (layout_v2.h)
+#else
 #define PET_GROUND 288  // pet ground line: 8 px over the bottom panel (296), so feet are never cut off
+#endif
 PmdMon galleryPmd;  // large sprite for the gallery detail view (PMD/TPK2, legal)
 PmdMon galleryShinyPmd;  // the entry's shiny, next to the regular one when both are caught
 
@@ -425,7 +429,7 @@ struct Btn {
 // zZ are orange
 Btn buttons[BTN_COUNT] = {
   { V2_BTN[0][0], V2_BTN[0][1], SPR_HOME_BAG },
-  { V2_BTN[1][0], V2_BTN[1][1], SPR_HOME_GAMES },
+  { V2_BTN[1][0], V2_BTN[1][1], SPR_V2_HOME_GB },  // a Game Boy, its own colours (sprites_v2.h)
   { V2_BTN[2][0], V2_BTN[2][1], SPR_HOME_MAP },
   { V2_BTN[3][0], V2_BTN[3][1], SPR_HOME_MOON_V2 },
   { V2_BTN[4][0], V2_BTN[4][1], SPR_HOME_DROP },
@@ -440,8 +444,13 @@ Btn buttons[BTN_COUNT] = {
 };
 #endif
 #define BTN_LIGHT 3  // the one that still works while it sleeps
+#if UI_V2
+#define BTN_HALF V2_ICON_HALF  // V2: the 72x72 icon (HOME_ICON_N at 4x)
+#define BTN_HIT 44             // ...and a touch that much bigger
+#else
 #define BTN_HALF 27  // the 54x54 icon (HOME_ICON_N at 3x)
 #define BTN_HIT 36   // touch radius (a bit more generous; neighbours overlap, so the closest wins)
+#endif
 
 // the icon under a touch: the closest one within BTN_HIT (-1: none)
 int buttonAt(int16_t x, int16_t y) {
@@ -469,11 +478,11 @@ static const int16_t STARTER_DEX[3] = { 1, 4, 7 };
 #define EVO_BTN_W 200
 #define EVO_BTN_H 52
 #define EVO_BTN_X (CX - EVO_BTN_W / 2)
-#define EVO_BTN_Y 292
+#define EVO_BTN_Y 262  // (under the feet, which are 32 higher: 292 and 290 before)
 #define FAR_BTN_W 380
 #define FAR_BTN_H 56
 #define FAR_BTN_X (CX - FAR_BTN_W / 2)
-#define FAR_BTN_Y 290
+#define FAR_BTN_Y 260
 #else
 // evolution CTA button (centered, mid-screen)
 #define EVO_BTN_W 256
@@ -508,6 +517,10 @@ uint32_t gBtnSimUntil = 0;  // simulated press of the physical button (serial co
 bool v2RadialOpen = false;    // V2: the radial menu, a hold on the Pokemon (radial_v2.h)
 int8_t v2RadialHover = -1;   // its section under the finger
 static void v2RadialStart();
+#ifdef BOARD_HOST
+void v2HoverUpdate();   // V2 on a computer and the web: the control under the mouse, outlined (menus_v2.h)
+void v2HoverOverlay();
+#endif
 static int v2RadialAt(int16_t x, int16_t y);
 static void v2RadialLift(int16_t x, int16_t y);
 bool v2ResetSure = false;    // V2: ERASE EVERYTHING was tapped once; the question now asks "Are you sure?"
@@ -671,6 +684,9 @@ void loop() {
   wasRunReady = runReady;
 
   handleTouch();
+#if UI_V2 && defined(BOARD_HOST)
+  v2HoverUpdate();  // V2 on a computer and the web: what's under the mouse (menus_v2.h)
+#endif
 #if UI_V2
   v2RepelTick(now);  // V2: every second of a minigame played counts toward a Repel
 #endif
@@ -1196,6 +1212,9 @@ bool inPetZone(int16_t x, int16_t y) {
   int n = partyOthers();
   if (n)  // with others around, yours stands in the middle
     return abs(x - PARTY_MINE_X) < (n <= 2 ? 72 : 56) && y > PET_GROUND - (n <= 2 ? 150 : 115) && y < HOME_PANEL_Y;
+#if UI_V2
+  return x > 110 && x < 356 && y > 95 && y < PET_GROUND + 12;  // V2: down to its feet (it stands higher)
+#endif
   return x > 110 && x < 356 && y > 95 && y < HOME_PANEL_Y;
 }
 
@@ -1204,6 +1223,14 @@ PressTarget pressT;
 bool pressOn = false;
 bool pressSoftGone = false;  // this touch moved off a soft target (a buddy): a swipe, no preview till lift
 bool pressTargetAt(int16_t x, int16_t y, PressTarget &t);  // prototypes (defined at the end)
+#if UI_V2
+void v2DexEntryPos(int16_t dex, int &pos, int &n);          // V2: an entry's side buttons (menus_v2.h)
+void v2DexEntryStep(int d);
+bool v2DexEntryArrowTap(int16_t x, int16_t y);
+bool v2PressNav(int16_t x, int16_t y, PressTarget &t, int page, int pages, int arrowY, bool hasX, int cy = CLOSE_Y);
+bool v2PressDexEntry(int16_t x, int16_t y, PressTarget &t);  // the side buttons' and the X's press previews,
+bool v2PressTrophies(int16_t x, int16_t y, PressTarget &t);  // the trophy room's (menus_v2.h)
+#endif
 void gameTap(int16_t x, int16_t y);
 
 // screens that only repaint on a change must repaint when the highlight moves
@@ -1532,6 +1559,12 @@ void onSwipe(int dir) {
     }
     return;
   }
+#if UI_V2
+  if (galleryDetail) {  // V2: an entry's swipe steps through the Pokedex, as its side buttons do
+    v2DexEntryStep(-dir);
+    return;
+  }
+#endif
   if (galleryDetail) {  // in detail: back to the grid
     galleryDetail = 0;
     galleryUnload();
@@ -1658,9 +1691,10 @@ void onTap(int16_t x, int16_t y) {
     if (cardAch) {  // V2: the trophy room: a tap opens the group it's on. A shelf: its side buttons step through the
       bool onX = closeHit(x, y);  // five, a tap on a thing opens its card, the X goes back to the room
       if (achGroup < 0) {
-        sfxPlay(SFX_TAP);
+        int g = v2TrophyGroupAt(x, y);
+        if (onX || g >= 0) sfxPlay(SFX_TAP);
         if (onX) cardOpen = cardAch = false;
-        else achGroup = v2TrophyGroupAt(x, y);
+        else if (g >= 0) achGroup = g;
         return;
       }
       int a = pageArrowAt(x, y, achGroup, V2_TR_GROUPS, V2_PAGE_ARROW_Y), m = v2ShelfAt(achGroup, x, y);
@@ -2404,8 +2438,9 @@ bool render() {
     // V2: the scene runs to the rim; the bars ride on it and the icons sit on their band. The radial menu's ring
     // is see-through (Fedor), so while it's open what it would show through stays out: the header, the band, the
     // icons and the pill (radial_v2.h)
-    if (!v2RadialOpen) drawHeader(name, gNight || gV2Dark ? v2LightAccent(d.accent) : d.accent, statusMsg(), lv);
     drawPet();
+    // (the header over the Pokemon, which stands higher now: a tall one never covers its words)
+    if (!v2RadialOpen) drawHeader(name, gNight || gV2Dark ? v2LightAccent(d.accent) : d.accent, statusMsg(), lv);
     drawBath();
     drawPoops();
     v2DrawBars();
@@ -3987,6 +4022,9 @@ void battleCenterLine(const char *s, int y) {
 // the result of a throw: large text on color, so nobody is left in doubt
 void catchBanner(const char *s, uint16_t bg) { catchBannerAt(s, bg, 352, 3); }
 void catchBannerAt(const char *s, uint16_t bg, int y, uint8_t maxSize) {
+#if UI_V2
+  maxSize = 2;  // V2: size 2 (bold below), crisp on the Knomi; 3 was soft
+#endif
   uint8_t size = maxSize >= 3 && textW(s, 3) <= 306 ? 3 : 2;
   int w = textW(s, size) + 24, h = size == 3 ? 44 : 36;
   gfx->fillRoundRect(CX - w / 2, y, w, h, 12, bg);
@@ -3994,6 +4032,12 @@ void catchBannerAt(const char *s, uint16_t bg, int y, uint8_t maxSize) {
   setSize(size);
   setCur(centerX(s, size), y + (h - 8 * size) / 2);
   printT(s);
+#if UI_V2
+  if (!gCjkFont) {  // V2: bold, a Knomi pixel over
+    setCur(SNAP2(centerX(s, size)) + 2, y + (h - 8 * size) / 2);
+    printT(s);
+  }
+#endif
   setSize(2);
   gfx->setTextColor(UI_INK);
 }
@@ -4237,12 +4281,18 @@ void renderCatch() {
       snprintf(c, sizeof(c), n == 1 ? "1" : n == 2 ? "1  2" : "1  2  3");
       setSize(5);
 #if UI_V2
+      setSize(4);
       {
-        int w = textW(c, 5) + 36;
+        int w = textW(c, 4) + 36;
         v2Panel(CX - w / 2, 352, CX + w / 2, 410, 10);
       }
 #endif
+#if UI_V2
+      setSize(4);  // V2: size 4, crisp on the Knomi (5 was soft)
+      setCur(centerX(c, 4), 366);
+#else
       setCur(centerX(c, 5), 362);
+#endif
       printT(c);
       setSize(2);
       break;
@@ -5713,6 +5763,19 @@ void drawBigTime(int h24, int m) {
   snprintf(t, sizeof(t), "%d:%02d", clock12Hour(h24), m);
   // centred as one group, whatever the digits: "4:27 PM" and "12:05 AM" alike. The widths leave out the
   // blank column after the last letter, so what shows is what's centred
+#if UI_V2
+  {  // V2: sizes 8 and 4, even, so each font pixel lands whole on the Knomi (7 and 3 were soft); their bottoms level
+    int tw = textW(t, 8) - 8, aw = textW("AM", 4) - 4, gap = 12;
+    int x0 = CX - (tw + gap + aw) / 2;
+    if (t[0] == '1') x0 -= 4;
+    setSize(8);
+    setCur(x0, 100);
+    printT(t);
+    setSize(4);
+    setCur(x0 + tw + gap, 132);
+    printT(h24 < 12 ? "AM" : "PM");
+  }
+#else
   int tw = textW(t, 7) - 7, aw = textW("AM", 3) - 3, gap = 12;
   int x0 = CX - (tw + gap + aw) / 2;
   if (t[0] == '1') x0 -= 4;  // a 1 is drawn a column in from its left edge: half that column back
@@ -5722,6 +5785,7 @@ void drawBigTime(int h24, int m) {
   setSize(3);
   setCur(x0 + tw + gap, 136);
   printT(h24 < 12 ? "AM" : "PM");
+#endif
   classicFontEnd(cjk);
 }
 
@@ -7132,6 +7196,13 @@ void renderDexDetail(int16_t dex) {
     } else if (const uint8_t *t = thumbs.get(dex)) {
       drawThumb(t, CX - GAL_CELL, 135, 4, true);
     }
+#if UI_V2
+    {
+      int pos, n;
+      v2DexEntryPos(dex, pos, n);
+      drawPageArrows(pos, n, V2_PAGE_ARROW_Y);  // V2: on to the next entry, back to the last
+    }
+#endif
     drawCloseButton();  // a tap anywhere goes back too
     gfx->flush();
 }
@@ -7348,6 +7419,9 @@ void renderGallery() {
 
 void galleryTap(int16_t x, int16_t y) {
   if (galleryDetail) {
+#if UI_V2
+    if (v2DexEntryArrowTap(x, y)) return;  // V2: the next entry or the last
+#endif
     if (dexArtPet(x, y)) return;  // its sprite: a pat, as at home
     galleryDetail = 0;            // anywhere else: back to the grid
     galleryUnload();
@@ -9217,6 +9291,12 @@ void zoneBack() {
 }
 
 void zoneTurnPage(int dir) {
+#if UI_V2
+  if (zoneScreen == ZS_ZONE && zoneDetail) {  // V2: an entry's swipe steps through the zone, as its side buttons do
+    v2DexEntryStep(dir);
+    return;
+  }
+#endif
   if (zoneScreen != ZS_ZONE || zoneDetail) return;
   int pages = (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE;
   int np = (int)zonePage + dir;
@@ -9254,6 +9334,9 @@ void zoneBattleEnded() {
 
 void zoneTap(int16_t x, int16_t y) {
   if (zoneDetail) {
+#if UI_V2
+    if (v2DexEntryArrowTap(x, y)) return;  // V2: the next entry or the last
+#endif
     if (dexArtPet(x, y)) return;  // its sprite: a pat
     zoneDetailClose();            // anywhere else: back to the zone
     return;
@@ -10190,7 +10273,7 @@ void overlayMouth(const Species &sp, int x, int y, int s, bool open) {
 void drawPoops() {
   for (int i = 0; i < pet.poops; i++) {
 #if UI_V2
-    v2PoopIcon(86 + i * 46, 274);  // V2: its own, on the grass, in from the bars (scene_v2.h)
+    v2PoopIcon(86 + i * 46, PET_GROUND - 14);  // V2: its own, on the grass, in from the bars (scene_v2.h)
 #else
     drawMap(SPR_POOP, 32, 36 + i * 46, HOME_PANEL_Y - 68, 2, false);  // just over the panel
 #endif
@@ -10433,6 +10516,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   }
   if (gamesMenuOpen) {
     int g = gameAt(x, y);
+#if UI_V2
+    if (g < 0) return v2PressNav(x, y, t, 0, 0, 0, true);  // V2: its X
+#endif
     if (g < 0) return false;
 #if UI_V2
     int k = v2CartOfGame(g);  // V2: round the cartridge
@@ -10442,6 +10528,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   }
   if (zoneScreen == ZS_PICK) {
     int z = zonePickAt(x, y);
+#if UI_V2
+    if (z < 0) return v2PressNav(x, y, t, 0, 0, 0, true);  // V2: Travel's X
+#endif
     if (z < 0) return false;
 #if UI_V2
     int16_t bx, by, bw;
@@ -10452,11 +10541,17 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
                     z == ZONE_RANDOM ? T(S_RANDOM_BATTLE) : T(ZONE_NAME[z]));
   }
   if (zoneScreen) {
+#if UI_V2
+    if (zoneDetail) return v2PressDexEntry(x, y, t);  // V2: an entry's side buttons and its X
+#endif
     if (zoneDetail) return false;  // an entry: tap anywhere to go back
     if (y >= ZONE_BTN_Y && y < ZONE_BTN_Y + ZONE_BTN_H && x >= ZONE_BTN_X && x < ZONE_BTN_X + ZONE_BTN_W)
       return pressSet(t, ZONE_BTN_X, ZONE_BTN_Y, ZONE_BTN_W, ZONE_BTN_H, T(S_ZONE_SEARCH));
     if (int d = pageArrowAt(x, y, zonePage, (zoneSize(zoneCur) + ZONE_PAGE - 1) / ZONE_PAGE, PAGE_ARROW_Y))
       return pressSet(t, CX + d * pageArrowDx(PAGE_ARROW_Y) - CLOSE_R, PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+#if UI_V2
+    if (v2PressNav(x, y, t, 0, 0, 0, true, ZONE_CLOSE_Y)) return true;  // V2: its X
+#endif
     return false;  // Pokedex grids (here and below) swipe between pages: a slow swipe must not pick a square
   }
   if (gameOpen || runOpen || surfOpen || dungeonOpen || vbOpen) return false;  // aiming, jumping, surfing, walking, volleying: no buttons
@@ -10503,6 +10598,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   }
   if (buddyMenuOpen) {
     if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+#if UI_V2
+    if (v2PressNav(x, y, t, buddyPage, 2, V2_PAGE_ARROW_Y, false)) return true;  // V2: its side buttons
+#endif
     if (buddyPage == 0) return false;
     if (abs(x - CX) > 130 || y < BUDDY_ROW_Y || y >= BUDDY_ROW_Y + BUDDY_ROWS * BUDDY_ROW_STEP) return false;
     int row = (y - BUDDY_ROW_Y) / BUDDY_ROW_STEP;
@@ -10519,6 +10617,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (tradeOpen) {
+#if UI_V2
+    if (trPhase == TR_PICK && v2PressNav(x, y, t, trPage, (pet.formCount() + 15) / 16, V2_PAGE_ARROW_Y, false)) return true;
+#endif
     if (trPhase == TR_PICK)
       return closeHitAt(x, y, GAL_CLOSE_Y) && pressSet(t, CX - CLOSE_R, GAL_CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
     if (trPhase == TR_DONE) return false;
@@ -10529,9 +10630,15 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (galleryOpen) {
+#if UI_V2
+    if (galleryDetail) return v2PressDexEntry(x, y, t);  // V2: an entry's side buttons and its X
+#endif
     if (galleryDetail) return false;
     if (int d = pageArrowAt(x, y, galleryPage, DEX_PAGES, PAGE_ARROW_Y))
       return pressSet(t, CX + d * pageArrowDx(PAGE_ARROW_Y) - CLOSE_R, PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, d < 0 ? "<" : ">");
+#if UI_V2
+    if (v2PressNav(x, y, t, 0, 0, 0, true, GAL_CLOSE_Y)) return true;  // V2: its X
+#endif
     return false;
   }
   if (kbOpen) {
@@ -10551,6 +10658,15 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, KB_X + col * KB_W, KB_Y + row * KB_H, KB_W - 6, KB_H - 6, buf);
   }
   if (clockOpen) {
+#if UI_V2
+#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
+    const int clockPages = 2;  // V2: the time, then the Knomi's settings
+#else
+    const int clockPages = 1;
+#endif
+    if (tzPickOpen && clockPage == 0 && closeHit(x, y)) return v2PressNav(x, y, t, 0, 0, 0, true);  // the picker's X
+    if (!tzPickOpen && wifiSetupState() == WS_OFF && v2PressNav(x, y, t, clockPage, clockPages, V2_PAGE_ARROW_Y, true)) return true;
+#endif
 #ifdef BOARD_KNOMI_V2
     if (clockPage == 1) {
       WifiSetupState ws = wifiSetupState();
@@ -10618,6 +10734,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (pet.ceremony) return false;
+#if UI_V2
+  if (cardOpen) {  // V2: the card's side buttons and X; the trophy room's
+    if (!cardAch) return v2PressNav(x, y, t, cardPage, cardPageCount(), V2_PAGE_ARROW_Y, true);
+    return v2PressTrophies(x, y, t);
+  }
+#endif
   if (cardOpen) {
     if (cardAch && achDetail >= 0) {  // a medal's card: its X
       if (closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
@@ -10717,22 +10839,41 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
 // Drawn last on every frame (from the canvas flush): the outline on the control and its
 // large copy beside the finger, in the Wi-Fi keyboard's colours.
 void pressOverlay() {
+#if UI_V2 && defined(BOARD_HOST)
+  v2HoverOverlay();  // V2 on a computer and the web: the outline under the mouse (menus_v2.h)
+#endif
   if (!pressOn) return;
   const PressTarget &t = pressT;
   const uint16_t ring = TYPE_ACCENT[TY_WATER];
   for (int i = 0; i < 4; i++) gfx->drawRoundRect(t.x - 3 - i, t.y - 3 - i, t.w + 6 + 2 * i, t.h + 6 + 2 * i, 12 + i, ring);
   if (t.icon) {
+#if UI_V2
+    const int s = 6, side = HOME_ICON_N * s + 24;  // V2: 6x, so its cells land whole on the Knomi (5x didn't)
+#else
     const int s = 5, side = HOME_ICON_N * s + 24;  // only the home buttons and the food menu carry an icon
+#endif
     PressBox b = pressPopupBox(tXl, tYl, side + 16, side + 16);
     gfx->fillRoundRect(b.x, b.y, b.w, b.h, 16, ring);
     gfx->fillRoundRect(b.x + 8, b.y + 8, side, side, 12, UI_WHITE);
+#if UI_V2
+    if (t.icon == SPR_V2_HOME_GB) {  // the Game Boy, in its own colours
+      v2GbIcon(SNAP2(b.x + 20), SNAP2(b.y + 20), s);
+      return;
+    }
+#endif
     drawMap(t.icon, HOME_ICON_N, b.x + 20, b.y + 20, s, false);
     return;
   }
   if (!t.label || !t.label[0]) return;
+#if UI_V2
+  uint8_t size = 4;  // V2: 4 or 2, even sizes, crisp on the Knomi
+  setSize(size);
+  if (textW(t.label, size) > 340) setSize(size = 2);
+#else
   uint8_t size = 5;
   setSize(size);
   while (size > 2 && textW(t.label, size) > 340) setSize(--size);
+#endif
   int16_t tw = textW(t.label, size), th = (gCjkFont ? 16 : 8) * gTextSize;
   PressBox b = pressPopupBox(tXl, tYl, tw + 40, th + 36);
   gfx->fillRoundRect(b.x, b.y, b.w, b.h, 16, ring);

@@ -281,3 +281,31 @@ static const char* const SPR_V2_DUCK[12] = {  // 14x12
   "..kYYYYYYYYk..",
   "...kkkkkkkk...",
 };
+
+// FIXED  the home band's games icon (Fedor: "Change the games icon's color from blue to the iconic gray with green hue
+// screen from the original gameboy"): 18x18 as the other icons, its own colours (V2_GB_KEY)
+static const char *const SPR_V2_HOME_GB[18] = {
+  "...kkkkkkkkkkkk...",
+  "..kwwwwwwwwwwwwk..",
+  "..kwDDDDDDDDDDbk..",
+  "..kwDdggggggdDbk..",
+  "..kwDdggggggdDbk..",
+  "..kwDrggggggdDbk..",
+  "..kwDdggggGGdDbk..",
+  "..kwDdGGGGGGdDbk..",
+  "..kwDdddddddddbk..",
+  "..kwbbbbbbbbbbbk..",
+  "..kwbpbbbbbbmmbk..",
+  "..kwpppbbbmmMMbk..",
+  "..kwbpbbbbMMbbbk..",
+  "..kwbbbbbbbbbbbk..",
+  "..kwbbssbssbbBBk..",
+  "..kwbbbbbbbbBBk...",
+  "..kBBBBBBBBBBk....",
+  "...kkkkkkkkkk.....",
+};
+struct V2GbKey { char ch; uint32_t rgb; };
+static const V2GbKey V2_GB_KEY[13] = {  // grey body, the dark bezel and its red light, the green screen, magenta buttons
+  { 'k', 0x1B1B25 }, { 'w', 0xF2F0EC }, { 'b', 0xCDC9C2 }, { 'B', 0xA39E97 }, { 'D', 0x3E3C52 }, { 'd', 0x5E5C74 },
+  { 'g', 0xA6BA3C }, { 'G', 0x869C2C }, { 'r', 0xE0463A }, { 'p', 0x2C2C3A }, { 'm', 0xB83A78 }, { 'M', 0x7E2452 },
+  { 's', 0x8E8A84 } };

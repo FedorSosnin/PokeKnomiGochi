@@ -20,6 +20,10 @@ A new look for every screen, on the Knomi, Mac, Windows and the web. Your Pokém
 - **The Pokédex:** each entry turns round to show its Pokémon from every side.
 - **Knomi Island:** Travel is a round island with the five zones, its sea, pines and Mansion windows moving.
 - **The games:** cartridges in an old TV, **Play Again!** at every game's end, and new stairs in PokeDungeon.
+- **The games, on a Game Boy:** the mini games sit on a Game Boy's green screen as cartridges in the colours the games came in, and the screen opens at once.
+- **Bigger home icons:** easier to tap on the Knomi, with the games as a little grey Game Boy. Your Pokémon and its world sit higher, so the backpack's foods never cover it.
+- **Pokédex: one entry to the next:** arrows on every entry step through the Pokédex, or a zone's list.
+- **Crisper on the Knomi:** round buttons with a dark ring, text in sizes that land on whole pixels, and Pokédex entries in capitals as on the Game Boy.
 - **The trophy room:** all 25 medals as things in one room, a gleam sweeping over the ones you've won. Tap a part of the room for a closer look at that group, every trophy with its name under it, and tap a trophy for its card. Each is drawn in the same pixel-art style as the Pokémon and the food: zone badges in a case, Poké, Great, Ultra and Master Ball statues, a golden Pikachu under glass, bronze, silver and gold cups, photos of your buddies, and rosettes marked with what they're for.
 - **Who's That? counts down:** ten seconds for each silhouette, alone or in a Showdown; out of time counts as wrong, and the answer shows.
 - **Every Pokémon on its feet:** each one stands and walks on the ground instead of floating over its shadow (Venusaur and Ivysaur on their legs, their heads hanging in front, awake or asleep), and big ones like Snorlax, Lapras and Dragonite come out bigger.
