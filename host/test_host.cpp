@@ -625,7 +625,7 @@ static void testGame() {
   hostSerialPush("GAMES");
   runTicks(300);
   CHECK(gamesMenuOpen && introCard == -1);
-  tapAt(170, 128);  // Berry Drop's tile
+  tapAt(150, 128);  // Berry Drop's tile (V2: its cartridge, which stops at 166)
   CHECK(gameOpen && !gamesMenuOpen && introCard == 0);
   runTicks(500);    // landed
   tapAt(233, 240);  // the text
@@ -636,7 +636,7 @@ static void testGame() {
   hostSerialPush("GAMES");
   runTicks(300);
   gameOpen = false;  // (Berry Drop, left: the menu opens over it in this test)
-  tapAt(170, 128);
+  tapAt(150, 128);
   runTicks(500);
   CHECK(gameOpen && introCard == 0);
   hostPointer(233, 380, true);  // a swipe up from the bottom: it would quit a game, here it sends the card
@@ -653,7 +653,7 @@ static void testGame() {
   gameOpen = false;
   hostSerialPush("GAMES");
   runTicks(300);
-  tapAt(296, 128);  // PokeRun's tile
+  tapAt(316, 128);  // PokeRun's tile (V2: its cartridge, from 299)
   runTicks(500);
   tapAt(233, 335);  // Ready, GO!
   for (int i = 0; i < 40 && !runOverT; i++) runTicks(200);  // until it has ended

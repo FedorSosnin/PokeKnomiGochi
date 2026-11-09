@@ -764,11 +764,20 @@ static void v2DexInfo(int16_t dex, bool withFact) {
     printT(caps);
   }
   if (!withFact) return;
+  // the fact at most 25 letters a line, at least 23 px in from the panel's sides (Fedor: "add some padding to the
+  // sides of the text so it doesnt come so close to the edges"; it was 28, 5 px), its lines in the middle of the room
+  // under the next form's: 20 px apart, 18 for the four facts that take four lines
   gfx->setTextColor(UI_INK);
+  int n = 0, skip;  // how many lines it takes
+  for (const char *q = DEX_FACT[dex]; *q && n < 4; n++) {
+    wrapNext(q, 25, skip);
+    q += skip;
+  }
+  int step = n >= 4 ? 18 : 20, y = 306 + (78 - (n * step - (step - 16))) / 2;
   const char *p = DEX_FACT[dex];
-  for (int y = 308; *p && y <= 368; y += 20) {
-    int skip, n = wrapNext(p, 28, skip);
-    snprintf(line, sizeof(line), "%.*s", n, p);
+  for (int i = 0; i < n && *p; i++, y += step) {
+    int len = wrapNext(p, 25, skip);
+    snprintf(line, sizeof(line), "%.*s", len, p);
     v2Caps(line, caps, sizeof(caps));
     setCur(centerX(caps, 2), y);
     printT(caps);
@@ -1118,16 +1127,18 @@ static void v2MedalCard(int m) {
   }
   if (won) v2SignIn(medalName(m), V2_BOARD_Y, C565(0xc0, 0x84, 0x10), C565(0xf0, 0xc0, 0x4a));
   else v2SignIn(medalName(m), V2_BOARD_Y, C565(0x5a, 0x3a, 0x22), C565(0x7a, 0x5a, 0x3a));
-  v2Panel(72, 286, 394, 374, 10);  // (10 px over the mockup's, for its page line under it)
+  v2Panel(72, 270, 394, 374, 10);  // (26 px over the mockup's, for its page line under it and a fourth line)
   // how to win it, wrapped by its width (three lines, or two over a progress bar), and under it whether it's won or
   // how far along: the lot together in the middle of the panel (Fedor: not stuck to its top and bottom edges)
   int cur, goal;
   bool prog = !won && v2MedalProgress(m, cur, goal);
   const char *w = medalHow(m);
-  char lines[3][64];
+  char lines[4][64];
   int nl = 0;
   setSize(2);
-  while (*w && nl < (prog ? 2 : 3)) {
+  // up to four lines, three over a bar (they were three and two: German, French, Italian and Portuguese lost their
+  // last words, "Kummere dich 7 Tage am Stuck um dasselbe" without its Pokemon)
+  while (*w && nl < (prog ? 3 : 4)) {
     int n = 0, fit = 0;
     for (;;) {
       int e = n;
@@ -1142,10 +1153,11 @@ static void v2MedalCard(int m) {
     w += fit;
     while (*w == ' ') w++;
   }
-  int statusH = prog ? 34 : 16, total = (nl ? nl * 18 + 8 : 0) + statusH;  // (18 px a line, 10 between)
-  int y = 286 + (89 - total) / 2;
+  int pitch = nl >= 4 || (prog && nl >= 3) ? 17 : 18;  // (17 px a line when it's that long)
+  int statusH = prog ? 34 : 16, total = (nl ? nl * pitch + 8 : 0) + statusH;
+  int y = 270 + (105 - total) / 2;
   gfx->setTextColor(UI_INK);
-  for (int i = 0; i < nl; i++, y += 18) {
+  for (int i = 0; i < nl; i++, y += pitch) {
     setCur(centerX(lines[i], 2), y);
     printT(lines[i]);
   }
@@ -1510,10 +1522,10 @@ static void v2ZoneBack(uint8_t zone) {
 // cartridges in the colours the games came in, each label a little picture from its game: its colours and a
 // starter, quick to draw (they were the games' own scenes at half size, and opening took seconds on the Knomi).
 // One tap on a cartridge starts its game, as V1's windows did.
-#define V2_GB_X0 56  // its screen
-#define V2_GB_Y0 80
-#define V2_GB_X1 410
-#define V2_GB_Y1 374
+#define V2_GB_X0 40  // its screen: the cartridges sit inside it, 11 px in at least (Fedor: "so they sit in the screen
+#define V2_GB_Y0 84  // and not over top of it")
+#define V2_GB_X1 426
+#define V2_GB_Y1 392
 #define V2_LBL_W 79  // a label's picture (AW x AH)
 #define V2_LBL_H 42
 #define V2_GB_KEY 0x3A000000
@@ -1523,7 +1535,7 @@ static void v2PaintGb(int) {
   gfx->fillRect(0, 0, V2_W, 14, bodyL);  // its top edge, lit, and the ridge under it
   gfx->fillRect(0, 14, V2_W, 4, bodyD);
   // the bezel: dark, its bottom right corner rounder, as the Game Boy's is
-  const int bx0 = 28, by0 = 50, bx1 = 438, by1 = 392;
+  const int bx0 = 22, by0 = 62, bx1 = 444, by1 = 408;
   gfx->fillRoundRect(bx0 - 4, by0 - 4, bx1 - bx0 + 8, by1 - by0 + 8, 26, ink);
   gfx->fillRoundRect(bx0, by0, bx1 - bx0, by1 - by0, 22, sc565(0x5E5C74));
   gfx->fillCircle(bx1 - 60, by1 - 60, 60, sc565(0x5E5C74));  // (the round corner's fill, then its rim)
@@ -1533,12 +1545,12 @@ static void v2PaintGb(int) {
   // the two lines across its top, a gap where the words would be
   for (int k = 0; k < 2; k++) {
     uint16_t c = k ? sc565(0x2A2A6E) : sc565(0xB83A78);
-    gfx->fillRect(60, 60 + k * 6, 110, 4, c);
-    gfx->fillRect(296, 60 + k * 6, 110, 4, c);
+    gfx->fillRect(60, 70 + k * 6, 110, 4, c);
+    gfx->fillRect(296, 70 + k * 6, 110, 4, c);
   }
-  gfx->fillCircle(42, 172, 6, ink);  // the power light
-  gfx->fillCircle(42, 172, 4, sc565(0xE0463A));
-  gfx->fillRect(40, 168, 2, 2, sc565(0xFFB0A0));
+  gfx->fillCircle(31, 214, 5, ink);  // the power light
+  gfx->fillCircle(31, 214, 3, sc565(0xE0463A));
+  gfx->fillRect(30, 212, 2, 2, sc565(0xFFB0A0));
   // the screen: olive, its dot matrix faint, a shadow along its top and left
   const uint16_t lcd = sc565(0xA6BA3C), dot = sc565(0x9CB036), sh = sc565(0x869C2C);
   gfx->fillRect(V2_GB_X0, V2_GB_Y0, V2_GB_X1 - V2_GB_X0, V2_GB_Y1 - V2_GB_Y0, lcd);
@@ -1546,15 +1558,16 @@ static void v2PaintGb(int) {
   for (int x = V2_GB_X0; x < V2_GB_X1; x += 4) gfx->fillRect(x + 2, V2_GB_Y0, 2, V2_GB_Y1 - V2_GB_Y0, dot);
   gfx->fillRect(V2_GB_X0, V2_GB_Y0, V2_GB_X1 - V2_GB_X0, 4, sh);
   gfx->fillRect(V2_GB_X0, V2_GB_Y0, 4, V2_GB_Y1 - V2_GB_Y0, sh);
-  // the D-pad, the A and B buttons, under the screen either side of the X
+  // the D-pad, the A and B buttons, down at the rim either side of the X, the round screen's edge cutting them, so
+  // they read as the Game Boy's and not as buttons to press (Fedor)
   const uint16_t pad = sc565(0x2C2C3A), padL = sc565(0x4A4A5C);
-  gfx->fillRoundRect(130, 398, 48, 16, 3, pad);
-  gfx->fillRoundRect(146, 382, 16, 48, 3, pad);
-  gfx->fillRect(146, 382, 16, 4, padL);
-  gfx->fillRect(130, 398, 4, 16, padL);
-  gfx->fillCircle(154, 406, 4, padL);
+  gfx->fillRoundRect(126, 434, 48, 16, 3, pad);
+  gfx->fillRoundRect(142, 418, 16, 48, 3, pad);
+  gfx->fillRect(142, 418, 16, 4, padL);
+  gfx->fillRect(126, 434, 4, 16, padL);
+  gfx->fillCircle(150, 442, 4, padL);
   const uint16_t btn = sc565(0xB83A78), btnD = sc565(0x7E2452), btnL = sc565(0xE070A8);
-  static const int16_t AB[2][2] = { { 314, 412 }, { 352, 394 } };
+  static const int16_t AB[2][2] = { { 314, 448 }, { 350, 430 } };
   for (auto &b : AB) {
     gfx->fillCircle(b[0], b[1] + 2, 15, btnD);
     gfx->fillCircle(b[0], b[1], 14, btn);
@@ -1627,38 +1640,40 @@ static bool v2CartFont(const char *title) {
 static void v2CartRun(int x, int y, int cy, int cx0, int cx1, uint16_t c) {
   if (cx1 >= cx0) gfx->fillRect(x + cx0 * 5, y + cy * 5, (cx1 - cx0 + 1) * 5, 5, c);
 }
-static bool v2CartIn(int cx, int cy) { return cx >= 0 && cx < 23 && cy >= 0 && cy < 27 && cx - 19 <= cy; }
+// (21 x 26 cells: a cell narrower each side and one shorter than it was, so they stand apart; Fedor: "make the
+// cartirages just a bit smaller so they dont touch each other". The label keeps its 85 px, for the titles)
+static bool v2CartIn(int cx, int cy) { return cx >= 0 && cx < 21 && cy >= 0 && cy < 26 && cx - 17 <= cy; }
 static void v2Cart(int x, int y, const uint16_t *pic, const char *title, Rgb shell) {
   // the shell in its game's colour (Fedor: "edit the colors of each cartridge to make them different colors like they
   // were"), its label a darker shade of it
   const Rgb col = scMix(shell, 0x1B1B25, .32);
   const uint16_t body = sc565(shell), shade = sc565(scMix(shell, 0x1B1B25, .22)), lite = sc565(scMix(shell, 0xFFFFFF, .35)),
                  groove = sc565(scMix(shell, 0x1B1B25, .12)), ink = sc565(0x1B1B25);
-  for (int cy = -1; cy <= 27; cy++) {  // the shell and its dark outline, row by row in runs
+  for (int cy = -1; cy <= 26; cy++) {  // the shell and its dark outline, row by row in runs
     int run = 0;
     uint16_t runC = 0;
     bool on = false;
-    for (int cx = -1; cx <= 24; cx++) {
+    for (int cx = -1; cx <= 22; cx++) {
       bool have = false;
       uint16_t c = 0;
-      if (cx <= 23) {
-        if (v2CartIn(cx, cy)) have = true, c = (cx == 0 || cy == 0) ? lite : (cx == 22 || cy == 26) ? shade : body;
+      if (cx <= 21) {
+        if (v2CartIn(cx, cy)) have = true, c = (cx == 0 || cy == 0) ? lite : (cx == 20 || cy == 25) ? shade : body;
         else if (v2CartIn(cx + 1, cy) || v2CartIn(cx - 1, cy) || v2CartIn(cx, cy + 1) || v2CartIn(cx, cy - 1)) have = true, c = ink;
       }
       if (on && (!have || c != runC)) v2CartRun(x, y, cy, run, cx - 1, runC), on = false;
       if (have && !on) on = true, run = cx, runC = c;
     }
   }
-  v2CartRun(x, y, 1, 2, 14, groove);  // the grooves across the top
-  v2CartRun(x, y, 4, 2, 14, lite);
-  for (int cy = 2; cy <= 3; cy++) v2CartRun(x, y, cy, 1, 1, groove), v2CartRun(x, y, cy, 15, 15, lite);
-  for (int cy = 1; cy <= 3; cy++) v2CartRun(x, y, cy, 16, 18, cy % 2 ? groove : lite);
-  v2CartRun(x, y, 6, 2, 20, shade);  // the label's well: its edges (the label covers the rest)
-  for (int cy = 7; cy <= 24; cy++) v2CartRun(x, y, cy, 2, 2, shade), v2CartRun(x, y, cy, 20, 20, lite);
-  v2CartRun(x, y, 24, 3, 20, lite);
-  v2CartRun(x, y, 25, 10, 12, shade);  // the arrow
-  v2CartRun(x, y, 26, 11, 11, shade);
-  const int lx0 = x + 15, ly0 = y + 35;
+  v2CartRun(x, y, 1, 2, 12, groove);  // the grooves across the top
+  v2CartRun(x, y, 4, 2, 12, lite);
+  for (int cy = 2; cy <= 3; cy++) v2CartRun(x, y, cy, 1, 1, groove), v2CartRun(x, y, cy, 13, 13, lite);
+  for (int cy = 1; cy <= 3; cy++) v2CartRun(x, y, cy, 14, 16, cy % 2 ? groove : lite);
+  v2CartRun(x, y, 5, 1, 19, shade);  // the label's well: its edges (the label covers the rest)
+  for (int cy = 6; cy <= 23; cy++) v2CartRun(x, y, cy, 1, 1, shade), v2CartRun(x, y, cy, 19, 19, lite);
+  v2CartRun(x, y, 23, 2, 19, lite);
+  v2CartRun(x, y, 24, 9, 11, shade);  // the arrow
+  v2CartRun(x, y, 25, 10, 10, shade);
+  const int lx0 = x + 10, ly0 = y + 30;
   gfx->fillRect(lx0, ly0, 85, 85, sc565(col));
   char lines[3][32];
   bool cjk = v2CartFont(title);
@@ -1667,7 +1682,7 @@ static void v2Cart(int x, int y, const uint16_t *pic, const char *title, Rgb she
   gfx->setTextColor(UI_WHITE);
   setSize(2);
   for (int i = 0; i < n; i++) {
-    setCur(x + (gCjkFont ? 57 : 58) - textW(lines[i], 2) / 2, ly0 + LY[n - 1][i]);  // the ink centred on the label
+    setCur(x + (gCjkFont ? 52 : 53) - textW(lines[i], 2) / 2, ly0 + LY[n - 1][i]);  // the ink centred on the label
     printT(lines[i]);
   }
   classicFontEnd(cjk);
@@ -1807,11 +1822,11 @@ static void v2PaintPlayLabels() {
 }
 
 // ----- the two Game Boys -----
-static const int16_t V2_CART_XY[5][2] = { { 52, 100 }, { 176, 100 }, { 300, 100 }, { 114, 246 }, { 238, 246 } };
+static const int16_t V2_CART_XY[5][2] = { { 56, 100 }, { 180, 100 }, { 304, 100 }, { 118, 248 }, { 242, 248 } };
 static const uint8_t V2_CART_GAME[5] = { 0, 1, 2, 4, 3 };  // V1's games in the cartridges' order (Berry Drop, Who's That?, PokeRun, PikaSurf, PokeDungeon)
 // the colours the games came in: Green, Silver, Red, Yellow, Blue; Play together's Gold, Crystal, Yellow
 static const Rgb V2_CART_COL[5] = { 0x3E9A52, 0xB4BAC8, 0xD8403A, 0xF2C230, 0x3A6FC8 };
-static const int16_t V2_PLAY_XY[3][2] = { { 52, 150 }, { 176, 150 }, { 300, 150 } };
+static const int16_t V2_PLAY_XY[3][2] = { { 56, 150 }, { 180, 150 }, { 304, 150 } };
 static const Rgb V2_PLAY_COL[3] = { 0xC9A43C, 0x5AC8D8, 0xF2C230 };
 static void v2GbBack(const char *title) {
   char b[40];
@@ -1838,7 +1853,7 @@ static void v2PlayTv() {
 // the cartridge under a tap (its outline counts), or -1
 static int v2CartAt(int16_t x, int16_t y, const int16_t (*xy)[2], int n) {
   for (int k = 0; k < n; k++)
-    if (x >= xy[k][0] - 5 && x < xy[k][0] + 120 && y >= xy[k][1] - 5 && y < xy[k][1] + 140) return k;
+    if (x >= xy[k][0] - 5 && x < xy[k][0] + 110 && y >= xy[k][1] - 5 && y < xy[k][1] + 135) return k;
   return -1;
 }
 static int v2GameAt(int16_t x, int16_t y) {  // V1's game number

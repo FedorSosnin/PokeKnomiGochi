@@ -7119,6 +7119,12 @@ void drawDexArt(PmdMon &a, uint8_t starsA, PmdMon *b, uint8_t starsB) {
   dexArtCount = n;
   for (int i = 0; i < n; i++) {
     int x = b ? (i ? CX + 84 : CX - 84) : CX;
+#if UI_V2
+    {  // V2: what it draws centred, not its frame (Fedor: "The pokemon isnt centered"), as the grids do
+      int t2, b2, l2, r2;
+      if (pmdBoxAll(*m[i], PMD_IDLE, t2, b2, l2, r2)) x -= ((l2 + r2 + 1) - m[i]->acts[PMD_IDLE].w) * s / 2;
+    }
+#endif
     int hop = 0;
     bool patted = dexPatSlot == i && pat < DEX_PAT_MS;
     if (patted && pat < 700) hop = (int)(16 * fabsf(sinf(pat * 3.14159f / 350)));  // two hops
@@ -7187,14 +7193,31 @@ void renderDexDetail(int16_t dex) {
       uint8_t stars = pet.starsOf(dex, !pet.hasForm(dex, false));
       if (galleryPmd.loaded) drawDexArt(galleryPmd, stars, nullptr, 0);
       else {
+#if UI_V2
+        if (const uint8_t *t = thumbs.get(dex)) drawThumbFit(t, CX, 158, 200, 120, 3, false, 0, nullptr);  // V2: centred
+#else
         if (const uint8_t *t = thumbs.get(dex)) drawThumb(t, CX - GAL_CELL, 96, 3, false);
+#endif
         drawStars(CX, 237, DEX_STAR_R, stars);
       }
       drawDexInfo(dex);
     } else if (galleryPmd.loaded) {
+#if UI_V2
+      {  // V2: its silhouette centred on what it draws
+        int t2, b2, l2, r2, sx = CX;
+        if (pmdBoxAll(galleryPmd, PMD_IDLE, t2, b2, l2, r2))
+          sx -= ((l2 + r2 + 1) - galleryPmd.acts[PMD_IDLE].w) * pmdScale(galleryPmd, 6) / 2;
+        drawPmdActM(galleryPmd, PMD_IDLE, sx, 300, 0, true, true, 6);
+      }
+#else
       drawPmdActM(galleryPmd, PMD_IDLE, CX, 300, 0, true, true, 6);  // static silhouette ("?" style)
+#endif
     } else if (const uint8_t *t = thumbs.get(dex)) {
+#if UI_V2
+      drawThumbFit(t, CX, 170, 220, 160, 4, true, 0, nullptr);  // V2: centred
+#else
       drawThumb(t, CX - GAL_CELL, 135, 4, true);
+#endif
     }
 #if UI_V2
     {
@@ -10522,7 +10545,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     if (g < 0) return false;
 #if UI_V2
     int k = v2CartOfGame(g);  // V2: round the cartridge
-    return pressSet(t, V2_CART_XY[k][0] - 5, V2_CART_XY[k][1] - 5, 125, 145, gameLabel(g));
+    return pressSet(t, V2_CART_XY[k][0] - 5, V2_CART_XY[k][1] - 5, 115, 140, gameLabel(g));
 #endif
     return pressSet(t, GAME_XY[g][0] - GAME_ICON_R, GAME_XY[g][1] - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, gameLabel(g));
   }
@@ -10609,7 +10632,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   if (playMenuOpen) {
     int i = playGameAt(x, y);
 #if UI_V2
-    if (i >= 0) return pressSet(t, V2_PLAY_XY[i][0] - 5, V2_PLAY_XY[i][1] - 5, 125, 145, T(PLAY_GAMES[i]));  // V2: round the cartridge
+    if (i >= 0) return pressSet(t, V2_PLAY_XY[i][0] - 5, V2_PLAY_XY[i][1] - 5, 115, 140, T(PLAY_GAMES[i]));  // V2: round the cartridge
 #endif
     if (i >= 0)
       return pressSet(t, PLAY_X[i] - GAME_ICON_R, PLAY_TILE_Y - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, T(PLAY_GAMES[i]));
