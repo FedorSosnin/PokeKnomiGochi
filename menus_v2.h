@@ -1561,13 +1561,13 @@ static void v2PaintGb(int) {
   // the D-pad, the A and B buttons, down at the rim either side of the X, the round screen's edge cutting them, so
   // they read as the Game Boy's and not as buttons to press (Fedor)
   const uint16_t pad = sc565(0x2C2C3A), padL = sc565(0x4A4A5C);
-  gfx->fillRoundRect(126, 434, 48, 16, 3, pad);
-  gfx->fillRoundRect(142, 418, 16, 48, 3, pad);
-  gfx->fillRect(142, 418, 16, 4, padL);
-  gfx->fillRect(126, 434, 4, 16, padL);
-  gfx->fillCircle(150, 442, 4, padL);
+  gfx->fillRoundRect(126, 458, 48, 16, 3, pad);  // (further off: "I find them a bit distracting", Fedor; only the
+  gfx->fillRoundRect(142, 442, 16, 48, 3, pad);  // D-pad's top shows)
+  gfx->fillRect(142, 442, 16, 4, padL);
+  gfx->fillRect(126, 458, 4, 16, padL);
+  gfx->fillCircle(150, 466, 4, padL);
   const uint16_t btn = sc565(0xB83A78), btnD = sc565(0x7E2452), btnL = sc565(0xE070A8);
-  static const int16_t AB[2][2] = { { 314, 448 }, { 350, 430 } };
+  static const int16_t AB[2][2] = { { 314, 472 }, { 350, 454 } };
   for (auto &b : AB) {
     gfx->fillCircle(b[0], b[1] + 2, 15, btnD);
     gfx->fillCircle(b[0], b[1], 14, btn);
