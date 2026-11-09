@@ -736,121 +736,61 @@ static void v2DexInfo(int16_t dex, bool withFact) {
 }
 
 // ----- the trophy room (the achievements) and a medal's card -----
-// All 25 medals as things in one room (rooms_px.py trophy_room()): the five zone badges in a case, the Pokedex
-// statues and the shiny gem on the top shelf, the level 100 cups on the next, three frames on the left wall
-// and the pet's eight rosettes on the right. A medal not won yet is its shape in shadow. Tap one for its card
-// (medal_won(), medal_locked()): the room dimmed under a spotlight, the medal big on a plinth, its name on the
-// board, how to win it and how far along you are, the page buttons stepping through all 25 in the room's order.
+// All 25 medals as things in one room: the five zone badges in a case, the Pokedex statues (a Poke, Great, Ultra
+// and Master Ball on marble) and a golden Pikachu under a glass dome (the shiny medal) on the top shelf, the level 100 cups on the next, three
+// photos in gold frames on the lower wall and the pet's eight rosettes beside them. A medal not won yet is its shape
+// in shadow. Tap for a card (medal_won(), medal_locked()): the room dimmed under a spotlight, the medal big on a
+// plinth, its name on the board, how to win it and how far along you are, the page buttons stepping through all 25
+// in the room's order. The things are pixel art in the game's style (tools/trophies.py, trophies_v2.h: Fedor, "they
+// don't have the same art style as some of our icons or even the Pokemon sprites"), each drawn twice: small in the
+// room, 2 px a pixel (one Knomi pixel each), and big on its card, 3 px a pixel, the size the food is drawn at.
+#include "trophies_v2.h"
 #define TR_WALL 0x8A5A3A
 #define TR_WALL_D 0x6E452A
 #define TR_WALL_L 0xA8744C
 #define TR_GOLD 0xF0C04A
 #define TR_GOLD_D 0xC08410
-#define TR_GOLD_L 0xFFF0B0
-#define TR_SIL 0x4A2E1E  // a medal not won yet
-#define TR_INK 0x1B1B25
+#define TR_SIL 0x4A2E1E    // a medal not won yet
+#define TR_SIL_D 0x3A2214  // ...its outline
 // the room's order (V2_TROPHY_ORDER) is in layout_v2.h: the taps and swipes need it early in the sketch
 static bool v2Won(int medal, bool bare) { return !bare && pet.hasMedal(1UL << medal); }
 
-// a rosette: a disc and a white middle over two tails (k: its size; the room's is 1)
-static void trRosette(int x, int y, Rgb col, bool won, int k) {
-  Rgb c = won ? col : TR_SIL, c2 = won ? scMix(col, TR_INK, .25) : TR_SIL;
-  scRR(x - 7 * k, y + 6 * k, x - k, y + 26 * k, c2);
-  scRR(x + k, y + 6 * k, x + 7 * k, y + 26 * k, c2);
-  if (k == 1) {  // the tails' notches, in the wall's colour (the big one ends square)
-    scRR(x - 7, y + 22, x - 4, y + 26, TR_WALL);
-    scRR(x + 4, y + 22, x + 7, y + 26, TR_WALL);
-  }
-  scOval(scE(x - 13 * k, y - 13 * k, x + 13 * k, y + 13 * k), c, won ? scMix(c, 0xFFFFFF, .4) : SC_NONE);
-  scOval(scE(x - 6 * k, y - 6 * k, x + 6 * k, y + 6 * k), won ? 0xFFFFFF : 0x5A3A28);
-}
-// a cup h tall on its plinth, its foot at base, with stars on it
-static void trCup(int x, int base, int h, bool won, int stars) {
-  Rgb g = won ? TR_GOLD : TR_SIL, gd = won ? TR_GOLD_D : TR_SIL;
-  double w = h * 0.55;
-  scRR((int)(x - w * .6), base - 8, (int)(x + w * .6), base, gd);  // the plinth
-  scRR(x - 3, (int)(base - h * .45), x + 3, base - 8, gd);         // the stem
-  int rows = (int)(h * .55) / 4;
-  for (int i = 0; i < rows; i++) {  // the bowl, narrowing down
-    int yy = base - h + i * 4;
-    double t = i / (h * .55 / 4), half = w / 2 * (1 - t * t * .7);
-    scRR(scFl4((int)floor(x - half)) * 4, yy, scFl4((int)floor(x + half)) * 4 + 4, yy + 4, g);
-  }
-  scRR((int)(x - w / 2 - 6), base - h + 4, (int)(x - w / 2), base - h + 16, gd);  // the handles
-  scRR((int)(x + w / 2), base - h + 4, (int)(x + w / 2 + 6), base - h + 16, gd);
-  if (won) scRR((int)(x - w / 2 + 4), base - h + 4, (int)(x - w / 2 + 8), base - h + 16, TR_GOLD_L);
-  for (int s = 0; s < stars; s++) {
-    int sx = x - (stars - 1) * 4 + s * 8;
-    scGridRect(sx, base - h + 20, sx + 4, base - h + 24, won ? 0xFFF3DC : 0x5A3A28);
-  }
-}
-// a Poke Ball statue on a pedestal (the Pokedex medals), tinted on top
-static void trBall(int x, int base, Rgb tint, bool won, int k) {
-  Rgb top = won ? tint : TR_SIL, bot = won ? 0xFFFFFF : TR_SIL, band = won ? TR_INK : 0x3A2214;
-  ScEll e = scE(x - 16 * k, base - 40 * k, x + 16 * k, base - 8 * k);
-  scRR(x - 16 * k, base - 8 * k, x + 16 * k, base, won ? 0x5A5F7C : TR_WALL_D);
-  scOval(e, bot);
-  for (int cy = scFl4(e.y0) * 4; cy < base - 24 * k; cy += 4)  // the top half in the tint
-    for (int cx = scFl4(e.x0) * 4; cx < e.x1; cx += 4)
-      if (scInEll(cx + 2, cy + 2, e)) scCell(cx, cy, top);
-  scRR(x - 16 * k, base - 26 * k, x + 16 * k, base - 22 * k, band);
-  scOval(scE(x - 5 * k, base - 29 * k, x + 5 * k, base - 19 * k), bot);
-  if (won) scGridRect(x - 10 * k, base - 36 * k, x - 6 * k, base - 32 * k, scMix(top, 0xFFFFFF, .5));
-}
-// the shiny gem under its glass dome
-static void trGem(int x, int base, bool won, int k) {
-  scRR(x - 18 * k, base - 6 * k, x + 18 * k, base, won ? 0x5A5F7C : TR_WALL_D);
-  scOval(scE(x - 18 * k, base - 44 * k, x + 18 * k, base - 4 * k), won ? scMix(0xBFE6F5, TR_WALL, .55) : TR_WALL_D);
-  Rgb c = won ? 0xF08AA4 : TR_SIL;
-  static const int8_t WID[6] = { 4, 10, 14, 10, 6, 2 };
-  for (int i = 0; i < 6; i++)
-    scRR(x - WID[i] * k, base - (34 - i * 4) * k, x + WID[i] * k, base - (30 - i * 4) * k, i ? c : scMix(c, 0xFFFFFF, .5));
-  if (won) {
-    static const int8_t SP[3][2] = { {-14, -40}, {10, -22}, {12, -42} };
-    for (auto &s : SP) scGridRect(x + s[0] * k, base + s[1] * k, x + s[0] * k + 4, base + s[1] * k + 4, 0xFFFFFF);
-  }
-}
-// a zone's badge, 7 x 7 cells (BADGE_SHAPES), in the sprites' own colours
-static void trBadge(int zone, int x, int y, bool won, int cell) {
-  static const char *const SHAPE[5][7] = {
-    { "...g...", "..ggg..", ".ggGgg.", "ggggGgg", ".ggGgg.", "...t...", "...t..." },  // the Forest
-    { ".......", ".b...b.", "bBb.bBb", "b.bBb.b", ".......", "bBb.bBb", "b.bBb.b" },  // the Beach
-    { "...t...", "..tTt..", "..tTt..", ".ttTtt.", ".tTTTt.", "tTTTTTt", "......." },  // the Cave
-    { "..ppp..", ".ppppp.", ".pwpwp.", ".ppppp.", ".ppppp.", "pp.p.pp", "p..p..p" },  // the Mansion
-    { "...f...", ".f.f.f.", "..fff..", "fffYfff", "..fff..", ".f.f.f.", "...f..." },  // the Field
-  };
-  for (int r = 0; r < 7; r++)
-    for (int c = 0; c < 7; c++) {
-      char ch = SHAPE[zone][r][c];
-      if (ch == '.') continue;
-      Rgb col = 0x4A1620;  // in shadow
-      if (won) switch (ch) {
-        case 'g': col = 0x58B868; break; case 'G': col = 0x3C8A4C; break; case 't': col = 0x8FD6B4; break;
-        case 'T': col = 0x3FB8A8; break; case 'b': col = 0x7CC4EA; break; case 'B': col = 0x4F93C4; break;
-        case 'p': col = 0xF08AA4; break; case 'w': col = 0xFFFFFF; break; case 'f': col = 0xFFD95E; break;
-        default: col = 0xE0B860; break;  // 'Y'
+// a medal's art, s px a pixel, the middle of its bottom edge at (x, base): in its colours once won, otherwise its
+// shape in shadow (its outline a shade darker, no glass and no sparkles). Glass shows the room through it
+static void trArt(const TrArt &a, int x, int base, int s, bool won, Rgb sil = TR_SIL, Rgb silD = TR_SIL_D) {
+  int x0 = x - a.w * s / 2, y0 = base - a.h * s;
+  for (int j = 0; j < a.h; j++) {
+    const uint8_t *row = a.px + j * a.w;
+    for (int i = 0; i < a.w; i++) {
+      uint8_t k = row[i];
+      if (!k) continue;
+      int px = x0 + i * s, py = y0 + j * s;
+      if (!won) {
+        if (TR_PAL_A[k] < 255 || TR_PAL_WON[k]) continue;
+        scRect(px, py, px + s - 1, py + s - 1, k == 1 ? silD : sil);
+      } else if (TR_PAL_A[k] == 255) {
+        scRect(px, py, px + s - 1, py + s - 1, TR_PAL[k]);
+      } else {
+        uint16_t c = sc565(scGrade(TR_PAL[k]));
+        for (int yy = py + scDY; yy < py + s + scDY; yy++)
+          for (int xx = px + scDX; xx < px + s + scDX; xx++)
+            if (xx >= 0 && yy >= 0 && xx < scW && yy < scH) scFb[yy * scW + xx] = v2Blend(scFb[yy * scW + xx], c, TR_PAL_A[k]);
       }
-      scRect(x + c * cell, y + r * cell, x + c * cell + cell - 1, y + r * cell + cell - 1, col);
     }
-}
-// a framed picture: two friends (Buddy), five (Party), two with a console (Playmate)
-static void trFrame(int x, int y, int kind, bool won, int k) {
-  scRR(x, y, x + 52 * k, y + 44 * k, won ? TR_GOLD_D : 0x3A2414);
-  scRR(x + 4 * k, y + 4 * k, x + 48 * k, y + 40 * k, won ? 0x9FD6F0 : 0x2A1A12);
-  if (!won) return;
-  scRR(x + 4 * k, y + 30 * k, x + 48 * k, y + 40 * k, 0x79BD4F);
-  static const Rgb COL[5] = { 0x6F5AA8, 0xF8D038, 0xE8503A, 0x4F93C4, 0x58B868 };
-  int n = kind == 1 ? 5 : 2;
-  for (int i = 0; i < n; i++) {
-    int cx = x + (10 + i * (32 / (n - 1))) * k;
-    scRR(cx - 3 * k, y + 20 * k, cx + 5 * k, y + 30 * k, COL[i]);
   }
-  if (kind == 2) scRR(x + 20 * k, y + 10 * k, x + 32 * k, y + 18 * k, 0x3A4A5A);
 }
-static const Rgb TR_ROSETTE[8] = { 0x58B868, 0x4F93C4, 0x6F5AA8, 0xE8503A, 0xF5863D, 0xF08AA4, TR_GOLD, 0x8FD6B4 };
-static const Rgb TR_STATUE[4] = { 0xC08450, 0xAAB0BC, TR_GOLD, 0xE8503A };
-static const uint8_t TR_CUP_H[4] = { 34, 40, 46, 54 }, TR_CUP_STARS[4] = { 1, 3, 5, 0 };
-static int trCupIndex(int medal) { return medal == 13 ? 0 : medal - 21; }  // MED_LV100, then LV100_3/5/10 (bits 22-24)
+// where each medal stands in the room: the middle of its bottom edge (V2_TROPHY_ORDER walks them in this order)
+static void trSpot(int m, int &x, int &base) {
+  static const int16_t STATUE_X[4] = { 118, 176, 234, 292 }, CUP_X[4] = { 127, 190, 257, 330 };
+  if (m >= 17 && m <= 21) {  // the badges, each in the middle of its place in the case
+    x = 153 + (m - 17) * 40;
+    base = 80 + TR_ART_SMALL[m].h;  // (2 px a pixel: half its height under the middle, 80)
+  } else if (m >= 9 && m <= 12) x = STATUE_X[m - 9], base = 170;
+  else if (m == 8) x = 350, base = 170;
+  else if (m == 13 || (m >= 22 && m <= 24)) x = CUP_X[m == 13 ? 0 : m - 21], base = 246;
+  else if (m >= 14 && m <= 16) x = 72 + (m - 14) * 58, base = 308;  // three photos in a row
+  else x = 268 + (m % 4) * 38 + (m < 4 ? 0 : 19), base = m < 4 ? 298 : 334;  // the rosettes: two rows of four, the
+}                                                                            // second between the first's tails
 
 // the room; bare: every medal in shadow (behind a medal's card)
 static void trRoom(bool bare) {
@@ -869,23 +809,25 @@ static void trRoom(bool bare) {
   scRR(126, 56, 340, 104, 0x3A2414);  // the badges' case, velvet inside
   scRR(130, 60, 336, 100, 0x6E1E2A);
   scRR(130, 60, 336, 64, 0x8A2A38);
-  for (int i = 0; i < 5; i++) trBadge(i, 150 + i * 40, 66, v2Won(17 + i, bare), 4);
   for (int sy : { 170, 246 }) {  // two shelves
     scRR(84, sy, 382, sy + 8, 0x5A3A22);
     scRR(84, sy, 382, sy + 2, TR_WALL_L);
     scRR(92, sy + 8, 100, sy + 18, 0x3A2414);
     scRR(366, sy + 8, 374, sy + 18, 0x3A2414);
   }
-  for (int i = 0; i < 4; i++) trBall(112 + i * 56, 170, TR_STATUE[i], v2Won(9 + i, bare), 1);
-  trGem(344, 170, v2Won(8, bare), 1);
-  for (int i = 0; i < 4; i++) trCup(126 + i * 72, 246, TR_CUP_H[i], v2Won(i ? 21 + i : 13, bare), TR_CUP_STARS[i]);
-  static const int16_t FRAME[3][2] = { {56, 262}, {114, 262}, {56, 308} };
-  for (int i = 0; i < 3; i++) trFrame(FRAME[i][0], FRAME[i][1], i, v2Won(14 + i, bare), 1);
-  for (int i = 0; i < 8; i++) trRosette(296 + (i % 4) * 34, 270 + (i / 4) * 40, TR_ROSETTE[i], v2Won(i, bare), 1);
+  for (int i = 0; i < MED_COUNT; i++) {
+    int m = V2_TROPHY_ORDER[i], x, base;
+    trSpot(m, x, base);
+    if (m >= 17 && m <= 21) trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare), 0x4A1620, 0x3A1018);  // shadows in the velvet
+    else trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare));
+  }
 }
-// a tap in the room: anywhere but the X opens the first medal's card, page 1 of them (Fedor: tapping the things
-// themselves was odd; the side buttons and swipes step on from there)
-static int v2TrophyAt(int16_t x, int16_t y) { return closeHit(x, y) ? -1 : V2_TROPHY_ORDER[0]; }
+// a tap in the room opens the shelf of the group it's on (v2TrophyGroupAt(), layout_v2.h; Fedor, first: tapping the
+// things themselves was odd, a tap anywhere opened the first card; then: "If you click on the trophy room, you get to
+// sections"). V1's achMedalAt() asks this, and gets the group's first medal
+static int v2TrophyAt(int16_t x, int16_t y) {
+  return closeHit(x, y) ? -1 : V2_TROPHY_ORDER[V2_TR_GROUP_FIRST[v2TrophyGroupAt(x, y)]];
+}
 
 // what the won medals draw, a bit a pixel: where the room as it is differs from the bare room (every medal in
 // shadow), so the gleam lights the medals and nothing behind them
@@ -936,6 +878,131 @@ static void v2TrophyRoom() {
   v2CloseX();
 }
 
+// ----- a group's shelf: the room a step closer -----
+// Fedor: "the trophy room has no names. Then the grouped trophies should have the names. And then if you click into
+// the trophy, then you have the whole view with the explanation". One of the room's five groups on two rows, a place
+// each big enough for a finger: the things at the room's 2 px a pixel, from their cards' pictures, which have more in
+// them; the badges, the statues and the cups on shelves, the photos and the rosettes on the wall; each
+// with its name on a plate under it, gold once it's won and brown till then. The board says the group and how many
+// of it you have, in gold when that's all of them. The side buttons and swipes step through the five, a tap on a
+// thing opens its card, the X (or a swipe down) goes back to the room. The plates of a row are all one size, the
+// biggest of them, a name on one line in the middle of its plate (Fedor: "make the Bond label as large as the others
+// and center Bond in that badge").
+static bool trShelved(int g) { return g <= 2; }  // the badges, the statues and the cups stand on shelves (Fedor: the
+                                                 // badges too, not a case of their own); the photos and rosettes hang
+static void v2PaintShelf(int g) {
+  scRR(0, 0, V2_W, 376, TR_WALL);  // the wall: the room's planks, further apart
+  for (int x = 24; x < V2_W; x += 60) {
+    scRR(x, 0, x + 4, 376, TR_WALL_D);
+    scRR(x + 4, 0, x + 8, 376, TR_WALL_L);
+  }
+  scRR(0, 372, V2_W, 380, 0x3A2414);  // the skirting, the carpet
+  scRR(0, 380, V2_W, V2_W, 0xA83C3C);
+  for (int y = 388; y < V2_W; y += 16)
+    for (int x = ((y / 16) % 2) * 16; x < V2_W; x += 32) scGridRect(x, y, x + 8, y + 8, 0x882C2C);
+  scRR(0, 380, V2_W, 384, TR_GOLD_D);
+  int first = V2_TR_GROUP_FIRST[g], n = v2TrophyGroupSize(g);
+  if (trShelved(g)) {  // a shelf under each row
+    for (int r = 0; r < 2; r++) {
+      int k0 = r ? V2_TR_ROW1[g] : 0, k1 = r ? n - 1 : V2_TR_ROW1[g] - 1, ax, ay, bx, w, h;
+      v2ShelfCell(g, k0, ax, ay, w, h);
+      v2ShelfCell(g, k1, bx, ay, w, h);
+      int sy = ay + V2_TR_ART_H, x0 = ax + 2, x1 = bx + w - 2;
+      scRR(x0, sy, x1, sy + 8, 0x5A3A22);
+      scRR(x0, sy, x1, sy + 2, TR_WALL_L);
+      scRR(x0 + 8, sy + 8, x0 + 16, sy + 16, 0x3A2414);
+      scRR(x1 - 16, sy + 8, x1 - 8, sy + 16, 0x3A2414);
+    }
+  }
+  for (int k = 0; k < n; k++) {
+    int m = V2_TROPHY_ORDER[first + k], x0, y0, w, h;
+    v2ShelfCell(g, k, x0, y0, w, h);
+    const TrArt &a = TR_ART_BIG[m];
+    int base = trShelved(g) ? y0 + V2_TR_ART_H : y0 + V2_TR_ART_H / 2 + a.h;  // (2 px a pixel: its middle on the row's)
+    trArt(a, x0 + w / 2, base, 2, pet.hasMedal(1UL << m));
+  }
+}
+// a medal's name on a plate, its top at y: gold once it's won, brown till then. Too wide for its place (maxW), it
+// breaks at the space that leaves its longer line shortest (German's BINDUNG and ENDFORM side by side ran into each
+// other: a plate keeps its margin only while it has the room)
+struct TrPlate {
+  char a[48], b[48];  // its lines (b empty: one line)
+  int wa, wb, w, h;   // their widths, and the plate's own size
+};
+static void v2PlateFit(const char *s, int maxW, TrPlate &p) {
+  char *a = p.a, *b = p.b;
+  b[0] = 0;
+  snprintf(a, sizeof(p.a), "%s", s);
+  setSize(2);
+  if (textW(a, 2) > maxW) {
+    int best = -1, bestW = 9999;
+    for (int i = 1; s[i]; i++) {
+      if (s[i] != ' ') continue;
+      snprintf(a, sizeof(p.a), "%.*s", i, s);
+      int wa = textW(a, 2), wb = textW(s + i + 1, 2), wm = wa > wb ? wa : wb;
+      if (wm < bestW) bestW = wm, best = i;
+    }
+    snprintf(a, sizeof(p.a), "%.*s", best > 0 ? best : (int)strlen(s), s);
+    if (best > 0) snprintf(b, sizeof(p.b), "%s", s + best + 1);
+  }
+  p.wa = textW(a, 2);
+  p.wb = b[0] ? textW(b, 2) : 0;
+  int tw = p.wa > p.wb ? p.wa : p.wb;
+  p.h = b[0] ? 42 : 24;
+  p.w = tw + 14 < maxW + 4 ? tw + 14 : tw + 6 > maxW + 4 ? tw + 6 : maxW + 4;  // (no wider than its place, so two long
+}                                                                          // names side by side don't run into each other)
+// a plate w x h, its top at y, its lines in its middle
+static void v2NamePlate(const TrPlate &p, int cx, int y, int w, int h, bool won) {
+  const uint16_t dark = C565(0x3a, 0x24, 0x14);
+  int x0 = cx - w / 2, ty = y + (h - (p.b[0] ? 34 : 16)) / 2 + 1;
+  gfx->fillRect(x0 - 2, y - 2, w + 4, h + 4, dark);
+  gfx->fillRect(x0, y, w, h, won ? C565(0xc0, 0x84, 0x10) : C565(0x5a, 0x3a, 0x22));
+  gfx->fillRect(x0, y, w, 3, won ? C565(0xf0, 0xc0, 0x4a) : C565(0x7a, 0x5a, 0x3a));
+  gfx->setTextColor(won ? C565(0xff, 0xf3, 0xdc) : C565(0xc8, 0xb0, 0x90));
+  setCur(cx - p.wa / 2, ty);
+  printT(p.a);
+  if (p.b[0]) {
+    setCur(cx - p.wb / 2, ty + 18);
+    printT(p.b);
+  }
+}
+static void v2TrophyShelf(int g) {
+  int first = V2_TR_GROUP_FIRST[g], n = v2TrophyGroupSize(g), got = 0;
+  uint32_t won = 0;
+  for (int k = 0; k < n; k++)
+    if (pet.hasMedal(1UL << V2_TROPHY_ORDER[first + k])) won |= 1UL << k, got++;
+  v2Cached(0x3E000000 | (g << 12) | won, v2PaintShelf, g);
+  for (int r = 0; r < 2; r++) {  // the names, a row's plates all the size of its biggest, a gap kept between them (one
+    int k0 = r ? V2_TR_ROW1[g] : 0, k1 = r ? n : V2_TR_ROW1[g], pw = 0, ph = 0;  // longer name gets a wider one)
+    TrPlate pl[4];
+    for (int k = k0; k < k1; k++) {
+      int x0, y0, w, h;
+      v2ShelfCell(g, k, x0, y0, w, h);
+      TrPlate &p = pl[k - k0];
+      v2PlateFit(medalName(V2_TROPHY_ORDER[first + k]), w - 8, p);
+      if (p.w > pw) pw = p.w;
+      if (p.h > ph) ph = p.h;
+    }
+    for (int k = k0; k < k1; k++) {
+      int x0, y0, w, h;
+      v2ShelfCell(g, k, x0, y0, w, h);
+      const TrPlate &p = pl[k - k0];
+      int tw = p.wa > p.wb ? p.wa : p.wb, pwk = pw < w - 10 ? pw : w - 10;
+      if (pwk < tw + 2) pwk = tw + 2 < w - 6 ? tw + 2 : w - 6;
+      v2NamePlate(p, x0 + w / 2, y0 + V2_TR_ART_H + (trShelved(g) ? 20 : 6), pwk, ph, won & (1UL << k));
+    }
+  }
+  char b[48];
+  static const StrId TITLE[V2_TR_GROUPS] = { S_ZONE_MEDALS_FMT, S_DEX_TITLE, S_LV100_FMT, S_TRG_BUDDIES_FMT, S_TRG_CARE_FMT };
+  if (g == 1) snprintf(b, sizeof(b), "%s %d/%d", T(S_DEX_TITLE), got, n);  // ("POKEDEX" has no count of its own)
+  else snprintf(b, sizeof(b), T(TITLE[g]), got, n);
+  if (got == n) v2SignIn(b, V2_BOARD_Y, C565(0xc0, 0x84, 0x10), C565(0xf0, 0xc0, 0x4a));
+  else v2Sign(b);
+  drawPageArrows(g, V2_TR_GROUPS, V2_PAGE_ARROW_Y);
+  v2PageOf(V2_TR_GROUPS, g, 390);
+  v2CloseX();
+}
+
 // how far along a medal not won yet is, where the game counts it
 static bool v2MedalProgress(int m, int &cur, int &goal) {
   switch (m) {
@@ -954,17 +1021,24 @@ static bool v2MedalProgress(int m, int &cur, int &goal) {
   }
   return false;
 }
-// a medal's thing, big, standing on the plinth (its foot at base)
+// a medal's thing, big (3 px a pixel): standing on the plinth (its foot at base), or a badge, a photo or a rosette
+// over it as if held up to the light
 static void trBig(int m, bool won) {
-  const int x = CX, base = 262;
-  if (m >= 17 && m <= 21) trBadge(m - 17, x - 42, base - 100, won, 12);
-  else if (m >= 9 && m <= 12) trBall(x, base, TR_STATUE[m - 9], won, 3);
-  else if (m == 8) trGem(x, base, won, 3);
-  else if (m == 13 || (m >= 22 && m <= 24)) {
-    int i = trCupIndex(m), h = TR_CUP_H[i] * 27 / 10;
-    trCup(x, base, h > 130 ? 130 : h, won, TR_CUP_STARS[i]);
-  } else if (m >= 14 && m <= 16) trFrame(x - 78, base - 140, m - 14, won, 3);
-  else trRosette(x, base - 100, TR_ROSETTE[m], won, 3);
+  const TrArt &a = TR_ART_BIG[m];
+  bool stands = (m >= 8 && m <= 13) || m >= 22;
+  int base = stands ? 262 : 190 + a.h * 3 / 2;
+  trArt(a, CX, base, 3, won, 0x63402A, 0x3A2214);  // (its shadow a shade lighter than the room's: the lights are down)
+  if (won) {  // it shines: three sparkles round it, in its own pixels
+    int x0 = CX - a.w * 3 / 2, x1 = x0 + a.w * 3, y0 = base - a.h * 3;
+    const int16_t sp[3][3] = { {(int16_t)(x0 - 12), (int16_t)(y0 + 18), 3}, {(int16_t)(x1 + 9), (int16_t)(y0 + 6), 3},
+                               {(int16_t)(x1 + 15), (int16_t)(y0 + a.h * 2), 2} };
+    for (auto &q : sp) {
+      int x = q[0], y = q[1], r = q[2] * 3;
+      scRR(x - 1, y - r - 1, x + 2, y + r + 2, 0xFFFFFF);
+      scRR(x - r - 1, y - 1, x + r + 2, y + 2, 0xFFFFFF);
+      scRR(x - 2, y - 2, x + 3, y + 3, 0xFFF6C8);
+    }
+  }
 }
 // behind a card: the bare room, the lights down (scGrade's mode 4), a spotlight from above
 static void v2PaintTrophyBack(int) {
@@ -987,13 +1061,7 @@ static void v2MedalCard(int m) {
   scRR(173, 262, 293, 290, 0x5A3A22);  // the plinth
   scRR(173, 262, 293, 266, TR_WALL_L);
   trBig(m, won);
-  if (won) {  // it shines
-    static const int16_t SP[3][2] = { {180, 150}, {290, 140}, {300, 210} };
-    for (auto &s : SP) {
-      scGridRect(s[0], s[1] - 8, s[0] + 4, s[1] + 12, 0xFFFFFF);
-      scGridRect(s[0] - 8, s[1], s[0] + 12, s[1] + 4, 0xFFFFFF);
-    }
-  } else {
+  if (!won) {
     gfx->setTextColor(C565(0x8a, 0x6a, 0x50));  // not yet: a question mark over its shadow
     setSize(4);
     setCur(centerX("?", 4), 186);
@@ -1051,9 +1119,9 @@ static void v2MedalCard(int m) {
     setCur(centerX(T(S_MEDAL_TODO), 2), y);
     printT(T(S_MEDAL_TODO));
   }
-  int pos = v2TrophyPos(m);
-  drawPageArrows(pos, MED_COUNT, V2_PAGE_ARROW_Y);
-  v2PageOf(MED_COUNT, pos, 390);  // "Page 7 of 25": the medal's place among them all
+  int g = v2TrophyGroup(m), pos = v2TrophyPos(m) - V2_TR_GROUP_FIRST[g], n = v2TrophyGroupSize(g);
+  drawPageArrows(pos, n, V2_PAGE_ARROW_Y);
+  v2PageOf(n, pos, 390);  // "Page 2 of 5": the medal's place in its group (the X goes back to the group's shelf)
   v2CloseX();
 }
 

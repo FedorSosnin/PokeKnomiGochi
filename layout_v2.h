@@ -96,6 +96,49 @@ static inline int v2TrophyPos(int medal) {
     if (V2_TROPHY_ORDER[p] == medal) return p;
   return 0;
 }
+// ...in five groups, as the room's order runs (Fedor: the room, then each group a step closer with the names, then a
+// medal's card): the badges, the top shelf (the Pokedex statues and the golden Pikachu), the cups, the photos, the
+// rosettes. A group's shelf has two rows: how many are on the first (the rest go on the second), and how wide a place
+// each one takes on each row. A row is V2_TR_ROW_H tall: V2_TR_ART_H for the thing (standing on the bottom of it, or
+// in its middle when it hangs), then a shelf, then its name on up to two lines
+#define V2_TR_GROUPS 5
+static const uint8_t V2_TR_GROUP_FIRST[V2_TR_GROUPS + 1] = { 0, 5, 10, 14, 17, MED_COUNT };
+static const uint8_t V2_TR_ROW1[V2_TR_GROUPS] = { 3, 3, 2, 2, 4 };
+static const uint8_t V2_TR_CELL_W[V2_TR_GROUPS][2] = { { 108, 108 }, { 108, 150 }, { 150, 150 }, { 150, 150 }, { 92, 92 } };
+#define V2_TR_ROW_Y0 70  // the first row's top
+#define V2_TR_ROW_H 152
+#define V2_TR_ART_H 100
+static inline int v2TrophyGroup(int medal) {
+  int p = v2TrophyPos(medal), g = 0;
+  while (g < V2_TR_GROUPS - 1 && p >= V2_TR_GROUP_FIRST[g + 1]) g++;
+  return g;
+}
+static inline int v2TrophyGroupSize(int g) { return V2_TR_GROUP_FIRST[g + 1] - V2_TR_GROUP_FIRST[g]; }
+// the k-th of group g on its shelf: its place, which is also its tap
+static inline void v2ShelfCell(int g, int k, int &x0, int &y0, int &w, int &h) {
+  int r = k < V2_TR_ROW1[g] ? 0 : 1, inRow = r ? v2TrophyGroupSize(g) - V2_TR_ROW1[g] : V2_TR_ROW1[g];
+  w = V2_TR_CELL_W[g][r];
+  h = V2_TR_ROW_H;
+  x0 = 233 - inRow * w / 2 + (r ? k - V2_TR_ROW1[g] : k) * w;
+  y0 = V2_TR_ROW_Y0 + r * V2_TR_ROW_H;
+}
+// the medal under a tap on group g's shelf, or -1
+static inline int v2ShelfAt(int g, int x, int y) {
+  for (int k = 0; k < v2TrophyGroupSize(g); k++) {
+    int x0, y0, w, h;
+    v2ShelfCell(g, k, x0, y0, w, h);
+    if (x >= x0 && x < x0 + w && y >= y0 && y < y0 + h) return V2_TROPHY_ORDER[V2_TR_GROUP_FIRST[g] + k];
+  }
+  return -1;
+}
+// the group under a tap in the room (menus_v2.h trRoom()): the badges' case, the top shelf, the cups' shelf, then on
+// the lower wall the photos to the left and the rosettes to the right
+static inline int v2TrophyGroupAt(int x, int y) {
+  if (y < 108) return 0;
+  if (y < 180) return 1;
+  if (y < 256) return 2;
+  return x < 240 ? 3 : 4;
+}
 
 // the radial menu (radial_v2.h): how long a still finger on the Pokemon takes to open it (the taps need it early)
 #define V2_RADIAL_HOLD_MS 450

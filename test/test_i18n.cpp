@@ -97,6 +97,8 @@ static const ExpectedFmt EXPECTED[] = {
   { S_MASTER_EARN_FMT, "%u" },  // V2: the card's Items page (repel_v2.h)
   { S_REPEL_EARN_FMT,  "%u" },
   { S_REPEL_DOES_FMT,  "%u" },  // V2: the Repel's own page of the card
+  { S_TRG_BUDDIES_FMT, "%d,%d" },  // V2: the trophy room's shelves' boards (menus_v2.h v2TrophyShelf())
+  { S_TRG_CARE_FMT,    "%d,%d" },
 #endif
 };
 static const int NUM_EXPECTED = (int)(sizeof(EXPECTED) / sizeof(EXPECTED[0]));

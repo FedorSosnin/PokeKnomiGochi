@@ -20,7 +20,7 @@ A new look for every screen, on the Knomi, Mac, Windows and the web. Your Pokém
 - **The Pokédex:** each entry turns round to show its Pokémon from every side.
 - **Knomi Island:** Travel is a round island with the five zones, its sea, pines and Mansion windows moving.
 - **The games:** cartridges in an old TV, **Play Again!** at every game's end, and new stairs in PokeDungeon.
-- **The trophy room:** all 25 medals as things in one room, a gleam sweeping over the ones you've won; tap one for its card.
+- **The trophy room:** all 25 medals as things in one room, a gleam sweeping over the ones you've won. Tap a part of the room for a closer look at that group, every trophy with its name under it, and tap a trophy for its card. Each is drawn in the same pixel-art style as the Pokémon and the food: zone badges in a case, Poké, Great, Ultra and Master Ball statues, a golden Pikachu under glass, bronze, silver and gold cups, photos of your buddies, and rosettes marked with what they're for.
 - **Who's That? counts down:** ten seconds for each silhouette, alone or in a Showdown; out of time counts as wrong, and the answer shows.
 - **Every Pokémon on its feet:** each one stands and walks on the ground instead of floating over its shadow (Venusaur and Ivysaur on their legs, their heads hanging in front, awake or asleep), and big ones like Snorlax, Lapras and Dragonite come out bigger.
 - **The hills in order:** the Forest's big pines and the Mansion's fence and graves stand behind the hill your Pokémon walks on, not over it.

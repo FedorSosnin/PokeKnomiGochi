@@ -121,6 +121,7 @@ static void v2RadialPick(int s) {
     cardOpen = cardAch = true;
     cardPage = 0;
     achDetail = -1;
+    achGroup = -1;  // the trophy room
   } else if (s == 2) {  // Stats: the swipe up's card
     cardOpen = true;
     cardAch = false;

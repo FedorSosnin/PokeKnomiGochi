@@ -1353,8 +1353,9 @@ void saveMigrate() {
     list.push_back(en);
   }
   nvs_release_iterator(it);
+  // (available_entries, not free_entries: that one counts the page the NVS keeps empty for itself)
   nvs_stats_t st;
-  bool ok = !list.empty() && nvs_get_stats(NULL, &st) == ESP_OK && st.free_entries > n + 8 &&
+  bool ok = !list.empty() && nvs_get_stats(NULL, &st) == ESP_OK && st.available_entries > n + 8 &&
             nvs_open(SAVE_NS_NEW, NVS_READWRITE, &to) == ESP_OK;
   int copied = 0;
   if (ok) {
@@ -1366,6 +1367,10 @@ void saveMigrate() {
       copied++;
     }
     ok = ok && nvs_commit(to) == ESP_OK;
+    if (!ok) {  // half a copy: gone again, so it doesn't hold the room the old save needs to go on being saved
+      nvs_erase_all(to);
+      nvs_commit(to);
+    }
     nvs_close(to);
   }
   nvs_close(from);

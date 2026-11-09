@@ -77,6 +77,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "MEDALLAS", "DATOS",
     "Ultra Ball", "Triplica la captura si acierta.", "Triplica la captura!",
     "Isla Knomi",
+    "AMIGOS %d/%d", "CUIDADOS %d/%d",
 #endif
   },
   // ---------------- EN ----------------
@@ -149,6 +150,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "MEDALS", "STATS",
     "Ultra Ball", "Triples your catch chance when it hits.", "Triples the catch chance!",
     "Knomi Island",
+    "BUDDIES %d/%d", "CARE %d/%d",
 #endif
   },
   // ---------------- FR ----------------
@@ -221,6 +223,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "M\220DAILLES", "STATS",
     "Hyper Ball", "Triple la capture si elle touche.", "Triple la capture!",
     "\214le Knomi",
+    "COPAINS %d/%d", "SOINS %d/%d",
 #endif
   },
   // ---------------- DE ----------------
@@ -298,6 +301,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "MEDAILLEN", "WERTE",
     "Hyperball", "Dreifache Fangchance, wenn er trifft.", "Dreifache Fangchance!",
     "Knomi-Insel",
+    "KUMPEL %d/%d", "PFLEGE %d/%d",
 #endif
   },
   // ---------------- IT ----------------
@@ -370,6 +374,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "MEDAGLIE", "STATISTICHE",
     "Ultra Ball", "Triplica la cattura se colpisce.", "Triplica la cattura!",
     "Isola Knomi",
+    "AMICI %d/%d", "CURA %d/%d",
 #endif
   },
   // ---------------- PT ----------------
@@ -442,6 +447,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "MEDALHAS", "DADOS",
     "Ultra Ball", "Triplica a captura se acertar.", "Triplica a captura!",
     "Ilha Knomi",
+    "AMIGOS %d/%d", "CUIDADOS %d/%d",
 #endif
   },
   // ---------------- JA ----------------
@@ -537,6 +543,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "メダル", "つよさ",
     "ハイパーボール", "あたると つかまえやすさが 3ばいに なる。", "つかまえやすさ 3ばい!",
     "ノーミじま",
+    "ともだち %d/%d", "おせわ %d/%d",
 #endif
   },
   // ---------------- KO ----------------
@@ -614,6 +621,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "메달", "능력치",
     "하이퍼볼", "맞으면 잡힐 확률이 3배가 돼요.", "포획률 3배!",
     "노미 섬",
+    "친구 %d/%d", "돌보기 %d/%d",
 #endif
   },
 };

@@ -172,6 +172,9 @@ uint8_t cardPage = 0;         // the card: 0 profile, 1 stats, 2 training, 3 pro
 #endif
 bool cardAch = false;         // the same screen showing the achievements (swipe right to left from home)
 int8_t achDetail = -1;        // a medal tapped there: its card, with how to earn it (-1: the medals)
+#if UI_V2
+int8_t achGroup = -1;  // V2: one of the trophy room's five groups on its shelf, under a medal's card too (-1: the room)
+#endif
 #define ACH_PAGES 6           // the pet's medals (2 pages), the trainer's (2), the zones' (1), level 100 (1): 6 at most a page
 #define cardPageCount() (cardAch ? ACH_PAGES : CARD_PAGES)  // a macro: a function here would come before the sketch's prototypes
 uint8_t clockPage = 0;        // 0 time, 1 settings (Knomi only)
@@ -1416,7 +1419,13 @@ void onSwipeV(int dir) {
     return;
   }
   if (cardOpen) {
+#if UI_V2
+    if (achDetail >= 0) achGroup = v2TrophyGroup(achDetail);  // V2: a medal's card goes back to its group's shelf
+#endif
     if (achDetail >= 0) achDetail = -1;  // a medal's card: back to the medals
+#if UI_V2
+    else if (cardAch && achGroup >= 0) achGroup = -1;  // V2: a shelf, back to the room
+#endif
     else if (dir < 0 && !cardAch) cardOpen = false;  // up closes the card
     return;
   }
@@ -1475,13 +1484,26 @@ void onSwipe(int dir) {
   if (cardOpen) {  // inside the card or the achievements: switch pages
     if (achDetail >= 0) {  // a medal's card: back to the medals
 #if UI_V2
-      int p = v2TrophyPos(achDetail) + (dir > 0 ? -1 : 1);  // V2: a swipe steps through them, as the side buttons do
-      if (p >= 0 && p < MED_COUNT) achDetail = V2_TROPHY_ORDER[p];
+      int g = v2TrophyGroup(achDetail), p = v2TrophyPos(achDetail) + (dir > 0 ? -1 : 1);  // V2: a swipe steps
+      if (p >= V2_TR_GROUP_FIRST[g] && p < V2_TR_GROUP_FIRST[g + 1]) achDetail = V2_TROPHY_ORDER[p];  // through its group
       return;
 #endif
       achDetail = -1;
       return;
     }
+#if UI_V2
+    if (cardAch) {  // V2: the trophy room and its groups' shelves
+      if (achGroup >= 0) {  // a shelf: on through the five, back past the first to the room
+        int g = achGroup + (dir > 0 ? -1 : 1);
+        if (g < V2_TR_GROUPS) achGroup = g < 0 ? -1 : g;
+      } else if (dir < 0) {
+        achGroup = 0;  // the room: left, on to the first shelf
+      } else {
+        cardOpen = cardAch = false;  // right: home
+      }
+      return;
+    }
+#endif
     int p = (int)cardPage + (dir > 0 ? -1 : 1);  // left advances
     if (p < 0 && cardAch) {  // back past the first: home, as the Pokedex does
       cardOpen = cardAch = false;
@@ -1495,6 +1517,9 @@ void onSwipe(int dir) {
       cardOpen = cardAch = true;
       cardPage = 0;
       achDetail = -1;
+#if UI_V2
+      achGroup = -1;  // V2: the room
+#endif
     }
     return;
   }
@@ -1606,12 +1631,14 @@ void onTap(int16_t x, int16_t y) {
   if (cardOpen) {
     if (cardAch && achDetail >= 0) {  // a medal's card: the X goes back to the medals
 #if UI_V2
-      int pos = v2TrophyPos(achDetail), a = pageArrowAt(x, y, pos, MED_COUNT, V2_PAGE_ARROW_Y);
-      if (a) {  // V2: the side buttons step through all 25, in the room's order
+      int g = v2TrophyGroup(achDetail), pos = v2TrophyPos(achDetail) - V2_TR_GROUP_FIRST[g];
+      int a = pageArrowAt(x, y, pos, v2TrophyGroupSize(g), V2_PAGE_ARROW_Y);
+      if (a) {  // V2: the side buttons step through its group
         sfxPlay(SFX_TAP);
-        achDetail = V2_TROPHY_ORDER[pos + a];
+        achDetail = V2_TROPHY_ORDER[V2_TR_GROUP_FIRST[g] + pos + a];
         return;
       }
+      if (closeHit(x, y)) achGroup = g;  // V2: the X goes back to its group's shelf
 #endif
       if (closeHit(x, y)) {
         sfxPlay(SFX_TAP);
@@ -1627,6 +1654,21 @@ void onTap(int16_t x, int16_t y) {
         onSwipe(a < 0 ? 1 : -1);
         return;
       }
+    }
+    if (cardAch) {  // V2: the trophy room: a tap opens the group it's on. A shelf: its side buttons step through the
+      bool onX = closeHit(x, y);  // five, a tap on a thing opens its card, the X goes back to the room
+      if (achGroup < 0) {
+        sfxPlay(SFX_TAP);
+        if (onX) cardOpen = cardAch = false;
+        else achGroup = v2TrophyGroupAt(x, y);
+        return;
+      }
+      int a = pageArrowAt(x, y, achGroup, V2_TR_GROUPS, V2_PAGE_ARROW_Y), m = v2ShelfAt(achGroup, x, y);
+      if (a || onX || m >= 0) sfxPlay(SFX_TAP);
+      if (a) achGroup += a;
+      else if (onX) achGroup = -1;
+      else if (m >= 0) achDetail = m;
+      return;
     }
 #endif
     if (!cardAch && cardPage == 0 && y < cardNameBottom + 12) openKeyboard();  // tap the name (or its pencil) = rename
@@ -2131,7 +2173,7 @@ static bool staticScreen() {
   if (kbOpen || clockOpen) return true;
 #if UI_V2
   if (cardOpen && !cardAch && cardPage >= 4) return false;  // V2: an item's page: the item hovers (Fedor)
-  if (cardOpen && cardAch && achDetail < 0 && (pet.medals | pet.trainerMedals)) return false;  // V2: the trophy room's gleam
+  if (cardOpen && cardAch && achDetail < 0 && achGroup < 0 && (pet.medals | pet.trainerMedals)) return false;  // V2: the trophy room's gleam
 #endif
   return cardOpen && (cardAch || cardPage != 0);  // the card's page 0 has the animated portrait
 }
@@ -2140,6 +2182,9 @@ static uint32_t screenKey() {
   uint32_t h = 2166136261u;
   h = mixKey(h, pet.awaitingStarter() ? 1 : kbOpen ? 2 : clockOpen ? 3 : 4 + cardPage + (cardAch ? 16 : 0));
   h = mixKey(h, cardAch ? achDetail + 1 : 0);
+#if UI_V2
+  h = mixKey(h, cardAch ? achGroup + 1 : 0);  // V2: the trophy room's shelves
+#endif
   h = mixKey(h, sdEpoch);
   h = mixKey(h, partyBoostOn());  // the stats page shows the boost
   if (kbOpen) {
@@ -6373,6 +6418,7 @@ bool celebrationTap(int16_t x, int16_t y) {
 #if UI_V2
         cardPage = 0;
         achDetail = i;  // V2: straight to the new medal's card in the trophy room
+        achGroup = v2TrophyGroup(i);  // (its X goes back to its group's shelf)
 #endif
         break;
       }
@@ -6777,6 +6823,7 @@ void renderCard() {
 #if UI_V2
   if (!cardAch) v2Card();  // V2: the card's pages on the dimmed room
   else if (achDetail >= 0) v2MedalCard(achDetail);  // a medal's card
+  else if (achGroup >= 0) v2TrophyShelf(achGroup);    // a group of the room on its shelf
   else {
     cardPage = 0;  // the medals are all in one room
     v2TrophyRoom();
