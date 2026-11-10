@@ -727,22 +727,19 @@ static NSRect initialFrame(bool ownSave) {
   }
 }
 
-// Asks GitHub for the newest Mac release. From the menu (sender != nil) it always answers;
-// the automatic check only speaks up the first time it finds each new version.
+// Asks GitHub for the newest Mac release. From the menu (sender != nil) it always answers, and always
+// asks again, even with a new version already found: a newer one may be out since (Fedor was offered 2.0
+// after 2.0.1 was out). The automatic check only speaks up the first time it finds each new version.
 - (void)checkForUpdates:(id)sender {
   bool asked = sender != nil;
   if (gUpdating) return;
-  if (asked && gNewVersion) {  // already known: update, or straight to the download
-    if (canUpdateInPlace()) [self offerUpdate:gNewVersion];
-    else [NSWorkspace.sharedWorkspace openURL:gNewURL];
-    return;
-  }
   // POKEMACGOCHI_UPDATE_API: another release list, for testing the update on a local server
   NSString *api = NSProcessInfo.processInfo.environment[@"POKEMACGOCHI_UPDATE_API"] ?: @RELEASES_API;
   NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:api]];
   [req setValue:@APP_NAME forHTTPHeaderField:@"User-Agent"];
   [req setValue:@"application/vnd.github+json" forHTTPHeaderField:@"Accept"];
   req.timeoutInterval = 15;
+  if (asked) req.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
   [[NSURLSession.sharedSession dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
     NSString *found = nil;
     NSURL *url = nil, *zip = nil, *sig = nil;
@@ -768,6 +765,11 @@ static NSRect initialFrame(bool ownSave) {
     bool answered = [list isKindOfClass:NSArray.class];
     dispatch_async(dispatch_get_main_queue(), ^{
       if (answered) gUpdateAnswered = NSDate.date;
+      if (asked && !answered && gNewVersion) {  // no answer, but one was found before: that one
+        if (canUpdateInPlace()) [self offerUpdate:gNewVersion];
+        else [NSWorkspace.sharedWorkspace openURL:gNewURL];
+        return;
+      }
       [self updateCheckFound:found url:url zip:zip sig:sig asked:asked];
     });
   }] resume];

@@ -856,17 +856,13 @@ static std::wstring besideExe(const wchar_t *name) {
   return p.substr(0, p.find_last_of(L"\\/") + 1) + name;
 }
 
-// Asks GitHub for the newest Windows release. From the menu (asked) it always answers; the
-// automatic check only speaks up the first time it finds each new version.
+// Asks GitHub for the newest Windows release. From the menu (asked) it always answers, and always asks
+// again, even with a new version already found: a newer one may be out since. The automatic check only
+// speaks up the first time it finds each new version.
 static void offerUpdate();
 static void removeTrayIcon();
 static void checkForUpdates(bool asked) {
   if (gUpdating) return;
-  if (asked && !gNewVersion.empty()) {  // already known: update, or straight to the download
-    if (!gNewExe.empty() && !gNewSig.empty()) offerUpdate();
-    else ShellExecuteW(NULL, L"open", gNewURL.c_str(), NULL, NULL, SW_SHOWNORMAL);
-    return;
-  }
   std::thread([asked] {
     std::string body;
     UpdateResult *res = new UpdateResult;
@@ -905,6 +901,11 @@ static void checkForUpdates(bool asked) {
 }
 
 static void updateCheckFound(const UpdateResult &r, bool asked) {
+  if (asked && !r.answered && !gNewVersion.empty()) {  // no answer, but one was found before: that one
+    if (!gNewExe.empty() && !gNewSig.empty()) offerUpdate();
+    else ShellExecuteW(NULL, L"open", gNewURL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    return;
+  }
   bool newer = !r.version.empty() && compareVersions(r.version, APP_VERSION) > 0;
   if (newer) {
     gNewVersion = r.version;

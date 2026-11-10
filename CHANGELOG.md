@@ -6,6 +6,10 @@ bottom of the clock/settings screen (**Settings** in the hold menu) and `web/kno
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [Unreleased]
+
+- **Check for Updates asks again:** on Mac and Windows, **Update to Version…** in the menu now checks GitHub again before offering, so it offers the newest version. Before, it could offer the one it had found earlier, even after a newer one came out. Offline, it still offers the one it found.
+
 ## [2.0.1] - 2026-11-10
 
 - **The hold menu is the way around:** no more swipes on the home screen. Hold your Pokémon for the ring of Settings, Medals, Stats and the Pokédex, which leaves room for more there. Swipes still turn pages inside them, and still quit a game.
