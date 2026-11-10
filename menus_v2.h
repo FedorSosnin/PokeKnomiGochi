@@ -2434,6 +2434,16 @@ static void v2AgainButton(int y) {
   v2CloseX();
 }
 static void v2RepelRow(int y, int x0, int x1);  // (repel_v2.h: how far along the next Repel is)
+// where the Repel row is on the end whose PLAY AGAIN! is at by: drawn there, and a tap there opens the Repel's page
+static void v2RepelRowAt(int by, int &x0, int &y, int &x1) {
+  if (by == V2_AGAIN_YB) x0 = 104, y = 357, x1 = 362;  // as wide as the score panel, clear of the X
+  else x0 = 96, y = 338, x1 = 370;                      // between the panel and the X, as wide as the panel
+}
+static void v2RepelRowFor(int by) {
+  int x0, y, x1;
+  v2RepelRowAt(by, x0, y, x1);
+  v2RepelRow(y, x0, x1);
+}
 // a game's result (rooms2_px.py game_over()): the game behind, dimmed 45%, its name on a board; in a panel a
 // line on what happened (the dungeon's faint), the score big, the record (or NEW RECORD! in gold) and the
 // happiness it brought, in green, all of it in the room over PLAY AGAIN!, which is at the panel's foot
@@ -2468,7 +2478,7 @@ static void v2GameResult(const char *title, const char *top, const char *big, bo
   setCur(centerX(joy, 2), y);
   printT(joy);
   v2AgainButton(V2_AGAIN_Y);
-  v2RepelRow(338, 96, 370);  // the Repel this play counts toward, between the panel and the X, as wide as the panel
+  v2RepelRowFor(V2_AGAIN_Y);  // the Repel this play counts toward
 }
 
 // a game's how-to card (rooms2_px.py howto()): its name on a board, how to play in a panel, READY, GO! where
@@ -2674,7 +2684,7 @@ static void v2BuddyResult(const char *news, int mine, int theirs, PmdMon &them, 
   setCur(nx0, 268);
   printT(nm);
   v2AgainButton(V2_AGAIN_YB);
-  v2RepelRow(357, 104, 362);  // the Repel this play counts toward, as wide as the score panel, clear of the X
+  v2RepelRowFor(V2_AGAIN_YB);  // the Repel this play counts toward
 }
 // PikaSurf with a buddy, both out (V1's words over the water): as the other games with a buddy, the times
 // for the score
@@ -2706,13 +2716,16 @@ static int v2GameEnd(uint32_t *since = nullptr) {
   if (since) *since = t;
   return y;
 }
-// What a tap on it means: 1 PLAY AGAIN!, 2 the X, 0 nothing. Not in its first 800 ms, and only for a finger put
+// What a tap on it means: 1 PLAY AGAIN!, 2 the X, 3 the Repel row, 0 nothing. Not in its first 800 ms, and only for a finger put
 // down after it came up: one steering or jumping as the game ended lifts on nothing
 static int v2GameEndTap(int16_t x, int16_t y) {
   uint32_t since;
   int by = v2GameEnd(&since);
   if (!by || millis() - since < 800 || (int32_t)(tStart - since) < 0) return 0;
   if (x >= V2_AGAIN_X0 - 8 && x <= V2_AGAIN_X1 + 8 && y >= by - 8 && y <= by + V2_AGAIN_H + 8) return 1;
+  int rx0, ry, rx1;
+  v2RepelRowAt(by, rx0, ry, rx1);
+  if (x >= rx0 && x <= rx1 && y >= ry - 4 && y <= ry + 32) return 3;
   return closeHit(x, y) ? 2 : 0;
 }
 // A game with a buddy closes as its end did by itself: home, or Play together after PikaSurf (with back)
@@ -2730,9 +2743,26 @@ static void v2BuddyGameClose(bool back) {
 }
 // What they do. PLAY AGAIN! starts a game of yours again at once (no card: you've just played it); after a game
 // with a buddy it asks them again, from home, as an invitation does. The X goes where the end went by itself:
-// back to the games, home after a game with a buddy, Play together after PikaSurf with one
+// back to the games, home after a game with a buddy, Play together after PikaSurf with one. The Repel row closes
+// the game and opens the card on the Repel's page (Fedor: "Clicking on repel progress after a mini game should take
+// you to the repel screen"); its X goes home, as the card's does
 static void v2GameEndDo(int k) {
   sfxPlay(SFX_TAP);
+  if (k == 3) {
+    if (sdOpen || vbOpen || surfDuel) {
+      v2BuddyGameClose(false);
+    } else {
+      gameOpen = false;
+      if (quizOpen) closeQuiz();
+      if (runOpen) closeRun();
+      if (dungeonOpen) closeDungeon();
+      if (surfOpen) closeSurf();
+    }
+    cardOpen = true;
+    cardAch = false;
+    cardPage = 6;  // the Repel's, after the Ultra Ball's and the Master Ball's (CARD_PAGES)
+    return;
+  }
   bool again = k == 1;
   if (sdOpen || vbOpen || surfDuel) {
     uint8_t kind = sdOpen ? BK_SHOWDOWN : vbOpen ? BK_VOLLEY : BK_SURF;

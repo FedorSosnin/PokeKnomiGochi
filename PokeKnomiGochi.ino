@@ -3325,6 +3325,11 @@ void closeQuiz() {
 #define QUIZ_OPT_H 44
 #define QUIZ_OPT_GAP 6
 #if UI_V2
+#define QUIZ_OPT_INSET(i) 26  // V2: all three as narrow as the bottom one (Fedor: "make all three choice buttons be the same width. The narrower one")
+#else
+#define QUIZ_OPT_INSET(i) i == 2 ? 26 : 0
+#endif
+#if UI_V2
 #define QUIZ_ASK_MS 10000UL  // V2: 10 s to answer, then it counts as wrong (Fedor), as a Showdown round (SD_ROUND_MS)
 #endif
 
@@ -3425,7 +3430,7 @@ void renderQuiz() {
   gPmdForceScale = 0;
   for (int i = 0; i < 3; i++) {
     int y = QUIZ_OPT_Y + i * (QUIZ_OPT_H + QUIZ_OPT_GAP);
-    int inset = i == 2 ? 26 : 0;  // the bottom one, narrower: the circle closes in
+    int inset = QUIZ_OPT_INSET(i);  // (V1: the bottom one, narrower: the circle closes in)
     uint16_t bg = UI_WHITE;
     if (reveal && quizOpts[i] == quizAnswer) bg = UI_BAR_OK;
     else if (reveal && quizOpts[i] == quizTapped) bg = UI_BAR_BAD;
@@ -8870,7 +8875,7 @@ void renderShowdown() {
   bool locked = sdMyPick >= 0 && !reveal;
   for (int i = 0; i < 3; i++) {
     int y = SD_OPT_Y + i * (SD_OPT_H + SD_OPT_GAP);
-    int inset = i == 2 ? 26 : 0;  // the bottom one, narrower: the circle closes in
+    int inset = QUIZ_OPT_INSET(i);  // (V1: the bottom one, narrower: the circle closes in)
     uint16_t bg = UI_WHITE;
     if (reveal && sdOpts[i] == sdAnswer) bg = UI_BAR_OK;
     else if (i == sdMyPick && sdOpts[i] != sdAnswer) bg = UI_BAR_BAD;
@@ -10572,6 +10577,11 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   if (int by = v2GameEnd()) {  // V2: a game's end: PLAY AGAIN! and the X
     int k = v2GameEndTap(x, y);
     if (k == 1) return pressSet(t, V2_AGAIN_X0, by, V2_AGAIN_X1 - V2_AGAIN_X0, V2_AGAIN_H, T(S_PLAY_AGAIN));
+    if (k == 3) {  // the Repel row: its page
+      int x0, y0, x1;
+      v2RepelRowAt(by, x0, y0, x1);
+      return pressSet(t, x0, y0, x1 - x0, 32, T(S_REPEL));
+    }
     return k == 2 && pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
   }
 #endif
@@ -10591,14 +10601,14 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     if (sdPhase != SD_ASK || sdMyPick >= 0 || y < SD_OPT_Y) return false;
     int i = (y - SD_OPT_Y) / (SD_OPT_H + SD_OPT_GAP);
     if (i > 2) return false;
-    int inset = i == 2 ? 26 : 0;
+    int inset = QUIZ_OPT_INSET(i);
     return pressSet(t, 83 + inset, SD_OPT_Y + i * (SD_OPT_H + SD_OPT_GAP), 300 - 2 * inset, SD_OPT_H, dexName(sdOpts[i]));
   }
   if (quizOpen) {
     if (quizPhase != QP_ASK || y < QUIZ_OPT_Y) return false;
     int i = (y - QUIZ_OPT_Y) / (QUIZ_OPT_H + QUIZ_OPT_GAP);
     if (i > 2) return false;
-    int inset = i == 2 ? 26 : 0;
+    int inset = QUIZ_OPT_INSET(i);
     return pressSet(t, 83 + inset, QUIZ_OPT_Y + i * (QUIZ_OPT_H + QUIZ_OPT_GAP), 300 - 2 * inset, QUIZ_OPT_H, dexName(quizOpts[i]));
   }
   if (gamesMenuOpen) {

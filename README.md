@@ -215,7 +215,7 @@ Tap the **map** icon in the middle of the bottom to open **Travel**: **Knomi Isl
 
 ### Games
 
-Tap the **handheld** icon, second from the left, for the mini games: cartridges on a Game Boy's screen, each label a little scene from its game. When one starts, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed, and the time you play counts toward your next Repel. At the end, **Play Again!** starts it again and the ✕ goes back to the games. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
+Tap the **handheld** icon, second from the left, for the mini games: cartridges on a Game Boy's screen, each label a little scene from its game. When one starts, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed, and the time you play counts toward your next Repel. At the end, **Play Again!** starts it again, the ✕ goes back to the games, and the Repel bar opens the Repel's page. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs down. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?

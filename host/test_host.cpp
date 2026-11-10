@@ -668,6 +668,23 @@ static void testGame() {
   for (int i = 0; i < 40 && !runOverT; i++) runTicks(200);
   runTicks(1000);
   CHECK(runOpen && runOverT);
+  {  // the Repel row under it: the game closed, the card on the Repel's page (Fedor: "Clicking on repel progress
+     // after a mini game should take you to the repel screen")
+    extern bool cardOpen, cardAch;
+    extern uint8_t cardPage;
+    tapAt(233, 354);
+    CHECK(!runOpen && !gamesMenuOpen && cardOpen && !cardAch && cardPage == 6);
+    cardOpen = false;
+    cardPage = 0;
+    hostSerialPush("GAMES");
+    runTicks(300);
+    tapAt(316, 128);  // PokeRun again
+    runTicks(500);
+    tapAt(233, 335);
+    for (int i = 0; i < 40 && !runOverT; i++) runTicks(200);
+    runTicks(1000);
+    CHECK(runOpen && runOverT);
+  }
   tapAt(233, 422);  // the X
 #else
   tapAt(233, 200);

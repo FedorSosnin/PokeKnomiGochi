@@ -8,6 +8,8 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 
 ## [Unreleased]
 
+- **The Repel bar opens the Repel's page:** at the end of a mini game, tap the Repel bar under **Play Again!** to see the Repel's page on your Pokémon's card: what it does, how many you hold and how far along the next one is.
+- **Who's That? buttons are all one width:** the three names are as wide as the bottom one, in Who's That? and in Who's That? Showdown.
 - **Wild Encounter brings you back to Knomi Island:** when a Wild Encounter ends, whether you run, win, catch it or it gets away, you're back on the island, ready for the next one, the way a zone's Search brings you back to the zone. Before, it went home every time, which made hunting for shinies slow. The physical button's battle (Space on a keyboard) still ends at home.
 - **Check for Updates asks again:** on Mac and Windows, **Update to Version…** in the menu now checks GitHub again before offering, so it offers the newest version. Before, it could offer the one it had found earlier, even after a newer one came out. Offline, it still offers the one it found.
 
