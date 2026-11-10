@@ -696,7 +696,7 @@ static void testGame() {
     extern int buttonAt(int16_t x, int16_t y);
     extern Pet pet;
     extern ScaledCanvas *gfx;
-    static const int16_t icon[5][2] = { {121, 374}, {173, 403}, {233, 413}, {293, 403}, {345, 374} };
+    static const int16_t icon[5][2] = { {94, 340}, {160, 394}, {230, 408}, {308, 394}, {374, 338} };  // (V2_BTN)
     for (int i = 0; i < 5; i++) CHECK(buttonAt(icon[i][0], icon[i][1]) == i);
     CHECK(buttonAt(233, 300) == -1);  // between the pet and the band: no icon
     pet.hygiene = 100;

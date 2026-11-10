@@ -22,6 +22,8 @@ static inline void v2Cell(uint16_t *fb, int x, int y, uint16_t col, int a) {
   p[466] = v2Blend(p[466], col, a); p[467] = v2Blend(p[467], col, a);
 }
 
+#include "hover_v2.h"  // on a computer and the web: the control under the mouse lifted, with its shadow (V2_HOVER)
+
 // A ring segment round the screen's centre: from angle a0 to a1 (degrees, 0 = right, clockwise, less than
 // half a turn), r_in..r_out, with round ends centred on its middle radius at a0 and a1.
 struct V2Seg {
@@ -88,9 +90,23 @@ static void v2GlyphTurned(uint16_t *fb, uint8_t ch, int s, float px, float py, f
     for (int x = (int)px - R; x <= (int)px + R; x++) {
       if (x < 0 || x > 465) continue;
       float dx = x + 0.5f - px, dy = y + 0.5f - py;
+#ifdef BOARD_HOST
+      // a computer and the web show the canvas 2 to 4 times bigger: each pixel takes how much of it the letter covers
+      // (16 points in it), so the turned strokes have smooth edges, not steps (Fedor: "pixelation on the 4 bars and
+      // its text"). The Knomi keeps the font pixel under the centre: its own 2x2 averaging smooths them there
+      int n = 0;
+      for (int sy = 0; sy < 4; sy++)
+        for (int sx = 0; sx < 4; sx++) {
+          float ex = dx + (sx - 1.5f) / 4, ey = dy + (sy - 1.5f) / 4;
+          float u = (ex * tx + ey * ty) / s + 2.5f, v = (ey * tx - ex * ty) / s + 3.5f;
+          if (u >= 0 && v >= 0 && u < 5 && v < 8 && (GLCD_FONT[ch * 5 + (int)u] >> (int)v & 1)) n++;
+        }
+      if (n) fb[y * 466 + x] = n == 16 ? col : v2Blend(fb[y * 466 + x], col, n * 16);
+#else
       float u = (dx * tx + dy * ty) / s + 2.5f, v = (dy * tx - dx * ty) / s + 3.5f;  // back into the font
       if (u < 0 || v < 0 || u >= 5 || v >= 8) continue;
       if (GLCD_FONT[ch * 5 + (int)u] >> (int)v & 1) fb[y * 466 + x] = col;
+#endif
     }
   }
 }
@@ -135,6 +151,29 @@ static void v2BarLabel(uint16_t *fb, const char *lab, float midDeg, uint16_t col
   }
 }
 
+#ifdef BOARD_HOST
+// How much of a pixel (its centre at fx, fy from the screen's centre) a bar covers, 0..256: the bar is everything within
+// h of its middle line, the arc of radius rm from a0 to a1 degrees (round ends included), and a pixel half in, half
+// out is half covered. On a computer and the web, where the canvas shows 2 to 4 times bigger, the bars are drawn a
+// pixel at a time with these soft edges (Fedor: "Now were getting some pixelation on the 4 bars and its text"); the
+// Knomi keeps its 2 px cells, a Knomi pixel each
+struct V2Arc {
+  float rm, h, a0, a1, x0, y0, x1, y1;  // (its ends on the middle line)
+};
+static V2Arc v2ArcOf(float rm, float h, float a0, float a1) {
+  const float D = 0.01745329f;
+  return { rm, h, a0, a1, rm * cosf(a0 * D), rm * sinf(a0 * D), rm * cosf(a1 * D), rm * sinf(a1 * D) };
+}
+static int v2ArcCover(const V2Arc &a, float fx, float fy) {
+  if (a.a1 <= a.a0) return 0;
+  float t = atan2f(fy, fx) * 57.29578f, d;
+  while (t < a.a0) t += 360;
+  if (t <= a.a1) d = fabsf(sqrtf(fx * fx + fy * fy) - a.rm);
+  else d = fminf(hypotf(fx - a.x0, fy - a.y0), hypotf(fx - a.x1, fy - a.y1));
+  float c = a.h - d + 0.5f;
+  return c <= 0 ? 0 : c >= 1 ? 256 : (int)(c * 256);
+}
+#endif
 // One need bar on the rim: a soft rim, the see-through track, and the fill in the status colour from the
 // bar's lower end (a0 on the left, a1 on the right). All three in one pass over the bar's box.
 static void v2Bar(uint16_t *fb, const V2Bar &b, uint8_t val, const char *lab, bool dim) {
@@ -149,6 +188,29 @@ static void v2Bar(uint16_t *fb, const V2Bar &b, uint8_t val, const char *lab, bo
   const int ra = V2_RIM_A, ta = V2_TRACK_A;
   int x0, y0, x1, y1;
   v2SegBox(V2_BAR_ROUT + V2_BAR_RIM, a0, a1, (V2_BAR_ROUT - V2_BAR_RIN) / 2.0f + V2_BAR_RIM, x0, y0, x1, y1);
+#ifdef BOARD_HOST
+  {
+    const float rm = (V2_BAR_RIN + V2_BAR_ROUT) / 2.0f, h = (V2_BAR_ROUT - V2_BAR_RIN) / 2.0f;
+    const V2Arc aRim = v2ArcOf(rm, h + V2_BAR_RIM, a0, a1), aTrack = v2ArcOf(rm, h, a0, a1), aFull = v2ArcOf(rm, h, f0, f1);
+    (void)rim; (void)track; (void)full;
+    for (int y = y0; y <= y1 + 1 && y < 466; y++) {
+      float fy = y + 0.5f - CY;
+      for (int x = x0; x <= x1 + 1 && x < 466; x++) {
+        float fx = x + 0.5f - CX;
+        int cr = v2ArcCover(aRim, fx, fy);
+        if (!cr) continue;
+        uint16_t &p = fb[y * 466 + x];
+        p = v2Blend(p, tcol, ra * cr >> 8);
+        int ct = v2ArcCover(aTrack, fx, fy);
+        if (ct) p = v2Blend(p, tcol, ta * ct >> 8);
+        int cf = v2ArcCover(aFull, fx, fy);
+        if (cf) p = v2Blend(p, fill, cf);
+      }
+    }
+  }
+  v2BarLabel(fb, lab, (a0 + a1) / 2, UI_WHITE);
+  return;
+#endif
   for (int y = y0; y <= y1; y += 2) {
     float fy = y + 1 - CY;
     for (int x = x0; x <= x1; x += 2) {
@@ -203,6 +265,25 @@ static void v2DrawBand() {
   v2BandInk(col, ra, ta);
   int x0, y0, x1, y1;
   v2SegBox(V2_BAND_ROUT + 3, V2_BAND_A0, V2_BAND_A1, (V2_BAND_ROUT - V2_BAND_RIN) / 2.0f + 3, x0, y0, x1, y1);
+#ifdef BOARD_HOST
+  // a computer and the web: a pixel at a time, its edges soft, as the bars (v2ArcCover(); Fedor: "Yes, smooth them too")
+  const float rm = (V2_BAND_RIN + V2_BAND_ROUT) / 2.0f, h = (V2_BAND_ROUT - V2_BAND_RIN) / 2.0f;
+  const V2Arc aRim = v2ArcOf(rm, h + 3, V2_BAND_A0, V2_BAND_A1), aBand = v2ArcOf(rm, h, V2_BAND_A0, V2_BAND_A1);
+  (void)rim;
+  (void)band;
+  for (int y = y0; y <= y1 + 1 && y < 466; y++) {
+    float fy = y + 0.5f - CY;
+    for (int x = x0; x <= x1 + 1 && x < 466; x++) {
+      float fx = x + 0.5f - CX;
+      int cr = v2ArcCover(aRim, fx, fy);
+      if (!cr) continue;
+      uint16_t &p = fb[y * 466 + x];
+      p = v2Blend(p, col, ra * cr >> 8);
+      int cb = v2ArcCover(aBand, fx, fy);
+      if (cb) p = v2Blend(p, col, ta * cb >> 8);
+    }
+  }
+#else
   for (int y = y0; y <= y1; y += 2) {
     float fy = y + 1 - CY;
     for (int x = x0; x <= x1; x += 2) {
@@ -212,6 +293,7 @@ static void v2DrawBand() {
       if (v2In(band, fx, fy, r2)) v2Cell(fb, x, y, col, ta);
     }
   }
+#endif
 }
 
 // The icons on their circle. Asleep, all but the moon are slate shadows: ink would vanish on the band. With the
@@ -239,12 +321,13 @@ static void v2GbIcon(int x, int y, int s) {
     }
   }
 }
-// A home icon at 4x with its outside outline 2 px thinner (Fedor: the icons touched, "just a few pixels will fix
-// this"): an outline cell on the outside edge loses its outer half, and a fill corner left showing at a diagonal step
-// takes the outline colour, so the edge stays one clean 2 px line (a Knomi pixel). Only the k outline is cut: strokes
-// with none (the moon's Zs) stay whole. Its top left at (x, y); mode 0 its own colours, 1 all in flat, 2 the Game Boy's.
+// A home icon at 4x, its outline whole, 4 px as the backpack's foods have it (Fedor: "match the outline to the current
+// berry icons so they look like they came from the same icon pack"; for a while it was cut to 2 px so they wouldn't
+// touch, and they're further apart instead). A gap inside the outline that the outside can't reach is the outline's
+// ink too: the line between the bag's strap and its body ("the backpack lost its black line for the strap"). Its top
+// left at (x, y); mode 0 its own colours, 1 all in flat, 2 the Game Boy's.
 static void v2IconTrim(const char *const *map, int x, int y, int mode, uint16_t flat) {
-  const int N = HOME_ICON_N, W = N + 2, H = 2 * N;
+  const int N = HOME_ICON_N, W = N + 2;
   // (on the stack, not static: internal RAM is what the Wi-Fi and the relay's TLS need)
   uint32_t out[N + 2] = {};  // the outside, a bit a cell: the empty cells reached from the edge (a ring round it)
   int16_t stk[(N + 2) * (N + 2)];
@@ -264,30 +347,19 @@ static void v2IconTrim(const char *const *map, int x, int y, int mode, uint16_t 
       stk[sp++] = (int16_t)(rr * W + cc);
     }
   }
-  auto isOut = [&](int R, int C) { return R < 0 || C < 0 || R >= H || C >= H || (out[R / 2 + 1] >> (C / 2 + 1) & 1); };
-  auto isCut = [&](int R, int C) {  // an outline half cell with the outside next to it
-    if (R < 0 || C < 0 || R >= H || C >= H || map[R / 2][C / 2] != 'k') return false;
-    for (const auto &d : D4)
-      if (isOut(R + d[0], C + d[1])) return true;
-    return false;
-  };
-  for (int R = 0; R < H; R++) {
+  for (int r = 0; r < N; r++) {
     int run = 0;
     int32_t runCol = -1;
-    for (int C = 0; C <= H; C++) {
+    for (int c = 0; c <= N; c++) {
       int32_t col = -1;
-      if (C < H) {
-        char ch = map[R / 2][C / 2];
-        if (ch != '.' && !isCut(R, C)) {
-          if (ch != 'k')
-            for (const auto &d : D4)
-              if (isCut(R + d[0], C + d[1])) ch = 'k';
-          col = mode == 1 ? flat : mode == 2 ? v2GbCol(ch) : spriteColor(ch);
-        }
+      if (c < N) {
+        char ch = map[r][c];
+        if (ch == '.' && !(out[r + 1] >> (c + 1) & 1)) ch = 'k';  // a gap shut in by the icon: outline ink
+        if (ch != '.') col = mode == 1 ? flat : mode == 2 ? v2GbCol(ch) : spriteColor(ch);
       }
       if (col == runCol) continue;
-      if (runCol >= 0) gfx->fillRect(x + run * 2, y + R * 2, (C - run) * 2, 2, (uint16_t)runCol);
-      run = C;
+      if (runCol >= 0) gfx->fillRect(x + run * V2_ICON_S, y + r * V2_ICON_S, (c - run) * V2_ICON_S, V2_ICON_S, (uint16_t)runCol);
+      run = c;
       runCol = col;
     }
   }
@@ -297,8 +369,10 @@ static void v2DrawIcons() {
   for (int i = 0; i < BTN_COUNT; i++) {
     int x = buttons[i].cx - BTN_HALF, y = buttons[i].cy - BTN_HALF;
     bool flat = (pet.sleeping && i != BTN_LIGHT) || (bag && i != 0);
+    V2_HOVER(x, y, 2 * BTN_HALF, 2 * BTN_HALF);  // under the mouse: lifted (hover_v2.h)
     v2IconTrim(buttons[i].icon, x, y, flat ? 1 : buttons[i].icon == SPR_V2_HOME_GB ? 2 : 0, C565(0x3a, 0x4a, 0x5a));
   }
+  V2_HOVER(buttons[0].cx - BTN_HALF, buttons[0].cy - BTN_HALF, 2 * BTN_HALF, 2 * BTN_HALF);  // (lifted with the bag)
   v2RepelBagBadge(buttons[0].cx + 30, buttons[0].cy - 30);  // a Repel running: the minutes left, on the bag
 }
 
@@ -476,6 +550,27 @@ static void v2FeedPip(const V2Seg &band, float a1, int len) {
   float ot_x = tx + ux * 4, ot_y = ty + uy * 4;
   int x0 = (int)fminf(fminf(oa_x, ob_x), ot_x) - 2, x1 = (int)fmaxf(fmaxf(oa_x, ob_x), ot_x) + 2;
   int y0 = (int)fminf(fminf(oa_y, ob_y), ot_y) - 2, y1 = (int)fmaxf(fmaxf(oa_y, ob_y), ot_y) + 2;
+#ifdef BOARD_HOST
+  // a computer and the web: each pixel takes how much of it the tail and its rim cover (16 points in it), soft edges
+  for (int y = y0; y <= y1 && y <= 465; y++)
+    for (int x = x0; x <= x1 && x <= 465; x++) {
+      if (x < 0 || y < 0) continue;
+      int ni = 0, no = 0;
+      for (int sy = 0; sy < 4; sy++)
+        for (int sx = 0; sx < 4; sx++) {
+          float cx = x + (sx + 0.5f) / 4, cy = y + (sy + 0.5f) / 4;
+          if (v2InTri(cx, cy, ia_x, ia_y, ib_x, ib_y, tx, ty)) ni++;
+          else if (v2InTri(cx, cy, oa_x, oa_y, ob_x, ob_y, ot_x, ot_y)) {
+            float fx = cx - V2_FEED_CX, fy = cy - V2_FEED_CY;
+            if (!v2In(band, fx, fy, fx * fx + fy * fy)) no++;
+          }
+        }
+      uint16_t &p = fb[y * 466 + x];
+      if (no) p = v2Blend(p, V2_FEED_EDGE, no * 16);
+      if (ni) p = v2Blend(p, green, ni * 16);
+    }
+  return;
+#endif
   for (int y = y0 & ~1; y <= y1 && y <= 464; y += 2)
     for (int x = x0 & ~1; x <= x1 && x <= 464; x += 2) {
       if (x < 0 || y < 0) continue;
@@ -525,6 +620,32 @@ static void v2DrawFoodPicker(int) {
   y0 &= ~1;
   if (x0 < 0) x0 = 0;
   if (x1 > 464) x1 = 464;
+#ifdef BOARD_HOST
+  {  // a computer and the web: a pixel at a time, rim, band and line with soft edges (v2ArcCover(), as the bars)
+    const float rm = (V2_FEED_RIN + V2_FEED_ROUT) / 2.0f, h = (V2_FEED_ROUT - V2_FEED_RIN) / 2.0f;
+    const V2Arc aRim = v2ArcOf(rm, h + 3, a0, a1), aBand = v2ArcOf(rm, h, a0, a1), aOut = v2ArcOf(rm, h - 3, a0, a1),
+                aIn = v2ArcOf(rm, h - 6, a0, a1);
+    (void)rim;
+    (void)lineOut;
+    (void)lineIn;
+    for (int y = y0; y <= y1 + 1; y++) {  // (y where it rests; it's drawn dy lower while it slides)
+      int yy = y + dy;
+      if (yy < 0 || yy > 465) continue;
+      float fy = y + 0.5f - V2_FEED_CY;
+      for (int x = x0; x <= x1 + 1 && x < 466; x++) {
+        float fx = x + 0.5f - V2_FEED_CX;
+        int cr = v2ArcCover(aRim, fx, fy);
+        if (!cr) continue;
+        uint16_t &p = fb[yy * 466 + x];
+        p = v2Blend(p, V2_FEED_EDGE, cr);
+        int cb = v2ArcCover(aBand, fx, fy);
+        if (cb) p = v2Blend(p, green, cb);
+        int cl = v2ArcCover(aOut, fx, fy) - v2ArcCover(aIn, fx, fy);
+        if (cl > 0) p = v2Blend(p, line, cl);
+      }
+    }
+  }
+#else
   for (int y = y0; y <= y1; y += 2) {  // (y where it rests; it's drawn dy lower while it slides)
     if (y + dy < 0 || y + dy > 464) continue;
     float fy = y + 1 - V2_FEED_CY;
@@ -535,6 +656,7 @@ static void v2DrawFoodPicker(int) {
       v2Cell(fb, x, y + dy, c, 256);
     }
   }
+#endif
   if (e >= V2_FEED_SLIDE_MS) {  // landed: the pip grows down into the bag
     uint32_t p = e - V2_FEED_SLIDE_MS;
     int len = p >= V2_FEED_PIP_MS ? V2_FEED_PIP_LEN : (int)(V2_FEED_PIP_LEN * p / V2_FEED_PIP_MS);
@@ -546,11 +668,17 @@ static void v2DrawFoodPicker(int) {
     v2FeedSeat(i, cx, cy);
     cy += dy;
     gfx->fillCircle(cx, cy, V2_FEED_SEAT_R, seat);
-    if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - V2_ICON_HALF, cy - V2_ICON_HALF, V2_ICON_S, false);
-    else v2RepelSeatDraw(cx, cy);
+    {
+      V2_HOVER(cx - V2_FEED_SEAT_R, cy - V2_FEED_SEAT_R, 2 * V2_FEED_SEAT_R, 2 * V2_FEED_SEAT_R);  // under the mouse: lifted off its seat (hover_v2.h)
+      if (i < foods) drawMap(FOOD[i], HOME_ICON_N, cx - V2_ICON_HALF, cy - V2_ICON_HALF, V2_ICON_S, false);
+      else v2RepelSeatDraw(cx, cy);
+    }
     if (i == 3) candyX = cx, candyY = cy;
   }
-  if (foods == 4) v2CountBadge(candyX + 30, candyY - 37, pet.candiesLeft());
+  if (foods == 4) {
+    V2_HOVER(candyX - V2_FEED_SEAT_R, candyY - V2_FEED_SEAT_R, 2 * V2_FEED_SEAT_R, 2 * V2_FEED_SEAT_R);  // (lifted with its candy)
+    v2CountBadge(candyX + 30, candyY - 37, pet.candiesLeft());
+  }
 }
 
 // ---------- the scenes: the home's backdrop, in the Pokemon's Travel zone ----------
@@ -1516,6 +1644,7 @@ static void v2DnHud(uint8_t floor, int hp, int maxHp) {
 
 // a V2 button: a dark rim, its colour, a lit stripe along the top (button() in the mockups)
 static void v2Button(int x, int y, int w, int h, uint16_t col) {
+  V2_HOVER(x, y, w, h);  // under the mouse: lifted, with what's drawn on it after (hover_v2.h)
   gfx->fillRoundRect(x - 3, y - 3, w + 6, h + 6, 10, V2_RIM);
   gfx->fillRoundRect(x, y, w, h, 8, col);
   gfx->fillRect(x + 6, y + 3, w - 12, 4, v2Blend(col, UI_WHITE, 90));  // 35% lighter

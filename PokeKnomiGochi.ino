@@ -518,7 +518,7 @@ bool v2RadialOpen = false;    // V2: the radial menu, a hold on the Pokemon (rad
 int8_t v2RadialHover = -1;   // its section under the finger
 static void v2RadialStart();
 #ifdef BOARD_HOST
-void v2HoverUpdate();   // V2 on a computer and the web: the control under the mouse, outlined (menus_v2.h)
+void v2HoverUpdate();   // V2 on a computer and the web: the control under the mouse, lifted (hover_v2.h)
 void v2HoverOverlay();
 #endif
 static int v2RadialAt(int16_t x, int16_t y);
@@ -685,7 +685,7 @@ void loop() {
 
   handleTouch();
 #if UI_V2 && defined(BOARD_HOST)
-  v2HoverUpdate();  // V2 on a computer and the web: what's under the mouse (menus_v2.h)
+  v2HoverUpdate();  // V2 on a computer and the web: what's under the mouse (hover_v2.h)
 #endif
 #if UI_V2
   v2RepelTick(now);  // V2: every second of a minigame played counts toward a Repel
@@ -8072,6 +8072,7 @@ void drawBuddyPet(uint32_t now) {
     if (walk) act = PMD_WALKD;
     int bx = partyBuddyX(n, k), gy = v2GroundAt(bx);  // on the hill's curve (scene_v2.h)
     v2PetShadow(bx, gy - 4 + v2Bob, 30);
+    V2_HOVER_RISE(bx - partyHalf(n), gy - partyTall(n), 2 * partyHalf(n), partyTall(n));  // under the mouse: it rises off its shadow (hover_v2.h)
     drawPmdActM(buddyPmd[i], act, bx, gy + v2Bob, walk ? v2WalkT() + i * 300 : now, true, false, partyOthersScale(n));
 #else
     drawPmdActM(buddyPmd[i], act, partyBuddyX(n, k), PET_GROUND, now, true, false, partyOthersScale(n));
@@ -8101,6 +8102,9 @@ void drawBuddyTop() {
   } else if (partyPillShown()) {  // a buddy or a visitor around: the Party Boost button
     snprintf(b, sizeof(b), "%s +%d", T(S_PARTY_BOOST), PARTY_STAT_BONUS);
     int w = textW(b, 2) + 24;
+#if UI_V2
+    V2_HOVER(CX - w / 2, BUDDY_PILL_Y, w, BUDDY_PILL_H);  // under the mouse: lifted, its words with it (hover_v2.h)
+#endif
     gfx->fillRoundRect(CX - w / 2, BUDDY_PILL_Y, w, BUDDY_PILL_H, 12, C565(0x1e, 0x7d, 0x3c));
     gfx->setTextColor(UI_WHITE);
     setCur(centerX(b, 2), BUDDY_PILL_Y + 8);
@@ -10901,7 +10905,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
 // large copy beside the finger, in the Wi-Fi keyboard's colours.
 void pressOverlay() {
 #if UI_V2 && defined(BOARD_HOST)
-  v2HoverOverlay();  // V2 on a computer and the web: the outline under the mouse (menus_v2.h)
+  v2HoverOverlay();  // V2 on a computer and the web: the control under the mouse lifted (hover_v2.h)
 #endif
   if (!pressOn) return;
   const PressTarget &t = pressT;

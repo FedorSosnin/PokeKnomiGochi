@@ -147,6 +147,7 @@ static bool v2BtnMark(int mark, int dx, int dy) {
 static void v2RoundBtn(int cx, int cy, int mark, Rgb base, Rgb lite, Rgb dark) {
   cx = SNAP2(cx);
   cy = SNAP2(cy);
+  V2_HOVER(cx - 26, cy - 26, 52, 52);  // under the mouse: lifted (hover_v2.h)
   const uint16_t cRing = sc565(0x1B1B25), cBase = sc565(base), cLite = sc565(lite), cDark = sc565(dark),
                  cGlint = sc565(scMix(lite, 0xFFFFFF, .7)), cMark = sc565(0xFFFFFF), cShadow = sc565(scMix(dark, 0x1B1B25, .35));
   for (int j = -13; j < 13; j++) {
@@ -843,6 +844,13 @@ static void trSpot(int m, int &x, int &base) {
 }                                                                            // second between the first's tails
 
 // the room; bare: every medal in shadow (behind a medal's card)
+static int8_t trHoverGroup = -1;  // the group under the mouse: left out of the painted room, drawn over it to lift
+static void trMedal(int m, bool bare) {
+  int x, base;
+  trSpot(m, x, base);
+  if (m >= 17 && m <= 21) trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare), 0x4A1620, 0x3A1018);  // shadows in the velvet
+  else trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare));
+}
 static void trRoom(bool bare) {
   scRR(0, 0, V2_W, 330, TR_WALL);
   for (int x = 0; x < V2_W; x += 40) {  // wood panelling
@@ -865,12 +873,8 @@ static void trRoom(bool bare) {
     scRR(92, sy + 8, 100, sy + 18, 0x3A2414);
     scRR(366, sy + 8, 374, sy + 18, 0x3A2414);
   }
-  for (int i = 0; i < MED_COUNT; i++) {
-    int m = V2_TROPHY_ORDER[i], x, base;
-    trSpot(m, x, base);
-    if (m >= 17 && m <= 21) trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare), 0x4A1620, 0x3A1018);  // shadows in the velvet
-    else trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare));
-  }
+  for (int i = 0; i < MED_COUNT; i++)
+    if (v2TrophyGroup(V2_TROPHY_ORDER[i]) != trHoverGroup) trMedal(V2_TROPHY_ORDER[i], bare);
 }
 // a tap in the room opens the shelf of the group it's on (v2TrophyGroupAt(), layout_v2.h; Fedor, first: tapping the
 // things themselves was odd, a tap anywhere opened the first card; then: "If you click on the trophy room, you get to
@@ -920,7 +924,23 @@ static void v2TrophyRoom() {
   int got = 0;
   for (int m = 0; m < MED_COUNT; m++)
     if (pet.hasMedal(1UL << m)) won |= 1UL << m, got++;
-  v2Cached(0x40000000 | (int)won, v2PaintTrophyRoom, 0);
+  int hg = -1;
+#ifdef BOARD_HOST
+  for (int g = 0; g < V2_TR_GROUPS; g++) {
+    int bx, by, bw, bh;
+    v2TrophyGroupBox(g, bx, by, bw, bh);
+    if (v2HoverIs(bx, by, bw, bh)) hg = g;
+  }
+#endif
+  trHoverGroup = (int8_t)hg;
+  v2Cached(0x40000000 | (hg + 1) << 25 | (int)won, v2PaintTrophyRoom, 0);
+  if (hg >= 0) {  // under the mouse: its group over the room without it, so it can lift with its shadow (hover_v2.h)
+    int bx, by, bw, bh;
+    v2TrophyGroupBox(hg, bx, by, bw, bh);
+    V2_HOVER_DIFF(bx, by, bw, bh);
+    for (int i = 0; i < MED_COUNT; i++)
+      if (v2TrophyGroup(V2_TROPHY_ORDER[i]) == hg) trMedal(V2_TROPHY_ORDER[i], false);
+  }
   if (won) trGleam(millis());
   char b[32];
   snprintf(b, sizeof(b), T(S_MEDALS_FMT), got, MED_COUNT);
@@ -940,6 +960,14 @@ static void v2TrophyRoom() {
 // and center Bond in that badge").
 static bool trShelved(int g) { return g <= 2; }  // the badges, the statues and the cups stand on shelves (Fedor: the
                                                  // badges too, not a case of their own); the photos and rosettes hang
+static int8_t trShelfHover = -1;  // the thing under the mouse: left off the painted shelf, drawn over it to lift
+static void trShelfThing(int g, int k) {
+  int m = V2_TROPHY_ORDER[V2_TR_GROUP_FIRST[g] + k], x0, y0, w, h;
+  v2ShelfCell(g, k, x0, y0, w, h);
+  const TrArt &a = TR_ART_BIG[m];
+  int base = trShelved(g) ? y0 + V2_TR_ART_H : y0 + V2_TR_ART_H / 2 + a.h;  // (2 px a pixel: its middle on the row's)
+  trArt(a, x0 + w / 2, base, 2, pet.hasMedal(1UL << m));
+}
 static void v2PaintShelf(int g) {
   scRR(0, 0, V2_W, 376, TR_WALL);  // the wall: the room's planks, further apart
   for (int x = 24; x < V2_W; x += 60) {
@@ -951,7 +979,7 @@ static void v2PaintShelf(int g) {
   for (int y = 388; y < V2_W; y += 16)
     for (int x = ((y / 16) % 2) * 16; x < V2_W; x += 32) scGridRect(x, y, x + 8, y + 8, 0x882C2C);
   scRR(0, 380, V2_W, 384, TR_GOLD_D);
-  int first = V2_TR_GROUP_FIRST[g], n = v2TrophyGroupSize(g);
+  int n = v2TrophyGroupSize(g);
   if (trShelved(g)) {  // a shelf under each row
     for (int r = 0; r < 2; r++) {
       int k0 = r ? V2_TR_ROW1[g] : 0, k1 = r ? n - 1 : V2_TR_ROW1[g] - 1, ax, ay, bx, w, h;
@@ -964,13 +992,8 @@ static void v2PaintShelf(int g) {
       scRR(x1 - 16, sy + 8, x1 - 8, sy + 16, 0x3A2414);
     }
   }
-  for (int k = 0; k < n; k++) {
-    int m = V2_TROPHY_ORDER[first + k], x0, y0, w, h;
-    v2ShelfCell(g, k, x0, y0, w, h);
-    const TrArt &a = TR_ART_BIG[m];
-    int base = trShelved(g) ? y0 + V2_TR_ART_H : y0 + V2_TR_ART_H / 2 + a.h;  // (2 px a pixel: its middle on the row's)
-    trArt(a, x0 + w / 2, base, 2, pet.hasMedal(1UL << m));
-  }
+  for (int k = 0; k < n; k++)
+    if (k != trShelfHover) trShelfThing(g, k);
 }
 // a medal's name on a plate, its top at y: gold once it's won, brown till then. Too wide for its place (maxW), it
 // breaks at the space that leaves its longer line shortest (German's BINDUNG and ENDFORM side by side ran into each
@@ -1031,7 +1054,16 @@ static void v2TrophyShelf(int g) {
   uint32_t won = 0;
   for (int k = 0; k < n; k++)
     if (pet.hasMedal(1UL << V2_TROPHY_ORDER[first + k])) won |= 1UL << k, got++;
-  v2Cached(0x3E000000 | (g << 12) | won, v2PaintShelf, g);
+  int hk = -1;
+#ifdef BOARD_HOST
+  for (int k = 0; k < n; k++) {
+    int x0, y0, w, h;
+    v2ShelfCell(g, k, x0, y0, w, h);
+    if (v2HoverIs(x0 + 4, y0 + 2, w - 8, h - 6)) hk = k;
+  }
+#endif
+  trShelfHover = (int8_t)hk;
+  v2Cached(0x3E000000 | (hk + 1) << 16 | (g << 12) | won, v2PaintShelf, g);
   for (int r = 0; r < 2; r++) {  // the names, a row's plates all the size of its biggest, a gap kept between them (one
     int k0 = r ? V2_TR_ROW1[g] : 0, k1 = r ? n : V2_TR_ROW1[g], pw = 0, ph = 0;  // longer name gets a wider one)
     TrPlate pl[4];
@@ -1049,6 +1081,8 @@ static void v2TrophyShelf(int g) {
       const TrPlate &p = pl[k - k0];
       int tw = p.wa > p.wb ? p.wa : p.wb, pwk = pw < w - 10 ? pw : w - 10;
       if (pwk < tw + 2) pwk = tw + 2 < w - 6 ? tw + 2 : w - 6;
+      V2_HOVER_DIFF(x0 + 4, y0 + 2, w - 8, h - 6);  // under the mouse: the thing and its plate lift (hover_v2.h)
+      if (k == hk) trShelfThing(g, k);
       v2NamePlate(p, x0 + w / 2, y0 + V2_TR_ART_H + (trShelved(g) ? 20 : 6), pwk, ph, won & (1UL << k));
     }
   }
@@ -1437,6 +1471,7 @@ static void v2IsleTag(const char *name, const char *line2, int x, int y, Rgb col
   int w = textW(name, 2);
   if (textW(line2, 2) > w) w = textW(line2, 2);
   w += 16;
+  V2_HOVER(x - w / 2, y, w, 44);  // under the mouse: lifted (hover_v2.h)
   uint16_t rim = sc565(col);
   gfx->fillRoundRect(x - w / 2 - 3, y - 3, w + 6, 50, 10, rim);
   gfx->fillRoundRect(x - w / 2, y, w, 44, 8, UI_WHITE);
@@ -1644,6 +1679,7 @@ static void v2CartRun(int x, int y, int cy, int cx0, int cx1, uint16_t c) {
 // cartirages just a bit smaller so they dont touch each other". The label keeps its 85 px, for the titles)
 static bool v2CartIn(int cx, int cy) { return cx >= 0 && cx < 21 && cy >= 0 && cy < 26 && cx - 17 <= cy; }
 static void v2Cart(int x, int y, const uint16_t *pic, const char *title, Rgb shell) {
+  V2_HOVER(x, y, 105, 130);  // under the mouse: lifted (hover_v2.h)
   // the shell in its game's colour (Fedor: "edit the colors of each cartridge to make them different colors like they
   // were"), its label a darker shade of it
   const Rgb col = scMix(shell, 0x1B1B25, .32);
@@ -2181,6 +2217,7 @@ static int v2KbNext(int L, int code) {
 // a key in the V2 button style (key()): a dark rim, a lit stripe along its top; held: a bar under its label
 static void v2Key(const V2Key &k, const char *lab, uint16_t col, uint16_t ink, int size, bool held) {
   int w = k.x1 - k.x0, h = k.y1 - k.y0;  // (even, from even pixels: its edges whole Knomi pixels)
+  V2_HOVER(k.x0, k.y0, w, h);  // under the mouse: lifted (hover_v2.h)
   gfx->fillRoundRect(k.x0 - 2, k.y0 - 2, w + 4, h + 4, 6, C565(0x3a, 0x4a, 0x5a));
   gfx->fillRoundRect(k.x0, k.y0, w, h, 6, col);
   gfx->fillRect(k.x0 + 4, k.y0 + 2, w - 8, 2, lerp565(col, UI_WHITE, 8, 16));
@@ -2507,6 +2544,7 @@ static void v2QuizHead(const char *q, int round, int rounds, int secs = -1) {
   printT(b);
 }
 static void v2QuizOption(int x, int y, int w, int h, const char *name, uint16_t bg) {
+  V2_HOVER(x, y, w, h);  // under the mouse: lifted (hover_v2.h)
   if (bg == UI_WHITE) {
     gfx->fillRoundRect(x - 3, y - 3, w + 6, h + 6, 10, C565(0x3a, 0x4a, 0x5a));
     gfx->fillRoundRect(x, y, w, h, 8, UI_WHITE);
@@ -2993,26 +3031,3 @@ bool v2PressTrophies(int16_t x, int16_t y, PressTarget &t) {
   return v2PressSet(t, bx, by, bw, bh, v2PressBuf);
 }
 
-#ifdef BOARD_HOST
-// ----- hover: on a computer and the web, the control under the mouse is outlined, as a finger's press is, so what can
-// be tapped shows (Fedor: "The medal room needs to have hover states since they are buttons. Its hard to know what is
-// clickable"). Every control the press preview knows (pressTargetAt()); the outline only, thinner, no copy
-extern volatile int16_t gHostHoverX, gHostHoverY;  // (host_runtime.cpp; -1: not over the screen)
-static PressTarget v2HoverT;
-static bool v2HoverOn = false;
-void v2HoverUpdate() {
-  int16_t x = gHostHoverX, y = gHostHoverY;
-  PressTarget t;
-  bool on = x >= 0 && !pressOn && !wasPressed && pressTargetAt(x, y, t);
-  if (on == v2HoverOn && (!on || (t.x == v2HoverT.x && t.y == v2HoverT.y && t.w == v2HoverT.w && t.h == v2HoverT.h))) return;
-  v2HoverOn = on;
-  if (on) v2HoverT = t;
-  pressRepaint();
-}
-void v2HoverOverlay() {
-  if (!v2HoverOn || pressOn) return;
-  const PressTarget &t = v2HoverT;
-  const uint16_t ring = C565(0x7c, 0xc4, 0xea);
-  for (int i = 0; i < 2; i++) gfx->drawRoundRect(t.x - 3 - i, t.y - 3 - i, t.w + 6 + 2 * i, t.h + 6 + 2 * i, 12 + i, ring);
-}
-#endif

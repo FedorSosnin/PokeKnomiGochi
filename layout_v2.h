@@ -21,27 +21,29 @@ struct V2Bar { uint16_t a0, a1; bool leftSide; };
 static const V2Bar V2_BARS[4] = {
   { 203, 251, true },   // FOOD  (upper left)
   { 289, 337, false },  // JOY   (upper right)
-  { 150, 198, true },   // ENE   (lower left)
-  { 342, 390, false },  // HYG   (lower right; 390 = 30)
+  { 155, 198, true },   // ENE   (lower left)
+  { 342, 385, false },  // HYG   (lower right; 385 = 25)
 };
 
 // icons: a circle round the screen's own centre, so each is the same distance from the edge. At 4x, 72 px (Fedor:
 // "make the icons on the main screen and their surround, including the backpack popup, a bit larger. They some times
 // take extra clicks and effort to press on the tiny knomi"; they were 3x on a circle of 180, 60 px apart), on a
-// circle of 176 from 41.5 to 138.5 degrees, so the band's round ends stay 6 px clear of the ENE and HYG bars (Fedor:
-// "a few pixels of gap ... I dont want those touching"). Their outside outline is 2 px, not 4 (v2IconTrim; Fedor: the
-// icons "touch each other and overlap. Just a few pixels will fix this"), and they sit at 138.5, 112.75, 90.75, 67.25
-// and 41.5 degrees: 4 to 6 px between what each draws. Each centre on even pixels, so the cells land whole on the Knomi
+// circle of about 176. Their outline is whole, 4 px, as the backpack's foods have it (v2IconTrim; Fedor: "match the
+// outline to the current berry icons"), so they sit further round than they did (Fedor, choosing it: "A: spread them
+// out"): at 142.4, 114.4, 91, 65 and 36.7 degrees, 6 px between what each draws (Fedor: the icons "touch each other
+// and overlap. Just a few pixels will fix this"). For the band's round ends to stay 6 px clear of the ENE and HYG
+// bars (Fedor: "a few pixels of gap ... I dont want those touching"), those two end 5 degrees higher than FOOD and
+// JOY start (V2_BARS). Each centre on even pixels, so the cells land whole on the Knomi
 #define V2_ICON_S 4
 #define V2_ICON_HALF 36
 #define V2_ICON_R 176
-static const int16_t V2_BTN[5][2] = { {102, 350}, {164, 396}, {230, 408}, {302, 396}, {364, 350} };  // bag, games, map, moon, drop
+static const int16_t V2_BTN[5][2] = { {94, 340}, {160, 394}, {230, 408}, {308, 394}, {374, 338} };  // bag, games, map, moon, drop
 
 // the icon band (the "holder"): one curved band under all five, ends centred on the bag and the drop
 #define V2_BAND_RIN 138
 #define V2_BAND_ROUT 214
-#define V2_BAND_A0 41.5
-#define V2_BAND_A1 138.5
+#define V2_BAND_A0 36.7
+#define V2_BAND_A1 142.4
 
 // the home's scene sits this much higher than it's painted, the Pokemon with it (PET_GROUND 256 where it was 288;
 // Fedor: "move up the entire scene. So the pokemon and its background are always above the center line"), so the

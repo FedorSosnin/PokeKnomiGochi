@@ -13,6 +13,28 @@ bool Arduino_Canvas::begin(int32_t) {
 
 void Arduino_Canvas::flush(bool) {}
 
+// V2's hover (hover_v2.h): while gHoverRec is on, each pixel drawn on the canvas whose framebuffer is gHoverFb is
+// marked in gHoverMask, and the first time, what was there before is kept in gHoverUnder. So the control under the
+// mouse is known pixel by pixel, and what's behind it, and it can be lifted off the screen with its shadow under it
+bool gHoverRec = false;
+uint16_t *gHoverFb = nullptr;
+uint8_t *gHoverMask = nullptr;     // (w x h, set up by hover_v2.h)
+uint16_t *gHoverUnder = nullptr;
+int16_t gHoverBox[4] = { 32767, 32767, -1, -1 };  // what's marked: x0, y0, x1, y1 (inclusive)
+static void hoverMark(int x0, int y0, int x1, int y1, int w, const uint16_t *fb) {  // x1, y1 exclusive
+  for (int y = y0; y < y1; y++)
+    for (int x = x0; x < x1; x++) {
+      int i = y * w + x;
+      if (gHoverMask[i]) continue;
+      gHoverMask[i] = 1;
+      gHoverUnder[i] = fb[i];
+    }
+  if (x0 < gHoverBox[0]) gHoverBox[0] = (int16_t)x0;
+  if (y0 < gHoverBox[1]) gHoverBox[1] = (int16_t)y0;
+  if (x1 - 1 > gHoverBox[2]) gHoverBox[2] = (int16_t)(x1 - 1);
+  if (y1 - 1 > gHoverBox[3]) gHoverBox[3] = (int16_t)(y1 - 1);
+}
+
 void Arduino_Canvas::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c) {
   int x0 = x, y0 = y, x1, y1;
   if (w < 0) { x0 += w + 1; w = -w; }
@@ -24,6 +46,7 @@ void Arduino_Canvas::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16
   if (x1 > w_) x1 = w_;
   if (y1 > h_) y1 = h_;
   if (x0 >= x1 || y0 >= y1) return;
+  if (gHoverRec && fb_ == gHoverFb) hoverMark(x0, y0, x1, y1, w_, fb_);
   for (int yy = y0; yy < y1; yy++) {
     uint16_t *p = fb_ + yy * w_ + x0;
     for (int n = x1 - x0; n > 0; n--) *p++ = c;
@@ -161,7 +184,10 @@ void Arduino_Canvas::draw16bitRGBBitmap(int16_t x, int16_t y, const uint16_t *bi
   for (int j = 0; j < h; j++)
     for (int i = 0; i < w; i++) {
       int px = x + i, py = y + j;
-      if (px >= 0 && px < w_ && py >= 0 && py < h_) fb_[py * w_ + px] = bitmap[j * w + i];
+      if (px >= 0 && px < w_ && py >= 0 && py < h_) {
+        if (gHoverRec && fb_ == gHoverFb) hoverMark(px, py, px + 1, py + 1, w_, fb_);
+        fb_[py * w_ + px] = bitmap[j * w + i];
+      }
     }
 }
 
