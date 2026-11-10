@@ -6,7 +6,7 @@ bottom of the clock/settings screen (**Settings** in the hold menu) and `web/kno
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [Unreleased]
+## [2.0.2] - 2026-11-10
 
 - **Beach Pokémon stand on the sand:** at home on the Beach, the sand now comes up as far as the other homes' grass. Before, a Pokémon stood on the very edge of the sand with the top of its shadow on the sea, so a big one like Blastoise looked like it was hovering when it stepped.
 - **Blastoise sleeps on the ground:** asleep, it sits back with a foot stretched toward you, and it used to stand on that foot with its body in the air (over the sea, on the Beach). It sits on its body now.
