@@ -6,7 +6,7 @@ bottom of the clock/settings screen (**Settings** in the hold menu) and `web/kno
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [Unreleased]
+## [2.0.3] - 2026-11-10
 
 - **Choose a ball, then Throw:** on the catch screen, a tap on a ball chooses it, in a gold frame, and the **Throw** button above the balls throws it. The button is in the ball's colour and says its name (Throw Poké Ball in red, Ultra Ball in yellow, Master Ball in purple), so a Master Ball can't go by accident. Each catch starts on the Poké Ball; with only Poké Balls, the button is ready and a tap on the ball throws too. The hint is up in the sky now.
 - **Throw with the keyboard:** on Mac, Windows and the web, the left and right arrows choose a ball, Space or the up arrow throws it, and once it's in the air the left and right arrows steer it.

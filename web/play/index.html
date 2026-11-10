@@ -53,7 +53,7 @@
 </style>
 </head>
 <body>
-<div id="hint">Tap, hold and swipe the screen · ← → tilt · arrows walk in PokeDungeon · Space: wild battle</div>
+<div id="hint">Tap, hold and swipe the screen · ← → tilt · arrows walk in PokeDungeon · Space: wild battle · Space or ↑ throws on a catch</div>
 <script>  // a phone has no arrow keys or Space: it tilts
   if (matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Tap, hold and swipe the screen · Tilt to aim';
 </script>
@@ -80,7 +80,7 @@ const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = '04d546cde0';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = 'd6992bf380';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -439,6 +439,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=04d546cde0"></script>
+<script src="pokewebgochi.js?v=d6992bf380"></script>
 </body>
 </html>
