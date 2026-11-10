@@ -22,6 +22,7 @@
 #include "rtcbat.h"
 #include "i18n.h"
 #include "pet.h"
+#include "press.h"
 #include "power.h"
 #include <Preferences.h>
 
@@ -868,6 +869,47 @@ static void testGame() {
       hostButton(false);
       runTicks(200);
       CHECK(battleOpen && bBallT != t0);
+      closeBattle();
+      runTicks(200);
+      // a ball is chosen, then THROW throws it (Fedor: "clicking one selects it and there is a throw button to throw
+      // it"): with an Ultra Ball held, a tap on it chooses it and throws nothing; THROW names it; the right arrow
+      // chooses too; with the Poke Ball alone, a tap on it throws
+      extern bool pressTargetAt(int16_t x, int16_t y, PressTarget &t);
+      PressTarget pt;
+      pet.ultraBalls = 1;
+      hostSerialPush("WILD 129");
+      runTicks(300);
+      hostSerialPush("BTLWIN");
+      runTicks(4300);
+      t0 = bBallT;
+      CHECK(pressTargetAt(233, 319, pt) && !strcmp(pt.label, "THROW POKE BALL"));
+      tapAt(130, 405);  // the Ultra Ball, left of the Poke Ball
+      CHECK(bBallT == t0 && pressTargetAt(233, 319, pt) && !strcmp(pt.label, "THROW ULTRA BALL"));
+      hostTiltKeys(false, true);  // the right arrow: the Poke Ball again
+      runTicks(100);
+      hostTiltKeys(false, false);
+      runTicks(100);
+      CHECK(bBallT == t0 && pressTargetAt(233, 319, pt) && !strcmp(pt.label, "THROW POKE BALL"));
+      tapAt(233, 319);  // THROW
+      CHECK(bBallT != t0);
+      closeBattle();
+      pet.ultraBalls = 0;
+      runTicks(200);
+      hostSerialPush("WILD 129");
+      runTicks(300);
+      hostSerialPush("BTLWIN");
+      runTicks(4300);
+      t0 = bBallT;
+      tapAt(233, 405);  // the Poke Ball alone: thrown
+      CHECK(bBallT != t0);
+      closeBattle();
+      runTicks(200);
+      // no swipe out of a battle (Fedor: "you can swipe out of a battle. Which means you can cancel out a run")
+      hostSerialPush("WILD 129");
+      runTicks(300);
+      CHECK(battleOpen);
+      swipe(233, 400, 233, 200);  // up from the lower half: it quits a game, and it did a battle
+      CHECK(battleOpen);
       closeBattle();
       runTicks(200);
     }

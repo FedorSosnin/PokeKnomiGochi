@@ -119,7 +119,7 @@ enum StrId : STRID_BASE {
   S_REPEL, S_REPEL_ON_FMT,  // V2: the Repel's name, and "Repel: 3 min" when one is used
   S_BROKE_FREE_FMT,  // V2: it broke out of a Poke Ball, and there are more to throw
   S_ITEMS, S_MASTER, S_MASTER_EARN_FMT, S_REPEL_EARN_FMT,  // V2: the card's Items page, and how to earn each
-  S_THROW_HINT_KEYS,  // V2: the catch's hint where the arrow keys aim too (a computer, the web)
+  S_AIM_KEYS,  // V2: the catch's hint, how to aim where the arrow keys aim too (a computer, the web)
   S_ST_GREAT, S_ST_HUM, S_ST_ROUND, S_ST_JOG, S_ST_RUMBLE, S_ST_SMELLY, S_ST_STINKS,  // V2: more lines under the name
   S_ST_NAP, S_ST_PLAY, S_ST_FULL, S_ST_CLEAN, S_ST_SLEEPY, S_ST_MORNING,             // (Fedor), taking turns
   S_RESET_SURE, S_RESET_NOUNDO,  // V2: ERASE EVERYTHING asks once more: "Are you sure?" "There's no going back."
@@ -128,6 +128,8 @@ enum StrId : STRID_BASE {
   S_ULTRA, S_ULTRA_DOES, S_ULTRA_HOW,  // V2: the Ultra Ball: its name, what it does, and the line on the one earned
   S_ISLAND,  // V2: Travel's title, the island's name (Fedor: "Lets name the island Knomi Island")
   S_TRG_BUDDIES_FMT, S_TRG_CARE_FMT,  // V2: the trophy room's photos' and rosettes' shelves: "BUDDIES 2/3", "CARE 6/8"
+  S_POKE_BALL, S_THROW_FMT,  // V2: the catch's button names the ball chosen: "Throw %s" with "Poke Ball" (or the Ultra's, the Master's)
+  S_PICK_THROW, S_TAP_THROW, S_AIM_LEAN,  // V2: its hint in the sky: choose a ball then THROW (or only THROW), then how to aim
 #endif
   STR_COUNT
 };

@@ -118,32 +118,6 @@ static void v2SpecialBallTurned(int s, float deg, float px, float py, float ax, 
 }
 static void v2SpecialBall(int x, int y, int s) { v2SpecialBallTurned(s, 0, x, y, 0, 0); }
 
-#ifdef BOARD_HOST
-// ----- on a computer, keys on the catch (Fedor: "you should be able to use space, or up arrow to throw the ball and
-// arrow keys to steer it"): Space (the Knomi's button, knomiButtonTap()) or the up arrow throws a Poke Ball, and the
-// left and right arrows steer it, as they tilt (battleThrowStep()). The Ultra and Master Balls are thrown with a tap,
-// so a key never spends one. Not in the catch's first 300 ms, and the up arrow only pressed while it's waiting -----
-bool hostArrowUp();  // the up arrow held (host_runtime.cpp)
-static bool v2KeyThrow() {
-  if (!battleOpen || bPhase != BP_AIM || millis() - bPhaseT < 300) return false;
-  v2Throw = V2_BALL_POKE;
-  sfxPlay(SFX_TAP);
-  tiltZero();
-  bBallX = CX;
-  bBallT = millis();
-  battleSetPhase(BP_THROW);
-  return true;
-}
-static void v2AimKeys() {  // each frame while it waits for a throw
-  static uint32_t aim = 0;
-  static bool was = true;
-  bool up = hostArrowUp();
-  if (aim != bPhaseT) aim = bPhaseT, was = true;  // a new wait: an up arrow held from before doesn't throw
-  if (up && !was) v2KeyThrow();
-  was = up;
-}
-#endif
-
 // ----- the bars: the ball, how many you hold, the fights to the next -----
 // the ball at (x, y) at 2x, the bar and "7/25" to its right, w in all; full: the fight that just earned one (25/25,
 // before its moment), the ball it earned not counted yet
@@ -214,36 +188,10 @@ static void v2MasterEnd(uint32_t t) {
 // bounce, and only then the count starts (Fedor): the shake's time runs from its landing
 #define V2_CATCH_DROP_MS 700
 #define V2_BALL_LOWER 14  // and lands this much below the Pokemon's feet, in front of where it stood, on its shadow
-// the hint over the band, higher than V1's so it clears the balls (Fedor); a computer or the web aims with the arrow
-// keys too, and says so, on two lines
-#define V2_HINT_Y 318
-static void v2ThrowHint() {
-#ifdef BOARD_HOST
-  const char *p = T(S_THROW_HINT_KEYS);
-  char l[2][48];
-  int n = 0, w = 0;
-  for (; *p && n < 2; n++) {
-    int skip, k = wrapNext(p, 24, skip);
-    snprintf(l[n], sizeof(l[n]), "%.*s", k, p);
-    setSize(2);
-    if (textW(l[n], 2) > w) w = textW(l[n], 2);
-    p += skip;
-  }
-  int y0 = V2_HINT_Y - 22 * (n - 1);
-  v2Panel(CX - (w + 28) / 2, y0 - 7, CX + (w + 28) / 2, y0 + 22 * (n - 1) + 20, 8);
-  gfx->setTextColor(UI_INK);
-  for (int i = 0; i < n; i++) {
-    setCur(centerX(l[i], 2), y0 + 22 * i);
-    printT(l[i]);
-  }
-#else
-  battleCenterLine(T(S_THROW_HINT), V2_HINT_Y);
-#endif
-}
-// the band under the running Pokemon, with an Ultra or a Master Ball in hand: the balls you hold in a row, each the
-// button for its throw (a tap throws the one nearest it). With one of them, it and then the Poke Ball with its throws
-// left (Fedor); with both, the Poke Ball in the middle, the Master Ball left of it and the Ultra Ball right (Fedor:
-// "the regular pokeball in the center"). Three in the row are drawn at 3x, so they stay inside the round screen
+// the band under the running Pokemon, with an Ultra or a Master Ball in hand: the balls you hold in a row. With one of
+// them, it and then the Poke Ball with its throws left (Fedor); with both, the Poke Ball in the middle, the Master Ball
+// left of it and the Ultra Ball right (Fedor: "the regular pokeball in the center"). Three in the row are drawn at 3x,
+// so they stay inside the round screen
 static bool v2MasterAiming() { return pet.masterBalls > 0 || pet.ultraBalls > 0; }
 static int v2AimKinds(uint8_t *kind) {
   int n = 0;
@@ -255,17 +203,6 @@ static int v2AimKinds(uint8_t *kind) {
   return n;
 }
 static int v2AimX(int i, int n) { return n == 3 ? CX - 117 + i * 90 : CX - 104 + i * 136; }  // ball i's left edge
-static void v2MasterAimBalls(uint8_t throws) {
-  uint8_t kind[3];
-  int n = v2AimKinds(kind), s = n == 3 ? 3 : 4, y = n == 3 ? 378 : 372, w = 18 * s;
-  for (int i = 0; i < n; i++) {
-    int x = v2AimX(i, n);
-    if (kind[i] == V2_BALL_MASTER) v2MasterBall(x, y, s);
-    else if (kind[i] == V2_BALL_ULTRA) v2UltraBall(x, y, s);
-    else drawMap(SPR_HOME_BALL, HOME_ICON_N, x, y, s, false);
-    drawCountBadge(x + w - 4, y + 6, kind[i] == V2_BALL_MASTER ? pet.masterBalls : kind[i] == V2_BALL_ULTRA ? pet.ultraBalls : throws);
-  }
-}
 static uint8_t v2BallAt(int16_t x) {
   if (!v2MasterAiming()) return V2_BALL_POKE;
   uint8_t kind[3];
@@ -279,3 +216,210 @@ static uint8_t v2BallAt(int16_t x) {
   }
   return kind[best];
 }
+
+// ----- choosing a ball, then THROW (Fedor: "Maybe clicking one selects it and there is a throw button to throw it"):
+// a tap on a ball chooses it, lifted in a gold slot, and THROW with its name, in its colour (Fedor: "I like the color
+// coded buttons"), throws it, over the row where the hint was. The hint is up in the sky (Fedor: "The ... text can go
+// at the top in the sky area"). With the Poke Ball alone there's nothing to choose: its button is there (Fedor: "If
+// there is only one type of ball available, throw poke ball should already be there") and a tap on the ball throws it
+// too, as it always has. Each catch starts on the Poke Ball; a missed Ultra or Master Ball comes back and stays chosen,
+// and when the last one is used, the Poke Ball is chosen again -----
+static uint8_t v2Pick = V2_BALL_POKE;
+static uint8_t v2PickNow() {
+  if ((v2Pick == V2_BALL_MASTER && !pet.masterBalls) || (v2Pick == V2_BALL_ULTRA && !pet.ultraBalls)) v2Pick = V2_BALL_POKE;
+  return v2Pick;
+}
+#define V2_HINT_Y 318     // where the hint was: a ball broken out of says so there (BP_BROKE)
+#define V2_THROW_Y0 296  // THROW: where the hint was, between the running Pokemon and the balls
+#define V2_THROW_Y1 342
+#define V2_PICK_HINT_Y 72  // the hint's first line, in the sky
+static const char *v2ThrowLabel(char *b, int n) {
+  uint8_t k = v2PickNow();
+  char t[48];
+  snprintf(t, sizeof(t), T(S_THROW_FMT), T(k == V2_BALL_MASTER ? S_MASTER : k == V2_BALL_ULTRA ? S_ULTRA : S_POKE_BALL));
+  return v2Caps(t, b, n);
+}
+static void v2ThrowRect(int &x0, int &x1) {  // as wide as its words need, from 256
+  char b[48];
+  setSize(2);
+  int w = textW(v2ThrowLabel(b, sizeof(b)), 2) + 44;
+  if (w < 256) w = 256;
+  if (w > 330) w = 330;
+  x0 = CX - w / 2;
+  x1 = CX + w / 2;
+}
+static bool v2ThrowHit(int x, int y) {
+  int x0, x1;
+  v2ThrowRect(x0, x1);
+  return x >= x0 - 6 && x <= x1 + 6 && y >= V2_THROW_Y0 - 6 && y <= V2_THROW_Y1 + 6;
+}
+// ball i of n in the row: its top left and its size
+static void v2PickBallAt(int i, int n, int &x, int &y, int &w) {
+  int s = n == 3 ? 3 : 4;
+  w = 18 * s;
+  x = n == 1 ? CX - 36 : v2AimX(i, n);
+  y = n == 3 ? 378 : 372;
+}
+static int v2PickKinds(uint8_t *kind) {
+  if (v2MasterAiming()) return v2AimKinds(kind);
+  kind[0] = V2_BALL_POKE;
+  return 1;
+}
+// the hint in a panel in the sky, wrapped to fit: choose and throw (or only throw), then how to aim
+static int v2SpanW(const char *p, int n) {
+  char b[96];
+  snprintf(b, sizeof(b), "%.*s", n, p);
+  return textW(b, 2);
+}
+static void v2PickHint(bool choose) {
+#ifdef BOARD_HOST
+  StrId aim = S_AIM_KEYS;  // a computer, the web: the arrow keys aim too
+#else
+  StrId aim = S_AIM_LEAN;
+#endif
+  char txt[192], l[4][96];
+  snprintf(txt, sizeof(txt), "%s %s", T(choose ? S_PICK_THROW : S_TAP_THROW), T(aim));
+  setSize(2);
+  int n = 0, w = 0;
+  const char *p = txt;
+  while (*p && n < 4) {  // as many words as fit in 276 px (the first one whatever its width)
+    int end = 0;
+    for (;;) {
+      int e = end;
+      while (p[e] == ' ') e++;
+      while (p[e] && p[e] != ' ') e++;
+      if (end && v2SpanW(p, e) > 276) break;
+      end = e;
+      if (!p[e]) break;
+    }
+    snprintf(l[n], sizeof(l[n]), "%.*s", end, p);
+    int tw = textW(l[n], 2);
+    if (tw > w) w = tw;
+    n++;
+    p += end;
+    while (*p == ' ') p++;
+  }
+  int y0 = V2_PICK_HINT_Y;
+  v2Panel(CX - (w + 28) / 2, y0 - 7, CX + (w + 28) / 2, y0 + 22 * (n - 1) + 20, 8);
+  gfx->setTextColor(UI_INK);
+  for (int i = 0; i < n; i++) {
+    setCur(centerX(l[i], 2), y0 + 22 * i);
+    printT(l[i]);
+  }
+}
+// the catch waiting for a throw: the hint, THROW, the balls with the chosen one in its slot
+static void v2PickDraw(uint8_t throws) {
+  uint8_t kind[3];
+  int n = v2PickKinds(kind);
+  uint8_t pick = v2PickNow();
+  v2PickHint(n > 1);
+  int x0, x1;
+  v2ThrowRect(x0, x1);
+  {
+    V2_HOVER(x0, V2_THROW_Y0, x1 - x0, V2_THROW_Y1 - V2_THROW_Y0);  // under the mouse: lifted (hover_v2.h)
+    char b[48];
+    v2ThrowLabel(b, sizeof(b));
+    uint16_t col = pick == V2_BALL_MASTER ? C565(0x8a, 0x5c, 0xc8) : pick == V2_BALL_ULTRA ? C565(0xf0, 0xc0, 0x4a) : C565(0xe8, 0x50, 0x3a);
+    v2LabelButton(x0, V2_THROW_Y0, x1, V2_THROW_Y1, b, col, pick == V2_BALL_ULTRA ? UI_INK : UI_WHITE);
+  }
+  for (int i = 0; i < n; i++) {
+    int x, y, w;
+    v2PickBallAt(i, n, x, y, w);
+    if (n > 1 && kind[i] == pick) {  // chosen: lifted, in a gold slot (a dark rim, gold, cream)
+      y -= 8;
+      gfx->fillRoundRect(x - 11, y - 11, w + 22, w + 22, 14, C565(0x3a, 0x4a, 0x5a));
+      gfx->fillRoundRect(x - 9, y - 9, w + 18, w + 18, 12, C565(0xf0, 0xb8, 0x30));
+      gfx->fillRoundRect(x - 5, y - 5, w + 10, w + 10, 9, C565(0xff, 0xf4, 0xd0));
+    }
+    V2_HOVER(x - 6, y - 6, w + 12, w + 12);
+    if (kind[i] == V2_BALL_MASTER) v2MasterBall(x, y, w / 18);
+    else if (kind[i] == V2_BALL_ULTRA) v2UltraBall(x, y, w / 18);
+    else drawMap(SPR_HOME_BALL, HOME_ICON_N, x, y, w / 18, false);
+    drawCountBadge(x + w - 4, y + 6, kind[i] == V2_BALL_MASTER ? pet.masterBalls : kind[i] == V2_BALL_ULTRA ? pet.ultraBalls : throws);
+  }
+}
+// the throw of a ball, by a tap or a key
+static void v2ThrowBall(uint8_t k) {
+  v2Throw = k;
+  sfxPlay(SFX_TAP);
+  tiltZero();
+  bBallX = CX;
+  bBallT = millis();
+  battleSetPhase(BP_THROW);
+}
+// a tap while it waits: THROW throws the chosen ball; a ball is chosen (the Poke Ball alone: thrown)
+static void v2BallTap(int16_t x, int16_t y) {
+  if (v2ThrowHit(x, y)) {
+    v2ThrowBall(v2PickNow());
+    return;
+  }
+  if (y < V2_THROW_Y1 + 10) return;
+  if (!v2MasterAiming()) {
+    v2ThrowBall(V2_BALL_POKE);
+    return;
+  }
+  uint8_t k = v2BallAt(x);
+  if (k != v2PickNow()) {
+    v2Pick = k;
+    sfxPlay(SFX_TAP);
+  }
+}
+// the press preview's (press.h): THROW, or the ball under the finger
+static bool v2PickPress(int16_t x, int16_t y, PressTarget &t) {
+  static char b[48];  // (the target keeps the label's address)
+  if (v2ThrowHit(x, y)) {
+    int x0, x1;
+    v2ThrowRect(x0, x1);
+    return v2PressSet(t, x0, V2_THROW_Y0, x1 - x0, V2_THROW_Y1 - V2_THROW_Y0, v2ThrowLabel(b, sizeof(b)));
+  }
+  if (y < V2_THROW_Y1 + 10) return false;
+  uint8_t kind[3];
+  int n = v2PickKinds(kind);
+  uint8_t k = v2BallAt(x);
+  for (int i = 0; i < n; i++)
+    if (kind[i] == k) {
+      int bx, by, w;
+      v2PickBallAt(i, n, bx, by, w);
+      if (n > 1 && k == v2PickNow()) by -= 8;
+      return v2PressSet(t, bx - 6, by - 6, w + 12, w + 12, T(k == V2_BALL_MASTER ? S_MASTER : k == V2_BALL_ULTRA ? S_ULTRA : S_POKE_BALL));
+    }
+  return false;
+}
+// the arrow keys' choice (a computer, the web): the next ball in the row, left or right
+static void v2PickStep(int d) {
+  uint8_t kind[3];
+  int n = v2PickKinds(kind), i = 0;
+  uint8_t pick = v2PickNow();
+  while (i < n - 1 && kind[i] != pick) i++;
+  i += d;
+  if (i < 0 || i >= n) return;
+  v2Pick = kind[i];
+  sfxPlay(SFX_TAP);
+}
+
+#ifdef BOARD_HOST
+// ----- on a computer, keys on the catch (Fedor: "you should be able to use space, or up arrow to throw the ball and
+// arrow keys to steer it"): while it waits, the left and right arrows choose a ball and Space (the Knomi's button,
+// knomiButtonTap()) or the up arrow throws the one chosen; in the air the left and right arrows steer it, as they tilt
+// (battleThrowStep()). Not in the catch's first 300 ms, and only keys pressed while it's waiting -----
+bool hostArrowUp();  // the arrows held (host_runtime.cpp)
+bool hostArrowLeft();
+bool hostArrowRight();
+static bool v2KeyThrow() {
+  if (!battleOpen || bPhase != BP_AIM || millis() - bPhaseT < 300) return false;
+  v2ThrowBall(v2PickNow());
+  return true;
+}
+static void v2AimKeys() {  // each frame while it waits for a throw
+  static uint32_t aim = 0;
+  static bool wasUp = true, wasL = true, wasR = true;
+  bool up = hostArrowUp(), l = hostArrowLeft(), r = hostArrowRight();
+  if (aim != bPhaseT) aim = bPhaseT, wasUp = wasL = wasR = true;  // a new wait: keys held from before do nothing
+  if (l && !wasL) v2PickStep(-1);
+  if (r && !wasR) v2PickStep(1);
+  wasL = l;
+  wasR = r;
+  if (up && !wasUp) v2KeyThrow();
+  wasUp = up;
+}
+#endif

@@ -1359,8 +1359,8 @@ void handleTouch() {
           introTouch(tX0, tY0, tXl, tYl, picked);
         } else if (picked) {
           gameTap(tXl, tYl);  // the control under the finger when it lifted
-        } else if (swipeUpQuit(tX0, tY0, tXl, tYl, millis() - tStart)) {
-          if (zoneScreen) zoneBack();
+        } else if (swipeUpQuit(tX0, tY0, tXl, tYl, millis() - tStart) V2_AND(!battleOpen)) {  // V2: no swipe out of a battle
+          if (zoneScreen) zoneBack();  // (Fedor: "you can swipe out of a battle. Which means you can cancel out a run")
           else quitGame();
         } else if (zoneScreen && abs(tXl - tX0) >= 40 && abs(tYl - tY0) < abs(tXl - tX0)) {
           zoneTurnPage(tXl > tX0 ? -1 : 1);  // left advances, as in the Pokedex
@@ -3742,6 +3742,10 @@ void battleTap(int16_t x, int16_t y) {
     return;
   }
   if (bPhase == BP_AIM) {
+#if UI_V2
+    v2BallTap(x, y);  // V2: a ball chooses, THROW throws (master_v2.h)
+    return;
+#endif
     if (y < BTL_BAND_Y) return;
 #if UI_V2
     v2Throw = v2BallAt(x);  // V2: the ball nearest the tap, in the row of those you hold (master_v2.h)
@@ -3808,6 +3812,9 @@ void battleFinish(bool won) {
 void battleAfterEnd() {
   if (!bPvp && bWon) {
     bBalls = CATCH_BALLS;
+#if UI_V2
+    v2Pick = V2_BALL_POKE;  // V2: each catch starts on the Poke Ball (master_v2.h)
+#endif
     catchRunStart();
     battleSetPhase(BP_AIM);
   } else {
@@ -4299,15 +4306,10 @@ void renderCatch() {
   switch (bPhase) {
     case BP_AIM:
 #if UI_V2
-      v2ThrowHint();  // V2: higher, clear of the balls; the arrow keys too, where they aim (master_v2.h)
+      v2PickDraw(bBalls);  // V2: the hint in the sky, THROW and the balls to choose from (master_v2.h)
+      break;
 #else
       battleCenterLine(T(S_THROW_HINT), 350);
-#endif
-#if UI_V2
-      if (v2MasterAiming()) {  // V2: the Master Ball beside it (master_v2.h)
-        v2MasterAimBalls(bBalls);
-        break;
-      }
 #endif
       drawMap(SPR_HOME_BALL, HOME_ICON_N, CX - 36, 372, 4, false);  // the pokeball is the button
       drawCountBadge(CX + 32, 378, bBalls);                           // how many are left, as on the candy
@@ -10594,6 +10596,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
 #endif
   if (battleOpen) {
     if (bPhase == BP_RESULT && closeHit(x, y)) return pressSet(t, CX - CLOSE_R, CLOSE_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, "X");
+#if UI_V2
+    if (bPhase == BP_AIM) return v2PickPress(x, y, t);  // V2: THROW, or a ball (master_v2.h)
+#endif
     if (bPhase != BP_CHOOSE) return false;
     if (y >= 392 && x >= 160 && x <= 306) return !bRunFailed && pressSet(t, 160, 394, 146, 38, T(S_BTL_RUN));
     if (y < 344 || y > 386) return false;

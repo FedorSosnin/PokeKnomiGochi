@@ -8,7 +8,9 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 
 ## [Unreleased]
 
-- **Throw with the keyboard:** on Mac, Windows and the web, Space or the up arrow throws a Poké Ball on the catch screen, and the left and right arrows steer it as before. Ultra and Master Balls are still thrown with a click, so a key never uses one up.
+- **Choose a ball, then Throw:** on the catch screen, a tap on a ball chooses it, in a gold frame, and the **Throw** button above the balls throws it. The button is in the ball's colour and says its name (Throw Poké Ball in red, Ultra Ball in yellow, Master Ball in purple), so a Master Ball can't go by accident. Each catch starts on the Poké Ball; with only Poké Balls, the button is ready and a tap on the ball throws too. The hint is up in the sky now.
+- **Throw with the keyboard:** on Mac, Windows and the web, the left and right arrows choose a ball, Space or the up arrow throws it, and once it's in the air the left and right arrows steer it.
+- **No swiping out of a battle:** a swipe up no longer closes a battle or a catch, so a failed run can't be undone by swiping away.
 
 ## [2.0.2] - 2026-11-10
 

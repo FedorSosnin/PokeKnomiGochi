@@ -67,7 +67,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repelente", "Repelente: %u min",
     "%s se solt\242!",
     "Objetos", "Master Ball", "Termina %u combates", "%u min de minijuegos",
-    "Toca y apunta inclinando o con las flechas",
+    "Apunta inclinando o con las flechas",
     "Se siente genial!", "Tararea una canci\242n~", "Redondito y feliz!", "Necesita ejercicio...", "Le ruge la barriga!",
     "Huele un poco...", "Algo huele mal...", "Necesita una siesta...", "Quiere jugar...", "Est\240 lleno...",
     "Limpio y reluciente!", "Tiene sue\244o...", "Buenos d\241as!",
@@ -78,6 +78,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Ultra Ball", "Triplica la captura si acierta.", "Triplica la captura!",
     "Isla Knomi",
     "AMIGOS %d/%d", "CUIDADOS %d/%d",
+    "Pok\202 Ball", "Lanzar %s",
+    "Toca una Ball y luego LANZAR.", "Toca LANZAR.", "Inclina para apuntar",
 #endif
   },
   // ---------------- EN ----------------
@@ -140,7 +142,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repel", "Repel: %u min",
     "%s broke free!",
     "Items", "Master Ball", "Finish %u battles", "%u min of minigames",
-    "Tap ball, lean or use arrow keys to aim",
+    "Lean or use arrow keys to aim",
     "Feeling great!", "Humming a tune~", "Round and proud!", "Could use a jog...", "Tummy's rumbling!",
     "A bit smelly...", "Something stinks...", "Needs a nap...", "Wants to play...", "So full...",
     "Squeaky clean!", "Getting sleepy...", "Good morning!",
@@ -151,6 +153,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Ultra Ball", "Triples your catch chance when it hits.", "Triples the catch chance!",
     "Knomi Island",
     "BUDDIES %d/%d", "CARE %d/%d",
+    "Pok\202 Ball", "Throw %s",
+    "Tap a ball, then THROW.", "Tap THROW.", "Lean to aim",
 #endif
   },
   // ---------------- FR ----------------
@@ -213,7 +217,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repousse", "Repousse: %u min",
     "%s s'est lib\202r\202!",
     "Objets", "Master Ball", "Finis %u combats", "%u min de mini-jeux",
-    "Touche, penche ou utilise les fl\212ches pour viser",
+    "Penche ou utilise les fl\212ches pour viser",
     "En pleine forme!", "Fredonne un air~", "Rond et fier!", "Un footing s'impose...", "Son ventre gargouille!",
     "Sent un peu...", "\200a sent mauvais...", "Besoin d'une sieste...", "Veut jouer...", "Le ventre plein...",
     "Tout propre!", "Il a sommeil...", "Bonjour!",
@@ -224,6 +228,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Hyper Ball", "Triple la capture si elle touche.", "Triple la capture!",
     "\214le Knomi",
     "COPAINS %d/%d", "SOINS %d/%d",
+    "Pok\202 Ball", "Lancer %s",
+    "Touche une Ball, puis LANCER.", "Touche LANCER.", "Penche pour viser",
 #endif
   },
   // ---------------- DE ----------------
@@ -291,7 +297,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Schutz", "Schutz: %u Min.",
     "%s hat sich befreit!",
     "Gegenst\204nde", "Meisterball", "Beende %u K\204mpfe", "%u Min. Minispiele",
-    "Tippen, neigen oder Pfeiltasten zum Zielen",
+    "Neigen oder Pfeiltasten zum Zielen",
     "Super drauf!", "Summt ein Lied~", "Rund und stolz!", "Braucht Bewegung...", "Der Magen knurrt!",
     "Riecht etwas...", "Hier stinkt's...", "Will ein Nickerchen", "Will spielen...", "Pappsatt...",
     "Blitzsauber!", "Wird m\201de...", "Guten Morgen!",
@@ -302,6 +308,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Hyperball", "Dreifache Fangchance, wenn er trifft.", "Dreifache Fangchance!",
     "Knomi-Insel",
     "KUMPEL %d/%d", "PFLEGE %d/%d",
+    "Pok\202ball", "%s werfen",
+    "Tippe einen Ball an, dann WERFEN.", "Tippe auf WERFEN.", "Neigen zum Zielen",
 #endif
   },
   // ---------------- IT ----------------
@@ -364,7 +372,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repellente", "Repellente: %u min",
     "%s si \212 liberato!",
     "Strumenti", "Master Ball", "Finisci %u lotte", "%u min di minigiochi",
-    "Tocca, inclina o usa le frecce per mirare",
+    "Inclina o usa le frecce per mirare",
     "In gran forma!", "Canticchia~", "Tondo e fiero!", "Gli serve una corsa...", "Pancia che brontola!",
     "Puzza un po'...", "Qualcosa puzza...", "Vuole un pisolino...", "Vuole giocare...", "Pieno zeppo...",
     "Pulito e splendente!", "Ha sonno...", "Buongiorno!",
@@ -375,6 +383,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Ultra Ball", "Triplica la cattura se colpisce.", "Triplica la cattura!",
     "Isola Knomi",
     "AMICI %d/%d", "CURA %d/%d",
+    "Pok\202 Ball", "Lancia %s",
+    "Tocca una Ball, poi LANCIA.", "Tocca LANCIA.", "Inclina per mirare",
 #endif
   },
   // ---------------- PT ----------------
@@ -437,7 +447,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Repelente", "Repelente: %u min",
     "%s se soltou!",
     "Itens", "Master Ball", "Termina %u combates", "%u min de minijogos",
-    "Toca e inclina ou usa as setas para mirar",
+    "Inclina ou usa as setas para mirar",
     "Est\240 \242timo!", "Cantarolando~", "Redondo e feliz!", "Precisa se mexer...", "A barriga ronca!",
     "Um pouco fedido...", "Algo est\240 fedendo...", "Precisa de um cochilo", "Quer brincar...", "Est\240 cheio...",
     "Limpinho!", "Com sono...", "Bom dia!",
@@ -448,6 +458,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Ultra Ball", "Triplica a captura se acertar.", "Triplica a captura!",
     "Ilha Knomi",
     "AMIGOS %d/%d", "CUIDADOS %d/%d",
+    "Pok\202 Bola", "Lan\207ar %s",
+    "Toca numa Bola e depois em LAN\207AR.", "Toca em LAN\207AR.", "Inclina para mirar",
 #endif
   },
   // ---------------- JA ----------------
@@ -533,7 +545,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "むしよけスプレー", "むしよけ: あと %u ふん",
     "%sが とびだした!",
     "どうぐ", "マスターボール", "バトルを %uかい さいごまで", "ミニゲーム %uふん",
-    "タッチして かたむけるか やじるしキーで ねらう",
+    "かたむけるか やじるしキーで ねらう",
     "ちょうしいい！", "はなうたを うたってる", "まるまるで しあわせ！", "うんどうしたいな...", "おなかが ぐうぐう！",
     "ちょっと におう...", "なにか におう...", "おひるね したい...", "あそびたいな...", "おなかいっぱい...",
     "ぴかぴか！", "ねむくなってきた...", "おはよう！",
@@ -544,6 +556,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ハイパーボール", "あたると つかまえやすさが 3ばいに なる。", "つかまえやすさ 3ばい!",
     "ノーミじま",
     "ともだち %d/%d", "おせわ %d/%d",
+    "モンスターボール", "%sを なげる",
+    "ボールを えらんで なげるを タッチ。", "なげるを タッチ。", "かたむけて ねらう",
 #endif
   },
   // ---------------- KO ----------------
@@ -611,7 +625,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "벌레회피스프레이", "벌레회피: %u분",
     "%s 빠져나왔다!",
     "도구", "마스터볼", "배틀 %u번 끝내기", "미니게임 %u분",
-    "눌러서 기울이거나 화살표 키로 조준",
+    "기울이거나 화살표 키로 조준",
     "기분 최고예요!", "콧노래를 불러요", "동글동글 행복해요!", "운동이 필요해요...", "배에서 꼬르륵!",
     "냄새가 조금 나요...", "뭔가 냄새가 나요...", "낮잠이 필요해요...", "놀고 싶어요...", "배불러요...",
     "반짝반짝 깨끗해요!", "졸려요...", "좋은 아침!",
@@ -622,6 +636,8 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "하이퍼볼", "맞으면 잡힐 확률이 3배가 돼요.", "포획률 3배!",
     "노미 섬",
     "친구 %d/%d", "돌보기 %d/%d",
+    "몬스터볼", "%s 던지기",
+    "볼을 고르고 던지기를 눌러요.", "던지기를 눌러요.", "기울여서 조준",
 #endif
   },
 };

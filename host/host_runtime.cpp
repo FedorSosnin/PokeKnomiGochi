@@ -181,6 +181,8 @@ void hostArrowKeys(bool up, bool down) {
   gArrowDown = down;
 }
 bool hostArrowUp() { return gArrowUp; }
+bool hostArrowLeft() { return gTiltLeft; }
+bool hostArrowRight() { return gTiltRight; }
 bool hostArrowDir(int8_t *dx, int8_t *dy) {
   const bool held[5] = { false, gTiltLeft, gTiltRight, gArrowUp, gArrowDown };
   uint8_t k = held[gArrowLast] ? gArrowLast : gArrowUp ? 3 : gArrowDown ? 4 : gTiltLeft ? 1 : gTiltRight ? 2 : 0;
