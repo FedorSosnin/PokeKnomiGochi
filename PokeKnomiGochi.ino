@@ -3581,6 +3581,9 @@ void knomiButtonTap() {
   screenOff = false;
   wakeUI();
   if (wasAsleep) return;  // in the dark it only wakes, like the touchscreen
+#if UI_V2 && defined(BOARD_HOST)
+  if (v2KeyThrow()) return;  // V2 on a computer: Space throws on the catch (master_v2.h)
+#endif
   if (buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || gameOpen || runOpen || surfOpen || dungeonOpen || quizOpen || gamesMenuOpen || zoneScreen || galleryOpen || cardOpen || kbOpen || clockOpen || choiceKind || confirmUntil) return;
   startBattle();
 }
@@ -3976,7 +3979,11 @@ void battleStep() {
     case BP_EFFECT: if (t > 1000) battleAfterHit(); break;
     case BP_RAN: if (t > (bPvpGone ? 2500UL : 1200UL)) closeBattle(); break;
     case BP_END: if (t > 3500 V2_AND(!v2MasterNew || t > V2_MASTER_END_MS)) battleAfterEnd(); break;  // (V2: a Master Ball's moment)
-    case BP_AIM: break;  // it keeps running until you throw, however long you wait
+    case BP_AIM:
+#if UI_V2 && defined(BOARD_HOST)
+      v2AimKeys();  // V2 on a computer: the up arrow throws (master_v2.h)
+#endif
+      break;  // it keeps running until you throw, however long you wait
     case BP_THROW: battleThrowStep(millis()); break;
     case BP_MISS:
       if (t > 2000) battleSetPhase(bBalls ? BP_AIM : BP_FLED);

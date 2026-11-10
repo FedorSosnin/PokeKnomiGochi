@@ -118,6 +118,32 @@ static void v2SpecialBallTurned(int s, float deg, float px, float py, float ax, 
 }
 static void v2SpecialBall(int x, int y, int s) { v2SpecialBallTurned(s, 0, x, y, 0, 0); }
 
+#ifdef BOARD_HOST
+// ----- on a computer, keys on the catch (Fedor: "you should be able to use space, or up arrow to throw the ball and
+// arrow keys to steer it"): Space (the Knomi's button, knomiButtonTap()) or the up arrow throws a Poke Ball, and the
+// left and right arrows steer it, as they tilt (battleThrowStep()). The Ultra and Master Balls are thrown with a tap,
+// so a key never spends one. Not in the catch's first 300 ms, and the up arrow only pressed while it's waiting -----
+bool hostArrowUp();  // the up arrow held (host_runtime.cpp)
+static bool v2KeyThrow() {
+  if (!battleOpen || bPhase != BP_AIM || millis() - bPhaseT < 300) return false;
+  v2Throw = V2_BALL_POKE;
+  sfxPlay(SFX_TAP);
+  tiltZero();
+  bBallX = CX;
+  bBallT = millis();
+  battleSetPhase(BP_THROW);
+  return true;
+}
+static void v2AimKeys() {  // each frame while it waits for a throw
+  static uint32_t aim = 0;
+  static bool was = true;
+  bool up = hostArrowUp();
+  if (aim != bPhaseT) aim = bPhaseT, was = true;  // a new wait: an up arrow held from before doesn't throw
+  if (up && !was) v2KeyThrow();
+  was = up;
+}
+#endif
+
 // ----- the bars: the ball, how many you hold, the fights to the next -----
 // the ball at (x, y) at 2x, the bar and "7/25" to its right, w in all; full: the fight that just earned one (25/25,
 // before its moment), the ball it earned not counted yet

@@ -489,7 +489,7 @@ static NSCursor *fingerCursor(bool pressed) {
   autoUpd.state = hostAutoUpdate() ? NSControlStateValueOn : NSControlStateValueOff;
   [menu addItem:NSMenuItem.separatorItem];
   [menu addItemWithTitle:@"Drag the ring to move" action:nil keyEquivalent:@""].enabled = NO;
-  [menu addItemWithTitle:@"\u2190 \u2192 tilt  \u00b7  Space: wild battle" action:nil keyEquivalent:@""].enabled = NO;
+  [menu addItemWithTitle:@"\u2190 \u2192 tilt  \u00b7  Space: wild battle  \u00b7  Space or \u2191: throw" action:nil keyEquivalent:@""].enabled = NO;
   [menu addItem:NSMenuItem.separatorItem];
   NSMenuItem *quit = [menu addItemWithTitle:@"Quit " APP_NAME action:@selector(terminate:) keyEquivalent:@"q"];
   quit.target = NSApp;

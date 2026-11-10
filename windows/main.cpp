@@ -769,7 +769,7 @@ static void showMenu(POINT at) {
   AppendMenuW(m, MF_STRING | (hostAutoUpdate() ? MF_CHECKED : 0), ID_AUTO_UPDATE, L"Update Automatically");
   AppendMenuW(m, MF_SEPARATOR, 0, NULL);
   AppendMenuW(m, MF_STRING | MF_GRAYED, 0, L"Drag the ring to move");
-  AppendMenuW(m, MF_STRING | MF_GRAYED, 0, L"← → tilt  ·  Space: wild battle");
+  AppendMenuW(m, MF_STRING | MF_GRAYED, 0, L"← → tilt  ·  Space: wild battle  ·  Space or ↑: throw");
   AppendMenuW(m, MF_SEPARATOR, 0, NULL);
   AppendMenuW(m, MF_STRING, ID_QUIT, L"Quit " APP_NAME_W);
   SetForegroundWindow(gWnd);  // or the menu doesn't close when clicking elsewhere

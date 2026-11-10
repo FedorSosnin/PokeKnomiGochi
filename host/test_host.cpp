@@ -838,6 +838,38 @@ static void testGame() {
       closeBattle();
       CHECK(zoneScreen == ZS_NONE);
       runTicks(200);
+      // the catch on a computer (Fedor: "you should be able to use space, or up arrow to throw the ball"): the up
+      // arrow throws a Poke Ball; one held from before the catch doesn't; Space (the Knomi's button) does
+      extern uint32_t bBallT;
+      hostSerialPush("WILD 129");
+      runTicks(300);
+      CHECK(battleOpen);
+      hostSerialPush("BTLWIN");
+      runTicks(4300);  // its end, then the catch, waiting for a throw
+      uint32_t t0 = bBallT;
+      hostArrowKeys(true, false);
+      runTicks(100);
+      hostArrowKeys(false, false);
+      runTicks(100);
+      CHECK(bBallT != t0);
+      closeBattle();
+      runTicks(200);
+      hostSerialPush("WILD 129");
+      runTicks(300);
+      hostSerialPush("BTLWIN");
+      hostArrowKeys(true, false);  // held all through its end
+      runTicks(4300);
+      t0 = bBallT;
+      runTicks(300);
+      CHECK(bBallT == t0);
+      hostArrowKeys(false, false);
+      hostButton(true);  // Space
+      runTicks(100);
+      hostButton(false);
+      runTicks(200);
+      CHECK(battleOpen && bBallT != t0);
+      closeBattle();
+      runTicks(200);
     }
   }
   // V2's game backgrounds, by day, as their mockups have them (games_px.py) where the game stands things

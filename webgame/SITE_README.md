@@ -36,7 +36,7 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 - **Tap your Pokémon** to pet it. The icons along the bottom, from left to right, open your bag to feed it, open the mini games, start a battle, turn off the light at bedtime and give it a bath.
 - **Hold your Pokémon** for the menu, a ring of **Settings**, **Medals** (the trophy room), **Stats** (its card: tap its name there to rename it) and the **Pokédex**. Slide onto one and let go, or let go first and tap one. The round **✕** at the bottom closes any of them, and the arrows at the sides (or a swipe) turn their pages.
 - **Battle** with the map icon: travel to a zone and search, or tap **Wild Encounter** to meet a wild Pokémon at your Pokémon's home, and catch what you beat to fill your Pokédex: tap a ball to throw it at the Pokémon running back and forth, leaning (or using the arrow keys) to aim. Every catch has 1 to 3 ★, and a better one replaces yours. Every 25 battles you see through earn an **Ultra Ball**, which triples the chance, and every 100 a **Master Ball**, which always catches.
-- On a computer, the mouse is a finger: it presses when you click, and what's under it lifts a little. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
+- On a computer, the mouse is a finger: it presses when you click, and what's under it lifts a little. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, **Space** starts a wild battle, and on a catch **Space** or the **up arrow** throws a Poké Ball.
 
 ## Training
 
