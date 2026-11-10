@@ -315,8 +315,8 @@ static void v2Settings() {
     printT(m);
   }
   if (clockTzUi) v2Version(AUTO_ROW_Y + AUTO_ROW_H + 30);  // which version this is (the time page has no room)
-  drawPageArrows(1, 2, V2_PAGE_ARROW_Y);  // back to the time
-  v2PageOf(2, 1);
+  drawPageArrows(1, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y);  // back to the time
+  v2PageOf(V2_CLOCK_PAGES, 1);
   v2CloseX();
 }
 #endif
@@ -664,11 +664,11 @@ static void v2Clock(const char *langCode) {
     v2LabelButton(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1, V2_RESET_Y1, T(S_RESET_BTN), UI_BAR_BAD);  // asks first
 #endif
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
-    v2PageOf(2, 0);  // the settings are the next page (the Knomi's own)
+    v2PageOf(V2_CLOCK_PAGES, 0);  // the settings are the next page (the Knomi's own)
 #endif
   }
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
-  drawPageArrows(0, 2, V2_PAGE_ARROW_Y);  // on to the settings
+  drawPageArrows(0, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y);  // on to the settings
 #endif
   v2CloseX();
 }
@@ -2114,6 +2114,7 @@ static void v2TradeDone(int16_t dex, bool shiny) {
   setSize(2);
   int w = textW(b, 2) + 40;
   v2LabelButton(CX - w / 2, 352, CX + w / 2, 392, b, C565(0x58, 0xb8, 0x68));
+  v2CloseX();  // it waits for this (it went by itself after 3.5 s)
 }
 
 // ----- the keyboards: a nickname and a Wi-Fi password (batch3.py keyboard(), wifi_list()) -----
@@ -2127,7 +2128,7 @@ static const char *const V2_KB[4][3] = {
   { "1234567890", "-/:;()$&@", ".,?!'\"#%" },
   { "[]{}#%^*+=", "_\\|~<>`\"'", ".,?!'\"#%" },
 };
-#define V2_KW 37
+#define V2_KW 36  // (with the gap, 40 a key: every key's edges on even pixels, whole Knomi pixels)
 #define V2_KGAP 4
 #define V2_KH 52
 #define V2_KY0 120
@@ -2138,7 +2139,7 @@ static const char *const V2_KB[4][3] = {
 #define V2K_BKSP 2
 #define V2K_LAYER 3  // 123, or back to ABC
 #define V2K_OK 5
-static int v2KbRowX(int n, int extra) { return 233 - (n * V2_KW + (n - 1) * V2_KGAP + extra) / 2; }
+static int v2KbRowX(int n, int extra) { return SNAP2(233 - (n * V2_KW + (n - 1) * V2_KGAP + extra) / 2); }
 // every key of layer L with its box, in drawing order; returns how many (at most 40)
 struct V2Key { int16_t x0, y0, x1, y1; int8_t code; };
 static int v2KbKeys(int L, V2Key *k) {
@@ -2179,10 +2180,11 @@ static int v2KbNext(int L, int code) {
 }
 // a key in the V2 button style (key()): a dark rim, a lit stripe along its top; held: a bar under its label
 static void v2Key(const V2Key &k, const char *lab, uint16_t col, uint16_t ink, int size, bool held) {
-  gfx->fillRoundRect(k.x0 - 2, k.y0 - 2, k.x1 - k.x0 + 5, k.y1 - k.y0 + 5, 6, C565(0x3a, 0x4a, 0x5a));
-  gfx->fillRoundRect(k.x0, k.y0, k.x1 - k.x0 + 1, k.y1 - k.y0 + 1, 5, col);
-  gfx->fillRect(k.x0 + 4, k.y0 + 2, k.x1 - k.x0 - 7, 3, lerp565(col, UI_WHITE, 8, 16));
-  if (held) gfx->fillRect(k.x0 + 8, k.y1 - 7, k.x1 - k.x0 - 15, 3, UI_WHITE);
+  int w = k.x1 - k.x0, h = k.y1 - k.y0;  // (even, from even pixels: its edges whole Knomi pixels)
+  gfx->fillRoundRect(k.x0 - 2, k.y0 - 2, w + 4, h + 4, 6, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(k.x0, k.y0, w, h, 6, col);
+  gfx->fillRect(k.x0 + 4, k.y0 + 2, w - 8, 2, lerp565(col, UI_WHITE, 8, 16));
+  if (held) gfx->fillRect(k.x0 + 8, k.y1 - 8, w - 16, 2, UI_WHITE);
   bool cjk = classicFontBegin();  // the keys' letters and arrows are the classic font's in every language
   gfx->setTextColor(ink);
   setSize(size);
@@ -2219,14 +2221,14 @@ static void v2Keyboard(int L, const char *title, const char *typed, int hot, boo
     bool lit = k[i].code == hot;
     switch (k[i].code) {
       case V2K_SHIFT:
-        if (L < 2) v2Key(k[i], "\x18", lit || L == 1 ? blue : grey, UI_WHITE, 3, L == 1);  // the font's up arrow
+        if (L < 2) v2Key(k[i], "\x18", lit || L == 1 ? blue : grey, UI_WHITE, 4, L == 1);  // the font's up arrow
         else v2Key(k[i], L == 2 ? "#+=" : "123", lit ? blue : grey, UI_WHITE, 2, false);
         break;
-      case V2K_BKSP: v2Key(k[i], "\x1b", lit ? blue : grey, UI_WHITE, 3, false); break;  // its left arrow
+      case V2K_BKSP: v2Key(k[i], "\x1b", lit ? blue : grey, UI_WHITE, 4, false); break;  // its left arrow
       case V2K_LAYER: v2Key(k[i], L < 2 ? "123" : "ABC", lit ? blue : grey, UI_WHITE, 2, false); break;
       case V2K_OK: v2Key(k[i], "OK", lit ? blue : ready ? C565(0x58, 0xb8, 0x68) : grey, UI_WHITE, 2, false); break;
       case ' ': v2Key(k[i], "SPACE", lit ? blue : UI_WHITE, lit ? UI_WHITE : C565(0x8e, 0x8c, 0x96), 2, false); break;
-      default: v2Key(k[i], lab, lit ? blue : UI_WHITE, lit ? UI_WHITE : UI_INK, 3, false);
+      default: v2Key(k[i], lab, lit ? blue : UI_WHITE, lit ? UI_WHITE : UI_INK, 4, false);  // (size 4: 3 spread each font pixel over a Knomi pixel and a half, Fedor: "very pixelated")
     }
   }
   if (hot > 0) {  // what the finger is on, big, where the text was

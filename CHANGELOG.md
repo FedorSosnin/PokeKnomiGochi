@@ -14,22 +14,25 @@ A new look for every screen, on the Knomi, Mac, Windows and the web. Your Pokém
 - **Choose your starter:** Bulbasaur, Charmander, Squirtle and Pikachu walk up to meet you. No more eggs: once a Pokémon has been offered its goodbye, you choose your next from any first form in your Pokédex, shinies included, and the old one walks off over the hill.
 - **Items:** an **Ultra Ball** every 25 battles fought to the end (it triples your catch chance), a **Master Ball** every 100 (it always catches) and a **Repel** every 20 minutes of mini games (weaker wild Pokémon stay away for 3 minutes). Each has its own page on the card.
 - **Catching:** the balls you hold sit in a row; tap one to throw it. With a Master and an Ultra Ball, the Poké Ball sits in the middle. A ball that hits drops to the ground before the count.
-- **The backpack:** berries, candy and Repels on a curved band that slides up out of the bag, its tail pointing into it; a berry drops onto your Pokémon and it hops.
-- **Hold it for a menu:** hold your finger on your Pokémon for a ring of Settings, Medals, Stats and the Pokédex.
+- **The backpack:** berries, candy and Repels on a curved band that slides up out of the bag, its tail pointing into it, spaced out so each is easy to tap; a berry drops onto your Pokémon and it hops. It stays open until you close it.
+- **Hold it for a menu:** hold your finger on your Pokémon for a ring of Settings, Medals, Stats and the Pokédex, with big icons. It stays open until you choose or tap away.
+- **Nothing closes on its own:** menus and questions you open stay until you answer or close them: the backpack, the hold menu, release, evolve, goodbye, and a finished trade.
 - **Menus:** every menu sits in your Pokémon's bedroom; the card's pages share one layout; "Page 2 of 7" in place of dots.
 - **The Pokédex:** each entry turns round to show its Pokémon from every side.
 - **Knomi Island:** Travel is a round island with the five zones, its sea, pines and Mansion windows moving.
 - **The games:** cartridges in an old TV, **Play Again!** at every game's end, and new stairs in PokeDungeon.
 - **The games, on a Game Boy:** the mini games sit on a Game Boy's green screen as cartridges in the colours the games came in, and the screen opens at once.
-- **Bigger home icons:** easier to tap on the Knomi, with the games as a little grey Game Boy. Your Pokémon and its world sit higher, so the backpack's foods never cover it.
+- **Bigger home icons:** easier to tap on the Knomi, with the games as a little grey Game Boy, and a little space between each. Your Pokémon and its world sit higher, so the backpack's foods never cover it. Poops land anywhere around your Pokémon.
 - **Pokédex: one entry to the next:** arrows on every entry step through the Pokédex, or a zone's list.
-- **Crisper on the Knomi:** round buttons with a dark ring, text in sizes that land on whole pixels, and Pokédex entries in capitals as on the Game Boy.
+- **Crisper on the Knomi:** round buttons with a dark ring, text and keyboard letters in sizes that land on whole pixels, and Pokédex entries in capitals as on the Game Boy.
 - **The trophy room:** all 25 medals as things in one room, a gleam sweeping over the ones you've won. Tap a part of the room for a closer look at that group, every trophy with its name under it, and tap a trophy for its card. Each is drawn in the same pixel-art style as the Pokémon and the food: zone badges in a case, Poké, Great, Ultra and Master Ball statues, a golden Pikachu under glass, bronze, silver and gold cups, photos of your buddies, and rosettes marked with what they're for.
 - **Who's That? counts down:** ten seconds for each silhouette, alone or in a Showdown; out of time counts as wrong, and the answer shows.
-- **Every Pokémon on its feet:** each one stands and walks on the ground instead of floating over its shadow (Venusaur and Ivysaur on their legs, their heads hanging in front, awake or asleep), and big ones like Snorlax, Lapras and Dragonite come out bigger.
+- **Every Pokémon on its feet:** each one stands and walks on the ground instead of floating over its shadow (Venusaur and Ivysaur on their legs, their heads hanging in front, awake or asleep; Diglett and Dugtrio down in their mounds), and big ones like Snorlax, Lapras and Dragonite come out bigger.
 - **The hills in order:** the Forest's big pines and the Mansion's fence and graves stand behind the hill your Pokémon walks on, not over it.
 - **Evolving:** while your Pokémon evolves it still goes by its own name, and by the new one once it has.
 - **And more:** a new evolution scene, counts in the middle of their circles, more lines under your Pokémon's name, a new click sound, **ERASE EVERYTHING** asks twice, and while your Pokémon sleeps only the home screen dims.
+- **Buddies on the hill:** buddies and visitors stand on the hill's curve, lower toward the sides of the screen, instead of in the air.
+- **More memory for buddies over the internet:** sprites keep their colours and animations in the Knomi's large memory, leaving more of its small fast memory for Wi-Fi and the buddy relay.
 - **The save** has a name of its own: an older save is copied over on the first start, and left as it was.
 
 ## [1.51] - 2026-11-06

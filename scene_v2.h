@@ -219,19 +219,76 @@ static void v2DrawBand() {
 static void v2RepelBagBadge(int cx, int cy);  // (repel_v2.h, below: the Repel)
 static bool v2RepelSeat();
 static void v2RepelSeatDraw(int cx, int cy);
+// a Game Boy colour (V2_GB_KEY), as 565
+static uint16_t v2GbCol(char ch) {
+  uint32_t c = 0x1B1B25;
+  for (const V2GbKey &k : V2_GB_KEY)
+    if (k.ch == ch) c = k.rgb;
+  return (uint16_t)(((c >> 8) & 0xF800) | ((c >> 5) & 0x07E0) | ((c >> 3) & 0x1F));
+}
 // the games icon, the Game Boy (sprites_v2.h), in its own colours: its top left at (x, y), cells of s px
 static void v2GbIcon(int x, int y, int s) {
   for (int j = 0; j < HOME_ICON_N; j++) {
     const char *row = SPR_V2_HOME_GB[j];
     for (int i = 0; row[i]; i++) {
       if (row[i] == '.') continue;
-      uint32_t c = 0x1B1B25;
-      for (const V2GbKey &k : V2_GB_KEY)
-        if (k.ch == row[i]) c = k.rgb;
       int n = 1;
       while (row[i + n] == row[i]) n++;
-      gfx->fillRect(x + i * s, y + j * s, n * s, s, (uint16_t)(((c >> 8) & 0xF800) | ((c >> 5) & 0x07E0) | ((c >> 3) & 0x1F)));
+      gfx->fillRect(x + i * s, y + j * s, n * s, s, v2GbCol(row[i]));
       i += n - 1;
+    }
+  }
+}
+// A home icon at 4x with its outside outline 2 px thinner (Fedor: the icons touched, "just a few pixels will fix
+// this"): an outline cell on the outside edge loses its outer half, and a fill corner left showing at a diagonal step
+// takes the outline colour, so the edge stays one clean 2 px line (a Knomi pixel). Only the k outline is cut: strokes
+// with none (the moon's Zs) stay whole. Its top left at (x, y); mode 0 its own colours, 1 all in flat, 2 the Game Boy's.
+static void v2IconTrim(const char *const *map, int x, int y, int mode, uint16_t flat) {
+  const int N = HOME_ICON_N, W = N + 2, H = 2 * N;
+  // (on the stack, not static: internal RAM is what the Wi-Fi and the relay's TLS need)
+  uint32_t out[N + 2] = {};  // the outside, a bit a cell: the empty cells reached from the edge (a ring round it)
+  int16_t stk[(N + 2) * (N + 2)];
+  x = SNAP2(x);
+  y = SNAP2(y);
+  auto empty = [&](int r, int c) { return r < 0 || c < 0 || r >= N || c >= N || map[r][c] == '.'; };
+  int sp = 0;
+  out[0] = 1;
+  stk[sp++] = 0;
+  static const int8_t D4[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+  while (sp) {
+    int v = stk[--sp], r = v / W, c = v % W;
+    for (const auto &d : D4) {
+      int rr = r + d[0], cc = c + d[1];
+      if (rr < 0 || cc < 0 || rr >= W || cc >= W || (out[rr] >> cc & 1) || !empty(rr - 1, cc - 1)) continue;
+      out[rr] |= 1u << cc;
+      stk[sp++] = (int16_t)(rr * W + cc);
+    }
+  }
+  auto isOut = [&](int R, int C) { return R < 0 || C < 0 || R >= H || C >= H || (out[R / 2 + 1] >> (C / 2 + 1) & 1); };
+  auto isCut = [&](int R, int C) {  // an outline half cell with the outside next to it
+    if (R < 0 || C < 0 || R >= H || C >= H || map[R / 2][C / 2] != 'k') return false;
+    for (const auto &d : D4)
+      if (isOut(R + d[0], C + d[1])) return true;
+    return false;
+  };
+  for (int R = 0; R < H; R++) {
+    int run = 0;
+    int32_t runCol = -1;
+    for (int C = 0; C <= H; C++) {
+      int32_t col = -1;
+      if (C < H) {
+        char ch = map[R / 2][C / 2];
+        if (ch != '.' && !isCut(R, C)) {
+          if (ch != 'k')
+            for (const auto &d : D4)
+              if (isCut(R + d[0], C + d[1])) ch = 'k';
+          col = mode == 1 ? flat : mode == 2 ? v2GbCol(ch) : spriteColor(ch);
+        }
+      }
+      if (col == runCol) continue;
+      if (runCol >= 0) gfx->fillRect(x + run * 2, y + R * 2, (C - run) * 2, 2, (uint16_t)runCol);
+      run = C;
+      runCol = col;
     }
   }
 }
@@ -239,9 +296,8 @@ static void v2DrawIcons() {
   bool bag = feedMenuUntil != 0;  // the backpack open: all but the bag go dim, as they do while it sleeps (Fedor)
   for (int i = 0; i < BTN_COUNT; i++) {
     int x = buttons[i].cx - BTN_HALF, y = buttons[i].cy - BTN_HALF;
-    if ((pet.sleeping && i != BTN_LIGHT) || (bag && i != 0)) v2MapFlat(buttons[i].icon, HOME_ICON_N, x, y, V2_ICON_S, C565(0x3a, 0x4a, 0x5a));
-    else if (buttons[i].icon == SPR_V2_HOME_GB) v2GbIcon(x, y, V2_ICON_S);
-    else drawMap(buttons[i].icon, HOME_ICON_N, x, y, V2_ICON_S, false);
+    bool flat = (pet.sleeping && i != BTN_LIGHT) || (bag && i != 0);
+    v2IconTrim(buttons[i].icon, x, y, flat ? 1 : buttons[i].icon == SPR_V2_HOME_GB ? 2 : 0, C565(0x3a, 0x4a, 0x5a));
   }
   v2RepelBagBadge(buttons[0].cx + 30, buttons[0].cy - 30);  // a Repel running: the minutes left, on the bag
 }
@@ -354,18 +410,28 @@ static void v2CountBadge(int cx, int cy, int n) {
 // view and what you tap is seen dropping onto it
 static int v2FeedFoods() { return pet.canHaveCandy() ? 4 : 3; }
 static int v2FeedCount() { return v2FeedFoods() + (v2RepelSeat() ? 1 : 0); }
+// from one seat to the next (degrees round the seats' circle): V2_FEED_STEP px, or less so the ends stay in the span
+static float v2FeedStepDeg() {
+  int n = v2FeedCount();
+  float d = V2_FEED_STEP * 57.29578f / V2_FEED_R;
+  if (n > 1 && d * (n - 1) > 2 * V2_FEED_SPAN) d = 2.0f * V2_FEED_SPAN / (n - 1);
+  if (n > 1 && d * (n - 1) < 2 * V2_FEED_SPAN_MIN) d = 2.0f * V2_FEED_SPAN_MIN / (n - 1);
+  return d;
+}
 // seat i's direction from the seats' circle's centre (degrees, 0 right, 90 down): the first on the left
-static float v2FeedDeg(int i) { return 90 + (v2FeedCount() - 1 - 2 * i) * (V2_FEED_STEP * 28.64789f / V2_FEED_R); }
+static float v2FeedDeg(int i) { return 90 + (v2FeedCount() - 1 - 2 * i) * v2FeedStepDeg() / 2; }
 static void v2FeedSeat(int i, int &cx, int &cy) {  // seat i's centre, on the 2 px grid
   float a = v2FeedDeg(i) * 0.01745329f;
   cx = SNAP2(V2_FEED_CX + (int)lroundf(V2_FEED_R * cosf(a)));
   cy = SNAP2(V2_FEED_CY + (int)lroundf(V2_FEED_R * sinf(a)));
 }
 static int v2FeedAt(int16_t x, int16_t y) {  // the seat under a tap (within half a step of its centre), or -1
+  int h = (int)(v2FeedStepDeg() * V2_FEED_R / 114.5916f);
+  if (h > 48) h = 48;  // (three seats far apart: a tap between them is off it, and closes it)
   for (int i = 0, n = v2FeedCount(); i < n; i++) {
     int cx, cy;
     v2FeedSeat(i, cx, cy);
-    if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= (V2_FEED_STEP / 2) * (V2_FEED_STEP / 2)) return i;
+    if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= h * h) return i;
   }
   return -1;
 }
@@ -384,6 +450,8 @@ static bool v2InTri(float px, float py, float ax, float ay, float bx, float by, 
 #define V2_FEED_SLIDE_MS 400  // ...settles back down onto it...
 #define V2_FEED_PIP_MS 120    // ...then its pip grows down into the bag
 #define V2_FEED_PIP_LEN 14
+// the backpack's band's rim: its own green, darker (Fedor: it was the panels' slate, "a strange black outline")
+#define V2_FEED_EDGE C565(0x2e, 0x78, 0x3e)
 // the band's pip, len px long: a speech bubble's tail from its lower edge to the bag, in its green with its rim
 // round it. It leaves the outer edge straight toward the bag, or the round end where the band stops short of it
 static void v2FeedPip(const V2Seg &band, float a1, int len) {
@@ -416,13 +484,13 @@ static void v2FeedPip(const V2Seg &band, float a1, int len) {
         v2Cell(fb, x, y, green, 256);
       } else if (v2InTri(cx, cy, oa_x, oa_y, ob_x, ob_y, ot_x, ot_y)) {
         float fx = cx - V2_FEED_CX, fy = cy - V2_FEED_CY;
-        if (!v2In(band, fx, fy, fx * fx + fy * fy)) v2Cell(fb, x, y, V2_RIM, 256);
+        if (!v2In(band, fx, fy, fx * fx + fy * fy)) v2Cell(fb, x, y, V2_FEED_EDGE, 256);
       }
     }
 }
 
 // The food picker: a band in the bag's own green over the icons' band, curved as it is (Fedor: the straight
-// bubble covered your Pokemon), with the panels' dark rim and a lighter green line inside; each item on a soft
+// bubble covered your Pokemon), with a darker green rim and a lighter green line inside; each item on a soft
 // green seat (the candy with its count left today, the Repel with how many and its minutes while one runs).
 // Opened, it slides up from below, a little past its place and back, and lands with a pip pointing down into
 // the bag (Fedor: "show that the menu holding the fruit, candy, and repel, all came from the backpack")
@@ -443,10 +511,18 @@ static void v2DrawFoodPicker(int) {
   V2Seg rim = v2Seg(V2_FEED_RIN - 3, V2_FEED_ROUT + 3, a0, a1), band = v2Seg(V2_FEED_RIN, V2_FEED_ROUT, a0, a1);
   V2Seg lineOut = v2Seg(V2_FEED_RIN + 3, V2_FEED_ROUT - 3, a0, a1), lineIn = v2Seg(V2_FEED_RIN + 6, V2_FEED_ROUT - 6, a0, a1);
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
-  int fx0, fy0, lx, ly;  // the box it fits in: the end seats and round them, down to the rim under the middle
-  v2FeedSeat(0, fx0, fy0);
-  v2FeedSeat(count - 1, lx, ly);
-  int x0 = (fx0 - 40) & ~1, y0 = ((fy0 < ly ? fy0 : ly) - 40) & ~1, x1 = lx + 40, y1 = V2_FEED_CY + V2_FEED_ROUT + 4;
+  // the box it fits in: every seat and the round ends' reach past them (half the band and its rim: 45 px; it was
+  // 40, and cut the ends' rim off, Fedor: "its missing pieces"), down to the rim under the middle
+  int x0 = 466, y0 = 466, x1 = 0, y1 = V2_FEED_CY + V2_FEED_ROUT + 4;
+  for (int i = 0; i < count; i++) {
+    int sx, sy;
+    v2FeedSeat(i, sx, sy);
+    if (sx - 50 < x0) x0 = sx - 50;
+    if (sx + 50 > x1) x1 = sx + 50;
+    if (sy - 50 < y0) y0 = sy - 50;
+  }
+  x0 &= ~1;
+  y0 &= ~1;
   if (x0 < 0) x0 = 0;
   if (x1 > 464) x1 = 464;
   for (int y = y0; y <= y1; y += 2) {  // (y where it rests; it's drawn dy lower while it slides)
@@ -455,7 +531,7 @@ static void v2DrawFoodPicker(int) {
     for (int x = x0; x <= x1; x += 2) {
       float fx = x + 1 - V2_FEED_CX, r2 = fx * fx + fy * fy;
       if (!v2In(rim, fx, fy, r2)) continue;
-      uint16_t c = !v2In(band, fx, fy, r2) ? V2_RIM : v2In(lineOut, fx, fy, r2) && !v2In(lineIn, fx, fy, r2) ? line : green;
+      uint16_t c = !v2In(band, fx, fy, r2) ? V2_FEED_EDGE : v2In(lineOut, fx, fy, r2) && !v2In(lineIn, fx, fy, r2) ? line : green;
       v2Cell(fb, x, y + dy, c, 256);
     }
   }
@@ -617,6 +693,17 @@ static const ScEll SC_MID[2] = { { -200, 246, 300, 600 }, { 240, 256, 700, 620 }
 static const ScEll SC_NEAR[1] = { { -400, 276, 866, 1100 } };
 static const ScEll SC_DUNES[2] = { { -200, 262, 300, 600 }, { 240, 270, 700, 620 } };
 static const ScEll SC_SHORE[1] = { { -400, 284, 866, 1100 } };
+// Where a Pokemon at x stands at home: the near hill's top edge (SC_NEAR; the Beach's shore is the same oval, lower)
+// falls away from the middle, and the buddies and the visitor at the sides stand that much lower than yours (Fedor:
+// "the pokemon needs to be placed on an arc as they get closer to the edges of the screen. Since the background drops
+// down on a curve. Blastoise is in the air a bit too much"): 10 px at 368, 16 at the ends of a row of four
+static int v2GroundAt(int x) {
+  const ScEll &e = SC_NEAR[0];
+  float rx = (e.x1 - e.x0) / 2.0f, ry = (e.y1 - e.y0) / 2.0f, u = (x - (e.x0 + e.x1) / 2.0f) / rx;
+  if (u > 1) u = 1;
+  if (u < -1) u = -1;
+  return PET_GROUND + SNAP2((int)lroundf(ry * (1 - sqrtf(1 - u * u))));
+}
 // Is (x, y) inside the oval in box e: ((x - cx) / rx)^2 + ((y - cy) / ry)^2 <= 1, as the mockups test it.
 // Worked in whole numbers (everything doubled, so the centre is whole), which is exact; only a point exactly
 // on the edge is left to floating point, rounded as Python rounds it there.
@@ -1521,6 +1608,37 @@ static void v2PoopIcon(int x, int y) {  // in the 36 px square at (x, y), standi
   v2PetShadow(x + 20, y + 33, 16);
   scSprite(SPR_V2_POOP, 11, x, y + 3, 3, K, 4);
   scGradeTod = 0;
+}
+// Where they land (Fedor: "Maybe is can appear randomly anywhere around the pokemon. No need to keep it in one spot"):
+// each new one on a free spot picked at random round your Pokemon, a spot being where its bottom middle stands. The two
+// beside it, level with its feet, only while it's alone (buddies and the visitor stand there); the rest in front, short
+// of the icons' band, back to front. Not saved: after a restart they land anew
+static const int16_t V2_POOP_SPOT[7][2] = { { 96, 266 }, { 370, 266 }, { 142, 292 }, { 324, 292 }, { 233, 300 }, { 182, 322 }, { 284, 322 } };
+static int8_t v2PoopSpot[3] = { -1, -1, -1 };  // each poop's spot, or -1
+static void v2DrawPoops(int n, bool party) {
+  static uint32_t rng = 0;
+  if (!rng) rng = millis() * 2654435761u | 1;
+  unsigned used = 0;
+  for (int i = 0; i < 3; i++) {  // gone, or beside it with company: it lands again
+    int8_t &s = v2PoopSpot[i];
+    if (i >= n || (party && s >= 0 && s < 2)) s = -1;
+    if (s >= 0) used |= 1u << s;
+  }
+  for (int i = 0; i < n && i < 3; i++) {
+    if (v2PoopSpot[i] >= 0) continue;
+    int free = 0;
+    for (int j = party ? 2 : 0; j < 7; j++) free += !(used >> j & 1);
+    rng = rng * 1664525u + 1013904223u;
+    int k = (int)((rng >> 16) % (unsigned)free);
+    for (int j = party ? 2 : 0; j < 7; j++)
+      if (!(used >> j & 1) && k-- == 0) {
+        v2PoopSpot[i] = (int8_t)j;
+        used |= 1u << j;
+        break;
+      }
+  }
+  for (int j = 0; j < 7; j++)
+    if (used >> j & 1) v2PoopIcon(V2_POOP_SPOT[j][0] - 18, V2_POOP_SPOT[j][1] - 36);
 }
 
 #include "walk_v2.h"   // step 4: the walk

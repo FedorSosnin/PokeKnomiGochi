@@ -41,6 +41,15 @@ struct PmdAct {
 };
 
 // multi-action PMD sprite loaded from SD into PSRAM
+#if UI_V2
+// V2: a sprite's palette and actions, kept in PSRAM beside its frames while it's loaded (PmdMon::side)
+struct PmdSide {
+  uint16_t pal[256];
+  PmdAct acts[PMD_NACTS];
+};
+extern uint16_t gPmdNoPal[256];          // an unloaded sprite's: all zero, never written
+extern PmdAct gPmdNoActs[PMD_NACTS];
+#endif
 struct PmdMon {
   bool loaded = false;
   bool shiny = false;  // the shiny sprite was loaded: it gets sparkles
@@ -48,9 +57,23 @@ struct PmdMon {
   uint8_t dex = 0;  // V2: the species, for its size (pmdScale)
 #endif
   uint16_t palCount = 0;
+#if UI_V2
+  // V2: the palette and the actions (2 KB, with the walks and each frame's feet) live in PSRAM with the frames while
+  // it's loaded, not in the internal RAM that Wi-Fi and the buddy relay's TLS need: twenty of these took 40 KB of it,
+  // and the relay's handshake left 6 KB free. Unloaded, they point at an empty set, read as before
+  uint16_t *pal = gPmdNoPal;
+  uint8_t *blob = nullptr;
+  PmdAct *acts = gPmdNoActs;
+  PmdSide *side = nullptr;
+  PmdMon() = default;
+  PmdMon(const PmdMon &) = delete;  // (side is its own)
+  PmdMon &operator=(const PmdMon &) = delete;
+  ~PmdMon() { unload(); }
+#else
   uint16_t pal[256];
   uint8_t *blob = nullptr;
   PmdAct acts[PMD_NACTS];
+#endif
 
   bool load(uint8_t dexNum, bool shiny = false);
   void unload();

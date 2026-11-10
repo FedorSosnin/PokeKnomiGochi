@@ -1649,7 +1649,7 @@ void onTap(int16_t x, int16_t y) {
 #endif
 #if UI_V2 && defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
     if (!tzPickOpen && wifiSetupState() == WS_OFF) {  // V2: the side buttons turn the time and settings pages
-      int a = pageArrowAt(x, y, clockPage, 2, V2_PAGE_ARROW_Y);
+      int a = pageArrowAt(x, y, clockPage, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y);
       if (a) {
         sfxPlay(SFX_TAP);
         onSwipe(a < 0 ? 1 : -1);  // as a swipe would
@@ -2473,6 +2473,13 @@ bool render() {
 
   // food picker
   if (feedMenuUntil) {
+#if UI_V2
+    // V2: open till it's closed (Fedor: "If I opened the backpack, I want it to stay opened"): by a tap off it or on
+    // the bag, the Repel, or your Pokemon falling asleep. Kept open only while it's drawn: back from a screen over it
+    // after 6 s, it's closed
+    if (pet.sleeping) feedMenuUntil = 0;
+    else if (timeLeft(feedMenuUntil)) feedMenuUntil = millis() + 6000;
+#endif
     if (!timeLeft(feedMenuUntil)) {
       feedMenuUntil = 0;
     } else {
@@ -2498,6 +2505,11 @@ bool render() {
 
   // "release?" dialog (long press on the pet)
   if (confirmUntil) {
+#if UI_V2
+    // V2: it waits for an answer (Fedor: "pretty much nothing in the game closes or changes by itself"; 10 s): kept
+    // open while it's drawn, as the backpack is
+    if (timeLeft(confirmUntil)) confirmUntil = millis() + 10000;
+#endif
     if (!timeLeft(confirmUntil)) {
       confirmUntil = 0;
     } else {
@@ -2537,6 +2549,11 @@ bool render() {
 
   // decision dialog (evolve/keep, say goodbye/stay together)
   if (choiceKind) {
+#if UI_V2
+    // V2: evolve, goodbye, run away and ERASE EVERYTHING wait for an answer (12 s) while they're up; a buddy's
+    // invitation still goes when they stop waiting
+    if (choiceKind != 5 && timeLeft(choiceUntil)) choiceUntil = millis() + 12000;
+#endif
     if (!timeLeft(choiceUntil)) choiceKind = 0;
     else drawChoiceDialog();
   } else if (timeLeft(farHintUntil)) {  // after "stay together": the way back to the goodbye
@@ -3516,8 +3533,9 @@ void drawVisitor(uint32_t now) {
 #if UI_V2
   bool walk = visitPhase == VP_HANG && v2Walking && visitPmd.has(PMD_WALKD);  // V2: it walks beside yours
   if (walk) act = PMD_WALKD;
-  v2PetShadow(x, PET_GROUND - 4 + v2Bob, 30);
-  drawPmdActM(visitPmd, act, x, PET_GROUND + v2Bob, walk ? v2WalkT() : now - visitT, true, false, partyOthersScale(n));
+  int gy = v2GroundAt(x);  // on the hill's curve (scene_v2.h)
+  v2PetShadow(x, gy - 4 + v2Bob, 30);
+  drawPmdActM(visitPmd, act, x, gy + v2Bob, walk ? v2WalkT() : now - visitT, true, false, partyOthersScale(n));
 #else
   drawPmdActM(visitPmd, act, x, PET_GROUND, now - visitT, true, false, partyOthersScale(n));
 #endif
@@ -7995,7 +8013,7 @@ void buddyTick(uint32_t now) {
   }
   if (bsState == BS_SYNC && now - bsT > BUDDY_REPLY_MS) buddyEndSession();
   if (tradeOpen && trPhase != TR_DONE && now - trT > 90000UL) tradeClose(true);  // nobody responds
-  if (tradeOpen && trPhase == TR_DONE && now - trT > 3500) tradeClose(false);
+  if (tradeOpen && trPhase == TR_DONE && now - trT > 3500 V2_AND(false)) tradeClose(false);  // (V2: "Got ...!" waits for its X)
   if (tradeOpen && trPhase == TR_WAITC && trTheirConfirm) tradeFinish();
 
   if (now - bsResendT < BUDDY_RESEND_MS) return;
@@ -8052,9 +8070,9 @@ void drawBuddyPet(uint32_t now) {
 #if UI_V2
     bool walk = v2Walking && buddyPmd[i].has(PMD_WALKD);  // V2: buddies walk beside yours, a little out of step
     if (walk) act = PMD_WALKD;
-    v2PetShadow(partyBuddyX(n, k), PET_GROUND - 4 + v2Bob, 30);
-    drawPmdActM(buddyPmd[i], act, partyBuddyX(n, k), PET_GROUND + v2Bob, walk ? v2WalkT() + i * 300 : now, true, false,
-                partyOthersScale(n));
+    int bx = partyBuddyX(n, k), gy = v2GroundAt(bx);  // on the hill's curve (scene_v2.h)
+    v2PetShadow(bx, gy - 4 + v2Bob, 30);
+    drawPmdActM(buddyPmd[i], act, bx, gy + v2Bob, walk ? v2WalkT() + i * 300 : now, true, false, partyOthersScale(n));
 #else
     drawPmdActM(buddyPmd[i], act, partyBuddyX(n, k), PET_GROUND, now, true, false, partyOthersScale(n));
 #endif
@@ -8095,7 +8113,12 @@ void drawBuddyTop() {
 bool visitorAt(int16_t x, int16_t y) {
   if (visitPhase != VP_HANG || pet.isEgg() || pet.sleeping || pet.ceremony) return false;
   int n = partyOthers(), vx = partyBuddyX(n, partyBuddies() + 1);
+#if UI_V2
+  int gy = v2GroundAt(vx);  // V2: standing on the hill's curve
+  return abs(x - vx) < partyHalf(n) && y > gy - partyTall(n) && y < gy;
+#else
   return abs(x - vx) < partyHalf(n) && y > PET_GROUND - partyTall(n) && y < PET_GROUND;
+#endif
 }
 
 int buddyAt(int16_t x, int16_t y) {
@@ -8104,7 +8127,12 @@ int buddyAt(int16_t x, int16_t y) {
   for (int i = 0; i < BUDDY_MAX; i++) {
     if (!bPeers[i].on) continue;
     k++;
+#if UI_V2
+    int gy = v2GroundAt(partyBuddyX(n, k));  // V2: standing on the hill's curve
+    if (abs(x - partyBuddyX(n, k)) < partyHalf(n) && y > gy - partyTall(n) && y < gy) return i;
+#else
     if (abs(x - partyBuddyX(n, k)) < partyHalf(n) && y > PET_GROUND - partyTall(n) && y < PET_GROUND) return i;
+#endif
   }
   return -1;
 }
@@ -9245,6 +9273,11 @@ void tradeTap(int16_t x, int16_t y) {
   } else if (trPhase != TR_DONE && closeHit(x, y)) {  // waiting for the buddy: the X backs out
     sfxPlay(SFX_TAP);
     tradeClose(true);
+#if UI_V2
+  } else if (trPhase == TR_DONE && closeHit(x, y)) {  // V2: what came stays up till its X
+    sfxPlay(SFX_TAP);
+    tradeClose(false);
+#endif
   }
 }
 
@@ -10294,13 +10327,13 @@ void overlayMouth(const Species &sp, int x, int y, int s, bool open) {
 }
 
 void drawPoops() {
-  for (int i = 0; i < pet.poops; i++) {
 #if UI_V2
-    v2PoopIcon(86 + i * 46, PET_GROUND - 14);  // V2: its own, on the grass, in from the bars (scene_v2.h)
+  v2DrawPoops(pet.poops, partyOthers() > 0);  // V2: its own, on the grass round your Pokemon (scene_v2.h)
 #else
+  for (int i = 0; i < pet.poops; i++) {
     drawMap(SPR_POOP, 32, 36 + i * 46, HOME_PANEL_Y - 68, 2, false);  // just over the panel
-#endif
   }
+#endif
 }
 
 void drawBars() {
@@ -10683,7 +10716,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   if (clockOpen) {
 #if UI_V2
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
-    const int clockPages = 2;  // V2: the time, then the Knomi's settings
+    const int clockPages = V2_CLOCK_PAGES;  // V2: the time, then the Knomi's settings
 #else
     const int clockPages = 1;
 #endif
@@ -10810,7 +10843,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     (void)count;
     int item = v2FeedAt(x, y);  // V2: the seats along their arc over the icons
     if (item < 0) return false;
-    int cx, cy, h = V2_FEED_STEP / 2;
+    int cx, cy, h = V2_FEED_SEAT_R + 2;
     v2FeedSeat(item, cx, cy);
     if (item >= v2FeedFoods()) return pressSet(t, cx - h, cy - h, 2 * h, 2 * h, T(S_REPEL));
     return pressSet(t, cx - h, cy - h, 2 * h, 2 * h, nullptr, ICON[item]);
@@ -10843,7 +10876,12 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     int n = partyOthers(), k = 0;
     for (int i = 0; i <= bt; i++) k += bPeers[i].on;
     const char *nm = buddyNameOf(bt);
+#if UI_V2
+    int gy = v2GroundAt(partyBuddyX(n, k));  // V2: standing on the hill's curve
+    pressSet(t, partyBuddyX(n, k) - partyHalf(n), gy - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
+#else
     pressSet(t, partyBuddyX(n, k) - partyHalf(n), PET_GROUND - partyTall(n), 2 * partyHalf(n), partyTall(n), nm);
+#endif
     t.soft = true;  // buddies sit where swipes start: they give way to them
     return true;
   }

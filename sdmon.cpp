@@ -1,5 +1,8 @@
 #include "sdmon.h"
 #include "pin_config.h"
+#if UI_V2
+#include <new>  // (placement new: PmdSide)
+#endif
 #ifdef BOARD_HOST
 #include "host/host_pak.h"
 #elif defined(BOARD_KNOMI_V2)
@@ -12,6 +15,10 @@
 bool sdReady = false;
 bool sdDirty = false;
 SdThumbs thumbs;
+#if UI_V2
+uint16_t gPmdNoPal[256];
+PmdAct gPmdNoActs[PMD_NACTS];
+#endif
 
 bool PmdMon::load(uint8_t dexNum, bool shiny) {
   unload();
@@ -36,6 +43,13 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
     return false;
   }
   f.close();
+#if UI_V2
+  side = (PmdSide *)ps_malloc(sizeof(PmdSide));  // its palette and actions, in PSRAM (sdmon.h)
+  if (!side) { unload(); return false; }
+  new (side) PmdSide();
+  pal = side->pal;
+  acts = side->acts;
+#endif
 
   uint8_t nActs = blob[4];
   memcpy(&palCount, blob + 5, 2);
@@ -134,6 +148,15 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
       }
       if (legsBase) a.base = legsBase;
     }
+    // Diglett and Dugtrio come up out of a mound of earth, drawn with them: stood on the mound's rounded bottom they
+    // were in the air (Fedor: "diglet ... is a bit too high in the air. Its another pokemon whos sprite needs to be a
+    // bit lower"). They stand on its wide part instead, the rows under it in the ground: 4 of Diglett's, 5 of
+    // Dugtrio's (up to where the mound is still 85% as wide as it gets, standing, asleep and hurt), in every row
+    if (dexNum == 50 || dexNum == 51) {
+      uint8_t sink = dexNum == 50 ? 4 : 5;
+      for (uint8_t f = 0; f < nf; f++) a.low[f] = a.low[f] > sink ? a.low[f] - sink : 1;
+      a.base = a.base > sink ? a.base - sink : 1;
+    }
 #endif
   }
 #if UI_V2
@@ -183,15 +206,20 @@ void PmdMon::unload() {
     free(blob);
     blob = nullptr;
   }
+#if UI_V2
+  if (side) {  // (PmdSide has nothing to destroy)
+    free(side);
+    side = nullptr;
+  }
+  pal = gPmdNoPal;
+  acts = gPmdNoActs;
+  palCount = 0;
+#else
   for (auto &a : acts) {
     a.w = a.h = a.frames = a.base = 0;
-#if UI_V2
-    a.top = 0;
-    memset(a.low, 0, sizeof(a.low));
-    a.footW = 0;
-#endif
     a.data = nullptr;
   }
+#endif
   loaded = false;
 }
 

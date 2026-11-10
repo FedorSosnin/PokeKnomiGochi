@@ -29,13 +29,13 @@ static const V2Bar V2_BARS[4] = {
 // "make the icons on the main screen and their surround, including the backpack popup, a bit larger. They some times
 // take extra clicks and effort to press on the tiny knomi"; they were 3x on a circle of 180, 60 px apart), on a
 // circle of 176 from 41.5 to 138.5 degrees, so the band's round ends stay 6 px clear of the ENE and HYG bars (Fedor:
-// "a few pixels of gap ... I dont want those touching"). Equal gaps between what each draws, not between centres:
-// the map and the moon are 72 px wide, the drop 48, so the map sits 3 px left of the middle. Each centre on even
-// pixels, so the 4 px cells land whole on the Knomi
+// "a few pixels of gap ... I dont want those touching"). Their outside outline is 2 px, not 4 (v2IconTrim; Fedor: the
+// icons "touch each other and overlap. Just a few pixels will fix this"), and they sit at 138.5, 112.75, 90.75, 67.25
+// and 41.5 degrees: 4 to 6 px between what each draws. Each centre on even pixels, so the cells land whole on the Knomi
 #define V2_ICON_S 4
 #define V2_ICON_HALF 36
 #define V2_ICON_R 176
-static const int16_t V2_BTN[5][2] = { {102, 350}, {158, 392}, {230, 408}, {308, 392}, {364, 350} };  // bag, games, map, moon, drop
+static const int16_t V2_BTN[5][2] = { {102, 350}, {164, 396}, {230, 408}, {302, 396}, {364, 350} };  // bag, games, map, moon, drop
 
 // the icon band (the "holder"): one curved band under all five, ends centred on the bag and the drop
 #define V2_BAND_RIN 138
@@ -90,14 +90,24 @@ static const int16_t V2_MANSION_RISE[4] = { 20, 226, 446, 330 };   // added to t
 // With the foods at 4x as the icons (they were 3x, 62 px apart), centred (Fedor: "keep the berry pop up centered"),
 // on a circle round the icons' own centre, so it follows their band's arch at an even distance, and 10 px over it
 // (Fedor: "It can also be moved down slightly to cover the menu under it a bit. Since both cant be used at the same
-// time"). Three or four seats clear the bag; five (the Repel's) reach up beside your Pokemon's feet
+// time"). Spread out left and right (Fedor: "we need to spread them out some left and right"; they were 72 px apart,
+// 4 px between seats): 92 px apart along the arc, closer only so the end seats stay within V2_FEED_SPAN degrees of
+// straight down, as five do (the Repel's with the foods), up beside your Pokemon's feet. A seat's tap reaches half
+// way to the next. Flatter than the icons' arch since (Fedor: "reduce its curvature to bring the edges of it down a
+// bit. Plenty of space side to side"): a circle of 150 round a point 45 px over the screen's centre, its bottom
+// where it was (the round ends 15 px lower, 20 px further out); three seats spread to 50 degrees each side
 #define V2_FEED_CX CX         // the seats' circle: its centre, and its radius
-#define V2_FEED_CY CY
-#define V2_FEED_R 104
-#define V2_FEED_RIN 64        // the band, from that centre
-#define V2_FEED_ROUT 148
-#define V2_FEED_STEP 72       // from one seat to the next, along it
+#define V2_FEED_CY 188
+#define V2_FEED_R 150
+#define V2_FEED_RIN 110       // the band, from that centre
+#define V2_FEED_ROUT 194
+#define V2_FEED_STEP 95       // from one seat to the next, along it, at most
+#define V2_FEED_SPAN 66       // the end seats at most this far round from straight down (degrees)...
+#define V2_FEED_SPAN_MIN 50   // ...and at least this far
 #define V2_FEED_SEAT_R 34
+
+// the clock's pages: the time and the Knomi's settings
+#define V2_CLOCK_PAGES 2
 
 // the time page's START OVER (menus_v2.h): its box, which is also its tap
 #define V2_RESET_X0 113

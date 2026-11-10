@@ -3,7 +3,8 @@
 // A hold on your Pokemon (V2_RADIAL_HOLD_MS, the finger still) opens a ring round the screen in four: Settings
 // above, Medals to the right, Stats below and the Pokedex to the left, where the home's swipes put them. Its middle
 // is open, so the finger that opened it covers none of it. Slide onto one and lift to open it; lift in the middle
-// and the ring stays for a tap (in the middle or outside, it closes; left alone 8 s, too). Held on still in the
+// and the ring stays for a tap (in the middle or outside, it closes; left alone it stays: Fedor, "if I hold the
+// Pokemon to pull up the menu, it eventually goes away after a couple seconds"; it went at 8 s). Held on still in the
 // middle, the release question comes at 3 s, as before. The ring is see-through, as the icons' band is (Fedor),
 // so while it's open the home leaves out what it would show through: the header, the band, the icons, the pill.
 
@@ -11,7 +12,8 @@
 #define V2_RAD_OUT 204
 #define V2_RAD_GAP 7    // between two sections, along the diagonals: |dx| and |dy| this close
 
-// its icons, as the home's: 18 x 18, drawn at 3x
+// its icons, as the home's: 18 x 18, drawn at 4x (Fedor: "make the four icons ... larger"; they were 3x, which on
+// the Knomi spreads each pixel over a pixel and a half)
 static const char *const SPR_V2_RAD_GEAR[18] = {
   "........kk........",
   ".......kssk.......",
@@ -149,10 +151,10 @@ static void v2RadialLift(int16_t x, int16_t y) {
     v2RadialClose();
   }
 }
-// an icon at 3x centred at (cx, cy), and its label (in capitals) centred under it or over it (labelY): white on a
+// an icon at 4x centred at (cx, cy), and its label (in capitals) centred under it or over it (labelY): white on a
 // dark 2 px shadow, as the pages' numbers, so it reads on any scene through the ring
 static void v2RadialItem(const char *const *icon, int cx, int cy, const char *label, int labelY) {
-  drawMap(icon, HOME_ICON_N, cx - 27, cy - 27, 3, false);
+  drawMap(icon, HOME_ICON_N, cx - 36, cy - 36, 4, false);
   char b[40];
   v2Caps(label, b, sizeof(b));
   setSize(2);
@@ -168,10 +170,6 @@ static void v2RadialItem(const char *const *icon, int cx, int cy, const char *la
 // main screen icons"), with its fainter edge; the section under the finger green in the panels' dark rim. Its icons
 // and words, the Pokemon seen through the middle.
 static void v2RadialDraw() {
-  if (v2RadialSticky && millis() - v2RadialT > 8000) {
-    v2RadialClose();
-    return;
-  }
   v2DimFrame(140);
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   const int ri = V2_RAD_IN, ro = V2_RAD_OUT, rr = ro + 3;
@@ -194,8 +192,8 @@ static void v2RadialDraw() {
         if (!rim) v2Cell(fb, x, y, col, ta);
       }
     }
-  v2RadialItem(SPR_V2_RAD_GEAR, CX, 74, T(S_SETTINGS), 106);
-  v2RadialItem(SPR_V2_RAD_MEDAL, 378, 210, T(S_RAD_MEDALS), 244);
-  v2RadialItem(SPR_V2_RAD_STATS, CX, 388, T(S_RAD_STATS), 340);
-  v2RadialItem(SPR_V2_RAD_DEX, 88, 210, T(S_DEX_TITLE), 244);
+  v2RadialItem(SPR_V2_RAD_GEAR, CX, 72, T(S_SETTINGS), 114);  // (72 px icons: their corners inside the ring's edge)
+  v2RadialItem(SPR_V2_RAD_MEDAL, 378, 206, T(S_RAD_MEDALS), 250);
+  v2RadialItem(SPR_V2_RAD_STATS, CX, 390, T(S_RAD_STATS), 334);
+  v2RadialItem(SPR_V2_RAD_DEX, 88, 206, T(S_DEX_TITLE), 250);
 }
