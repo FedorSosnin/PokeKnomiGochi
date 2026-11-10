@@ -1779,3 +1779,4 @@ static void v2DrawPoops(int n, bool party) {
 #include "master_v2.h"   // step 7: fights pay, the Master Ball
 #include "repel_v2.h"    // the Repel
 #include "radial_v2.h"   // the radial menu: a hold on the Pokemon
+#include "about_v2.h"    // Settings' first page's rows, and the About page with the coin

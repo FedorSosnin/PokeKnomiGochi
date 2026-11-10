@@ -180,6 +180,14 @@ void hostArrowKeys(bool up, bool down) {
   gArrowUp = up;
   gArrowDown = down;
 }
+// a link to open (V2's About page): the front end's (host.h), or false: none, and the game shows its QR code
+static HostOpenUrl gOpenUrl = nullptr;
+void hostSetOpenUrl(HostOpenUrl fn) { gOpenUrl = fn; }
+bool hostOpenUrl(const char *url) {
+  if (!gOpenUrl) return false;
+  gOpenUrl(url);
+  return true;
+}
 bool hostArrowUp() { return gArrowUp; }
 bool hostArrowLeft() { return gTiltLeft; }
 bool hostArrowRight() { return gTiltRight; }

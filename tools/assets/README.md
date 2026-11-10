@@ -50,3 +50,13 @@ breaking anything.
 
 > See [CREDITS.md](../../CREDITS.md) for the origin and terms of the
 > sprites. They are third-party: do not redistribute commercially.
+
+## The About page's logo and links
+
+`3dprintsos-logo.png` is Fedor's 3D Print SOS logo, the source of the About page's pixel-art coin. `tools/about_assets.py`
+turns it into `about_logo.h` (96 x 96, the logo's own colours, a braided rope drawn at that size) and the two links into
+QR codes in `about_qr.h` (it needs Pillow, and segno for the QR codes):
+
+```bash
+~/.venvs/esp/bin/python3 tools/about_assets.py
+```

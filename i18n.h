@@ -130,6 +130,8 @@ enum StrId : STRID_BASE {
   S_TRG_BUDDIES_FMT, S_TRG_CARE_FMT,  // V2: the trophy room's photos' and rosettes' shelves: "BUDDIES 2/3", "CARE 6/8"
   S_POKE_BALL, S_THROW_FMT,  // V2: the catch's button names the ball chosen: "Throw %s" with "Poke Ball" (or the Ultra's, the Master's)
   S_PICK_THROW, S_TAP_THROW, S_AIM_LEAN,  // V2: its hint in the sky: choose a ball then THROW (or only THROW), then how to aim
+  S_SOUND, S_LANGUAGE,  // V2: the settings page's rows
+  S_ABOUT, S_MADE_BY, S_SCAN_PHONE,  // V2: the About page: its board, who made it, and under a link's QR code (the Knomi)
 #endif
   STR_COUNT
 };

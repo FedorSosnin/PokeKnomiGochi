@@ -224,15 +224,6 @@ static void v2Bold(const char *s, int x, int y) {
   }
 }
 
-// which version this is, quietly, in a panel
-static void v2Version(int y) {
-  char ver[28];
-  snprintf(ver, sizeof(ver), "PokeKnomiGochi v%s", FW_VERSION);
-  gfx->setTextColor(V2_INK_MUTED);
-  setSize(2);
-  setCur(centerX(ver, 2), y);
-  printT(ver);
-}
 
 // ----- start over -----
 // The time page's START OVER (every build that has the question, its box in layout_v2.h): it asks
@@ -282,7 +273,7 @@ static void v2ResetDialog() {
 // the Knomi's settings page: Wi-Fi, updates and the auto-update switch in a panel (settings_dim())
 static void v2Settings() {
   v2MenuBackdrop();
-  v2Sign(T(S_SETTINGS));
+  v2Sign("Wi-Fi");  // (Settings is the first page's)
   v2Panel(80, 84, 386, 372, 10);  // the buttons fill V1's boxes exactly (96..370), so a press's ring hugs them
   setSize(2);
   gfx->setTextColor(UI_INK);
@@ -315,7 +306,6 @@ static void v2Settings() {
     setCur(centerX(m, 2), AUTO_ROW_Y + AUTO_ROW_H + 8);
     printT(m);
   }
-  if (clockTzUi) v2Version(AUTO_ROW_Y + AUTO_ROW_H + 30);  // which version this is (the time page has no room)
   drawPageArrows(1, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y);  // back to the time
   v2PageOf(V2_CLOCK_PAGES, 1);
   v2CloseX();
@@ -613,32 +603,20 @@ static void v2Card() {
 #define LANG_PILL_H 30
 #define LANG_PILL_X 336
 #define LANG_PILL_W 96
+static void v2SettingsRows();  // (about_v2.h)
+// Settings' first page. Its time set (the network's or the computer's): the time, where it comes from, a row each for
+// the sound and the language, START OVER (about_v2.h; the version is on the About page now). Being set by hand (a
+// Knomi without Wi-Fi): V1's controls where they were
 static void v2Clock(const char *langCode) {
   bool locked = clockLocked();
   v2MenuBackdrop();
-  v2Sign(locked ? T(S_CLOCK) : T(S_SET_TIME));
-  v2Panel(72, 92, 394, 280, 10);
+  v2Sign(locked ? T(S_SETTINGS) : T(S_SET_TIME));
+  v2Panel(72, locked ? 84 : 92, 394, locked ? V2_SET_PANEL_Y1 : 280, 10);
   gfx->setTextColor(UI_INK);
-  if (locked) {  // network time or the computer's: shown as it runs, with where it comes from
+  if (locked) {  // network time or the computer's: shown as it runs
     uint32_t e = rtcEpoch();
     drawBigTime((e / 3600) % 24, (e / 60) % 60);
-    const char *st = clockTzUi ? T(S_SET_BY_WIFI) : T(S_SET_AUTO);
-    gfx->setTextColor(C565(0x3c, 0x8a, 0x4c));
-    setSize(2);
-    setCur(centerX(st, 2), clockTzUi ? TIME_STATUS_Y : TIME_STATUS_Y + 16);
-    printT(st);
-    if (!clockTzUi) v2Version(240);  // in the panel (with the time zone there, it's on the settings page)
-#ifdef BOARD_KNOMI_V2
-    if (clockTzUi) {
-      gfx->setTextColor(V2_INK_MUTED);
-      setCur(centerX(T(S_TIME_ZONE), 2), TZ_LABEL_Y);
-      printT(T(S_TIME_ZONE));
-      char b[32];
-      int i = clockTzIndex();
-      snprintf(b, sizeof(b), "%s >", TIME_ZONES[i >= 0 ? i : TIME_ZONE_DEFAULT].city);
-      v2LabelButton(TZ_BTN_X + 3, TZ_BTN_Y + 3, TZ_BTN_X + TZ_BTN_W - 3, TZ_BTN_Y + TZ_BTN_H - 3, b, C565(0x4f, 0x93, 0xc4));
-    }
-#endif
+    v2SettingsRows();
   } else {
     drawBigTime(clockH, clockM);
     static const int16_t KX[4] = { 104, 170, 252, 318 };
@@ -650,27 +628,23 @@ static void v2Clock(const char *langCode) {
     setCur(276, 256);
     printT(T(S_MIN));
   }
-  // sound, left, and the language, right, both one tap
-  bool snd = audioEnabled();
-  v2LabelButton(37, LANG_PILL_Y + 3, 127, LANG_PILL_Y + LANG_PILL_H - 3, snd ? T(S_SND_ON) : T(S_SND_OFF),
-                snd ? C565(0x58, 0xb8, 0x68) : C565(0x8e, 0x8c, 0x96));
-  char lp[10];
-  snprintf(lp, sizeof(lp), "%s >", langCode);
-  v2LabelButton(LANG_PILL_X + 3, LANG_PILL_Y + 3, LANG_PILL_X + LANG_PILL_W - 3, LANG_PILL_Y + LANG_PILL_H - 3, lp,
-                C565(0x4f, 0x93, 0xc4));
-  if (!locked) {
+  if (!locked) {  // being set: sound, left, and the language, right, both one tap; OK
+    bool snd = audioEnabled();
+    v2LabelButton(37, LANG_PILL_Y + 3, 127, LANG_PILL_Y + LANG_PILL_H - 3, snd ? T(S_SND_ON) : T(S_SND_OFF),
+                  snd ? C565(0x58, 0xb8, 0x68) : C565(0x8e, 0x8c, 0x96));
+    char lp[10];
+    snprintf(lp, sizeof(lp), "%s >", langCode);
+    v2LabelButton(LANG_PILL_X + 3, LANG_PILL_Y + 3, LANG_PILL_X + LANG_PILL_W - 3, LANG_PILL_Y + LANG_PILL_H - 3, lp,
+                  C565(0x4f, 0x93, 0xc4));
     v2LabelButton(136, 343, 330, 385, "OK", C565(0x58, 0xb8, 0x68), UI_WHITE, 4);  // (size 4: crisp on the Knomi)
   } else {
-#ifdef BOARD_KNOMI_V2
-    v2LabelButton(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1, V2_RESET_Y1, T(S_RESET_BTN), UI_BAR_BAD);  // asks first
-#endif
-#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
-    v2PageOf(V2_CLOCK_PAGES, 0);  // the settings are the next page (the Knomi's own)
-#endif
+    {
+      V2_HOVER(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1 - V2_RESET_X0, V2_RESET_Y1 - V2_RESET_Y0);
+      v2LabelButton(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1, V2_RESET_Y1, T(S_RESET_BTN), UI_BAR_BAD);  // asks first
+    }
+    v2PageOf(V2_CLOCK_PAGES, 0);
   }
-#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
-  drawPageArrows(0, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y);  // on to the settings
-#endif
+  drawPageArrows(0, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y);  // on to the Knomi's Wi-Fi, or About
   v2CloseX();
 }
 #ifdef BOARD_KNOMI_V2  // as V1's

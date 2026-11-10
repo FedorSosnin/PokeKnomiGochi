@@ -1003,6 +1003,15 @@ static bool lockSave(NSString *saveDir) {
   return fd >= 0 && flock(fd, LOCK_EX | LOCK_NB) == 0;
 }
 
+// a link from the game (About's): in the browser, from the main thread
+static void macOpenUrl(const char *u) {
+  NSString *s = [NSString stringWithUTF8String:u];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    NSURL *url = [NSURL URLWithString:s];
+    if (url) [NSWorkspace.sharedWorkspace openURL:url];
+  });
+}
+
 int main(int argc, char **argv) {
   gArgv = argv;
   @autoreleasepool {
@@ -1024,6 +1033,7 @@ int main(int argc, char **argv) {
       }
       return 0;
     }
+    hostSetOpenUrl(macOpenUrl);  // About's links, in the browser
     hostInit(NSBundle.mainBundle.resourcePath.fileSystemRepresentation, saveDir.fileSystemRepresentation);
     for (int i = 1; i < argc; i++)
       if (strcmp(argv[i], "--console") == 0) { gConsole = true; startConsole(); }

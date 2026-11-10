@@ -56,6 +56,11 @@ void hostSetSoundEnabled(bool on);
 typedef void (*HostHaptic)(uint8_t sfx);
 void hostSetHaptic(HostHaptic fn);
 
+// Links (V2's About page: the repository, the YouTube channel): the front end opens the URL in the browser. NULL:
+// none, and the game shows the link's QR code instead, as the Knomi does
+typedef void (*HostOpenUrl)(const char *url);
+void hostSetOpenUrl(HostOpenUrl fn);
+
 // Buddy relay (relay/ on Cloudflare): the front end keeps a WebSocket to HOST_RELAY_URL, adding
 // "?v4=<its public IPv4>" when it can learn it, and passes things through on the game's thread.
 #define HOST_RELAY_URL "wss://pokeknomigochi-relay.fedor-dd0.workers.dev/ws"

@@ -15,6 +15,8 @@ static bool gStarted = false;
 // each sound effect, for the page to buzz (Module.haptic decides how, and whether)
 EM_JS(void, jsHaptic, (int sfx), { if (Module.haptic) Module.haptic(sfx); });
 static void haptic(uint8_t sfx) { jsHaptic(sfx); }
+EM_JS(void, jsOpenUrl, (const char *u), { window.open(UTF8ToString(u), '_blank', 'noopener'); });
+static void openUrl(const char *u) { jsOpenUrl(u); }  // About's links: a new tab
 
 // network time (host.h): the page asks its own site, past the cache, and hands back the answer's Date
 // header in seconds (0: none). The page and the game come from the same place, so the header is readable.
@@ -32,6 +34,7 @@ EMSCRIPTEN_KEEPALIVE void webStart(void) {
   gStarted = true;
   gFrame = (uint8_t *)malloc(HOST_CANVAS_SIZE * HOST_CANVAS_SIZE * 4);
   hostSetHaptic(haptic);
+  hostSetOpenUrl(openUrl);
   hostInit(RES_DIR, SAVE_DIR);
 }
 

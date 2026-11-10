@@ -84,6 +84,7 @@ enum {
   WM_UPDATE_READY,       // the new .exe is checked and beside this one (lParam: std::wstring*, its path, or empty: failed)
   WM_TEST,               // --console: a test event (lParam: std::string*)
   WM_NET_TIME,           // the time server's answer (lParam: seconds since 1970 UTC, 0: none)
+  WM_OPEN_URL,           // a link from the game, About's (lParam: std::string*): in the browser
 };
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
 enum {
@@ -1364,6 +1365,12 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
     case WM_RELAY_DOWN:
       hostRelayConnected(NULL);
       return 0;
+    case WM_OPEN_URL: {
+      std::string *u = (std::string *)lp;
+      ShellExecuteA(NULL, "open", u->c_str(), NULL, NULL, SW_SHOWNORMAL);
+      delete u;
+      return 0;
+    }
     case WM_UPDATE_FOUND: {
       UpdateResult *r = (UpdateResult *)lp;
       if (r->answered) gUpdateAnswered = time(NULL);
@@ -1474,6 +1481,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     return 0;
   }
   std::string res = unpackResources();
+  hostSetOpenUrl([](const char *u) { PostMessageW(gWnd, WM_OPEN_URL, 0, (LPARAM) new std::string(u)); });  // About's links
   hostInit(res.c_str(), saveDir.c_str());
   CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);  // the sensors are COM
   startVibration();

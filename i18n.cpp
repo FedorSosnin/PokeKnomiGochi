@@ -80,6 +80,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "AMIGOS %d/%d", "CUIDADOS %d/%d",
     "Pok\202 Ball", "Lanzar %s",
     "Toca una Ball y luego LANZAR.", "Toca LANZAR.", "Inclina para apuntar",
+    "Sonido", "Idioma", "Acerca de", "Hecho por Fedor", "Escan\202alo con el m\242vil",
 #endif
   },
   // ---------------- EN ----------------
@@ -155,6 +156,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "BUDDIES %d/%d", "CARE %d/%d",
     "Pok\202 Ball", "Throw %s",
     "Tap a ball, then THROW.", "Tap THROW.", "Lean to aim",
+    "Sound", "Language", "About", "Made by Fedor", "Scan it with your phone",
 #endif
   },
   // ---------------- FR ----------------
@@ -230,6 +232,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "COPAINS %d/%d", "SOINS %d/%d",
     "Pok\202 Ball", "Lancer %s",
     "Touche une Ball, puis LANCER.", "Touche LANCER.", "Penche pour viser",
+    "Son", "Langue", "A propos", "Cr\202\202 par Fedor", "Scanne avec ton portable",
 #endif
   },
   // ---------------- DE ----------------
@@ -310,6 +313,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "KUMPEL %d/%d", "PFLEGE %d/%d",
     "Pok\202ball", "%s werfen",
     "Tippe einen Ball an, dann WERFEN.", "Tippe auf WERFEN.", "Neigen zum Zielen",
+    "Ton", "Sprache", "Info", "Von Fedor", "Mit dem Handy scannen",
 #endif
   },
   // ---------------- IT ----------------
@@ -385,6 +389,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "AMICI %d/%d", "CURA %d/%d",
     "Pok\202 Ball", "Lancia %s",
     "Tocca una Ball, poi LANCIA.", "Tocca LANCIA.", "Inclina per mirare",
+    "Suono", "Lingua", "Info", "Creato da Fedor", "Scansiona col telefono",
 #endif
   },
   // ---------------- PT ----------------
@@ -460,6 +465,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "AMIGOS %d/%d", "CUIDADOS %d/%d",
     "Pok\202 Bola", "Lan\207ar %s",
     "Toca numa Bola e depois em LAN\207AR.", "Toca em LAN\207AR.", "Inclina para mirar",
+    "Som", "Idioma", "Sobre", "Feito por Fedor", "L\210 com o telem\242vel",
 #endif
   },
   // ---------------- JA ----------------
@@ -558,6 +564,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "ともだち %d/%d", "おせわ %d/%d",
     "モンスターボール", "%sを なげる",
     "ボールを えらんで なげるを タッチ。", "なげるを タッチ。", "かたむけて ねらう",
+    "サウンド", "げんご", "じょうほう", "つくった ひと: Fedor", "スマホで よみとってね",
 #endif
   },
   // ---------------- KO ----------------
@@ -638,6 +645,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "친구 %d/%d", "돌보기 %d/%d",
     "몬스터볼", "%s 던지기",
     "볼을 고르고 던지기를 눌러요.", "던지기를 눌러요.", "기울여서 조준",
+    "소리", "언어", "정보", "만든 사람: Fedor", "휴대폰으로 스캔하세요",
 #endif
   },
 };

@@ -108,8 +108,14 @@ static const int16_t V2_MANSION_RISE[4] = { 20, 226, 446, 330 };   // added to t
 #define V2_FEED_SPAN_MIN 50   // ...and at least this far
 #define V2_FEED_SEAT_R 34
 
-// the clock's pages: the time and the Knomi's settings
-#define V2_CLOCK_PAGES 2
+// Settings' pages: the time with the sound and the language, the Knomi's Wi-Fi and updates, and About (about_v2.h)
+#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
+#define V2_CLOCK_PAGES 3
+#else
+#define V2_CLOCK_PAGES 2  // (a computer's Wi-Fi and updates are its own business)
+#endif
+#define V2_ABOUT_PAGE (V2_CLOCK_PAGES - 1)
+#define V2_SET_PANEL_Y1 318  // the first page's panel's bottom: START OVER is under it
 
 // the time page's START OVER (menus_v2.h): its box, which is also its tap
 #define V2_RESET_X0 113

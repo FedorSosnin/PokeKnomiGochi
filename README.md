@@ -123,7 +123,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game, 
 | **Tap its name on the card** (✏️) | Rename it |
 | **Pokédex** in the ring | Tap a Pokémon for its page, where it turns round, and tap it there to give it a pat |
 | **Medals** in the ring | The trophy room: every medal. Tap anywhere to see how to earn each one |
-| **Settings** in the ring | The clock and your time zone (or set the time, without Wi-Fi), then the next page for settings |
+| **Settings** in the ring | The clock and your time zone (or set the time, without Wi-Fi), sound and language; the next page for Wi-Fi and updates; then **About**: the version, and the GitHub and YouTube links as QR codes |
 | **The arrows at the sides**, or a swipe | Turn the pages. "Page 2 of 7" shows where you are |
 | **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |

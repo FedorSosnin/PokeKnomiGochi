@@ -664,6 +664,7 @@ void loopTiming(uint32_t start) {
 
 #if UI_V2
 static void v2RepelTick(uint32_t now);  // V2: minigame time earns Repels (repel_v2.h, included with the scene)
+static bool v2AboutQrOpen();            // V2: a link's QR code is over the About page (about_v2.h)
 #endif
 void loop() {
   uint32_t now = millis();
@@ -1511,6 +1512,16 @@ void onSwipe(int dir) {
     return;
   }
 #endif
+#if UI_V2
+  if (clockOpen && wifiSetupState() == WS_OFF) {  // V2: Settings, (the Knomi's Wi-Fi,) About; left advances
+    int next = clockPage + (dir > 0 ? -1 : 1);
+    if (next >= 0 && next < V2_CLOCK_PAGES) {
+      if (next == 0 && clockPage != 0 && !clockEdited) clockLoadNow();  // may have synced in settings
+      clockPage = next;
+    }
+    return;
+  }
+#endif
 #if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)  // on the host, wifi is the system's business: there is no page
   if (clockOpen && wifiSetupState() == WS_OFF) {  // time <-> settings; left advances
     uint8_t next = dir > 0 ? 0 : 1;
@@ -1662,8 +1673,8 @@ void onTap(int16_t x, int16_t y) {
       return;
     }
 #endif
-#if UI_V2 && defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
-    if (!tzPickOpen && wifiSetupState() == WS_OFF) {  // V2: the side buttons turn the time and settings pages
+#if UI_V2
+    if (!tzPickOpen && wifiSetupState() == WS_OFF && !(clockPage == V2_ABOUT_PAGE && v2AboutQrOpen())) {  // V2: the side buttons turn the pages
       int a = pageArrowAt(x, y, clockPage, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y);
       if (a) {
         sfxPlay(SFX_TAP);
@@ -2219,6 +2230,9 @@ static bool staticScreen() {
 #endif
   if (pet.awaitingStarter()) return true;
   if (pet.awaitingEggPick() || buddyMenuOpen || partyOpen || playMenuOpen || tradeOpen || sdOpen || vbOpen || galleryOpen || gameOpen || battleOpen || quizOpen || gamesMenuOpen || zoneScreen || runOpen || surfOpen || dungeonOpen) return false;  // the gallery manages its own repainting
+#if UI_V2
+  if (clockOpen && clockPage == V2_ABOUT_PAGE) return false;  // V2: About's coin spins and gleams
+#endif
   if (kbOpen || clockOpen) return true;
 #if UI_V2
   if (cardOpen && !cardAch && cardPage >= 4) return false;  // V2: an item's page: the item hovers (Fedor)
@@ -6260,6 +6274,13 @@ void renderSettings() {
 #endif
 
 void renderClock() {
+#if UI_V2
+  if (clockPage == V2_ABOUT_PAGE) {  // V2: About, the last page (about_v2.h)
+    v2About();
+    gfx->flush();
+    return;
+  }
+#endif
 #ifdef BOARD_KNOMI_V2
   if (clockPage == 1) {
     renderSettings();
@@ -6366,6 +6387,12 @@ void clockTap(int16_t x, int16_t y) {
     return;
   }
 #endif
+#if UI_V2
+  if (clockPage == V2_ABOUT_PAGE) {  // V2: About: its X, the coin, the links (about_v2.h)
+    v2AboutTap(x, y);
+    return;
+  }
+#endif
   if (closeHit(x, y) && wifiSetupState() == WS_OFF) {  // as swiping up does: nothing set
     sfxPlay(SFX_TAP);
     wifiSetupStop();
@@ -6382,6 +6409,12 @@ void clockTap(int16_t x, int16_t y) {
   if (clockLocked() && clockTzUi && x >= TZ_BTN_X && x < TZ_BTN_X + TZ_BTN_W && y >= TZ_BTN_Y && y < TZ_BTN_Y + TZ_BTN_H) {
     sfxPlay(SFX_TAP);
     tzPickerOpen();
+    return;
+  }
+#endif
+#if UI_V2
+  if (clockPage == 0 && clockLocked()) {  // V2: the time zone, the sound and the language rows (about_v2.h)
+    v2SettingsTap(x, y);
     return;
   }
 #endif
@@ -10768,13 +10801,11 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
   }
   if (clockOpen) {
 #if UI_V2
-#if defined(BOARD_KNOMI_V2) && !defined(BOARD_HOST)
-    const int clockPages = V2_CLOCK_PAGES;  // V2: the time, then the Knomi's settings
-#else
-    const int clockPages = 1;
-#endif
     if (tzPickOpen && clockPage == 0 && closeHit(x, y)) return v2PressNav(x, y, t, 0, 0, 0, true);  // the picker's X
-    if (!tzPickOpen && wifiSetupState() == WS_OFF && v2PressNav(x, y, t, clockPage, clockPages, V2_PAGE_ARROW_Y, true)) return true;
+    if (clockPage == V2_ABOUT_PAGE && v2AboutQr) return v2AboutPress(x, y, t);  // V2: a link's QR code: its X
+    if (!tzPickOpen && wifiSetupState() == WS_OFF && v2PressNav(x, y, t, clockPage, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y, true)) return true;
+    if (clockPage == V2_ABOUT_PAGE) return v2AboutPress(x, y, t);  // V2: the links (about_v2.h)
+    if (clockPage == 0 && !tzPickOpen && clockLocked()) return v2SettingsPress(x, y, t);  // V2: the rows
 #endif
 #ifdef BOARD_KNOMI_V2
     if (clockPage == 1) {

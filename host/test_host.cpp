@@ -904,6 +904,43 @@ static void testGame() {
       CHECK(bBallT != t0);
       closeBattle();
       runTicks(200);
+      // Settings, tidied, and About (Fedor: "an about page with my logo on it ... a way to get to the repo but also my
+      // youtube channel"): the Sound and Language rows; the next page is About; its links open in the browser, and
+      // with nothing to open them the link's QR code shows (as on the Knomi), a tap puts it away; the X closes
+      {
+        extern bool clockOpen;
+        extern uint8_t clockPage;
+        extern void applyLangFont();
+        static std::string opened;
+        clockOpen = true;
+        clockPage = 0;
+        runTicks(300);
+        bool snd = audioEnabled();
+        tapAt(328, 232);  // the Sound row's switch
+        CHECK(audioEnabled() != snd);
+        audioSetEnabled(snd);
+        Lang was = gLang;
+        tapAt(290, 280);  // the Language row's button: the next language
+        CHECK(gLang == (Lang)((was + 1) % LANG_COUNT));
+        setLang(was);
+        applyLangFont();
+        tapAt(436, 228);  // the side button: About
+        CHECK(clockOpen && clockPage == 1);
+        hostSetOpenUrl([](const char *u) { opened = u; });
+        tapAt(164, 340);  // GITHUB
+        CHECK(opened == "https://github.com/FedorSosnin/PokeKnomiGochi");
+        tapAt(302, 340);  // YOUTUBE
+        CHECK(opened == "https://youtube.com/3dprintsos");
+        hostSetOpenUrl(nullptr);
+        CHECK(pressTargetAt(164, 340, pt) && !strcmp(pt.label, "GITHUB"));
+        tapAt(164, 340);  // nothing to open it with: its code, and the page under it takes no presses
+        CHECK(!pressTargetAt(164, 340, pt));
+        tapAt(233, 200);  // put away
+        CHECK(pressTargetAt(164, 340, pt));
+        tapAt(233, 422);  // the X
+        CHECK(!clockOpen);
+        runTicks(200);
+      }
       // no swipe out of a battle (Fedor: "you can swipe out of a battle. Which means you can cancel out a run")
       hostSerialPush("WILD 129");
       runTicks(300);

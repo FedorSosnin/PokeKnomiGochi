@@ -1,10 +1,15 @@
 # Changelog
 
 All notable changes to the firmware. Versions match the number shown at the
-bottom of the clock/settings screen (**Settings** in the hold menu) and `web/knomi/manifest.json`.
+**About** page (the last page of **Settings** in the hold menu) and `web/knomi/manifest.json`.
 
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
+
+## [Unreleased]
+
+- **About page:** the last page of **Settings** has the 3D Print SOS logo in pixel art, spinning like a gold coin: it spins when the page opens and whenever you tap it, and a gold gleam crosses it now and then. Under it are the version, who made it, and **GitHub** and **YouTube** buttons. On Mac, Windows and the web they open in your browser; on the Knomi they show a QR code to scan with your phone.
+- **Settings tidied:** the first page has the time, then a row each for **Sound** (a switch) and **Language** (its own name; tap for the next), and **Start Over** under them. On the Knomi, your time zone is the button under the time, and Wi-Fi and updates are the next page. The version moved to About.
 
 ## [2.0.3] - 2026-11-10
 
