@@ -1,11 +1,11 @@
 #!/bin/zsh
 # Publishes PokeWebGochi (web/play/, built by webgame/build.sh) to its own GitHub Pages site,
-# https://pokewebgochi.3dprintsos.com (repo FedorSosnin/pokewebgochi). The game lives at that one
+# https://pokewebgochi.3dprintsos.com (repo FedorSosnin/PokeWebGochi). The game lives at that one
 # address only: a browser keeps saves per site, so a second address would mean a second pet.
 #   tools/publish_web.sh
 set -e
 cd "${0:A:h}/.."
-REPO=FedorSosnin/pokewebgochi
+REPO=FedorSosnin/PokeWebGochi
 DOMAIN=pokewebgochi.3dprintsos.com
 SITE=build/pokewebgochi-site
 GIT=(git -c credential.helper= -c 'credential.helper=!gh auth git-credential')

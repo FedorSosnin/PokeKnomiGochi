@@ -6,7 +6,7 @@ bottom of the clock/settings screen (**Settings** in the hold menu) and `web/kno
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [2.0.1] - unreleased
+## [2.0.1] - 2026-11-10
 
 - **The hold menu is the way around:** no more swipes on the home screen. Hold your Pokémon for the ring of Settings, Medals, Stats and the Pokédex, which leaves room for more there. Swipes still turn pages inside them, and still quit a game.
 - **Searching a zone finds what you're missing:** a Search now leans toward the Pokémon you haven't caught there, rare ones too (less often), the way a Wild Encounter does. Before, a missing rare like Jynx at the Beach turned up only about once in 60 Searches; when it's the last one there, now it's about one in 3 or 4.
