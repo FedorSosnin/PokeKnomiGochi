@@ -820,8 +820,11 @@ static const ScEll SC_FAR[3] = { { -120, 214, 230, 500 }, { 200, 200, 600, 520 }
 static const ScEll SC_MID[2] = { { -200, 246, 300, 600 }, { 240, 256, 700, 620 } };
 static const ScEll SC_NEAR[1] = { { -400, 276, 866, 1100 } };
 static const ScEll SC_DUNES[2] = { { -200, 262, 300, 600 }, { 240, 270, 700, 620 } };
-static const ScEll SC_SHORE[1] = { { -400, 284, 866, 1100 } };
-// Where a Pokemon at x stands at home: the near hill's top edge (SC_NEAR; the Beach's shore is the same oval, lower)
+// The Beach's shore is the near hill's oval too. It was 8 px lower, so a Pokemon at home there stood on the sand's
+// very edge with the top of its shadow on the sea, more or less of it with each step as the sand bobbed and the sea
+// didn't (Fedor: "the Blastoise on my Mac sometimes ends up in the air on the beach ... when he steps, his shadow
+// hovers a bit")
+// Where a Pokemon at x stands at home: the near hill's top edge (SC_NEAR, the Beach's shore too)
 // falls away from the middle, and the buddies and the visitor at the sides stand that much lower than yours (Fedor:
 // "the pokemon needs to be placed on an arc as they get closer to the edges of the screen. Since the background drops
 // down on a curve. Blastoise is in the air a bit too much"): 10 px at 368, 16 at the ends of a row of four
@@ -1011,7 +1014,7 @@ static void scLandBeach(const ScPal &p) {
   scRect(0, 224, V2_W, 300, sea);
   scRect(0, 224, V2_W, 227, scMix(sea, 0xFFFFFF, .35));  // the horizon
   for (auto &g : glint) scRect(g[0], g[1], g[0] + 11, g[1] + 3, g[1] < 260 ? seaHi : scMix(seaHi, sea, .4));
-  ScLayer L[2] = { { p.mid, SC_DUNES, 2 }, { p.near, SC_SHORE, 1 } };
+  ScLayer L[2] = { { p.mid, SC_DUNES, 2 }, { p.near, SC_NEAR, 1 } };
   scHills(L, 2, p.lit, 1);
   ScKey palm[5];  // palms on the dunes, a size up so they read at the Knomi's size
   scPalmKeys(palm, p);

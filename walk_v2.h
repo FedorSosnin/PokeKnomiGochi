@@ -156,7 +156,7 @@ static void v2PaintMid(uint8_t zone, uint8_t tod) {
 static void v2PaintNear(uint8_t zone, uint8_t tod) {
   ScPal p = scZonePal(zone);
   scGradeTod = v2LandTod(zone, tod);
-  ScLayer L[1] = { { p.near, zone == Z_BEACH ? SC_SHORE : SC_NEAR, 1 } };
+  ScLayer L[1] = { { p.near, SC_NEAR, 1 } };  // (the Beach's shore too: scene_v2.h)
   scHills(L, 1, p.lit, 1);
 }
 // the sky as the still scene has it, without its clouds and birds (they move)

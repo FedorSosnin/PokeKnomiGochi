@@ -8,6 +8,8 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 
 ## [Unreleased]
 
+- **Beach Pokémon stand on the sand:** at home on the Beach, the sand now comes up as far as the other homes' grass. Before, a Pokémon stood on the very edge of the sand with the top of its shadow on the sea, so a big one like Blastoise looked like it was hovering when it stepped.
+- **Blastoise sleeps on the ground:** asleep, it sits back with a foot stretched toward you, and it used to stand on that foot with its body in the air (over the sea, on the Beach). It sits on its body now.
 - **The Repel bar opens the Repel's page:** at the end of a mini game, tap the Repel bar under **Play Again!** to see the Repel's page on your Pokémon's card: what it does, how many you hold and how far along the next one is.
 - **Who's That? buttons are all one width:** the three names are as wide as the bottom one, in Who's That? and in Who's That? Showdown.
 - **Wild Encounter brings you back to Knomi Island:** when a Wild Encounter ends, whether you run, win, catch it or it gets away, you're back on the island, ready for the next one, the way a zone's Search brings you back to the zone. Before, it went home every time, which made hunting for shinies slow. The physical button's battle (Space on a keyboard) still ends at home.

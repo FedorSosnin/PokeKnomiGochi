@@ -157,6 +157,14 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
       for (uint8_t f = 0; f < nf; f++) a.low[f] = a.low[f] > sink ? a.low[f] - sink : 1;
       a.base = a.base > sink ? a.base - sink : 1;
     }
+    // Blastoise sleeps sitting back with a leg stretched out toward you, its foot 4 rows under the rest of it: stood on
+    // that foot, its body and shell were 20 px over the ground, over the sea on the Beach (Fedor: "When Blastoise
+    // sleeps, he looks to be sitting in the water", "Still floating above the ground"). Asleep it sits on its body,
+    // the foot on the ground in front of it
+    if (dexNum == 9 && id == PMD_SLEEP) {
+      for (uint8_t f = 0; f < nf; f++) a.low[f] = a.low[f] > 4 ? a.low[f] - 4 : 1;
+      a.base = a.base > 4 ? a.base - 4 : 1;
+    }
 #endif
   }
 #if UI_V2
