@@ -523,6 +523,7 @@ static void runTicks(int ms) {
 
 // the real game, from start to finish
 extern bool gamesMenuOpen, gameOpen, runOpen;
+enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE };  // (the sketch's)
 extern uint32_t runOverT;
 extern int8_t introCard;
 extern uint32_t lastInteract;
@@ -789,6 +790,38 @@ static void testGame() {
     CHECK(galleryOpen && galleryPage == 1);
     galleryOpen = false;
     runTicks(200);
+    // a Wild Encounter from Knomi Island goes back to the island, as a zone's Search goes back to the zone
+    // (Fedor: "When hitting run, you should go back to the zone you were in right before you battled. Not back
+    // to home screen"); the button's battle still ends at home
+    {
+      extern bool battleOpen, bRunFailed;
+      extern ZoneScreen zoneScreen;
+      extern uint8_t zoneCur;
+      extern void closeBattle(), zoneSearch();
+      hostSerialPush("ZONES");
+      runTicks(300);
+      CHECK(zoneScreen == ZS_PICK);
+      tapAt(233, 230);  // the tall grass in the middle: Wild Encounter
+      CHECK(battleOpen && zoneScreen == ZS_NONE);
+      runTicks(4500);   // its intro, and a new move's if there is one
+      tapAt(233, 412);  // RUN
+      if (battleOpen && bRunFailed) closeBattle();  // (one run in 20 fails: closed as it would have)
+      runTicks(1500);
+      CHECK(!battleOpen && zoneScreen == ZS_PICK);
+      zoneCur = 1;  // a zone's Search: back to the zone
+      zoneScreen = ZS_ZONE;
+      zoneSearch();
+      CHECK(battleOpen && zoneScreen == ZS_NONE);
+      closeBattle();
+      CHECK(zoneScreen == ZS_ZONE);
+      zoneScreen = ZS_NONE;
+      hostSerialPush("BATTLE");  // the button's (Space on a keyboard): home
+      runTicks(300);
+      CHECK(battleOpen);
+      closeBattle();
+      CHECK(zoneScreen == ZS_NONE);
+      runTicks(200);
+    }
   }
   // V2's game backgrounds, by day, as their mockups have them (games_px.py) where the game stands things
   {

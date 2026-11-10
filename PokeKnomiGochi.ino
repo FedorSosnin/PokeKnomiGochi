@@ -243,6 +243,11 @@ enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE };
 ZoneScreen zoneScreen = ZS_NONE;
 uint8_t zoneCur = 0, zonePage = 0;
 int8_t bZone = -1;                  // this battle is in a zone; -1 = random
+#if UI_V2
+bool bFromIsland = false;  // V2: a Wild Encounter from Knomi Island: its end goes back there, as a zone's does (Fedor:
+                           // "When hitting run, you should go back to the zone you were in right before you battled.
+                           // Not back to home screen. Makes hunting shinys more tedious")
+#endif
 int16_t zoneDetail = 0;             // the entry opened from the zone's grid (0 = the grid)
 uint16_t *zoneArt = nullptr;        // the 5 frames, painted the first time the menu opens
 uint16_t *zoneBg = nullptr;         // the current battle's one, scaled up to the screen
@@ -3698,6 +3703,12 @@ void closeBattle() {
   battleOpen = false;
   wildPmd.unload();
   if (bZone >= 0) zoneBattleEnded();
+#if UI_V2
+  if (bFromIsland) {
+    bFromIsland = false;
+    zoneScreen = ZS_PICK;  // (asleep, a farewell or an egg shuts it again: zone render)
+  }
+#endif
 }
 
 void battleMoveRect(uint8_t i, int &x0, int &x1) {
@@ -9421,7 +9432,13 @@ void zoneTap(int16_t x, int16_t y) {
     sfxPlay(SFX_TAP);
     if (z == ZONE_RANDOM) {
       zoneScreen = ZS_NONE;
+#if UI_V2
+      bFromIsland = true;  // V2: its end comes back to the island
+      startBattle();
+      if (!battleOpen) bFromIsland = false, zoneScreen = ZS_PICK;  // without a sprite there is no battle
+#else
       startBattle();  // its end comes back home, as from the button
+#endif
       return;
     }
     zoneCur = z;

@@ -8,6 +8,7 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 
 ## [Unreleased]
 
+- **Wild Encounter brings you back to Knomi Island:** when a Wild Encounter ends, whether you run, win, catch it or it gets away, you're back on the island, ready for the next one, the way a zone's Search brings you back to the zone. Before, it went home every time, which made hunting for shinies slow. The physical button's battle (Space on a keyboard) still ends at home.
 - **Check for Updates asks again:** on Mac and Windows, **Update to Version…** in the menu now checks GitHub again before offering, so it offers the newest version. Before, it could offer the one it had found earlier, even after a newer one came out. Offline, it still offers the one it found.
 
 ## [2.0.1] - 2026-11-10

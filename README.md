@@ -211,7 +211,7 @@ Each kind of training stops at 100. The card's **Training** page (**Stats** in t
 
 ### Travel
 
-Tap the **map** icon in the middle of the bottom to open **Travel**: **Knomi Island**, a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
+Tap the **map** icon in the middle of the bottom to open **Travel**: **Knomi Island**, a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button, and brings you back to the island when it's over. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
 
 ### Games
 

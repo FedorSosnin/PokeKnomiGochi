@@ -131,7 +131,7 @@ While a Repel works, wild encounters, and zones you've caught everything in, bri
 
 There are two ways to start a battle:
 
-- 🔘 **The physical button, or Wild Encounter (the last circle, after the zones):** a random wild Pokémon from anywhere, met at your Pokémon's home. The Mac, Windows and web versions have no button, so Wild Encounter is the way there (or Space on a keyboard).
+- 🔘 **The physical button, or Wild Encounter (the last circle, after the zones):** a random wild Pokémon from anywhere, met at your Pokémon's home. From the island, you're back there when the battle ends, as a zone's Search brings you back to the zone; from the button, back home. The Mac, Windows and web versions have no button, so Wild Encounter is the way there (or Space on a keyboard).
 - 🗺️ **Travel, the map icon on the home screen:** tap a zone on Knomi Island and hunt there. Missing Pokémon show as silhouettes. Most Searches look first among the ones you're missing there, the rare ones too but less often, as a Wild Encounter does; never the legendary, which turns up about once in a hundred.
 
 | Zone | Pokémon | Who lives there | Rare 💎 | Legendary ⭐ |
