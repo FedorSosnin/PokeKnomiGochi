@@ -262,7 +262,7 @@ static void v2About() {
   char sign[32];
   v2Sign(v2Caps(T(S_ABOUT), sign, sizeof(sign)));
   v2Coin(now);
-  v2Panel(84, V2_ABOUT_PANEL_Y0, 382, V2_ABOUT_PANEL_Y1, 10);
+  v2Panel(70, V2_ABOUT_PANEL_Y0, 396, V2_ABOUT_PANEL_Y1, 10);  // (wide: "Made by 3DPrintSOS - Fedor")
   setSize(2);
   gfx->setTextColor(UI_INK);
   const char *v = "PokeKnomiGochi v" FW_VERSION;
