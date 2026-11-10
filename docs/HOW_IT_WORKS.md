@@ -98,7 +98,7 @@ Every form in the Pokédex (regular and shiny count apart) has 1–3 ★: its ge
 - **Mini games** add speed training: Berry Drop, PokeRun, PikaSurf and PokeDungeon add 1 for every 5 points.
 - **Weight** isn't training: every berry adds 4 and candy 12 (6 more if it was already 80% full). Games, battles and time burn it off. Over 50, energy drops twice as fast; 20 or less earns the Fit medal.
 
-Each kind of training stops at 100. Swipe up for the card, then left twice: the **Training** page shows each one's bar, with **MAX** when it's full, and what trains it, plus a row for weight. Training belongs to the Pokémon: a new one starts from zero.
+Each kind of training stops at 100. Hold your Pokémon and tap **Stats** for the card, then two pages on: the **Training** page shows each one's bar, with **MAX** when it's full, and what trains it, plus a row for weight. Training belongs to the Pokémon: a new one starts from zero.
 
 ## Party Boost
 
@@ -115,7 +115,7 @@ The **daily visitor** brings a candy (a third one that day) and stays 60 minutes
 
 ## Items
 
-Kept with you from one Pokémon to the next, up to 99 of each. Each has its own page on the card (swipe up, then left), with how far along the next one is.
+Kept with you from one Pokémon to the next, up to 99 of each. Each has its own page on the card (**Stats** in the hold menu, then the next pages), with how far along the next one is.
 
 | Item | Earned | What it does |
 |---|---|---|
@@ -132,7 +132,7 @@ While a Repel works, wild encounters, and zones you've caught everything in, bri
 There are two ways to start a battle:
 
 - 🔘 **The physical button, or Wild Encounter (the last circle, after the zones):** a random wild Pokémon from anywhere, met at your Pokémon's home. The Mac, Windows and web versions have no button, so Wild Encounter is the way there (or Space on a keyboard).
-- 🗺️ **Travel, the map icon on the home screen:** tap a zone on Knomi Island and hunt there. Missing Pokémon show as silhouettes. Each Search leans a little toward the common ones you're missing, never toward the rare ones or the legendary.
+- 🗺️ **Travel, the map icon on the home screen:** tap a zone on Knomi Island and hunt there. Missing Pokémon show as silhouettes. Most Searches look first among the ones you're missing there, the rare ones too but less often, as a Wild Encounter does; never the legendary, which turns up about once in a hundred.
 
 | Zone | Pokémon | Who lives there | Rare 💎 | Legendary ⭐ |
 |---|---|---|---|---|
@@ -167,7 +167,7 @@ The game counts its own minutes, and only a clock nobody can set adds time away.
 |---|---|
 | 🕰️ **Time away** | Applied when you come back, up to 2 weeks at once. The Knomi measures it by network time over Wi-Fi. Mac, Windows and the web ask a time server when they start, and keep counting with the computer's own clock, which runs on while it sleeps and can't be set. Without Wi-Fi or a server, time away waits until one answers. |
 | 📅 **A new day** | Candies, the visitor and the streak move on at midnight, once 12 hours have been played since the last day began. The day never goes back, so a clock that's wrong and then corrected loses nothing and keeps the streak going. |
-| 🌍 **Time zone** | The Knomi uses the city you pick (swipe down, tap the city). Mac, Windows and the web use the computer's. |
+| 🌍 **Time zone** | The Knomi uses the city you pick (**Settings** in the hold menu, tap the city). Mac, Windows and the web use the computer's. |
 | ✋ **Setting the time** | Only on a Knomi without Wi-Fi: on Wi-Fi, and on Mac, Windows and the web, the time screen just shows the clock. |
 
 ## Growing up
@@ -184,7 +184,7 @@ The game counts its own minutes, and only a clock nobody can set adds time away.
 
 ## Medals
 
-Swipe from right to left on the home screen for the trophy room: all 25 medals as things in one room (the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes), and one not won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, "Earned!" or how far along you are, and the side arrows step through all 25. A new medal drops in from the top of the screen on a ribbon; tap it to see its card.
+Hold your Pokémon and tap **Medals** for the trophy room: all 25 medals as things in one room (the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes), and one not won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, "Earned!" or how far along you are, and the side arrows step through all 25. A new medal drops in from the top of the screen on a ribbon; tap it to see its card.
 
 | Medal | How to earn it |
 |---|---|

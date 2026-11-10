@@ -9,6 +9,7 @@
 #define OTA_BASE_URL "https://fedorsosnin.github.io/PokeKnomiGochi/"
 #define OTA_CHECK_EVERY_MS (24UL * 60 * 60 * 1000)  // the automatic check: once a day
 #define OTA_FIRST_CHECK_MS (2UL * 60 * 1000)        // and the first, 2 minutes after boot
+#define OTA_CHECK_V2_MS (60UL * 60 * 1000)           // V2: every hour, so a release made overnight is in by morning
 
 // "1.19" > "1.18", "1.9" < "1.10": compares number by number. -1, 0 or 1.
 inline int otaVersionCmp(const char *a, const char *b) {

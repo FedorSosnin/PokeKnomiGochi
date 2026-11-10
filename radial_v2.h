@@ -115,7 +115,7 @@ static int v2RadialAt(int16_t x, int16_t y) {
   if (r2 < V2_RAD_IN * V2_RAD_IN || r2 > (V2_RAD_OUT + 16) * (V2_RAD_OUT + 16)) return -1;
   return abs(fy) > abs(fx) ? (fy < 0 ? 0 : 2) : (fx > 0 ? 1 : 3);
 }
-// what each opens: the page its swipe opens
+// what each opens: the page its swipe on home opened (V2 has none there: this ring is the way to them)
 static void v2RadialPick(int s) {
   if (s == 0) {  // Settings: the swipe down's
     openClock();

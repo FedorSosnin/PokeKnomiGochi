@@ -15,6 +15,7 @@
 #include <xinput.h>
 #include <math.h>
 #include <stdio.h>
+#include <time.h>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -50,7 +51,9 @@
 static const int kSizes[] = {190, 240, 300};  // side of the window at rest, frame included, in points
 #define DEFAULT_SIZE 240
 
-// New versions: the newest "win-v*" release on GitHub. Checked at launch and once a day; the player is
+// New versions: the newest "win-v*" release on GitHub. Checked at launch and every UPDATE_EVERY_S by the
+// real clock (time the PC sleeps counts), looked at every UPDATE_POLL_MS, so a release made overnight is in
+// by morning; a check that got no answer is tried again at the next look. The player is
 // told once per version and can always check from the menu. The save lives outside the app, so
 // a new .exe keeps the pet.
 // Updating in place, as the Knomi does: the release also carries the .exe's signature
@@ -65,7 +68,9 @@ static const int kSizes[] = {190, 240, 300};  // side of the window at rest, fra
 #define RELEASE_TAG "win-v"
 #define RELEASE_ASSET "PokeWinGochi.exe"
 #define RELEASE_SIG RELEASE_ASSET ".sig"
-#define UPDATE_EVERY_MS (24 * 60 * 60 * 1000)
+#define UPDATE_EVERY_S (60 * 60)  // GitHub answers 60 an hour from one address
+#define UPDATE_POLL_MS (10 * 60 * 1000)
+static time_t gUpdateAnswered = 0;  // when GitHub last answered an update check
 
 // The window's size and place live in the save folder (namespace "win"), next to the game they belong
 // to: a copy launched on another save (tests, POKEMACGOCHI_SAVE_DIR) can't move this one
@@ -1219,7 +1224,8 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
         if (timeGetTime() - gLastTick >= TICK_MS) tick();
       }
       else if (wp == TIMER_PING) relayPing();
-      else if (wp == TIMER_UPDATE) checkForUpdates(false);
+      else if (wp == TIMER_UPDATE && (!gUpdateAnswered || time(NULL) - gUpdateAnswered >= UPDATE_EVERY_S))
+        checkForUpdates(false);  // due by the clock, or the last one got no answer
       return 0;
     case WM_NCHITTEST: {
       POINT p = {(short)LOWORD(lp), (short)HIWORD(lp)};
@@ -1359,6 +1365,7 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
       return 0;
     case WM_UPDATE_FOUND: {
       UpdateResult *r = (UpdateResult *)lp;
+      if (r->answered) gUpdateAnswered = time(NULL);
       updateCheckFound(*r, wp != 0);
       delete r;
       return 0;
@@ -1504,7 +1511,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
   }
   // test copies never nag, unless given a release list of their own to test updating with
   if ((gOwnSave && !gConsole) || getenv("POKEMACGOCHI_UPDATE_API")) {
-    SetTimer(gWnd, TIMER_UPDATE, UPDATE_EVERY_MS, NULL);
+    SetTimer(gWnd, TIMER_UPDATE, UPDATE_POLL_MS, NULL);
     checkForUpdates(false);
   }
 

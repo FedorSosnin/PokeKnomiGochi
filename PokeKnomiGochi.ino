@@ -745,7 +745,7 @@ void loop() {
   pet.clockTrusted = clockFromNetwork();
 
   // Wi-Fi updates: this firmware is confirmed once it has run 30 s (a broken update rolls
-  // back), and a new one is looked for once a day, only with the screen dimmed: the
+  // back), and a new one is looked for once a day (V2: every hour), only with the screen dimmed: the
   // check holds the loop for a second or two
   static bool bootConfirmed = false;
   if (!bootConfirmed && now > 30000) {
@@ -753,7 +753,11 @@ void loop() {
     otaConfirmBoot();
   }
   static uint32_t lastOtaCheck = 0;
+#if UI_V2
+  uint32_t otaDue = !lastOtaCheck ? OTA_FIRST_CHECK_MS : otaState() == OTA_FAILED ? 3600000UL : OTA_CHECK_V2_MS;
+#else
   uint32_t otaDue = !lastOtaCheck ? OTA_FIRST_CHECK_MS : otaState() == OTA_FAILED ? 3600000UL : OTA_CHECK_EVERY_MS;
+#endif
   if ((screenOff || dimStage >= 1) && buddyNetUp() && !pet.ceremony && now - lastOtaCheck >= otaDue) {
     lastOtaCheck = now ? now : 1;
     otaCheck(FW_VERSION);
@@ -1456,6 +1460,9 @@ void onSwipeV(int dir) {
     else if (dir < 0 && !cardAch) cardOpen = false;  // up closes the card
     return;
   }
+#if UI_V2
+  return;  // V2: no swipes on home: hold your Pokemon for the ring that opens these (radial_v2.h), with room for more
+#endif
   if (dir > 0) {                    // swipe down: set the time
     if (!confirmUntil && !feedMenuUntil) openClock();
   } else if (!pet.isEgg() && !confirmUntil && !feedMenuUntil) {
@@ -1539,6 +1546,9 @@ void onSwipe(int dir) {
     cardPage = p < 0 ? 0 : (p > cardPageCount() - 1 ? cardPageCount() - 1 : p);
     return;
   }
+#if UI_V2
+  if (!galleryOpen) return;  // V2: no swipes on home: hold your Pokemon for the ring (radial_v2.h)
+#endif
   if (!galleryOpen && dir < 0) {  // right to left on home: the achievements, off to the right
     if (!pet.ceremony && !confirmUntil && !pet.isEgg()) {
       cardOpen = cardAch = true;

@@ -117,14 +117,14 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game, 
 | Do this | What happens |
 |---|---|
 | **Tap the Pokémon** | Pet it |
-| **Hold your finger on it** | A ring opens round it: Settings, Medals, Stats and the Pokédex. Slide onto one and lift, or let go and tap one. Keep holding still for 3 seconds to let your Pokémon go (or bring back its goodbye, if you chose to stay together) |
+| **Hold your finger on it** | The menu: a ring opens round it. Slide onto one and lift, or let go and tap one. Keep holding still for 3 seconds to let your Pokémon go (or bring back its goodbye, if you chose to stay together) |
 | **Tap the icons along the bottom** | From left to right: open the backpack (berries, candy and your Repels), play mini games, Travel to hunt, turn the light off for bed, or give it a bath |
-| **Swipe up** | Its card: profile, battle stats, training, progress, and a page for each item |
+| **Stats** in the ring | Its card: profile, battle stats, training, progress, and a page for each item |
 | **Tap its name on the card** (✏️) | Rename it |
-| **Swipe from left to right** | The Pokédex. Tap a Pokémon for its page, where it turns round, and tap it there to give it a pat |
-| **Swipe from right to left** | The trophy room: every medal. Tap anywhere to see how to earn each one |
-| **Swipe down** | The clock and your time zone (or set the time, without Wi-Fi), then swipe left for settings |
-| **The arrows at the sides** | Turn the pages, the same as a swipe. "Page 2 of 7" shows where you are |
+| **Pokédex** in the ring | Tap a Pokémon for its page, where it turns round, and tap it there to give it a pat |
+| **Medals** in the ring | The trophy room: every medal. Tap anywhere to see how to earn each one |
+| **Settings** in the ring | The clock and your time zone (or set the time, without Wi-Fi), then the next page for settings |
+| **The arrows at the sides**, or a swipe | Turn the pages. "Page 2 of 7" shows where you are |
 | **Tap the round ✕ at the bottom** | Close a menu, the card, the Pokédex or the clock |
 | **Press and slide** | The button under your finger shows large above it. Slide to another one if you missed, and lift to choose |
 | **Press the button** | Start a wild battle |
@@ -205,7 +205,7 @@ Your Pokémon's ATK, DEF and SPD grow as it levels up, and training adds more on
 - **Mini games** (Berry Drop, PokeRun, PikaSurf, PokeDungeon) add speed training.
 - **Weight** isn't training: food adds it (candy the most), and games, battles and time burn it off. Over 50, your Pokémon tires twice as fast.
 
-Each kind of training stops at 100. The card's **Training** page (swipe up, then left twice) shows how far along each one is, with **MAX** when it's full, and your Pokémon's weight. Once attack training is maxed, a win says so instead of adding more. A new Pokémon starts training from zero.
+Each kind of training stops at 100. The card's **Training** page (**Stats** in the ring, then two pages on) shows how far along each one is, with **MAX** when it's full, and your Pokémon's weight. Once attack training is maxed, a win says so instead of adding more. A new Pokémon starts training from zero.
 
 <p align="center"><img src="docs/images/v2/card-training.png" width="240" alt="The Training page: ATK, DEF and SPD training, what trains each, and weight"></p>
 
@@ -225,7 +225,7 @@ Tap the **handheld** icon, second from the left, for the mini games: cartridges 
 
 ### Medals
 
-Swipe from right to left for the trophy room: all 25 medals as things in one room, the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes. Every few seconds a gleam sweeps over the ones you've won; one you haven't won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, and how far along you are where the game counts it. A new medal drops in on a ribbon; tap it to see its card.
+**Medals** in the ring opens the trophy room: all 25 medals as things in one room, the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes. Every few seconds a gleam sweeps over the ones you've won; one you haven't won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, and how far along you are where the game counts it. A new medal drops in on a ribbon; tap it to see its card.
 
 ### Buddies
 
@@ -261,7 +261,7 @@ Once a day, a wild Pokémon drops by with a candy, a third one for that day, and
 
 The Knomi has no clock battery, so it gets the time over Wi-Fi. If it was already on your network, it usually reconnects by itself.
 
-To change networks, swipe down, swipe left, tap **Change Wi-Fi**, pick your network, and type the password on the screen. A new network is only saved once it connects.
+To change networks, open **Settings** in the ring, turn to the next page, tap **Change Wi-Fi**, pick your network, and type the password on the screen. A new network is only saved once it connects.
 
 On Wi-Fi the clock sets itself, and swiping down just shows it (**Set by Wi-Fi**). To choose your time zone, tap the city under **Time zone** and use the arrows: each city shows its own time, so pick the one that matches your clock, then tap **OK**. Summer time changes by itself. A new Knomi starts on New York.
 
@@ -271,7 +271,7 @@ Changing the clock doesn't speed anything up. Time away only counts by network t
 
 ### Updates over Wi-Fi
 
-Once it's on Wi-Fi, the Knomi looks for a new version two minutes after it starts and then once a day, while the screen is dimmed. With **Auto-update** on (the switch on the settings page: swipe down, then left; it's on unless you turn it off), it installs the new version by itself the next time nobody is using it during the day: the home screen showing and dimmed, your Pokémon awake, nothing being played with a buddy. To update by hand, swipe down, swipe left, and tap **Check for update**. If a new version is out, the button changes to **Update to v…**: tap it and wait about a minute while it downloads and restarts. Your Pokémon, Pokédex and Wi-Fi are kept. If the new version ever fails to start, the Knomi goes back to the one it had.
+Once it's on Wi-Fi, the Knomi looks for a new version two minutes after it starts and then every hour, while the screen is dimmed. With **Auto-update** on (the switch on the second page of **Settings** in the ring; it's on unless you turn it off), it installs the new version by itself the next time nobody is using it during the day: the home screen showing and dimmed, your Pokémon awake, nothing being played with a buddy. To update by hand, open **Settings** in the ring, turn to the next page and tap **Check for update**. If a new version is out, the button changes to **Update to v…**: tap it and wait about a minute while it downloads and restarts. Your Pokémon, Pokédex and Wi-Fi are kept. If the new version ever fails to start, the Knomi goes back to the one it had.
 
 <p align="center"><img src="docs/images/v2/settings.png" alt="The settings page: Change Wi-Fi, Check for update, and the Auto-update switch, on" width="240"></p>
 
@@ -378,7 +378,7 @@ The same game as a small round window on your Mac desktop, in a Poké Ball ring.
 
 Your pet, sound setting and window size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 
-**Updates:** PokeMacGochi checks for a new version 10 seconds after it opens and then once a day. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and reopens on it. Turned off, it tells you once when one is out. From 1.30 on it updates itself, like the Knomi: click **Update** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and reopens on it a few seconds later. Your pet stays, since it's saved outside the app. Older versions get the new DMG instead: quit PokeMacGochi, open the DMG and drag it into Applications, choosing **Replace**.
+**Updates:** PokeMacGochi checks for a new version 10 seconds after it opens and then every hour, counting the time the Mac sleeps, so a version out overnight is there by morning. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and reopens on it. Turned off, it tells you once when one is out. From 1.30 on it updates itself, like the Knomi: click **Update** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and reopens on it a few seconds later. Your pet stays, since it's saved outside the app. Older versions get the new DMG instead: quit PokeMacGochi, open the DMG and drag it into Applications, choosing **Replace**.
 
 **Buddies:** a Knomi or another PokeMacGochi on the same Wi-Fi shows up as a buddy, just like between two Knomis. The first time, macOS asks whether PokeMacGochi may find devices on your local network: click **Allow**. If you clicked **Don't Allow**, turn PokeMacGochi on in **System Settings → Privacy & Security → Local Network** and reopen it.
 
@@ -396,7 +396,7 @@ The same game as a small round window on your Windows desktop, for Windows 10 an
 
 Your pet, sound setting and window size and place are saved in `%APPDATA%\PokeWinGochi`, separate from the app; the game's pictures are unpacked to `%LOCALAPPDATA%\PokeWinGochi`. Only one copy runs on that save at a time.
 
-**Updates:** it checks for a new version when it opens and then once a day. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and starts again on it. Turned off, it tells you once when one is out. From 1.13 on it updates itself, like the Knomi: click **Yes** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and starts again on it a few seconds later. Your pet stays. On older versions, quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one.
+**Updates:** it checks for a new version when it opens and then every hour, counting the time the PC sleeps. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and starts again on it. Turned off, it tells you once when one is out. From 1.13 on it updates itself, like the Knomi: click **Yes** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and starts again on it a few seconds later. Your pet stays. On older versions, quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one.
 
 **Tilt and controllers:** a controller's left stick tilts smoothly (for Berry Drop and aiming Poké Balls), and the stick or D-pad walks in PokeDungeon: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. If Windows has a motion sensor, as many tablets do, tilting the device tilts the game, like on a phone; **Tilt with the Device** in the menu turns that off. On a ROG Ally, set the gyro to act as the left joystick in Armoury Crate, and tilting the Ally tilts the game. The controller and the sensor only count while PokeWinGochi is the active window.
 

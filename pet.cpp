@@ -1008,11 +1008,12 @@ int Pet::zoneCaught(uint8_t zone) const {
 int16_t Pet::pickZoneSpecies(uint8_t zone, uint8_t lvl) {
   int16_t legend = ZONE_LEGEND[zone];
   if (random(1000) < ZONE_LEGEND_PERMIL) return legend;  // any time, but seldom
-  // now and then only the common ones you're missing; otherwise anyone strong enough to be here
+  // now and then only the common ones you're missing (V2: most of the time, rares too but less often, as a
+  // Wild Encounter looks for them); otherwise anyone strong enough to be here
 #if UI_V2
   // V2: a Repel. In a zone not yet complete every one here is as likely; in a complete one, weaker ones stay away
   // (and if that leaves nobody, the last pass is the usual one)
-  int first = random(100) < ZONE_NEW_PCT ? 0 : 1;
+  int first = random(100) < ZONE_V2_NEW_PCT ? 0 : 1;
   bool even = repelOn() && !zoneComplete(zone), strong = repelOn() && !even;
   if (even) first = 1;
   for (int pass = first; pass < (strong ? 3 : 2); pass++) {
@@ -1024,7 +1025,11 @@ int16_t Pet::pickZoneSpecies(uint8_t zone, uint8_t lvl) {
     int n = 0, total = 0;
     for (int16_t d = 1; d <= 151; d++) {
       if (zoneOf(d) != zone || d == legend || btlMinLevel(d) > lvl) continue;
+#if UI_V2
+      if (pass == 0 && (isRegistered(d) || (zoneIsRare(d) && random(100) < ZONE_V2_RARE_SKIP))) continue;
+#else
       if (pass == 0 && (isRegistered(d) || zoneIsRare(d))) continue;
+#endif
 #if UI_V2
       if (strong && pass < 2 && repelKeepsAway(d)) continue;
 #endif

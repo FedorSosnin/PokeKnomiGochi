@@ -1,10 +1,16 @@
 # Changelog
 
 All notable changes to the firmware. Versions match the number shown at the
-bottom of the clock/settings screen (swipe down) and `web/knomi/manifest.json`.
+bottom of the clock/settings screen (**Settings** in the hold menu) and `web/knomi/manifest.json`.
 
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
+
+## [2.0.1] - unreleased
+
+- **The hold menu is the way around:** no more swipes on the home screen. Hold your Pokémon for the ring of Settings, Medals, Stats and the Pokédex, which leaves room for more there. Swipes still turn pages inside them, and still quit a game.
+- **Searching a zone finds what you're missing:** a Search now leans toward the Pokémon you haven't caught there, rare ones too (less often), the way a Wild Encounter does. Before, a missing rare like Jynx at the Beach turned up only about once in 60 Searches; when it's the last one there, now it's about one in 3 or 4.
+- **Updates arrive sooner:** the Knomi, Mac and Windows apps look for a new version every hour instead of once a day, and on a Mac or PC the hours it sleeps count, so a version out overnight is there by morning. Installing still waits until nobody is using the game.
 
 ## [2.0] - 2026-11-10
 

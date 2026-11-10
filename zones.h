@@ -32,13 +32,18 @@ static const uint8_t ZONE_LEGEND[ZONE_COUNT] = { 151, 144, 146, 150, 145 };  // 
 // but only about one in a hundred. The others are drawn by weight: a common first form most often,
 // its evolved forms half as often, and a rare one (and what it evolves into) a third as often again.
 // Searches lean a little toward the common ones still missing, never toward the rare or the legend:
-// filling a zone takes finding them.
+// filling a zone takes finding them. (V2 leans toward the rare ones too: below.)
 #define ZONE_LEGEND_PERMIL 10    // the legendary: 10 Searches in 1000
 #define ZONE_W_COMMON 6          // weights of the rest
 #define ZONE_W_COMMON_EVO 3
 #define ZONE_W_RARE 2
 #define ZONE_W_RARE_EVO 1
 #define ZONE_NEW_PCT 40          // how often a Search looks only among the common ones you're missing
+// V2: a Search leans toward the ones you're missing as a Wild Encounter does, rares too (each one left out of
+// that look 60 times in 100, as there), so searching the right zone is never the slow way to find one
+// (Fedor looked for Jynx at the Beach for three days; Wild Encounters found her at once)
+#define ZONE_V2_NEW_PCT 70       // how often a Search looks only among the ones you're missing
+#define ZONE_V2_RARE_SKIP 60     // and how often a missing rare one sits that look out
 
 inline uint8_t zoneOf(int16_t dex) { return ZONE_OF[dex - 1]; }
 

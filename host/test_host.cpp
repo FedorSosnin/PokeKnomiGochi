@@ -761,6 +761,34 @@ static void testGame() {
     runTicks(200);
     CHECK(!gamesMenuOpen);
     CHECK(anySound(HOST_AUDIO_RATE / 10));
+    // no swipes on home (Fedor: "Making the hold menu the main navigation there"): a quick swipe each way
+    // opens nothing; the ring opens the pages, where a swipe still turns them
+    extern bool galleryOpen, clockOpen, v2RadialOpen;
+    extern int galleryPage;
+    auto swipe = [](int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
+      for (int i = 0; i <= 6; i++) {
+        hostPointer(x0 + (x1 - x0) * i / 6, y0 + (y1 - y0) * i / 6, true);
+        runTicks(30);
+      }
+      hostPointer(x1, y1, false);
+      runTicks(300);
+    };
+    static const int16_t sw[4][4] = { {110, 230, 360, 230}, {360, 230, 110, 230}, {233, 150, 233, 290}, {233, 290, 233, 150} };
+    for (auto &s : sw) {
+      swipe(s[0], s[1], s[2], s[3]);
+      CHECK(!galleryOpen && !cardOpen && !clockOpen && !v2RadialOpen);
+    }
+    hostPointer(233, 240, true);  // a hold on the Pokemon, let go in the ring's middle: it stays for a tap
+    runTicks(700);
+    hostPointer(233, 240, false);
+    runTicks(200);
+    CHECK(v2RadialOpen);
+    tapAt(88, 206);  // the Pokedex, on the left
+    CHECK(galleryOpen && !v2RadialOpen && galleryPage == 0);
+    swipe(360, 230, 110, 230);  // right to left: the next page
+    CHECK(galleryOpen && galleryPage == 1);
+    galleryOpen = false;
+    runTicks(200);
   }
   // V2's game backgrounds, by day, as their mockups have them (games_px.py) where the game stands things
   {

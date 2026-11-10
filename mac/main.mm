@@ -29,7 +29,9 @@
 static const CGFloat kSizes[] = {190, 240, 300};  // side of the window at rest, frame included
 #define DEFAULT_SIZE 240.0
 
-// New versions: the newest "mac-v*" release on GitHub. Checked at launch and once a day; the
+// New versions: the newest "mac-v*" release on GitHub. Checked at launch and every UPDATE_EVERY_S by the
+// real clock (time the Mac sleeps counts, as it doesn't for a timer), looked at every UPDATE_POLL_S, so a
+// release made overnight is in by morning; a check that got no answer is tried again at the next look. The
 // player is told once per version and can always check from the menu. The save lives outside
 // the app, so a new app keeps the pet.
 // Updating in place, as the Knomi does: the release also carries the app as a zip and its
@@ -39,7 +41,9 @@ static const CGFloat kSizes[] = {190, 240, 300};  // side of the window at rest,
 // after the first install. When it can't (an older release, an app it can't write, running from the
 // DMG), the menu offers the download as before.
 #define RELEASES_API "https://api.github.com/repos/FedorSosnin/PokeKnomiGochi/releases?per_page=30"
-#define UPDATE_EVERY_S (24 * 60 * 60)
+#define UPDATE_EVERY_S (60 * 60)  // GitHub answers 60 an hour from one address
+#define UPDATE_POLL_S (10 * 60)
+static NSDate *gUpdateAnswered = nil;  // when GitHub last answered an update check
 #define UPDATE_ZIP "PokeMacGochi.zip"
 static NSString *const kPrefToldVersion = @"updateToldVersion";
 static NSString *gNewVersion = nil;  // newer than this app, once a check found one
@@ -717,9 +721,9 @@ static NSRect initialFrame(bool ownSave) {
   // test copies never nag, unless given a release list of their own to test updating with
   if ((gOwnSave && !gConsole) || NSProcessInfo.processInfo.environment[@"POKEMACGOCHI_UPDATE_API"]) {
     [self performSelector:@selector(checkForUpdates:) withObject:nil afterDelay:10];
-    NSTimer *daily = [NSTimer timerWithTimeInterval:UPDATE_EVERY_S target:self selector:@selector(dailyUpdateCheck:) userInfo:nil repeats:YES];
-    daily.tolerance = 600;
-    [NSRunLoop.mainRunLoop addTimer:daily forMode:NSRunLoopCommonModes];
+    NSTimer *poll = [NSTimer timerWithTimeInterval:UPDATE_POLL_S target:self selector:@selector(pollUpdateCheck:) userInfo:nil repeats:YES];
+    poll.tolerance = 60;
+    [NSRunLoop.mainRunLoop addTimer:poll forMode:NSRunLoopCommonModes];
   }
 }
 
@@ -761,11 +765,18 @@ static NSRect initialFrame(bool ownSave) {
           if ([a[@"name"] isEqual:@UPDATE_ZIP ".sig"]) sig = u;
         }
       }
-    dispatch_async(dispatch_get_main_queue(), ^{ [self updateCheckFound:found url:url zip:zip sig:sig asked:asked]; });
+    bool answered = [list isKindOfClass:NSArray.class];
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (answered) gUpdateAnswered = NSDate.date;
+      [self updateCheckFound:found url:url zip:zip sig:sig asked:asked];
+    });
   }] resume];
 }
 
-- (void)dailyUpdateCheck:(NSTimer *)t { [self checkForUpdates:nil]; }
+// the automatic check, when it's due by the clock (or the last one got no answer)
+- (void)pollUpdateCheck:(NSTimer *)t {
+  if (!gUpdateAnswered || -gUpdateAnswered.timeIntervalSinceNow >= UPDATE_EVERY_S) [self checkForUpdates:nil];
+}
 
 // "Update now?", then the update in place
 - (void)offerUpdate:(NSString *)version {
