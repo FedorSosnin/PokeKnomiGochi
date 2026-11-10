@@ -6,7 +6,7 @@ bottom of the clock/settings screen (swipe down) and `web/knomi/manifest.json`.
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [2.0] - Unreleased
+## [2.0] - 2026-11-10
 
 A new look for every screen, on the Knomi, Mac, Windows and the web. Your Pokémon, Pokédex and medals carry over.
 
@@ -16,12 +16,13 @@ A new look for every screen, on the Knomi, Mac, Windows and the web. Your Pokém
 - **Catching:** the balls you hold sit in a row; tap one to throw it. With a Master and an Ultra Ball, the Poké Ball sits in the middle. A ball that hits drops to the ground before the count.
 - **The backpack:** berries, candy and Repels on a curved band that slides up out of the bag, its tail pointing into it, spaced out so each is easy to tap; a berry drops onto your Pokémon and it hops. It stays open until you close it.
 - **Hover:** on a computer and the web, what's under the mouse lifts a little, with its shadow under it. (No more blue outline.)
+- **Smooth on big screens:** on a computer and the web, the need bars, their labels and the icons' and backpack's bands have smooth edges.
 - **Hold it for a menu:** hold your finger on your Pokémon for a ring of Settings, Medals, Stats and the Pokédex, with big icons. It stays open until you choose or tap away.
 - **Nothing closes on its own:** menus and questions you open stay until you answer or close them: the backpack, the hold menu, release, evolve, goodbye, and a finished trade.
 - **Menus:** every menu sits in your Pokémon's bedroom; the card's pages share one layout; "Page 2 of 7" in place of dots.
 - **The Pokédex:** each entry turns round to show its Pokémon from every side.
 - **Knomi Island:** Travel is a round island with the five zones, its sea, pines and Mansion windows moving.
-- **The games:** cartridges in an old TV, **Play Again!** at every game's end, and new stairs in PokeDungeon.
+- **The games:** **Play Again!** at every game's end, and new stairs in PokeDungeon.
 - **The games, on a Game Boy:** the mini games sit on a Game Boy's green screen as cartridges in the colours the games came in, and the screen opens at once.
 - **Bigger home icons:** easier to tap on the Knomi, with the games as a little grey Game Boy, outlined like the backpack's foods, and a little space between each. Your Pokémon and its world sit higher, so the backpack's foods never cover it. Poops land anywhere around your Pokémon.
 - **Pokédex: one entry to the next:** arrows on every entry step through the Pokédex, or a zone's list.

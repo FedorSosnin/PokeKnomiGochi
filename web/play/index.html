@@ -22,18 +22,20 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <style>
-  :root { --fit: min(92vw, calc(100vh - 110px)); --side: min(var(--fit), 260px); --ring: calc(var(--side) * 0.04); }
+  :root { --fit: min(92vw, calc(100vh - 110px)); --side: min(var(--fit), 260px);
+    --ring: calc(var(--side) * 0.025); --band: calc(var(--side) * 0.04); }
   html, body { margin: 0; height: 100%; background: #000; color: #9a9a9a; overflow: hidden;
     font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   /* the Knomi screen in a Poke Ball ring, centered both ways */
   /* with the mouse over it the ring grows outward to twice its width, like the Mac app's; the screen
-     stays put. Only for a real mouse: on a phone a tap would leave it grown */
+     stays put. Only for a real mouse: on a phone a tap would leave it grown. As thick as the Mac app's
+     (6 of its 240 points, 12 with the mouse over it); the black band keeps its own height */
   @property --grow { syntax: '<length>'; inherits: true; initial-value: 0px; }
   #ball { position: absolute; left: 50%; top: 50%; width: calc(var(--side) + 2 * var(--grow));
     height: calc(var(--side) + 2 * var(--grow)); transition: --grow .15s ease-out;
     transform: translate(-50%, -50%); border-radius: 50%; box-sizing: border-box;
-    background: linear-gradient(#de2121 0 calc(50% - var(--ring) / 2), #000 0 calc(50% + var(--ring) / 2), #fff 0); }
+    background: linear-gradient(#de2121 0 calc(50% - var(--band) / 2), #000 0 calc(50% + var(--band) / 2), #fff 0); }
   @media (hover: hover) and (pointer: fine) { #ball:hover { --grow: var(--ring); } }
   #screen { position: absolute; inset: calc(var(--ring) + var(--grow)); width: calc(100% - 2 * (var(--ring) + var(--grow)));
     height: calc(100% - 2 * (var(--ring) + var(--grow))); border-radius: 50%; background: #000;
@@ -71,14 +73,14 @@
 </div>
 <script>
 'use strict';
-const SIDE = 466, SAVE_FILE = '/save/tamapoke.prefs';
+const SIDE = 466, SAVE_FILE = '/save/pokeknomigochi.prefs';
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d');
 const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = '58fd5a4af6';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = 'cbcffeffec';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -191,8 +193,11 @@ canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (down) { const [x, y] = point(e); Module._webPointer(x, y, 1); } else Module._webHover();
+  if (down) { const [x, y] = point(e); Module._webPointer(x, y, 1); return; }
+  Module._webHover();
+  if (e.pointerType === 'mouse' && Module._webHoverAt) { const [x, y] = point(e); Module._webHoverAt(x, y); }  // its control outlined
 });
+canvas.addEventListener('pointerleave', () => { if (Module._webHoverAt) Module._webHoverAt(-1, -1); });
 for (const ev of ['pointerup', 'pointercancel']) {
   canvas.addEventListener(ev, (e) => {
     if (!down) return;
@@ -222,7 +227,7 @@ function key(e, isDown) {
 addEventListener('keydown', (e) => key(e, true));
 addEventListener('keyup', (e) => key(e, false));
 
-// ---- sound: the game's 16 kHz mono, pulled by the browser ----
+// ---- sound: the game's mono (48 kHz), pulled by the browser ----
 let audio = null;
 function startAudio() {
   if (audio) { if (audio.state === 'suspended') audio.resume(); return; }
@@ -310,8 +315,11 @@ function onTilt(e) {
 // ---- buddies: browsers can't use the Knomi's local Wi-Fi messages, so they meet through the relay ----
 let relay = null, relayIn = 0, relayTries = 0;
 Module.relaySend = (bytes) => { if (relay && relay.readyState === 1) relay.send(bytes); };
+// a copy served from this computer (a test build) only joins when asked (?relay=1), as the Mac and Windows
+// test copies do: otherwise a test pet turns up as a buddy on everyone's devices at home
+const relayAllowed = !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /[?&]relay=1\b/.test(location.search);
 async function connectRelay() {
-  if (!running || relay) return;
+  if (!running || relay || !relayAllowed) return;
   let v4 = '';  // the home's shared address: a Knomi on the same Wi-Fi shows the relay that one
   try { v4 = (await (await fetch(UTF8ToString(Module._webRelayV4Url()), { cache: 'no-store' })).text()).trim(); } catch (e) {}
   if (!running) return;
@@ -431,6 +439,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=58fd5a4af6"></script>
+<script src="pokewebgochi.js?v=cbcffeffec"></script>
 </body>
 </html>

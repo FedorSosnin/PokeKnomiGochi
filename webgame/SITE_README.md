@@ -6,22 +6,22 @@
 
 ### [▶ Play now at pokewebgochi.3dprintsos.com](https://pokewebgochi.3dprintsos.com)
 
-<p align="center"><img src="images/web-desktop.png" alt="PokeWebGochi in a browser: a Charmeleon with two buddies, Pikachu and Eevee, inside a Poké Ball ring" width="760"></p>
+<p align="center"><img src="images/web-desktop.png" alt="PokeWebGochi in a browser: Charmeleon in the Field on a sunny morning, inside a Poké Ball ring" width="760"></p>
 
 | | | |
 |:--:|:--:|:--:|
-| ![Gengar at home](images/home.png) | ![Charizard's fire attack on a wild Pikachu](images/battle.png) | ![Aiming a Poké Ball inside the catch rings](images/catch.png) |
+| ![Pikachu walking toward you through the Forest](images/walk-forest.gif) | ![Charizard's fire attack on a wild Pikachu](images/battle.png) | ![An Ultra Ball thrown at a running Pikachu: it hits, drops and holds](images/catch.gif) |
 | **Raise your Pokémon** | **Battle wild Pokémon** | **Catch what you beat** |
-| ![Five zones to hunt in](images/zones.png) | ![The Pokédex](images/pokedex.png) | ![Mini games](images/games.png) |
+| ![Knomi Island: five zones to hunt in](images/travel.gif) | ![The Pokédex](images/pokedex.png) | ![The mini games on a Game Boy](images/games.png) |
 | **Choose where to hunt** | **Fill the Pokédex** | **Play mini games** |
-| ![Pikachu and Charizard visiting Gengar](images/buddy.png) | ![Battle or trade with a buddy](images/buddy-menu.png) | ![The button under your finger, shown large](images/press.png) |
-| **Buddies come to play** | **Battle or trade with them** | **Press and slide to choose** |
-| ![Play together](images/play.png) | ![Who's That? Showdown](images/showdown.png) | ![Poké Ball Volley](images/volley.png) |
-| **Play together** | **Who's That? Showdown** | **Poké Ball Volley** |
-| ![Razz, Oran and Pinap Berries and a candy](images/food.png) | ![The card, with the favorite berry](images/card.png) | ![Pikachu and shiny Pikachu side by side](images/shiny.png) |
-| **Feed it berries and candy** | **Its card and favorite berry** | **Catch the shiny ones too** |
-| ![Every medal, 6 to a page](images/achievements.png) | ![Stats, training and battle wins](images/stats.png) | ![Level and evolution progress](images/progress.png) |
-| **Achievements, a swipe away** | **Stats, training and battle wins** | **How close it is to evolving** |
+| ![Pikachu with Eevee and Squirtle visiting](images/buddies.png) | ![Battle, trade or play with a buddy](images/buddy-menu.png) | ![A hold on your Pokémon: Settings, Medals, Stats and the Pokédex](images/radial.gif) |
+| **Buddies come to play** | **Battle, trade or play with them** | **Hold it for a menu** |
+| ![Play together](images/play-together.png) | ![Who's That Pokémon?](images/quiz.png) | ![PikaSurf](images/pikasurf.gif) |
+| **Play together** | **Who's That Pokémon?** | **PikaSurf** |
+| ![The backpack: berries, a candy and a Repel](images/backpack.png) | ![The card, with the favorite berry](images/card-profile.png) | ![A Pokédex entry turning round](images/pokedex-spin.gif) |
+| **Feed it from the backpack** | **Its card and favorite berry** | **Every entry turns round** |
+| ![The trophy room](images/trophy-room.png) | ![Battle stats and wins](images/card-battle.png) | ![Level and evolution progress](images/card-progress.png) |
+| **A trophy room of medals** | **Stats and battle wins** | **How close it is to evolving** |
 
 ## On your phone
 
@@ -34,9 +34,9 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 ## How to play
 
 - **Tap your Pokémon** to pet it. The icons along the bottom, from left to right, open your bag to feed it, open the mini games, start a battle, turn off the light at bedtime and give it a bath.
-- **Swipe up** for its card and stats (tap its name there to rename it), **from left to right** for the Pokédex, **from right to left** for your achievements, and **down** for the clock and settings. The round **✕** at the bottom closes any of them.
-- **Battle** with the map icon: travel to a zone and search, or tap **Wild Encounter** to meet a wild Pokémon at your Pokémon's home, and catch what you beat to fill your Pokédex. Every catch has 1 to 3 ★, and a better one replaces yours. Land the Poké Ball in the small green circle and the catch is sure; the faster the Pokémon, the faster it runs.
-- On a computer, the mouse is a finger: it presses when you click. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
+- **Hold your Pokémon** for a ring of Settings, Medals, Stats and the Pokédex. You can also **swipe up** for its card and stats (tap its name there to rename it), **from left to right** for the Pokédex, **from right to left** for the trophy room, and **down** for the clock and settings. The round **✕** at the bottom closes any of them.
+- **Battle** with the map icon: travel to a zone and search, or tap **Wild Encounter** to meet a wild Pokémon at your Pokémon's home, and catch what you beat to fill your Pokédex: tap a ball to throw it at the Pokémon running back and forth, leaning (or using the arrow keys) to aim. Every catch has 1 to 3 ★, and a better one replaces yours. Every 25 battles you see through earn an **Ultra Ball**, which triples the chance, and every 100 a **Master Ball**, which always catches.
+- On a computer, the mouse is a finger: it presses when you click, and what's under it lifts a little. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, and **Space** starts a wild battle.
 
 ## Training
 
@@ -47,7 +47,7 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 
 Each one stops at 100. The **Training** page on your Pokémon's card shows how far along each one is, and says **MAX** when it's full.
 
-<p align="center"><img src="images/training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each"></p>
+<p align="center"><img src="images/card-training.png" width="240" alt="The Training page: ATK, DEF and SPD training, and what trains each"></p>
 
 ## Moves
 
@@ -61,7 +61,7 @@ Your Pokémon is saved in this browser automatically. Clearing the browser's dat
 
 Anyone else playing on the same home Wi-Fi shows up on your screen: up to four at once. Tap one to battle, trade Pokédex entries, or **play** a game together: in **Who's That? Showdown** you both see the same silhouette and race to name it first, and in **Poké Ball Volley** your screens are the two halves of one court. Trades are a real swap: the Pokémon you give leaves your Pokédex. Shinies (about 1 wild Pokémon in 100) sparkle, have their own place in the Pokédex and can be traded too. While anyone's around, your Pokémon gets a **Party Boost**: energy drains a quarter slower, and it has +2 ATK, DEF and SPD in wild battles. Tap the green **PARTY BOOST** button to see who's here, and tap a friend for its stats. A wild Pokémon also visits once a day for an hour, brings a candy and counts for the boost too. 
 
-| ![Party Boost: who's here and the boost](images/party.png) | ![A buddy's stats](images/friend-stats.png) |
+| ![Party Boost: who's here and the boost](images/party-boost.png) | ![A buddy's stats](images/friend-stats.png) |
 |:---:|:---:|
 | **Party Boost** | **Tap a friend for its stats** |
 
@@ -69,9 +69,9 @@ You meet players of the browser version, the [Mac and Windows apps](https://gith
 
 ## Want a real one?
 
-<p align="center"><img src="images/knomi-updated.jpg" alt="PokeKnomiGochi on a BTT Knomi V2 in a 3D-printed Poké Ball case on a desk: a level 99 Venusaur with three buddies" width="720"></p>
+<p align="center"><img src="images/knomi-gameboys.gif" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, beside two Game Boys: Gengar walking past the haunted Mansion" width="720"></p>
 
-<p align="center"><img src="images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a BTT Knomi V2 in a 3D-printed Poké Ball case" width="360"> <img src="images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, its Pokémon asleep" width="360"></p>
+<p align="center"><img src="images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a BTT Knomi V2 in a 3D-printed Poké Ball case" width="360"> <img src="images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, showing the starter screen" width="360"></p>
 
 The same game runs on the **BIGTREETECH Knomi V2**, a little round touchscreen made for 3D printers. Put it in a 3D-printed Poké Ball case and you have a pocket tamagotchi that tilts, buzzes and meets the browser, Mac and Windows players as buddies.
 

@@ -26,11 +26,11 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Travel Knomi Island.** Five zones on a round island that's alive: foam runs round the coast, the pines sway and the Mansion's windows light up and go dark. See what's still missing in each.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Five mini games.** Berry Drop, PokeRun, PikaSurf, PokeDungeon and Who's That Pokémon?, on cartridges in an old TV. **Play Again!** at the end.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Five mini games.** Berry Drop, PokeRun, PikaSurf, PokeDungeon and Who's That Pokémon?, on cartridges in a Game Boy. **Play Again!** at the end.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Buddies.** Knomis, Macs, PCs and browsers on the same Wi-Fi visit each other. Their Pokémon walk beside yours, give it a Party Boost, and battle, trade and play games for two.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **A trophy room.** All 25 medals as things in one room: badges in a case, statues, cups, a shiny gem, a gleam sweeping over the ones you've won. Tap one to see how to earn it.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **A trophy room.** All 25 medals as things in one room: badges in a case, statues, cups, a shiny gem, a gleam sweeping over the ones you've won. Tap a group for its shelf, then a medal for how to earn it.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Care for it.** Feed it berries from the backpack, give it a bath and turn the lights off for bed. It evolves when it's ready, and one day it says goodbye and walks off over the hill.
 
@@ -66,9 +66,9 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 | **Battle wild Pokémon** | **Pick a ball and throw** | **Catch them, 1 to 3 ★** |
 | ![The Pokédex at 55 of 151, with stars and sparkling shinies](docs/images/v2/pokedex.png) | ![Knomi Island: the round island with five zones, the coast's foam and waves moving](docs/images/v2/travel.gif) | ![The Forest's Pokémon: 23 of 41, with Search](docs/images/v2/zone.png) |
 | **Fill the Pokédex** | **Travel Knomi Island** | **See what's missing** |
-| ![The games: five cartridges in an old TV](docs/images/v2/games-tv.png) | ![PokeRun's how-to card over the game](docs/images/v2/howto.png) | ![Berry Drop's end: the score, Play Again! and the Repel bar](docs/images/v2/game-end.png) |
+| ![The games: five cartridges on a Game Boy's screen](docs/images/v2/games.png) | ![PokeRun's how-to card over the game](docs/images/v2/howto.png) | ![Berry Drop's end: the score, Play Again! and the Repel bar](docs/images/v2/game-end.png) |
 | **Five mini games** | **How to play, before each game** | **Play Again!** |
-| ![Who's That Pokémon? A silhouette, three names and ten seconds on the clock](docs/images/v2/quiz.png) | ![The trophy room: 14 of 25 medals](docs/images/v2/trophy-room.png) | ![The shiny medal's card: a gem under a spotlight, earned](docs/images/v2/medal-card.png) |
+| ![Who's That Pokémon? A silhouette, three names and ten seconds on the clock](docs/images/v2/quiz.png) | ![The trophy room: 11 of 25 medals](docs/images/v2/trophy-room.png) | ![The shiny medal's card: a gem under a spotlight, earned](docs/images/v2/medal-card.png) |
 | **Who's That Pokémon?** | **The trophy room** | **How to earn each medal** |
 | ![The backpack's band out of the bag: three berries, a candy and a Repel](docs/images/v2/backpack.png) | ![Gengar in the bath, with bubbles and a duck](docs/images/v2/bath.png) | ![A new medal dropping in on a ribbon](docs/images/v2/medal-banner.png) |
 | **The backpack** | **Bath time** | **New medals** |
@@ -215,7 +215,7 @@ Tap the **map** icon in the middle of the bottom to open **Travel**: **Knomi Isl
 
 ### Games
 
-Tap the **handheld** icon, second from the left, for the mini games: cartridges in an old TV, each label a little scene from its game. When one starts, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed, and the time you play counts toward your next Repel. At the end, **Play Again!** starts it again and the ✕ goes back to the games. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
+Tap the **handheld** icon, second from the left, for the mini games: cartridges on a Game Boy's screen, each label a little scene from its game. When one starts, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed, and the time you play counts toward your next Repel. At the end, **Play Again!** starts it again and the ✕ goes back to the games. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs down. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?
