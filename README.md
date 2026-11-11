@@ -2,11 +2,28 @@
 
 [![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](relay/README.md)
 
-A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made for 3D printers, and for your Mac, your Windows PC and your browser. Raise any of the original 151 as it walks through its own pixel world, battle and catch wild Pokémon, fill your Pokédex, and play mini games by tapping and tilting.
+A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made for 3D printers, and for your Mac, your Windows PC and your browser. Raise any of the original 151 as it walks through its own pixel world, battle and catch wild Pokémon, climb Knomi Tower, fill your Pokédex, and play mini games by tapping and tilting.
 
 <p align="center"><img src="docs/images/v2/knomi-gameboys.gif" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, on a desk beside two Game Boys: Gengar walking past the haunted Mansion" width="720"></p>
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows).
+
+## New: the Knomi Tower Battle System
+
+<p align="center"><img src="docs/images/v2/tower-climb.gif" alt="A climb of Knomi Tower: the tower's islet, the tower, the team, who goes first, a floor fight, both balls' bars, the Rock Badge, the Legend, Mewtwo, Tower Master and the challenges" width="360"></p>
+
+Walk out along Travel's new pier to **Knomi Tower**: eight floors, each guarded by one boss of its type, and at the top the Legend, and after it **Mewtwo**. You climb with your Pokémon and two friends from your Pokédex, at your Pokémon's level and training, and their HP carries over from fight to fight, so who you send in matters as much as how strong they are. Before every fight, **Who goes first?** marks who should win it, worked out from the fight itself. Every fight fills your Ultra and Master Ball bars, a lost climb ends with a tip for the next one and your friends cheer you on, and beating the Legend earns a **Master Ball, every time**. The first team to do it goes into the **Hall of Fame**, and then there are three challenges to beat it again.
+
+| | | |
+|:--:|:--:|:--:|
+| ![Travel's second page: the tower's islet at the end of the pier, Mewtwo's shadow over its roof, your best floor on its tag](docs/images/v2/tower-islet.png) | ![The tower: eight floors lit in their types' colours, the floor guide beside them, the Master Ball at the top and CLIMB!](docs/images/v2/tower.png) | ![Your team: Charizard with Blastoise and Gengar from the Pokédex, and GO!](docs/images/v2/tower-team.png) |
+| **Out along the pier** | **Eight floors and the Legend** | **Your Pokémon and two friends** |
+| ![Who goes first? 1F's Rock guardian Aerodactyl, with Blastoise and Gengar marked Strong](docs/images/v2/tower-lead.png) | ![A floor fight in the tower's hall: Blastoise against Aerodactyl](docs/images/v2/tower-fight.png) | ![The Legend's second fight: Blastoise against Mewtwo](docs/images/v2/tower-mewtwo.png) |
+| **Who goes first?** | **A guardian on every floor** | **Mewtwo waits at the top** |
+| ![Climb over: CHARIZARD was Weak against KINGLER. Try a GRASS/ELECTRIC friend! Next climb +5% HP](docs/images/v2/tower-tip.png) | ![The tower with the friends' cheer: +5% HP for the next climb](docs/images/v2/tower-cheer.png) | ![TOWER MASTER! The Hall of Fame photo and +1 Master Ball](docs/images/v2/tower-master.png) |
+| **A tip after every lost climb** | **Friends cheer you on** | **Tower Master and the Hall of Fame** |
+
+How it all works, floor by floor: [Knomi Tower](docs/HOW_IT_WORKS.md#knomi-tower).
 
 ## What's in it
 
@@ -18,19 +35,21 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Catch them.** Throw a Poké Ball at the Pokémon running back and forth: it hits, drops to the ground and shakes, one, two, three...
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Ultra Balls and Master Balls.** Every battle you see through fills two bars: an Ultra Ball every 25, which triples your catch chance, and a Master Ball every 100, which always catches.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Climb Knomi Tower.** Walk the pier out to the tower's islet and take your Pokémon and two friends from your Pokédex up eight floors of type guardians, with HP carrying over from fight to fight. At the top waits the Legend, and then Mewtwo: beat them both for a Master Ball, every time you do.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Ultra Balls and Master Balls.** Every battle you see through fills two bars, which pop up after each fight to show how close you are: an Ultra Ball every 25, which triples your catch chance, and a Master Ball every 100, which always catches.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **The Repel.** Twenty minutes of mini games earn a Repel. Spray it from the backpack and weaker wild Pokémon stay away for 3 minutes, so the ones you're hunting turn up.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Fill the Pokédex.** All 151, with their shiny forms, each caught with 1 to 3 stars. Every entry turns round to show its Pokémon from all sides.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Travel Knomi Island.** Five zones on a round island that's alive: foam runs round the coast, the pines sway and the Mansion's windows light up and go dark. See what's still missing in each.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Travel Knomi Island.** Five zones on a round island that's alive: foam runs round the coast, the pines sway and the Mansion's windows light up and go dark. See what's still missing in each, then follow the pier out to Knomi Tower.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Five mini games.** Berry Drop, PokeRun, PikaSurf, PokeDungeon and Who's That Pokémon?, on cartridges in a Game Boy. **Play Again!** at the end.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Buddies.** Knomis, Macs, PCs and browsers on the same Wi-Fi visit each other. Their Pokémon walk beside yours, give it a Party Boost, and battle, trade and play games for two.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **A trophy room.** All 25 medals as things in one room: badges in a case, statues, cups, a shiny gem, a gleam sweeping over the ones you've won. Tap a group for its shelf, then a medal for how to earn it.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **A trophy room.** All 26 medals as things in one room: badges in a case (Knomi Tower's too), statues, cups, a shiny gem, a gleam sweeping over the ones you've won. Tap a group for its shelf, then a medal for how to earn it.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Care for it.** Feed it berries from the backpack, give it a bath and turn the lights off for bed. It evolves when it's ready, and one day it says goodbye and walks off over the hill.
 
@@ -46,6 +65,13 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 | **The Forest by day** | **Day, dusk and night** |
 | ![Charmander walking through the Field at night, the house's windows lit](docs/images/v2/walk-field.gif) | ![Gengar walking past the haunted Mansion](docs/images/v2/walk-mansion.gif) |
 | **The Field after dark** | **The Mansion, always night** |
+
+| | |
+|:--:|:--:|
+| ![Travel slides from Knomi Island out along the pier to Knomi Tower's islet, Mewtwo's shadow hovering over it, and back](docs/images/v2/tower-travel.gif) | ![A floor of Knomi Tower: Gengar's Night Shade hits Golem, Golem's Earthquake hits back, Golem faints, both balls' bars fill and the Rock Badge shows](docs/images/v2/tower-fight.gif) |
+| **Out along the pier to Knomi Tower** | **A floor won, its badge earned** |
+| ![2F: Kingler's Stomp knocks Charizard out, Kingler drains it, its HP bar climbing, then Who goes first? with Charizard asleep on its dais](docs/images/v2/tower-drain.gif) | ![The Legend: Mewtwo's Swift, Blastoise's Hydro Pump, Mewtwo faints, both balls' bars fill, then TOWER MASTER! and the Hall of Fame](docs/images/v2/tower-legend.gif) |
+| **A guardian drains the one it beats** | **Mewtwo, then Tower Master** |
 
 | | | |
 |:--:|:--:|:--:|
@@ -68,7 +94,7 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 | **Fill the Pokédex** | **Travel Knomi Island** | **See what's missing** |
 | ![The games: five cartridges on a Game Boy's screen](docs/images/v2/games.png) | ![PokeRun's how-to card over the game](docs/images/v2/howto.png) | ![Berry Drop's end: the score, Play Again! and the Repel bar](docs/images/v2/game-end.png) |
 | **Five mini games** | **How to play, before each game** | **Play Again!** |
-| ![Who's That Pokémon? A silhouette, three names and ten seconds on the clock](docs/images/v2/quiz.png) | ![The trophy room: 11 of 25 medals](docs/images/v2/trophy-room.png) | ![The shiny medal's card: a gem under a spotlight, earned](docs/images/v2/medal-card.png) |
+| ![Who's That Pokémon? A silhouette, three names and ten seconds on the clock](docs/images/v2/quiz.png) | ![The trophy room: 11 of 26 medals](docs/images/v2/trophy-room.png) | ![The shiny medal's card: a gem under a spotlight, earned](docs/images/v2/medal-card.png) |
 | **Who's That Pokémon?** | **The trophy room** | **How to earn each medal** |
 | ![The backpack's band out of the bag: three berries, a candy and a Repel](docs/images/v2/backpack.png) | ![Gengar in the bath, with bubbles and a duck](docs/images/v2/bath.png) | ![A new medal dropping in on a ribbon](docs/images/v2/medal-banner.png) |
 | **The backpack** | **Bath time** | **New medals** |
@@ -211,7 +237,15 @@ Each kind of training stops at 100. The card's **Training** page (**Stats** in t
 
 ### Travel
 
-Tap the **map** icon, second from the left, to open **Travel**: **Knomi Island**, a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button, and brings you back to the island when it's over. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
+Tap the **map** icon, second from the left, to open **Travel**: **Knomi Island**, a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button, and brings you back to the island when it's over. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack. The arrow on the right of the island slides Travel out along the pier to **Knomi Tower**.
+
+<p align="center"><img src="docs/images/v2/tower-travel.gif" width="300" alt="Travel slides from Knomi Island out along the pier to the tower's islet, Mewtwo's shadow hovering over it, and back"></p>
+
+### Knomi Tower
+
+Tap the tower on Travel's second page, then **CLIMB!** with a full energy bar. Your Pokémon goes with two friends you pick from the Pokédex, at its level and training, up eight floors (Rock, Water, Electric, Grass, Poison, Psychic, Fire and Ground) and the Legend's two fights at the top, the second against Mewtwo. HP carries over, everyone standing gets 20% back between floors, and a Pokémon that faints sleeps for the rest of the climb. **Who goes first?** marks each of your team **▲ Strong** or **▼ Weak** against the next guardian. **RUN** always works and just ends the climb. Every fight fills the balls' bars; beating the Legend earns a Master Ball every time, and the first time the Tower Master badge and the Hall of Fame. A lost climb gives the next one +5% HP (up to +15%), and once it's beaten, three challenges wait. [Everything about the tower](docs/HOW_IT_WORKS.md#knomi-tower).
+
+<p align="center"><img src="docs/images/v2/tower-legend.png" width="240" alt="The Legend: its first guardian and Mewtwo's shadow, Beat both!"> <img src="docs/images/v2/tower-badge.png" width="240" alt="1F won: the Rock Badge and the climb's row of eight, Next: 2F WATER"> <img src="docs/images/v2/tower-challenges.png" width="240" alt="The tower once beaten: the three challenge medals beside the Legend"></p>
 
 ### Games
 
@@ -225,7 +259,7 @@ Tap the **handheld** icon, on the left, for the mini games: cartridges on a Game
 
 ### Medals
 
-**Medals** in the ring opens the trophy room: all 25 medals as things in one room, the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes. Every few seconds a gleam sweeps over the ones you've won; one you haven't won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, and how far along you are where the game counts it. A new medal drops in on a ribbon; tap it to see its card.
+**Medals** in the ring opens the trophy room: all 26 medals as things in one room, the zone badges and Knomi Tower's in a case, the Pokédex statues, the shiny gem, the level 100 cups and the care rosettes. Every medal is earned once and kept through every Pokémon you raise. Every few seconds a gleam sweeps over the ones you've won; one you haven't won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, and how far along you are where the game counts it. A new medal drops in on a ribbon; tap it to see its card.
 
 ### Buddies
 

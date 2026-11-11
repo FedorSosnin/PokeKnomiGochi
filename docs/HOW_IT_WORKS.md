@@ -132,7 +132,7 @@ While a Repel works, wild encounters, and zones you've caught everything in, bri
 There are two ways to start a battle:
 
 - 🔘 **The physical button, or Wild Encounter (the last circle, after the zones):** a random wild Pokémon from anywhere, met at your Pokémon's home. From the island, you're back there when the battle ends, as a zone's Search brings you back to the zone; from the button, back home. The Mac, Windows and web versions have no button, so Wild Encounter is the way there (or Space on a keyboard).
-- 🗺️ **Travel, the map icon on the home screen:** tap a zone on Knomi Island and hunt there. Missing Pokémon show as silhouettes. Most Searches look first among the ones you're missing there, the rare ones too but less often, as a Wild Encounter does; never the legendary, which turns up about once in a hundred.
+- 🗺️ **Travel, the map icon on the home screen:** tap a zone on Knomi Island and hunt there. Missing Pokémon show as silhouettes. Most Searches look first among the ones you're missing there, the rare ones too but less often, as a Wild Encounter does; never the legendary, which turns up about once in a hundred. The arrow on the right slides Travel out along the pier to the tower's islet: [Knomi Tower](#knomi-tower).
 
 | Zone | Pokémon | Who lives there | Rare 💎 | Legendary ⭐ |
 |---|---|---|---|---|
@@ -149,6 +149,101 @@ Every zone's Pokémon are **common**, **rare** or **legendary**:
 - ⭐ The **legendary** can turn up on any Search, from the very first, but only about 1 Search in 100. Evolved forms only appear once your Pokémon is high enough level. All 151 can be caught this way, and catching all of a zone earns its zone medal.
 
 ✨ About 1 wild Pokémon in 100 is shiny. Its shiny form goes into the Pokédex separately from the regular one, so you can have both, and each can be traded on its own.
+
+## Knomi Tower
+
+A climb of ten fights in a row: eight floors, each with one guardian, then the Legend's two at the top. Your Pokémon and two friends go up together, and their HP carries from fight to fight, so who you send in matters as much as how strong they are.
+
+<p align="center"><img src="images/v2/tower.png" width="240" alt="Knomi Tower: eight floors, each lit in its type's colour with its name beside it, the Master Ball at the top and CLIMB! at its foot"> <img src="images/v2/tower-lead.png" width="240" alt="Who goes first? 1F's Rock guardian, Aerodactyl, with Blastoise and Gengar marked Strong"> <img src="images/v2/tower-master.png" width="240" alt="TOWER MASTER! The Hall of Fame photo of Charizard, Blastoise and Gengar, and +1 Master Ball"></p>
+
+### Getting there
+
+Open **Travel** (the map) and tap the arrow on the right: the island slides away along the pier to the tower's islet, with Mewtwo's shadow hovering over the roof. Tap the tower. Its tag shows your best climb so far (**Best: 6F**, or **LEGEND** once it's beaten).
+
+The tower screen shows all eight floors, each window lit in its floor's colour with the type's name beside it (the **floor guide**), and the Master Ball waiting at the top. Tap **CLIMB!**. The first time, a card explains how it works.
+
+### Your team
+
+Your own Pokémon always goes, plus **two friends** from your Pokédex: any form you've caught except the one you're raising, shinies included. Pick them from the Pokédex's own grid. A form your level doesn't allow yet shows as a shadow with the level it needs.
+
+Friends fight at **your Pokémon's level and training** (ATK, DEF, SPD), with the genes of the stars you caught them with: a 3★ friend is a little stronger than a 2★. Your own Pokémon fights with its own genes. The team you picked is offered again next time; tap a friend on the team screen to change it, then **GO!**
+
+### Energy
+
+A climb needs a **full energy bar** (90 or more). Each fight won uses 9, so a whole climb uses the whole bar. Losing a climb leaves your Pokémon exhausted, like a lost battle: it needs a rest (or a candy) before the next one.
+
+### The floors
+
+| Floor | Guardian's type |
+|---|---|
+| 1F | Rock |
+| 2F | Water |
+| 3F | Electric |
+| 4F | Grass |
+| 5F | Poison |
+| 6F | Psychic |
+| 7F | Fire |
+| 8F | Ground |
+| **The Legend** | The strongest of Ice, Fighting, Ghost or Dragon, then **Mewtwo** |
+
+Each guardian is one of the three strongest Pokémon of its type that your level allows (never a legendary), at your Pokémon's level or up to 3 above. Guardians are bosses, with more HP than their level gives, more the higher you go, and better trained than the floor below.
+
+### Who goes first
+
+Before each fight, **Who goes first?** shows your team, each on its dais with its HP:
+
+- **▲ Strong:** it should win this fight with a turn to spare.
+- **▼ Weak:** it should lose it.
+- Nothing: too close to call.
+
+It's worked out from the fight itself, not just the two types: both Pokémon's moves (the guardian's as often as it uses each), their stats, the HP each has right now, and who's faster. Rhydon is Ground and Kabutops is Rock, but Kabutops' Water move and speed win, so Rhydon isn't **Strong** there.
+
+The fight is a normal battle with your two moves. **RUN** always works in the tower, and ends the climb (it doesn't count as a loss).
+
+### HP carries over
+
+- Your team's HP **carries from fight to fight**. Between floors, everyone still standing gets **20%** of their HP back. Before Mewtwo they get it too.
+- A Pokémon that faints sleeps on its dais for the rest of the climb, **Fainted** under its name.
+- The guardian keeps its HP from one of yours to the next, and when it beats one, it **drains 30%** of its own HP back: its bar climbs while you watch. Then you pick who's next.
+- When all three have fainted, the climb is over.
+
+### The end of a climb
+
+**Climb over** shows who beat you and where, with a tip about what to try next:
+
+- If the one beaten last was Weak against it: *"CHARIZARD was Weak against KINGLER. Try a GRASS/ELECTRIC friend!"*, naming types that hit it hard and that its moves don't hit hard.
+- If nobody on the team was Strong against it, the same, with those types.
+- Otherwise, the guardian's training against yours, and the training your team is shortest of (DEF from good care, ATK from battles, SPD from mini games).
+
+### Friends cheer
+
+Lost climbs aren't wasted: each climb lost in a row gives the next one **+5% HP** for the whole team, up to **+15%**. A gold disc beside the tower shows what's waiting, and so do the team screen and the "needs a full energy bar" card. Reaching a new best floor starts it over, and once the Legend is beaten there's no more cheering.
+
+### Rewards
+
+- **Every tower fight** you fight to the end fills the **Ultra Ball's and Master Ball's bars**, like any battle: an Ultra Ball every 25, a Master Ball every 100.
+- **Beating the Legend** (both fights) earns a **Master Ball, every time**.
+- The first time, it earns the **Tower Master** badge in the trophy case.
+- Each floor won shows its **badge** (Rock Badge, Water Badge…) on a row of the climb's eight. They're the climb's own and start over each climb.
+- Your Pokémon's own wins in the tower train its ATK and make it happy, like any battle won.
+
+### Hall of Fame
+
+The first team to beat the tower is kept as the **Hall of Fame**: the Tower Master screen shows them in a gold frame with the level they climbed at, after that climb and every one after. Travel's tag keeps your best floor.
+
+### Challenges
+
+Once the Legend is beaten, three medals sit beside it on the tower screen (tap them to see what they are). Each turns gold when you beat the whole tower again:
+
+- **No one fainting.**
+- **Two 1-star friends.**
+- **No evolved Pokémon:** your Pokémon and both friends in their first forms.
+
+A climb that earns one shows it with **NEW!** after the Tower Master screen.
+
+### How hard is it?
+
+The top is meant to be a real challenge. A Lv 100 team of 3★ Pokémon with full ATK and SPD training, DEF at about 25 (a daily player's), types that fit the floors and the Strong picks first clears the whole tower about **1 time in 4**. A team at Lv 45 with 2★ friends usually stops around 3F–4F and doesn't reach 8F, and a team at Lv 15 rarely gets past 2F.
 
 ## What drops over time
 
@@ -184,7 +279,7 @@ The game counts its own minutes, and only a clock nobody can set adds time away.
 
 ## Medals
 
-Hold your Pokémon and tap **Medals** for the trophy room: all 25 medals as things in one room (the zone badges in a case, the Pokédex statues, the shiny gem, the level 100 cups and your Pokémon's rosettes), and one not won yet is its shape in shadow. Tap anywhere for each medal's card: how to earn it, "Earned!" or how far along you are, and the side arrows step through all 25. A new medal drops in from the top of the screen on a ribbon; tap it to see its card.
+Hold your Pokémon and tap **Medals** for the trophy room: all 26 medals as things in one room (the zone badges and Knomi Tower's in a case, the Pokédex statues, the shiny gem, the level 100 cups and the care rosettes), and one not won yet is its shape in shadow. Every medal is earned once and kept through every Pokémon you raise. Tap anywhere for each medal's card: how to earn it, "Earned!" or how far along you are, and the side arrows step through all 26. A new medal drops in from the top of the screen on a ribbon; tap it to see its card.
 
 | Medal | How to earn it |
 |---|---|
@@ -210,11 +305,12 @@ These stay with you across every Pokémon you raise.
 | 🎉 **Party of 5** | Have 4 buddies at once: 5 Pokémon on screen |
 | 🎮 **Playmate** | Play a game with a buddy (Who's That? Showdown or Poké Ball Volley) |
 
-### Zone medals
+### Zone medals and the tower
 
 | Medal | How to earn it |
 |---|---|
 | 🌲 **Forest** / 🏖️ **Beach** / 🪨 **Cave** / 👻 **Mansion** / 🌾 **Field** | Catch every Pokémon in that zone, legendary included |
+| 🏰 **Tower Master** | Beat [Knomi Tower](#knomi-tower): all eight floors and the Legend, Mewtwo included |
 
 ### Level 100 medals
 

@@ -2,7 +2,7 @@
 
 [![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](https://pokewebgochi.3dprintsos.com)
 
-**A Pokémon virtual pet in your browser.** Raise one of the original 151, battle and catch wild Pokémon, fill your Pokédex, play mini games and meet your buddies. Free, with nothing to install.
+**A Pokémon virtual pet in your browser.** Raise one of the original 151, battle and catch wild Pokémon, climb Knomi Tower, fill your Pokédex, play mini games and meet your buddies. Free, with nothing to install.
 
 ### [▶ Play now at pokewebgochi.3dprintsos.com](https://pokewebgochi.3dprintsos.com)
 
@@ -12,6 +12,8 @@
 |:--:|:--:|:--:|
 | ![Pikachu walking toward you through the Forest](images/walk-forest.gif) | ![Charizard's fire attack on a wild Pikachu](images/battle.png) | ![An Ultra Ball thrown at a running Pikachu: it hits, drops and holds](images/catch.gif) |
 | **Raise your Pokémon** | **Battle wild Pokémon** | **Catch what you beat** |
+| ![Knomi Tower: eight floors and the Legend](images/tower.png) | ![Who goes first? Your team against a floor's guardian](images/tower-lead.png) | ![TOWER MASTER! The Hall of Fame and a Master Ball](images/tower-master.png) |
+| **New: climb Knomi Tower** | **Your Pokémon and two friends** | **Beat Mewtwo at the top** |
 | ![Knomi Island: five zones to hunt in](images/travel.gif) | ![The Pokédex](images/pokedex.png) | ![The mini games on a Game Boy](images/games.png) |
 | **Choose where to hunt** | **Fill the Pokédex** | **Play mini games** |
 | ![Pikachu with Eevee and Squirtle visiting](images/buddies.png) | ![Battle, trade or play with a buddy](images/buddy-menu.png) | ![A hold on your Pokémon: Settings, Medals, Stats and the Pokédex](images/radial.gif) |
@@ -34,8 +36,9 @@ Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones
 ## How to play
 
 - **Tap your Pokémon** to pet it. The icons along the bottom, from left to right, open the mini games, start a battle, open your bag to feed it (in the middle), turn off the light at bedtime and give it a bath.
-- **Hold your Pokémon** for the menu, a ring of **Settings** (sound, language, and an **About** page with links to the code and the YouTube channel), **Medals** (the trophy room), **Stats** (its card: tap its name there to rename it) and the **Pokédex**. Slide onto one and let go, or let go first and tap one. The round **✕** at the bottom closes any of them, and the arrows at the sides (or a swipe) turn their pages.
+- **Hold your Pokémon** for the menu, a ring of **Settings** (sound, language, and an **About** page with links to the code and the YouTube channel), **Medals** (the trophy room), **Stats** (its card: tap its name there to rename it) and the **Pokédex**. Slide onto one and let go, or let go first and tap one. The round **✕** at the bottom closes any of them, and the arrows at the sides (or a swipe) slide their pages across.
 - **Battle** with the map icon: travel to a zone and search, or tap **Wild Encounter** to meet a wild Pokémon at your Pokémon's home, and catch what you beat to fill your Pokédex: tap a ball to choose it and **Throw** to throw it at the Pokémon running back and forth, leaning (or using the arrow keys) to aim. Every catch has 1 to 3 ★, and a better one replaces yours. Every 25 battles you see through earn an **Ultra Ball**, which triples the chance, and every 100 a **Master Ball**, which always catches.
+- **Knomi Tower:** on Travel, tap the arrow on the right to follow the pier out to the tower, then **CLIMB!** with a full energy bar. Your Pokémon and two friends from your Pokédex fight eight floors of type guardians and then the Legend and Mewtwo, their HP carrying over from fight to fight. **Who goes first?** marks who should win each fight. Beating the Legend earns a Master Ball every time.
 - On a computer, the mouse is a finger: it presses when you click, and what's under it lifts a little. The **left and right arrows** tilt, **all four arrows** walk in PokeDungeon, **Space** starts a wild battle, and on a catch the **left and right arrows** choose a ball and **Space** or the **up arrow** throws it.
 
 ## Training

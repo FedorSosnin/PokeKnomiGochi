@@ -26,7 +26,7 @@ mkdir -p $SITE/images  # the README's pictures: V2's (docs/images/v2)
 for i in web-desktop.png web-phone.png walk-forest.gif battle.png catch.gif travel.gif pokedex.png games.png buddies.png \
     buddy-menu.png radial.gif play-together.png quiz.png pikasurf.gif backpack.png card-profile.png pokedex-spin.gif \
     trophy-room.png card-battle.png card-progress.png card-training.png party-boost.png friend-stats.png \
-    knomi-gameboys.gif knomi-in-hand.jpg knomi-on-desk.jpg; do
+    knomi-gameboys.gif knomi-in-hand.jpg knomi-on-desk.jpg tower.png tower-lead.png tower-master.png; do
   cp docs/images/v2/$i $SITE/images/
 done
 touch $SITE/.nojekyll
