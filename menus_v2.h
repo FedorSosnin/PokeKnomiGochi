@@ -1271,6 +1271,7 @@ static void v2IsleSpot(int k, int &x, int &y) {  // where wedge k's landmark sta
 // (v2IsleLife()), and the coast's foam and the mansion's windows over it.
 static uint8_t v2IslePage = 0;  // V2: Travel's page: 0 the island, 1 Knomi Tower's islet (tower_v2.h)
 static void twPierPaint();       // the pier off the Cave's coast, toward the tower (tower_v2.h)
+static bool twOnPier(int x, int y);  // ...and where it is: the foam and the waves keep off it
 static void v2PaintIsle(int) {
   static const Rgb FILL[6] = { 0x8FCE7A, 0x6C7190, 0xECDCAC, 0x2E2758, 0x3F8A4C, 0x5F9E3E };
   static const Rgb LIT[6] = { 0xA6DC90, 0x8A8FA6, 0xF8ECC4, 0x3E3470, 0x58B868, 0x79BD4F };
@@ -1397,6 +1398,7 @@ static void v2IsleLife(uint32_t now) {
     const V2Foam &c = v2Foam[k];
     float f = sinf(c.ang * (5 * 6.2831853f / 65536) - ph);
     bool lit = (c.i + c.j) % 2 ? f > -0.6f : f > 0.55f;
+    if (twOnPier(c.i * 4, c.j * 4)) continue;  // (under the pier's planks)
     scCell(c.i * 4, c.j * 4, lit ? V2_SEA_L : V2_SEA);
   }
   static const uint8_t WR[10] = { 221, 225, 219, 226, 222, 220, 225, 219, 224, 221 };
@@ -1410,6 +1412,7 @@ static void v2IsleLife(uint32_t now) {
       int i = (x + c[0]) / 4, j = (y + c[1]) / 4;
       open = open && !v2IsleCell(i, j) && !v2IsleCell(i - 1, j) && !v2IsleCell(i + 1, j) && !v2IsleCell(i, j - 1) && !v2IsleCell(i, j + 1);
     }
+    for (auto &c : C) open = open && !twOnPier(x + c[0], y + c[1]);
     if (open)
       for (auto &c : C) scCell(x + c[0], y + c[1], V2_SEA_L);
   }

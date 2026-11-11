@@ -124,11 +124,23 @@ static void twPlanks(int x0, int x1, int y) {
 }
 
 // Travel's first page: the pier off the Cave's coast, at the height the bridge has on page 2
-static void twPierPaint() {
-  int x = V2_W - 4;
-  while (x > 233 && !v2IsleLand(x, TW_PIER_Y + 10)) x -= 4;
-  twPlanks(x - 8, V2_W, TW_PIER_Y);
+// (it starts on the sand at the left of every row it covers, so no sea shows between it and the coast: Fedor, "The dock
+// has a bit of a water leak")
+static int twPierX0() {
+  static int x0 = -1;
+  if (x0 < 0) {
+    x0 = V2_W;
+    for (int y = TW_PIER_Y; y < TW_PIER_Y + 28; y += 4) {
+      int x = V2_W - 4;
+      while (x > 233 && !v2IsleLand(x + 2, y + 2)) x -= 4;
+      if (x < x0) x0 = x;
+    }
+    x0 = scFl4(x0 - 8) * 4;
+  }
+  return x0;
 }
+static bool twOnPier(int x, int y) { return y >= TW_PIER_Y && y < TW_PIER_Y + 28 && x >= twPierX0(); }
+static void twPierPaint() { twPlanks(twPierX0(), V2_W, TW_PIER_Y); }
 
 // ===================================================================== Travel, page 2: the tower's islet
 #define TW_SHIFT 300                // page 2 is the map panned this far east
