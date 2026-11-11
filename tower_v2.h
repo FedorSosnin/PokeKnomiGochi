@@ -725,44 +725,61 @@ static void twViewTired() {
   gfx->fillRect(135 + 196 * TOWER_ENERGY_MIN / 100, 277, 2, 14, UI_WHITE);  // where a climb can start
   v2CloseX();
 }
-// 05: pick 2 friends (3 x 3 on a page)
-#define TW_PICK_X 136
-#define TW_PICK_Y 112
-#define TW_PICK_DX 97
-#define TW_PICK_DY 88
-static int twPickPages() { int n = twFormCount(); return n ? (n + 8) / 9 : 1; }
+// 05: pick 2 friends: the Pokedex's own grid (Fedor: "no need to boxes behind the pokemon. Keep the pokedex looking
+// like what we currently have built"): the dimmed room, the board with how many are picked, the sprites in its light
+// panel, page arrows and "Page 1 of 3"; a pick gets a green numbered disc, a form your level doesn't allow yet is a
+// shadow with the level it needs. GO! sits by the X
+#define TW_GO_X 300
+#define TW_GO_Y 394
+#define TW_GO_W 84
+#define TW_GO_H 32
+static int twPickList(int i, bool &sh) {  // the i-th pickable form: every one in the Pokedex but your own
+  int n = twFormCount(), k = 0;
+  for (int j = 0; j < n; j++) {
+    int16_t d = twFormAt(j, sh);
+    if (d == pet.speciesId && sh == pet.shiny) continue;
+    if (k++ == i) return d;
+  }
+  return 0;
+}
+static int twPickCount() { bool sh; int n = 0; while (twPickList(n, sh)) n++; return n; }
+static int twPickPages() { int n = twPickCount(); return n ? (n + DEXG_PAGE - 1) / DEXG_PAGE : 1; }
+static bool twPickReady() { int n = twPickCount(); return twPickN == 2 || (twPickN == n && n < 2); }
 static void twViewPick() {
-  twBackHall(TOWER_LEGEND, 115);
-  char b[32];
-  v2SignIn(v2Caps(T(S_PICK_FRIENDS), b, sizeof(b)), 30, C565(0x5a, 0x3a, 0x98), C565(0x8a, 0x6a, 0xd0));
-  gfx->fillRoundRect(86 - 3, 70 - 3, 295 + 6, 271 + 6, 12, V2_RIM);
-  gfx->fillRoundRect(86, 70, 295, 271, 10, sc565(0xF4F6FA));
-  for (int i = 0; i < 9; i++) {
+  v2MenuBackdrop();
+  char cnt[12], b[16];
+  snprintf(cnt, sizeof(cnt), "%d/2", twPickN);
+  v2GridHead(T(S_PICK_FRIENDS), cnt, DEXG_X, DEXG_Y, DEXG_CELL, 3);
+  for (int i = 0; i < DEXG_PAGE; i++) {
     bool sh;
-    int16_t d = twFormAt(twPickPage * 9 + i, sh);
+    int16_t d = twPickList(twPickPage * DEXG_PAGE + i, sh);
     if (!d) break;
-    int cx = TW_PICK_X + (i % 3) * TW_PICK_DX, cy = TW_PICK_Y + (i / 3) * TW_PICK_DY;
-    bool picked = twPicked(d, sh), ok = twAllowed(d, sh), mine = d == pet.speciesId && sh == pet.shiny;
-    gfx->fillRoundRect(cx - 42, cy - 38, 85, 77, 8, picked ? sc565(0xD4F0D0) : sc565(0xDDE4EE));
-    if (picked) for (int k = 0; k < 4; k++) gfx->drawRoundRect(cx - 42 + k, cy - 38 + k, 85 - 2 * k, 77 - 2 * k, 8, sc565(0x3F9A4C));
-    twThumb(thumbs.getForm(d, sh), cx, cy + 30, 2, ok ? SC_NONE : (Rgb)0xAAB0BC);
-    if (sh) drawShinyMark(cx - 40, cy - 40, 80);
-    if (picked) {
+    int x = DEXG_X + (i % DEXG_COLS) * DEXG_CELL, y = DEXG_Y + (i / DEXG_COLS) * DEXG_CELL, cx = x + DEXG_CELL / 2, cy = y + DEXG_CELL / 2;
+    bool ok = twAllowed(d, sh);
+    if (const uint8_t *t = thumbs.getForm(d, sh)) {
+      int box[4];
+      drawThumbFit(t, cx, cy, DEXG_CELL - 6, DEXG_CELL - 4, DEXG_SPRITE_S, !ok, DEXG_STARS_H / 2, box);
+      if (sh) drawSparkles(box[0], box[1], box[2], box[3], millis() + i * 337);
+    }
+    if (ok && pet.starsOf(d, sh) >= 3) drawStars(cx, y + DEXG_CELL - DEXG_STAR_R - 3, DEXG_STAR_R, 3);
+    if (!ok) {
+      snprintf(b, sizeof(b), "Lv%d", btlMinLevel(d));
+      twChip(b, cx, y + DEXG_CELL - 26);
+    }
+    if (twPicked(d, sh)) {
       int k = twPickDex[0] == d && twPickShiny[0] == sh ? 1 : 2;
-      gfx->fillCircle(cx + 31, cy - 25, 10, sc565(0x3F9A4C));
+      gfx->fillCircle(x + DEXG_CELL - 16, y + 16, 13, sc565(TW_INK));
+      gfx->fillCircle(x + DEXG_CELL - 16, y + 16, 11, UI_BAR_OK);
       snprintf(b, sizeof(b), "%d", k);
       gfx->setTextColor(UI_WHITE);
-      setCur(cx + 26, cy - 31);
+      setSize(2);
+      setCur(x + DEXG_CELL - 16 - textW(b, 2) / 2, y + 9);
       printT(b);
-    } else if (mine) {
-      twChip("YOU", cx, cy + 14);
-    } else if (!ok) {
-      snprintf(b, sizeof(b), "Lv%d", btlMinLevel(d));
-      twChip(b, cx, cy + 14);
     }
   }
+  drawDexGridPage(twPickPage, twPickPages(), DEXG_PAGE_Y);
   drawPageArrows(twPickPage, twPickPages(), V2_PAGE_ARROW_Y);
-  v2LabelButton(160, 352, 306, 384, T(S_GO), twPickN == 2 || twPickN == twFormCount() ? C565(0x58, 0xb8, 0x68) : C565(0x8e, 0x8c, 0x96));
+  v2LabelButton(TW_GO_X, TW_GO_Y, TW_GO_X + TW_GO_W, TW_GO_Y + TW_GO_H, T(S_GO), twPickReady() ? UI_BAR_OK : C565(0x8e, 0x8c, 0x96));
   v2CloseX();
 }
 // 06: who goes first (and after a faint, who's next)
@@ -1008,15 +1025,14 @@ void towerTap(int16_t x, int16_t y) {
         twPickPage += d;
         return;
       }
-      if (y >= 346 && y <= 392 && x >= 154 && x <= 312) {
-        if (twPickN == 2 || twPickN == twFormCount()) twStartClimb();
+      if (x >= TW_GO_X - 6 && x <= TW_GO_X + TW_GO_W + 6 && y >= TW_GO_Y - 8 && y <= TW_GO_Y + TW_GO_H + 8) {
+        if (twPickReady()) twStartClimb();
         else sfxPlay(SFX_DENY);
         return;
       }
-      int col = (x - (TW_PICK_X - 46)) / TW_PICK_DX, row = (y - (TW_PICK_Y - 42)) / TW_PICK_DY;
-      if (x < TW_PICK_X - 46 || y < TW_PICK_Y - 42 || col > 2 || row > 2) return;
+      if (x < DEXG_X || y < DEXG_Y || x >= DEXG_X + DEXG_COLS * DEXG_CELL || y >= DEXG_Y + 3 * DEXG_CELL) return;
       bool sh;
-      int16_t d = twFormAt(twPickPage * 9 + row * 3 + col, sh);
+      int16_t d = twPickList(twPickPage * DEXG_PAGE + (y - DEXG_Y) / DEXG_CELL * DEXG_COLS + (x - DEXG_X) / DEXG_CELL, sh);
       if (!d) return;
       if (twPicked(d, sh)) {  // a second tap takes it out
         int k = twPickDex[0] == d && twPickShiny[0] == sh ? 0 : 1;

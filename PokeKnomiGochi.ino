@@ -1134,6 +1134,9 @@ void handleSerial() {
   } else if (line.startsWith("TOWERBEST ") && pet.noSave) {  // V2: "TOWERBEST n": floors already won (testing)
     pet.towerBest = (uint8_t)line.substring(10).toInt();
     Serial.println("DONE");
+  } else if (line == "TOWERWIN" && pet.noSave) {  // V2: the tower fight under way is won (testing)
+    if (battleOpen && bTower && bPhase < BP_END) { bFoe.hp = 0; battleFinish(true); }
+    Serial.println("DONE");
   } else if (line.startsWith("TOWERSTEP ") && pet.noSave) {  // V2: "TOWERSTEP n": a climb under way jumps to step n (testing)
     towerJump((uint8_t)line.substring(10).toInt());
     Serial.println("DONE");
