@@ -25,9 +25,9 @@
 // game's biggest, so the same training as the rest made it all but unbeatable)
 static const uint8_t TOWER_TYPE[TOWER_LEGEND + 1] = { 0, TY_ROCK, TY_WATER, TY_ELECTRIC, TY_GRASS, TY_POISON, TY_PSYCHIC, TY_FIRE, TY_GROUND, TY_NORMAL };
 static const uint8_t TOWER_LVL_BONUS[TOWER_STEPS + 1] = { 0, 0, 0, 1, 1, 2, 2, 2, 3, 2, 0 };
-// (Fedor's target: a stacked team, Lv 100, three 3-star Pokemon, ATK and SPD trained full, DEF 60, the right types and
-// leads, clears the whole tower about 1 time in 4; tools/tower_sim.cpp and the climbs in test/test_tower.cpp check it)
-static const uint8_t TOWER_TRAIN[TOWER_STEPS + 1] = { 0, 28, 40, 50, 56, 66, 80, 88, 94, 90, 78 };
+// (Fedor's target: a stacked team, Lv 100, three 3-star Pokemon, ATK and SPD trained full, DEF 25 (a daily player's:
+// DEF grows 1 a 6 h of good care, so 60 is very rare), the right types and leads, clears the whole tower about 1 time in 4; tools/tower_sim.cpp and the climbs in test/test_tower.cpp check it)
+static const uint8_t TOWER_TRAIN[TOWER_STEPS + 1] = { 0, 28, 40, 50, 56, 66, 72, 80, 86, 82, 58 };
 static const uint8_t TOWER_GENE[TOWER_STEPS + 1] = { 0, 94, 96, 98, 100, 101, 102, 104, 106, 104, 100 };
 // a guardian is a boss: more HP than its level gives, % (Fedor: "way too easy ... I got those pokeballs without even
 // being hit"), so a fight lasts long enough to hurt
