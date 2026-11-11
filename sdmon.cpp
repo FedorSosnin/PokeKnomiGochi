@@ -163,9 +163,13 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
     // that foot, its body and shell were 20 px over the ground, over the sea on the Beach (Fedor: "When Blastoise
     // sleeps, he looks to be sitting in the water", "Still floating above the ground"). Asleep it sits on its body,
     // the foot on the ground in front of it
-    if (dexNum == 9 && id == PMD_SLEEP) {
-      for (uint8_t f = 0; f < nf; f++) a.low[f] = a.low[f] > 4 ? a.low[f] - 4 : 1;
-      a.base = a.base > 4 ? a.base - 4 : 1;
+    // Magikarp sleeps on its side with a fin hanging 3 rows under its body: stood on the fin's tip, it hovered 12 px
+    // over the ground (Fedor: "When sleeping, the magicarp appears to hover off the ground"). It lies on its body,
+    // the fin on the ground in front of it
+    uint8_t sink = id != PMD_SLEEP ? 0 : dexNum == 9 ? 4 : dexNum == 129 ? 3 : 0;
+    if (sink) {
+      for (uint8_t f = 0; f < nf; f++) a.low[f] = a.low[f] > sink ? a.low[f] - sink : 1;
+      a.base = a.base > sink ? a.base - sink : 1;
     }
 #endif
   }

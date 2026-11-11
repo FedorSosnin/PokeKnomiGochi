@@ -92,7 +92,7 @@ enum : uint32_t {
   MED_TOWER = 1UL << 25,
 #endif
 };
-#define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer
+#define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer (V2: all kept, earned once)
 #define MED_FIRST_ZONE 17  // MED_ZONE_FOREST's bit: the zone medals have their own card page
 #define MED_FIRST_LV100 22  // MED_LV100_3's bit: the level 100 medals too
 #if UI_V2
@@ -309,6 +309,12 @@ public:
   uint8_t hofShiny = 0, hofLevel = 0;  // hofShiny: a bit for each of the three
   uint32_t hofEpoch = 0;               // when (lastSeenEpoch, local time)
   uint8_t towerCheer = 0;  // climbs lost in a row since the last new best floor: the next climb's friends cheer (tower.h)
+  // V2: the game's day this Pokemon came (hatch()). Its card's age and its goodbye's "Thank you for 4 days" count
+  // calendar days from it (Fedor: "Lets make sure it counts days for real": they were its minutes lived / 1440, and
+  // an absence counts at most 2 weeks). 0: not known yet (no clock when it came, a save from before): the next day
+  // sets it, its age back from that day
+  uint32_t metDay = 0;
+  uint32_t daysHad() const { return metDay && gameDay >= metDay ? gameDay - metDay : ageMinutes / 1440; }  // 0 its first
   uint8_t towerChal = 0;   // the challenges done once the Legend is beaten (TOWER_CH_*)
   // a tower fight won: uses its energy; petFought: your own Pokemon won it, and gets a win's usual effects
   void towerFightWon(bool petFought);

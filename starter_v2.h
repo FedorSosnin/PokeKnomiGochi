@@ -245,15 +245,44 @@ static void v2StarterTap(int16_t x, int16_t y) {
 static V2Ask v2PickQ;
 
 static int v2PickPages() { return (pet.eggChoiceCount() + DEXG_PAGE - 1) / DEXG_PAGE; }
-// the grid's panel: its top, centred with the page line (if there's more than one page) between the board and
-// the bottom; its squares start 6 px in, and the page buttons are level with its middle
-#define V2_PICK_PANEL_H (3 * DEXG_CELL + 12)
-static int v2PickPanelY() {
-  int top = V2_BOARD_Y + 28, h = V2_PICK_PANEL_H + (v2PickPages() > 1 ? 28 : 0);
-  return top + (V2_W - top - h) / 2;
+// the grid where the Pokedex's is, its page line and page buttons too (Fedor: "This pokedex should look the same as
+// our main one, minus the evolved pokemon of course")
+static int v2PickGridY() { return DEXG_Y; }
+static int v2PickArrowY() { return PAGE_ARROW_Y; }
+// the page's shiny forms move, as on the Pokedex's grid (Fedor: "the shiny pokemon dont move"): their sprites in
+// the grid's slots (dexGridPmd: the Pokedex isn't open while you choose)
+static void v2PickSync() {
+  for (int i = 0; i < DEXG_PAGE; i++) {
+    bool shiny;
+    int16_t dex = pet.eggChoiceAt(eggPickPage * DEXG_PAGE + i, shiny), want = dex && shiny ? dex : 0;
+    if (dexGridPmdDex[i] == want) continue;
+    dexGridPmd[i].unload();
+    dexGridPmdDex[i] = want;
+    if (want) dexGridPmd[i].load(want, true);
+  }
 }
-static int v2PickGridY() { return v2PickPanelY() + 6; }
-static int v2PickArrowY() { return v2PickPanelY() + V2_PICK_PANEL_H / 2; }
+// a form in its square as the Pokedex draws one (drawDexCell()): a shiny's idle moving, sparkles and all, else its
+// still sprite; under it the form's stars (they say how strong it grows)
+static void v2PickCell(int slot, int16_t dex, bool shiny, int x, int y) {
+  const int cell = DEXG_CELL, cx = x + cell / 2, cy = y + cell / 2, maxW = cell - 6, maxH = cell - 4;
+  PmdMon &m = dexGridPmd[slot];
+  int top, bottom, left, right;
+  if (shiny && dexGridPmdDex[slot] == dex && m.loaded && pmdBoxAll(m, PMD_IDLE, top, bottom, left, right)) {
+    const PmdAct &a = m.acts[PMD_IDLE];
+    uint8_t s = pmdFitScaleAll(m, PMD_IDLE, maxW, maxH, DEXG_SPRITE_S);
+    int base = a.base ? a.base : a.h;
+    int lift = min(DEXG_STARS_H / 2, (maxH - (bottom + 1 - top) * s) / 2);
+    int ground = cy - lift + ((base - top) - (bottom + 1 - base)) * s / 2;
+    gPmdForceScale = s;
+    drawPmdActM(m, PMD_IDLE, cx - ((left + right + 1) - a.w) * s / 2, ground, millis() + slot * 337, true, false, s);
+    gPmdForceScale = 0;
+  } else if (const uint8_t *t = thumbs.getForm(dex, shiny)) {
+    int box[4];
+    drawThumbFit(t, cx, cy, maxW, maxH, DEXG_SPRITE_S, false, DEXG_STARS_H / 2, box);
+    if (shiny) drawSparkles(box[0], box[1], box[2], box[3], millis() + slot * 337);  // (its sprite still loading)
+  }
+  drawStars(cx, y + cell - DEXG_STAR_R - 3, DEXG_STAR_R, pet.starsOf(dex, shiny));
+}
 static void v2PickOpen(int16_t dex, bool shiny) {
   eggPickDetail = dex;
   eggPickShiny = shiny;
@@ -303,22 +332,16 @@ static void v2PickScreen() {
   v2Sign(v2Caps(T(S_CHOOSE_POKEMON), b, sizeof(b)));
   int pages = v2PickPages(), gy = v2PickGridY();
   if (eggPickPage >= pages) eggPickPage = pages ? pages - 1 : 0;
+  v2PickSync();
   v2Panel(DEXG_X - 6, gy - 6, DEXG_X + 3 * DEXG_CELL + 6, gy + 3 * DEXG_CELL + 6, 10);
   for (int i = 0; i < DEXG_PAGE; i++) {
     bool shiny;
     int16_t dex = pet.eggChoiceAt(eggPickPage * DEXG_PAGE + i, shiny);
     if (!dex) break;
-    int x = DEXG_X + (i % DEXG_COLS) * DEXG_CELL, y = gy + (i / DEXG_COLS) * DEXG_CELL;
-    int cx = x + DEXG_CELL / 2, cy = y + DEXG_CELL / 2;
-    if (const uint8_t *t = thumbs.getForm(dex, shiny)) {
-      int box[4];
-      drawThumbFit(t, cx, cy, DEXG_CELL - 6, DEXG_CELL - 4, DEXG_SPRITE_S, false, DEXG_STARS_H / 2, box);
-      if (shiny) drawSparkles(box[0], box[1], box[2], box[3], millis() + i * 337);
-    }
-    drawStars(cx, y + DEXG_CELL - DEXG_STAR_R - 3, DEXG_STAR_R, pet.starsOf(dex, shiny));
+    v2PickCell(i, dex, shiny, DEXG_X + (i % DEXG_COLS) * DEXG_CELL, gy + (i / DEXG_COLS) * DEXG_CELL);
   }
   if (pages > 1) {
-    drawDexGridPage(eggPickPage, pages, gy + 3 * DEXG_CELL + 18);  // (12 px under the panel: clear of its rim)
+    drawDexGridPage(eggPickPage, pages, DEXG_PAGE_Y);
     drawPageArrows(eggPickPage, pages, v2PickArrowY());
   }
 }
@@ -479,7 +502,7 @@ static void v2Departure() {
   char a[40];
   char b[40];
   snprintf(a, sizeof(a), T(S_VISIT_BYE_FMT), nm);
-  snprintf(b, sizeof(b), T(S_THANKS_DAYS_FMT), (unsigned)(1 + pet.ageMinutes / 1440));
+  snprintf(b, sizeof(b), T(S_THANKS_DAYS_FMT), (unsigned)(1 + pet.daysHad()));  // (the calendar's days, both ends counted)
   gfx->setTextColor(UI_INK);
   setCur(centerX(a, 2), 326);
   printT(a);

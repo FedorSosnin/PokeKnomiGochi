@@ -2360,7 +2360,7 @@ bool render() {
     return true;
   }
 #endif
-  if (!galleryOpen && zoneScreen != ZS_ZONE) dexGridUnload();  // off the grids: their shinies go
+  if (!galleryOpen && zoneScreen != ZS_ZONE V2_AND(!pet.awaitingEggPick())) dexGridUnload();  // off the grids: their shinies go
   if (staticScreen()) {
     uint32_t k = screenKey();
     if (screenKeyValid && k == lastScreenKey) return false;

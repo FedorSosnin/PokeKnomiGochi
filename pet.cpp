@@ -93,6 +93,12 @@ void Pet::advanceDay() {
   }
   bool clockDay = d == lastSeenEpoch / 86400;  // not held back: the clock's own day
   gameDay = d;
+#if UI_V2
+  if (!metDay && !isEgg() && !starterPick && !eggPick) {  // V2: the day it came, as near as its age tells
+    uint32_t back = ageMinutes / 1440;
+    metDay = back < d ? d - back : 1;
+  }
+#endif
   dayLife = lifeMin - (clockDay && (first || clockTrusted) ? (lastSeenEpoch % 86400) / 60 : 0);
   pendingSave = true;
 }
@@ -702,6 +708,9 @@ void Pet::release() {
 void Pet::hatch() {
   speciesId = eggTarget;
   shiny = eggShiny;
+#if UI_V2
+  metDay = gameDay;  // (0 without a clock yet: advanceDay() sets it)
+#endif
   // individual's genes: 90-110% per stat (every raising is unique), or inside the band of the form it
   // was picked from, so its stars are that form's
   int lo = eggStars == 1 ? 90 : eggStars == 2 ? GENE_BAND_1 + 1 : eggStars == 3 ? GENE_BAND_2 + 1 : 90;
@@ -720,7 +729,10 @@ void Pet::hatch() {
   berryKnown = false;
   bond = 0;          // bond, medals and name belong to the individual
   bondToday = 0;
+#if !UI_V2
   medals = 0;
+#endif  // V2 (Fedor: "my care achievements got wiped for this new pokemon and I re-earned the berry achievement. I
+        // think these should only happens once"): the care medals too are earned once and kept, as the trainer's are
   newMedal = 0;
   nick[0] = 0;
   registerSpecies(speciesId);  // raised = registered in the pokedex
@@ -1216,6 +1228,7 @@ void Pet::save() {
   prefs.putUChar("hofs", hofShiny);
   prefs.putUChar("hofl", hofLevel);
   prefs.putUInt("hofe", hofEpoch);
+  prefs.putUInt("met", metDay);
 #endif
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putUInt("life", lifeMin);
@@ -1323,6 +1336,7 @@ void Pet::load() {
   hofShiny = prefs.getUChar("hofs", 0);
   hofLevel = prefs.getUChar("hofl", 0);
   hofEpoch = prefs.getUInt("hofe", 0);
+  metDay = prefs.getUInt("met", 0);
 #endif
   prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
   bool hadStars = prefs.isKey("dexstr");
@@ -1351,6 +1365,12 @@ void Pet::load() {
   if (!prefs.isKey("l100n") && (trainerMedals & MED_LV100) && level() < LEVEL_MAX) lv100Count = 1;
   lifeMin = prefs.getUInt("life", 0);
   gameDay = prefs.getUInt("gday", 0);  // older saves: 0, and the first clock sets today without a wait
+#if UI_V2
+  if (!metDay && gameDay && !isEgg() && !starterPick && !eggPick) {  // V2: a save from before: the day it came, by its age
+    uint32_t back = ageMinutes / 1440;
+    metDay = back < gameDay ? gameDay - back : 1;
+  }
+#endif
   dayLife = prefs.getUInt("dlife", 0);
   refUtc = prefs.getUInt("rutc", 0);
   refLife = prefs.getUInt("rlife", 0);

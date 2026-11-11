@@ -445,7 +445,7 @@ static void v2CardProfile() {
   snprintf(line, sizeof(line), T(S_STREAK_FMT), pet.streak, pet.bestStreak);
   v2SplitPair(line, streak, best, sizeof(streak));
   const char *berry = !pet.berryKnown ? T(S_BERRY_UNK) : pet.lovesBerry(0) ? T(S_BERRY_RED) : pet.lovesBerry(1) ? T(S_BERRY_BLUE) : T(S_BERRY_GREEN);
-  snprintf(line, sizeof(line), T(S_INFO_FMT), berry, (unsigned long)(pet.ageMinutes / 1440));
+  snprintf(line, sizeof(line), T(S_INFO_FMT), berry, (unsigned long)pet.daysHad());  // (calendar days, as its goodbye)
   v2SplitPair(line, berryName, age, sizeof(berryName));
   setSize(2);
   bool ageOwn = V2_CARD_TX + textW(berryName, 2) + 16 > V2_CARD_R - textW(age, 2);

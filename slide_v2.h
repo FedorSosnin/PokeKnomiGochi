@@ -37,8 +37,7 @@ static V2PageKey v2PageKeyNow() {
   int pos, n;
   if (pet.awaitingStarter()) return k;
   if (pet.awaitingEggPick()) {
-    if (!eggPickDetail)  // (its page line 12 px under the panel's rim)
-      k = { 1, (int16_t)eggPickPage, (int16_t)v2PickPages(), (int16_t)v2PickArrowY(), (int16_t)(v2PickGridY() + 3 * DEXG_CELL + 10) };
+    if (!eggPickDetail) k = { 1, (int16_t)eggPickPage, (int16_t)v2PickPages(), (int16_t)v2PickArrowY(), V2_SLIDE_DEX_Y };  // (as the Pokedex)
     return k;
   }
   if (buddyMenuOpen) return { 2, buddyPage, 2, V2_PAGE_ARROW_Y };

@@ -1065,6 +1065,30 @@ TEST(v2pick, a_shiny_starter_only_if_you_own_its_shiny) {
 }
 
 // ---------------------------------------------------------------- V2: fights pay, the Master Ball (Fedor)
+// V2: a Pokemon's days go by the calendar from the day it came (Fedor: "Lets make sure it counts days for real"),
+// its card's age and its goodbye's "Thank you for N days" both; a save from before guesses the day from its age
+TEST(v2days, they_go_by_the_calendar) {
+  Pet p;
+  makePet(p, 7);
+  p.setClock(20000UL * 86400 + 20 * 3600);  // it came at 8 pm
+  CHECK_EQ(p.daysHad(), (uint32_t)0);
+  liveTo(p, 20001UL * 86400 + 9 * 3600);    // 9 am the next morning: its second day
+  CHECK_EQ(p.daysHad(), (uint32_t)1);
+  liveTo(p, 20010UL * 86400 + 9 * 3600);
+  CHECK_EQ(p.daysHad(), (uint32_t)10);      // "Thank you for 11 days", where its minutes lived made 9
+  CHECK(p.ageMinutes / 1440 < 10);
+  p.flushSave();
+  Pet again;
+  again.begin();
+  CHECK_EQ(again.daysHad(), (uint32_t)10);  // kept in the save
+  again.metDay = 0;                         // a save from before: by its age, back from today
+  again.ageMinutes = 3 * 1440 + 5;
+  again.setClock(20010UL * 86400 + 10 * 3600);  // (which saves)
+  Pet old;
+  old.begin();
+  CHECK_EQ(old.daysHad(), (uint32_t)3);
+}
+
 TEST(v2master, a_hundred_fights_earn_a_master_ball) {
   Pet p;
   makePet(p, 25);
@@ -1361,8 +1385,12 @@ TEST(medals, total_accumulates_across_pets) {
   p.newEgg();
   p.chooseStarter(144);  // ARTICUNO, another final form
   p.eggTap(); p.eggTap(); p.eggTap();
+#if UI_V2
+  CHECK_MSG(p.medals == MED_FINAL && p.totalMedals == 1, "V2: a care medal is earned once, kept through the next");
+#else
   CHECK_MSG(p.medals == MED_FINAL, "the individual's medals are reset");
   CHECK_MSG(p.totalMedals == 2, "the player's total is kept");
+#endif
 }
 
 TEST(medals, trainer_medals_come_from_the_dex_and_outlive_the_pet) {
