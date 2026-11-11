@@ -30,6 +30,7 @@ TEST(tower, guardians_match_your_level_and_are_never_legendary) {
         CHECK(gl >= lvl && gl <= lvl + 3);
       }
   CHECK_EQ((int)towerGuardianDex(TOWER_STEPS, 50, 7), DEX_MEWTWO);
+  for (uint8_t roll = 0; roll < 8; roll++) CHECK(towerGuardianDex(TOWER_LEGEND, 100, roll) != 147);  // never Dratini at the top
 }
 
 TEST(tower, a_low_level_meets_base_forms) {

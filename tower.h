@@ -64,11 +64,12 @@ inline uint8_t towerLevel(uint8_t step, uint8_t petLvl) {
   return l > BTL_LEVEL_CAP ? BTL_LEVEL_CAP : l < 2 ? 2 : (uint8_t)l;
 }
 
-// the guardian's species at a step (roll: any number; the Legend's first fight takes its type from it)
+// the guardian's species at a step (roll: any number; the Legend's first fight takes only its type from it: the
+// strongest of that type, never a Dratini at the top)
 inline int16_t towerGuardianDex(uint8_t step, uint8_t petLvl, uint8_t roll) {
   if (step == TOWER_STEPS) return DEX_MEWTWO;
   uint8_t lvl = towerLevel(step, petLvl);
-  if (step == TOWER_LEGEND) return towerSpecies(TOWER_LEGEND_TYPES[roll % 4], lvl, roll / 4);
+  if (step == TOWER_LEGEND) return towerSpecies(TOWER_LEGEND_TYPES[roll % 4], lvl, 0);  // the Legend: the type's strongest
   return towerSpecies(TOWER_TYPE[step], lvl, roll);
 }
 
