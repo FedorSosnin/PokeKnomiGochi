@@ -161,7 +161,7 @@ static uint8_t twIsleCell(int i, int j) {  // page 2's cells: the island shifted
 // the tower in the map's style: five storeys (lit windows for the floors won), gold gate ledges with pennants,
 // torches at the door, battlements on top (grand_tower()); returns the roof's y
 static int twMapTower(int cx, int base, uint8_t best) {
-  static const uint8_t ST[5][3] = { { 56, 24, 0 }, { 52, 22, 1 }, { 48, 22, 0 }, { 44, 22, 1 }, { 40, 20, 0 } };  // half, h, gold
+  static const uint8_t ST[5][3] = { { 56, 24, 0 }, { 52, 22, 0 }, { 48, 22, 0 }, { 44, 22, 1 }, { 40, 20, 0 } };  // half, h, gold (8F's gate)
   int y = base;
   for (int n = 0; n < 5; n++) {
     int half = ST[n][0], h = ST[n][1], top = y - h;
@@ -952,7 +952,7 @@ static void twViewWon() {
   for (int k = 1; k <= TOWER_FLOORS; k++) twShield(CX - 4 * 30 + (k - 1) * 30 + 15, 238, 2, k, k <= fl);  // this climb's
   char b[40];
   bool gate = (twGot >> 4) && towerIsGate(fl);  // (a gate's balls come only the first time it's passed)
-  if (gate) snprintf(b, sizeof(b), T(S_GATE_FMT), fl == 4 ? 1 : 2);
+  if (gate) snprintf(b, sizeof(b), T(S_GATE_FMT), 1);  // (8F: the one gate below the Legend)
   else snprintf(b, sizeof(b), T(S_BADGE_FMT), TYPE_NAME[TOWER_TYPE[fl]]);
   if (gate) v2SignIn(b, 30, C565(0x8a, 0x6a, 0x10), C565(0xf0, 0xc0, 0x4a));
   else v2SignIn(b, 30, sc565(TW_COL[fl][2]), sc565(TW_COL[fl][0]));

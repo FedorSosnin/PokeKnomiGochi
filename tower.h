@@ -35,9 +35,10 @@ static const uint8_t TOWER_LEGEND_TYPES[4] = { TY_ICE, TY_FIGHTING, TY_GHOST, TY
 // the floor a step of the climb is on: steps 1..8 are the floors, 9 and 10 the Legend
 inline uint8_t towerFloorOf(uint8_t step) { return step > TOWER_FLOORS ? TOWER_LEGEND : step; }
 
-// a gate's reward the first time it's passed: Ultra Balls (4F: 1, 8F: 2); the Legend gives a Master Ball instead
-inline uint8_t towerGateUltras(uint8_t floor) { return floor == 4 ? 1 : floor == 8 ? 2 : 0; }
-inline bool towerIsGate(uint8_t floor) { return floor == 4 || floor == 8 || floor == TOWER_LEGEND; }
+// the gates, the only floors that pay, and only the first time (Fedor: "only getting one ultra ball at 8f, Nothing for
+// 4F. This should be a legit challenge"): 8F an Ultra Ball, the Legend a Master Ball
+inline uint8_t towerGateUltras(uint8_t floor) { return floor == 8 ? 1 : 0; }
+inline bool towerIsGate(uint8_t floor) { return floor == 8 || floor == TOWER_LEGEND; }
 
 inline uint16_t towerBst(int16_t d) { const DexEntry &e = DEX_TBL[d]; return e.bHp + e.bAtk + e.bDef + e.bSpe; }
 
