@@ -957,6 +957,23 @@ static void testGame() {
         auto rows = [](const std::vector<uint16_t> &a, const std::vector<uint16_t> &b, int y0, int y1) {
           return std::equal(a.begin() + y0 * 466, a.begin() + y1 * 466, b.begin() + y0 * 466);
         };
+        // every frame for ms after a turn, so the slide shows in one of them however slow the machine (on Linux CI a
+        // frame taken at a fixed 120 ms had already landed)
+        auto watch = [&](int ms) {
+          std::vector<std::vector<uint16_t>> seen;
+          for (int i = 0; i < ms / 5; i++) {
+            hostTick();
+            usleep(5000);
+            seen.push_back(grab());
+          }
+          return seen;
+        };
+        auto between = [&](const std::vector<std::vector<uint16_t>> &seen, const std::vector<uint16_t> &a,
+                           const std::vector<uint16_t> &b) {
+          for (auto &f : seen)
+            if (!rows(f, a, 0, 377) && !rows(f, b, 0, 377)) return true;
+          return false;
+        };
         cardOpen = true;
         cardAch = false;
         cardPage = 2;
@@ -965,13 +982,13 @@ static void testGame() {
         hostPointer(436, 228, true);  // the side button (tapAt() would wait past the slide)
         runTicks(150);
         hostPointer(436, 228, false);
-        runTicks(120);
+        auto seen = watch(800);
+        std::vector<uint16_t> to = seen.back();
         CHECK(cardPage == 3);
-        std::vector<uint16_t> mid = grab();
-        runTicks(500);
-        std::vector<uint16_t> to = grab();
-        CHECK(!rows(mid, from, 0, 377) && !rows(mid, to, 0, 377));  // on the way
-        CHECK(rows(mid, to, 377, 466) && !rows(from, to, 377, 466));  // "Page 4 of 7" from the start
+        CHECK(between(seen, from, to));  // on the way: neither page
+        bool lineFirst = false;  // "Page 4 of 7" while the page is still on its way
+        for (auto &f : seen) lineFirst |= rows(f, to, 377, 466) && !rows(f, to, 0, 377);
+        CHECK(lineFirst && !rows(from, to, 377, 466));
         runTicks(300);
         CHECK(grab() == to);  // landed, and still
         for (int i = 0; i <= 6; i++) {  // a swipe right: back
@@ -979,12 +996,10 @@ static void testGame() {
           runTicks(30);
         }
         hostPointer(380, 300, false);
-        runTicks(120);
+        seen = watch(800);
         CHECK(cardPage == 2);
-        mid = grab();
-        CHECK(!rows(mid, from, 0, 377) && !rows(mid, to, 0, 377));
-        runTicks(600);
-        CHECK(rows(grab(), from, 0, 466));  // the Training page again, as it was
+        CHECK(between(seen, to, from));
+        CHECK(rows(seen.back(), from, 0, 466));  // the Training page again, as it was
         cardOpen = false;
         cardPage = 0;
         runTicks(200);
