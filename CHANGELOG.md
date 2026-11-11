@@ -6,7 +6,7 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [Unreleased]
+## [2.0.6] - 2026-11-11
 
 - **Your Pokémon faces its foe:** in a battle your Pokémon is seen from behind, facing the wild one up to its right, as in the Game Boy games: standing, attacking and taking a hit. Every Pokémon's sprites now have these back views (a few without them still face you).
 
