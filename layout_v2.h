@@ -37,9 +37,13 @@ static const V2Bar V2_BARS[4] = {
 #define V2_ICON_S 4
 #define V2_ICON_HALF 36
 #define V2_ICON_R 176
-static const int16_t V2_BTN[5][2] = { {94, 340}, {160, 394}, {230, 408}, {308, 394}, {374, 338} };  // bag, games, map, moon, drop
+// Left to right: the Game Boy, the map, the backpack in the middle at the bottom, the moon, the drop (Fedor: "Lets swap
+// the icons around so that the back pack in the middle bottom ... Its weird to click the edge buttons all the time, but
+// totally fine when its occasionally"; it was on the left). The ends where they were (the band's ends); the bag at 90
+// degrees, the map and the moon each where the gaps either side of it are the same (the drawn icons, outlines and all)
+static const int16_t V2_BTN[5][2] = { {94, 340}, {162, 394}, {232, 408}, {308, 392}, {374, 338} };  // games, map, bag, moon, drop
 
-// the icon band (the "holder"): one curved band under all five, ends centred on the bag and the drop
+// the icon band (the "holder"): one curved band under all five, ends centred on the Game Boy and the drop
 #define V2_BAND_RIN 138
 #define V2_BAND_ROUT 214
 #define V2_BAND_A0 36.7

@@ -6,6 +6,10 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [Unreleased]
+
+- **The backpack is in the middle:** the icons along the bottom are now the Game Boy, the map, the **backpack** (in the middle, where your thumb is), the moon and the bath. The backpack is the one you tap most, so it's no longer out at the edge.
+
 ## [2.0.4] - 2026-11-10
 
 - **About page:** the last page of **Settings** has the 3D Print SOS logo in pixel art, spinning like a gold coin: it spins when the page opens and whenever you tap it, and a gold gleam crosses it now and then. Under it are the version, "Made by 3DPrintSOS - Fedor", and **GitHub** and **YouTube** buttons. On Mac, Windows and the web they open in your browser; on the Knomi they show a QR code to scan with your phone.

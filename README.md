@@ -118,7 +118,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game, 
 |---|---|
 | **Tap the Pokémon** | Pet it |
 | **Hold your finger on it** | The menu: a ring opens round it. Slide onto one and lift, or let go and tap one. Keep holding still for 3 seconds to let your Pokémon go (or bring back its goodbye, if you chose to stay together) |
-| **Tap the icons along the bottom** | From left to right: open the backpack (berries, candy and your Repels), play mini games, Travel to hunt, turn the light off for bed, or give it a bath |
+| **Tap the icons along the bottom** | From left to right: play mini games, Travel to hunt, open the backpack in the middle (berries, candy and your Repels), turn the light off for bed, or give it a bath |
 | **Stats** in the ring | Its card: profile, battle stats, training, progress, and a page for each item |
 | **Tap its name on the card** (✏️) | Rename it |
 | **Pokédex** in the ring | Tap a Pokémon for its page, where it turns round, and tap it there to give it a pat |
@@ -211,11 +211,11 @@ Each kind of training stops at 100. The card's **Training** page (**Stats** in t
 
 ### Travel
 
-Tap the **map** icon in the middle of the bottom to open **Travel**: **Knomi Island**, a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button, and brings you back to the island when it's over. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
+Tap the **map** icon, second from the left, to open **Travel**: **Knomi Island**, a round island with five zones round a patch of tall grass. Tap a zone (Forest, Beach, Cave, Mansion or Field) to see the Pokémon that live there, what you've caught and what's still a silhouette, and **Search** to hunt one. Common Pokémon turn up all the time, rare ones much less often, and each zone's legendary can appear on any Search, but only about once in a hundred. The tall grass in the middle, **Wild Encounter**, meets a wild Pokémon from anywhere at your Pokémon's home, just like pressing the physical button, and brings you back to the island when it's over. The arrows at the sides of a zone's list, or a swipe, turn its pages. Battles train attack.
 
 ### Games
 
-Tap the **handheld** icon, second from the left, for the mini games: cartridges on a Game Boy's screen, each label a little scene from its game. When one starts, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed, and the time you play counts toward your next Repel. At the end, **Play Again!** starts it again, the ✕ goes back to the games, and the Repel bar opens the Repel's page. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
+Tap the **handheld** icon, on the left, for the mini games: cartridges on a Game Boy's screen, each label a little scene from its game. When one starts, a card drops in over it with how to play; press **Ready, GO!** or swipe the card away to start. They train speed, and the time you play counts toward your next Repel. At the end, **Play Again!** starts it again, the ✕ goes back to the games, and the Repel bar opens the Repel's page. **Swipe up from the lower half of the screen to quit any game**, with nothing earned.
 
 - **PokeDungeon:** explore a cave floor by floor. Tap toward where you want to step, or hold to keep walking. Walk into a wild Pokémon to attack it with your own best move, pick up Razz, Oran and Pinap Berries to heal, and find the stairs down. A better-trained Pokémon gets deeper.
 - **PokeRun:** tap to jump over rocks, bushes, fallen logs, stumps and mushrooms in a forest that keeps getting faster. How long can you last?

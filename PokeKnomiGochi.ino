@@ -432,10 +432,10 @@ struct Btn {
 #if UI_V2
 // V2: on a circle round the screen's own centre (layout_v2.h), so each is as far from the edge; the moon's
 // zZ are orange
-Btn buttons[BTN_COUNT] = {
-  { V2_BTN[0][0], V2_BTN[0][1], SPR_HOME_BAG },
-  { V2_BTN[1][0], V2_BTN[1][1], SPR_V2_HOME_GB },  // a Game Boy, its own colours (sprites_v2.h)
-  { V2_BTN[2][0], V2_BTN[2][1], SPR_HOME_MAP },
+Btn buttons[BTN_COUNT] = {  // (what each does is still by its number: 0 the bag, 1 the games, 2 the map...)
+  { V2_BTN[2][0], V2_BTN[2][1], SPR_HOME_BAG },    // in the middle (layout_v2.h)
+  { V2_BTN[0][0], V2_BTN[0][1], SPR_V2_HOME_GB },  // a Game Boy, its own colours (sprites_v2.h), on the left
+  { V2_BTN[1][0], V2_BTN[1][1], SPR_HOME_MAP },
   { V2_BTN[3][0], V2_BTN[3][1], SPR_HOME_MOON_V2 },
   { V2_BTN[4][0], V2_BTN[4][1], SPR_HOME_DROP },
 };

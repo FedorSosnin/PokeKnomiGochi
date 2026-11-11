@@ -715,8 +715,11 @@ static void testGame() {
     extern int buttonAt(int16_t x, int16_t y);
     extern Pet pet;
     extern ScaledCanvas *gfx;
-    static const int16_t icon[5][2] = { {94, 340}, {160, 394}, {230, 408}, {308, 394}, {374, 338} };  // (V2_BTN)
+    // bag, games, map, moon, drop (the numbers their taps go by), where they are now: the bag in the middle at the
+    // bottom (Fedor: "Gameboy > Map > Backpack > Sleep > Bath"), so the left end is the Game Boy (V2_BTN)
+    static const int16_t icon[5][2] = { {232, 408}, {94, 340}, {162, 394}, {308, 392}, {374, 338} };
     for (int i = 0; i < 5; i++) CHECK(buttonAt(icon[i][0], icon[i][1]) == i);
+    CHECK(buttonAt(233, 412) == 0);  // straight down from the middle: the backpack
     CHECK(buttonAt(233, 300) == -1);  // between the pet and the band: no icon
     pet.hygiene = 100;
     runTicks(300);
