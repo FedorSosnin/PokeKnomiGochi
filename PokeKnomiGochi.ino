@@ -1134,6 +1134,12 @@ void handleSerial() {
   } else if (line.startsWith("TOWERBEST ") && pet.noSave) {  // V2: "TOWERBEST n": floors already won (testing)
     pet.towerBest = (uint8_t)line.substring(10).toInt();
     Serial.println("DONE");
+  } else if (line.startsWith("TOWERCHEER ") && pet.noSave) {  // V2: "TOWERCHEER n": climbs lost in a row (testing)
+    pet.towerCheer = (uint8_t)line.substring(11).toInt();
+    Serial.println("DONE");
+  } else if (line.startsWith("TOWERCHAL ") && pet.noSave) {  // V2: "TOWERCHAL bits": challenges done (testing)
+    pet.towerChal = (uint8_t)line.substring(10).toInt() & 7;  // (TOWER_CH_ALL)
+    Serial.println("DONE");
   } else if (line == "TROPHIES") {  // V2: the trophy room (testing)
     zoneScreen = ZS_NONE;
     cardOpen = cardAch = true;

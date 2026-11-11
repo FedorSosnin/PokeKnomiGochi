@@ -55,6 +55,10 @@ static const ExpectedFmt EXPECTED[] = {
   { S_BADGES_FMT, "%d,%d" },
   { S_TWR_BEST_FMT, "%d" },
   { S_DRAIN_FMT, "%s,%s" },
+  { S_TIP_WEAK_FMT, "%s,%s,%s" },
+  { S_TIP_NOSTRONG_FMT, "%s,%s" },
+  { S_CHEER_FMT, "%d" },
+  { S_CHEER_NEXT_FMT, "%d" },
 #endif
   { S_ZONE_CAUGHT_FMT, "%d,%d" },
   { S_POKEDEX_FMT,     "%u" },

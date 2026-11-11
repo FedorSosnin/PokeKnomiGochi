@@ -302,12 +302,15 @@ public:
   int16_t hofDex[3] = { 0, 0, 0 };
   uint8_t hofShiny = 0, hofLevel = 0;  // hofShiny: a bit for each of the three
   uint32_t hofEpoch = 0;               // when (lastSeenEpoch, local time)
+  uint8_t towerCheer = 0;  // climbs lost in a row since the last new best floor: the next climb's friends cheer (tower.h)
+  uint8_t towerChal = 0;   // the challenges done once the Legend is beaten (TOWER_CH_*)
   // a tower fight won: uses its energy; petFought: your own Pokemon won it, and gets a win's usual effects
   void towerFightWon(bool petFought);
   // floor (1..8, or the Legend's 9) climbed: the badge, and a gate's balls the first time. Returns what it gave:
   // bit 0 a new badge, 1 a Master Ball, then the Ultra Balls in bits 4..7
   uint8_t towerFloorWon(uint8_t floor);
-  void towerLost();  // all three fainted: a loss, as a battle's
+  void towerLost();  // all three fainted: a loss, as a battle's (and the friends cheer the next climb, until the Legend)
+  uint8_t towerChalDone(uint8_t got);  // a climb's challenges: the new ones (and they're kept)
   void towerSave() { save(); }  // a pick, the Hall of Fame: kept at once
 #endif
   // first game: the player picks a starter (Bulbasaur/Charmander/Squirtle)

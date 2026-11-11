@@ -162,3 +162,42 @@ TEST(tower, the_legend_is_hard_even_for_the_best) {
   int eight = simPct(team, 100, 3, 100, 15, 100, 8);
   CHECK(eight >= 10 && eight <= 70);  // 8F is no walk either
 }
+
+TEST(tower, friends_cheer_adds_hp_up_to_three_times) {
+  CHECK_EQ((int)towerCheerHp(100, 0), 100);
+  CHECK_EQ((int)towerCheerHp(100, 2), 120);
+  CHECK_EQ((int)towerCheerHp(100, 9), 100 + TOWER_CHEER_PCT * TOWER_CHEER_MAX);  // never past the most
+}
+
+TEST(tower, the_end_says_which_types_to_bring) {
+  uint8_t t[2];
+  CHECK_EQ((int)towerStrongTypes(TY_ROCK, t), 2);
+  CHECK((t[0] == TY_WATER || t[1] == TY_WATER) && (t[0] == TY_GRASS || t[1] == TY_GRASS || t[0] == TY_GROUND || t[1] == TY_GROUND));
+  CHECK_EQ((int)towerStrongTypes(TY_PSYCHIC, t), 1);  // only Bug, in the first games' chart
+  CHECK_EQ((int)t[0], (int)TY_BUG);
+  for (uint8_t ty = 0; ty < TY_COUNT; ty++) {  // whatever it names is Strong there
+    uint8_t n = towerStrongTypes(ty, t);
+    for (uint8_t k = 0; k < n; k++) CHECK(towerHint(t[k], ty) > 0);
+  }
+}
+
+TEST(tower, the_tip_fits_how_the_climb_was_lost) {
+  const int16_t fire[3] = { 6, 4, 5 }, mixed[3] = { 6, 4, 9 };  // three Fire, or two Fire and Blastoise; vs Golem (Rock)
+  CHECK_EQ((int)towerTip(5, 76, fire, 3, 100, 25, 100), (int)TOWER_TIP_WEAK);       // the last one was Weak
+  CHECK_EQ((int)towerTip(0, 76, fire, 3, 100, 25, 100), (int)TOWER_TIP_NOSTRONG);   // nobody was Strong
+  CHECK_EQ((int)towerTip(9, 76, mixed, 3, 100, 25, 100), (int)TOWER_TIP_DEF);       // the right one lost: training, the shortest
+  CHECK_EQ((int)towerTip(9, 76, mixed, 3, 10, 25, 100), (int)TOWER_TIP_ATK);
+  CHECK_EQ((int)towerTip(9, 76, mixed, 3, 100, 25, 5), (int)TOWER_TIP_SPD);
+}
+
+TEST(tower, challenges_after_the_legend) {
+  CHECK(towerBaseForm(4) && towerBaseForm(133) && towerBaseForm(25) && towerBaseForm(1));
+  CHECK(!towerBaseForm(5) && !towerBaseForm(6) && !towerBaseForm(134) && !towerBaseForm(26));
+  const int16_t base[3] = { 4, 7, 1 }, big[3] = { 6, 7, 1 };
+  const uint8_t ones[3] = { 3, 1, 1 }, mix[3] = { 3, 2, 1 };
+  CHECK_EQ((int)towerChallenges(0, base, ones, 3), TOWER_CH_ALL);
+  CHECK_EQ((int)towerChallenges(1, big, mix, 3), 0);
+  CHECK_EQ((int)towerChallenges(0, big, mix, 3), TOWER_CH_NOFAINT);
+  CHECK_EQ((int)towerChallenges(2, big, ones, 3), TOWER_CH_ONESTAR);
+  CHECK_EQ((int)towerChallenges(0, base, ones, 2), TOWER_CH_NOFAINT | TOWER_CH_BASE);  // two 1-star friends need three
+}

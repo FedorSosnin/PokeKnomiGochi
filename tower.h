@@ -20,6 +20,8 @@
 #define TOWER_HEAL_PCT 20   // HP back between floors, for each one still standing
 #define TOWER_DRAIN_PCT 30  // a guardian keeps its HP from one of yours to the next, and drains the one it beats
 #define DEX_MEWTWO 150
+#define TOWER_CHEER_MAX 3   // friends cheer after a lost climb: up to this many in a row...
+#define TOWER_CHEER_PCT 10  // ...each this much more HP for the whole team, until a new best floor
 
 // by step: floor n (1..8) at [n]; [9] the Legend's first fight, [10] Mewtwo (its own numbers: its base stats are the
 // game's biggest, so the same training as the rest made it all but unbeatable)
@@ -158,3 +160,58 @@ inline uint16_t towerDrain(uint16_t hp, uint16_t maxHp) {
 
 // the average of the three training stats, for the "Climb over" bars
 inline uint8_t towerTrainAvg(uint8_t a, uint8_t d, uint8_t s) { return (uint8_t)(((int)a + d + s) / 3); }
+
+// ---- friends cheer (Fedor: kids slowly break through, strong players never see it): each climb lost in a row since
+// the last new best floor gives the next climb's team TOWER_CHEER_PCT more HP, up to TOWER_CHEER_MAX times
+inline uint16_t towerCheerHp(uint16_t hp, uint8_t cheer) {
+  if (cheer > TOWER_CHEER_MAX) cheer = TOWER_CHEER_MAX;
+  uint32_t v = (uint32_t)hp * (100 + TOWER_CHEER_PCT * cheer) / 100;
+  return v > 65535 ? 65535 : (uint16_t)v;
+}
+
+// ---- the climb's end says what to try next (Fedor: "a kid who loses at 7F should know exactly what to try")
+enum : uint8_t { TOWER_TIP_WEAK, TOWER_TIP_NOSTRONG, TOWER_TIP_ATK, TOWER_TIP_DEF, TOWER_TIP_SPD };
+// the types Strong against a guardian's (the lead screen's hint), the best first: up to 2, how many
+inline uint8_t towerStrongTypes(uint8_t foe, uint8_t out[2]) {
+  uint8_t n = 0;
+  for (int pass = 0; pass < 2 && n < 2; pass++)  // first those that hit it hard and take little back, then the rest
+    for (uint8_t t = 0; t < TY_COUNT && n < 2; t++) {
+      if (towerHint(t, foe) <= 0 || (n && out[0] == t)) continue;
+      bool best = btlEffect(t, foe) > 2 && btlEffect(foe, t) <= 2;
+      if (best == (pass == 0)) out[n++] = t;
+    }
+  return n;
+}
+// what the end screen says: the one beaten last was Weak against it, or nobody was Strong (both: try a type that is),
+// or else the training the team is shortest of
+inline uint8_t towerTip(int16_t lastDex, int16_t foeDex, const int16_t *team, uint8_t n, uint8_t ta, uint8_t td, uint8_t ts) {
+  uint8_t foe = DEX_TBL[foeDex].type, strong[2];
+  if (towerStrongTypes(foe, strong)) {
+    if (lastDex && towerHint(DEX_TBL[lastDex].type, foe) < 0) return TOWER_TIP_WEAK;
+    bool any = false;
+    for (uint8_t i = 0; i < n; i++) any = any || towerHint(DEX_TBL[team[i]].type, foe) > 0;
+    if (!any) return TOWER_TIP_NOSTRONG;
+  }
+  return td <= ta && td <= ts ? TOWER_TIP_DEF : ts <= ta ? TOWER_TIP_SPD : TOWER_TIP_ATK;
+}
+
+// ---- challenges, once the Legend is beaten (Fedor: the hard part is opt-in, not in a kid's way): a whole climb won...
+#define TOWER_CH_NOFAINT 1  // ...with no one fainting
+#define TOWER_CH_ONESTAR 2  // ...with two 1-star friends
+#define TOWER_CH_BASE 4     // ...with no evolved Pokemon on the team
+#define TOWER_CH_ALL 7
+inline bool towerBaseForm(int16_t d) {  // nothing evolves into it (Eevee's three come from Eevee)
+  if (d >= 134 && d <= 136) return false;
+  for (int16_t e = 1; e <= DEX_COUNT; e++)
+    if (DEX_TBL[e].evolvesTo == d) return false;
+  return true;
+}
+// the challenges a whole climb won meets: faints, the team (your Pokemon first), the friends' stars (stars[1], [2])
+inline uint8_t towerChallenges(uint8_t faints, const int16_t *team, const uint8_t *stars, uint8_t n) {
+  uint8_t got = faints ? 0 : TOWER_CH_NOFAINT;
+  if (n == TOWER_TEAM && stars[1] == 1 && stars[2] == 1) got |= TOWER_CH_ONESTAR;
+  bool base = n > 0;
+  for (uint8_t i = 0; i < n; i++) base = base && towerBaseForm(team[i]);
+  if (base) got |= TOWER_CH_BASE;
+  return got;
+}

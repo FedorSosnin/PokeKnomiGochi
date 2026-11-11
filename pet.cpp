@@ -877,6 +877,7 @@ uint8_t Pet::towerFloorWon(uint8_t floor) {
   uint8_t got = 0;
   if (floor > towerBest) {  // the first time: its badge, and a gate's balls
     towerBest = floor;
+    towerCheer = 0;  // a new best: the cheering starts over
     got |= 1;
     uint8_t u = towerGateUltras(floor);
     ultraBalls = ultraBalls + u > ULTRA_MAX ? ULTRA_MAX : ultraBalls + u;
@@ -899,7 +900,20 @@ uint8_t Pet::towerFloorWon(uint8_t floor) {
   return got;
 }
 
-void Pet::towerLost() { battleResult(false); }
+void Pet::towerLost() {
+  if (towerBest < TOWER_LEGEND && towerCheer < TOWER_CHEER_MAX) towerCheer++;
+  battleResult(false);
+  pendingSave = true;
+}
+
+uint8_t Pet::towerChalDone(uint8_t got) {
+  uint8_t fresh = got & ~towerChal & TOWER_CH_ALL;
+  if (fresh) {
+    towerChal |= fresh;
+    save();
+  }
+  return fresh;
+}
 #endif
 
 uint8_t Pet::battleResult(bool won) {
@@ -1198,6 +1212,8 @@ void Pet::save() {
   prefs.putUInt("rplu", repelUntil);
   prefs.putUChar("twrb", towerBest);
   prefs.putBool("twrh", towerHowSeen);
+  prefs.putUChar("twrc", towerCheer);
+  prefs.putUChar("twrx", towerChal);
   prefs.putShort("twrp0", towerPick[0]);
   prefs.putShort("twrp1", towerPick[1]);
   prefs.putUChar("twrps", (towerPickShiny[0] ? 1 : 0) | (towerPickShiny[1] ? 2 : 0));
@@ -1300,6 +1316,9 @@ void Pet::load() {
   towerBest = prefs.getUChar("twrb", 0);
   if (towerBest > TOWER_LEGEND) towerBest = TOWER_LEGEND;
   towerHowSeen = prefs.getBool("twrh", false);
+  towerCheer = prefs.getUChar("twrc", 0);
+  if (towerCheer > TOWER_CHEER_MAX) towerCheer = TOWER_CHEER_MAX;
+  towerChal = prefs.getUChar("twrx", 0) & TOWER_CH_ALL;
   towerPick[0] = prefs.getShort("twrp0", 0);
   towerPick[1] = prefs.getShort("twrp1", 0);
   uint8_t tps = prefs.getUChar("twrps", 0);

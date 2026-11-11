@@ -85,6 +85,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "TU EQUIPO", "Toca un amigo para cambiarlo",  // Knomi Tower: the team before a climb
     "Mejor: %dF",  // Knomi Tower: the island tag, your best climb
     "%s absorbe a %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s era D\202bil contra %s. Prueba un amigo %s!", "Nadie era Fuerte contra %s. Prueba un amigo %s!", "Gana batallas para entrenar ATQ, y empieza con los Fuertes!", "Cuidarlo cada d\241a entrena DEF. Empieza con los Fuertes!", "Juega minijuegos para entrenar VEL, y empieza con los Fuertes!",  // Knomi Tower: what to try next
+    "Tus amigos te animan! +%d%% PS", "Pr\242xima: +%d%% PS",  // Knomi Tower: friends cheer
+    "RETOS", "Vence la torre otra vez con:", "Nadie debilitado", "Dos amigos de 1 estrella", "Ning\243n Pokemon evolucionado", "NUEVO!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- EN ----------------
@@ -165,6 +168,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "YOUR TEAM", "Tap a friend to change it",  // Knomi Tower: the team before a climb
     "Best: %dF",  // Knomi Tower: the island tag, your best climb
     "%s drains %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s was Weak against %s. Try a %s friend!", "No one was Strong against %s. Try a %s friend!", "Win battles to train ATK, and lead with your Strong picks!", "Good care every day trains DEF. Lead with your Strong picks!", "Play mini games to train SPD, and lead with your Strong picks!",  // Knomi Tower: what to try next
+    "Friends cheer! +%d%% HP", "Next climb: +%d%% HP",  // Knomi Tower: friends cheer
+    "CHALLENGES", "Beat the tower again with:", "No one fainting", "Two 1-star friends", "No evolved Pokemon", "NEW!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- FR ----------------
@@ -245,6 +251,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "TON \220QUIPE", "Touche un ami pour le changer",  // Knomi Tower: the team before a climb
     "Record: %dF",  // Knomi Tower: the island tag, your best climb
     "%s draine %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s \202tait Faible contre %s. Essaie un ami %s!", "Personne n'\202tait Fort contre %s. Essaie un ami %s!", "Gagne des combats pour l'ATQ, et commence par les Forts!", "De bons soins chaque jour entra\214nent la DEF. Commence par les Forts!", "Joue aux mini-jeux pour la VIT, et commence par les Forts!",  // Knomi Tower: what to try next
+    "Tes amis t'encouragent! +%d%% PV", "Prochaine: +%d%% PV",  // Knomi Tower: friends cheer
+    "DEFIS", "Bats la tour encore avec:", "Personne K.O.", "Deux amis 1 \202toile", "Aucun Pokemon \202volu\202", "NOUVEAU!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- DE ----------------
@@ -330,6 +339,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "DEIN TEAM", "Tippe einen Freund an, um ihn zu tauschen",  // Knomi Tower: the team before a climb
     "Bestes: %dF",  // Knomi Tower: the island tag, your best climb
     "%s saugt %s aus!",  // Knomi Tower: a guardian drains one of yours
+    "%s war Schwach gegen %s. Probier einen %s-Freund!", "Keiner war Stark gegen %s. Probier einen %s-Freund!", "Gewinne K\204mpfe f\201r ANG, und fang mit den Starken an!", "Gute Pflege jeden Tag trainiert VER. Fang mit den Starken an!", "Spiele Minispiele f\201r INI, und fang mit den Starken an!",  // Knomi Tower: what to try next
+    "Freunde feuern dich an! +%d%% KP", "N\204chstes Mal: +%d%% KP",  // Knomi Tower: friends cheer
+    "HERAUSFORDERUNGEN", "Besiege den Turm noch mal mit:", "Keiner besiegt", "Zwei 1-Stern-Freunde", "Kein entwickeltes Pokemon", "NEU!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- IT ----------------
@@ -410,6 +422,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "LA TUA SQUADRA", "Tocca un amico per cambiarlo",  // Knomi Tower: the team before a climb
     "Record: %dF",  // Knomi Tower: the island tag, your best climb
     "%s assorbe %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s era Debole contro %s. Prova un amico %s!", "Nessuno era Forte contro %s. Prova un amico %s!", "Vinci lotte per allenare ATT, e inizia con i Forti!", "Cure ogni giorno allenano DIF. Inizia con i Forti!", "Gioca ai minigiochi per VEL, e inizia con i Forti!",  // Knomi Tower: what to try next
+    "Gli amici fanno il tifo! +%d%% PS", "Prossima: +%d%% PS",  // Knomi Tower: friends cheer
+    "SFIDE", "Batti di nuovo la torre con:", "Nessuno esausto", "Due amici da 1 stella", "Nessun Pokemon evoluto", "NUOVO!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- PT ----------------
@@ -490,6 +505,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "SUA EQUIPE", "Toque um amigo para troc\240-lo",  // Knomi Tower: the team before a climb
     "Recorde: %dF",  // Knomi Tower: the island tag, your best climb
     "%s absorve %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s era Fraco contra %s. Tente um amigo %s!", "Ninguem era Forte contra %s. Tente um amigo %s!", "Ven\207a batalhas para treinar ATQ, e comece com os Fortes!", "Cuidar todo dia treina DEF. Comece com os Fortes!", "Jogue minijogos para treinar VEL, e comece com os Fortes!",  // Knomi Tower: what to try next
+    "Seus amigos torcem! +%d%% PS", "Pr\242xima: +%d%% PS",  // Knomi Tower: friends cheer
+    "DESAFIOS", "Ven\207a a torre de novo com:", "Ninguem desmaiado", "Dois amigos de 1 estrela", "Nenhum Pokemon evoluido", "NOVO!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- JA ----------------
@@ -593,6 +611,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "じぶんの チーム", "ともだちを タッチで こうたい",  // Knomi Tower: the team before a climb
     "さいこう %dF",  // Knomi Tower: the island tag, your best climb
     "%sは %sの ちからを すいとった!",  // Knomi Tower: a guardian drains one of yours
+    "%sは %sに よわかった。 %sの ともだちを ためそう!", "%sに つよい ポケモンが いなかった。 %sの ともだちを ためそう!", "バトルに かって こうげきを きたえよう。 つよい ポケモンから だそう!", "まいにち おせわすると ぼうぎょが きたえられる。 つよい ポケモンから だそう!", "ミニゲームで すばやさを きたえよう。 つよい ポケモンから だそう!",  // Knomi Tower: what to try next
+    "ともだちの おうえん! HP +%d%%", "つぎは HP +%d%%",  // Knomi Tower: friends cheer
+    "チャレンジ", "もういちど タワーを クリア:", "だれも たおれない", "ほし 1つの ともだち 2ひき", "しんかしていない ポケモンだけ", "NEW!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- KO ----------------
@@ -678,6 +699,9 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "내 팀", "친구를 눌러 바꾸기",  // Knomi Tower: the team before a climb
     "최고 %dF",  // Knomi Tower: the island tag, your best climb
     "%s, %s의 힘을 흡수했다!",  // Knomi Tower: a guardian drains one of yours
+    "%s, %s에 약했어. %s 친구를 데려가 봐!", "%s에 강한 포켓몬이 없었어. %s 친구를 데려가 봐!", "배틀에 이겨서 공격을 단련하고, 유리한 포켓몬부터 내보내!", "매일 잘 돌보면 방어가 단련돼. 유리한 포켓몬부터 내보내!", "미니게임으로 스피드를 단련하고, 유리한 포켓몬부터 내보내!",  // Knomi Tower: what to try next
+    "친구들의 응원! HP +%d%%", "다음 도전: HP +%d%%",  // Knomi Tower: friends cheer
+    "챌린지", "타워를 다시 클리어:", "아무도 기절하지 않기", "별 1개 친구 2마리", "진화하지 않은 포켓몬만", "NEW!",  // Knomi Tower: challenges
 #endif
   },
 };

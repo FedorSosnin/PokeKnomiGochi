@@ -324,7 +324,7 @@ static void v2Travel2() {
 }
 
 // ===================================================================== the climb
-enum TwView : uint8_t { TW_TOWER, TW_HOW, TW_TIRED, TW_PICK, TW_TEAM, TW_LEAD, TW_DRAIN, TW_WON, TW_OVER, TW_LEGEND, TW_MASTER };
+enum TwView : uint8_t { TW_TOWER, TW_HOW, TW_TIRED, TW_PICK, TW_TEAM, TW_LEAD, TW_DRAIN, TW_WON, TW_OVER, TW_LEGEND, TW_MASTER, TW_CHAL };
 static TwView twView = TW_TOWER;
 struct TwMember { int16_t dex; bool shiny, isPet; BtlFighter f; };
 static TwMember twTeam[TOWER_TEAM];
@@ -338,6 +338,11 @@ static int8_t twFighting = -1;   // the member in the fight now
 static bool twRan = false;
 static int16_t twBeatBy = 0;     // who ended the climb, and where
 static uint8_t twBeatStep = 0;
+static int16_t twLastDex = 0;    // the last of yours it beat (the end screen's tip)
+static uint8_t twFaints = 0;     // this climb's faints (a challenge)
+static bool twWasMaster = false; // the Legend was beaten before this climb (challenges count only then)
+static uint8_t twChalNew = 0;    // the challenges this climb did for the first time (TW_CHAL)
+static int16_t twChalX0 = 0, twChalY0 = 0;  // where the tower screen's challenge medals are (a tap opens them)
 static PmdMon twPmd[2];          // the friends' sprites, for their fights
 static uint8_t twPickPage = 0, twPickN = 0;
 static int16_t twPickDex[2];
@@ -389,9 +394,15 @@ static void twStartClimb() {
     pet.towerPick[i] = d;
     pet.towerPickShiny[i] = sh;
   }
+  if (pet.towerCheer)  // friends cheer after lost climbs: more HP for everyone (tower.h)
+    for (int i = 0; i < twTeamN; i++) twTeam[i].f.hp = twTeam[i].f.maxHp = towerCheerHp(twTeam[i].f.maxHp, pet.towerCheer);
   pet.towerSave();
   twStep = 1;
   twRan = false;
+  twFaints = 0;
+  twLastDex = 0;
+  twChalNew = 0;
+  twWasMaster = pet.towerBest >= TOWER_LEGEND;
   twRollFoe();
   twView = TW_LEAD;
   Serial.printf("tower: climb with %d, Lv %u\n", twTeamN, lvl);
@@ -453,6 +464,8 @@ void towerFightEnded(bool won, bool ran) {
                // up and one of my pokemon cards gets crossed out")
     int beaten = &m - twTeam;
     m.f.hp = 0;
+    twFaints++;
+    twLastDex = m.dex;
     twFoe.hp = bFoe.hp;
     bool any = false;
     for (int i = 0; i < twTeamN; i++) any |= twTeam[i].f.hp > 0;
@@ -499,6 +512,12 @@ void towerFightEnded(bool won, bool ran) {
     pet.hofLevel = twLevel();
     pet.hofEpoch = pet.lastSeenEpoch;
     pet.towerSave();
+  }
+  if (twWasMaster) {  // the challenges count only once the Legend was beaten before
+    int16_t team[TOWER_TEAM];
+    uint8_t stars[TOWER_TEAM];
+    for (int i = 0; i < twTeamN; i++) team[i] = twTeam[i].dex, stars[i] = i ? pet.starsOf(twTeam[i].dex, twTeam[i].shiny) : pet.petStars();
+    twChalNew = pet.towerChalDone(towerChallenges(twFaints, team, stars, twTeamN));
   }
   sfxPlay(SFX_MEDAL);
   twEndClimb();
@@ -568,6 +587,7 @@ static void twPaintTowerScene(int arg) {
   for (int n = 1; n <= TOWER_FLOORS; n++) {
     int H = HS[n - 1], half = (84 - (n - 1) * 5) / 4 * 4, x0 = cx - half, x1 = cx + half, top = y - H;
     bool won = false;  // (a climb's badges are its own: Fedor, "contained to each of the tower runs")
+    bool lit = true;   // the floor guide: every window lit in its type's light, with its mark
     twStone(x0, top, x1, y);
     scRect(x0 - 4, top, x0 - 1, y - 1, TW_INK);
     scRect(x1, top, x1 + 3, y - 1, TW_INK);
@@ -584,15 +604,28 @@ static void twPaintTowerScene(int arg) {
     } else {  // an arched window: lit in its type's light with its mark, or dark
       int s = H >= 21 ? 3 : 2, ms = s == 3 ? 2 : 1, wy = top + (H - 7 * s) / 2;
       static const char *const WIN[7] = { "..xxxx..", ".xggggx.", "xggggggx", "xggggggx", "xggggggx", "xggggggx", "xxxxxxxx" };
-      if (won) twGlow(cx, wy + 3 * s, 8 * s + 2, TW_COL[n][1], 115);
-      const ScKey wk[2] = { { 'x', TW_INK }, { 'g', won ? scMix(TW_COL[n][1], 0xFFFFFF, .35) : (Rgb)0x2A2236 } };
+      if (lit) twGlow(cx, wy + 3 * s, 8 * s + 2, TW_COL[n][1], 115);
+      const ScKey wk[2] = { { 'x', TW_INK }, { 'g', lit ? scMix(TW_COL[n][1], 0xFFFFFF, .35) : (Rgb)0x2A2236 } };
       scSprite(WIN, 7, cx - 4 * s, wy, s, wk, 2);
-      const ScKey mk[2] = { { 'x', won ? TW_COL[n][0] : (Rgb)0x4A4058 }, { 'o', won ? TW_COL[n][2] : (Rgb)0x3A3046 } };
+      const ScKey mk[2] = { { 'x', lit ? TW_COL[n][0] : (Rgb)0x4A4058 }, { 'o', lit ? TW_COL[n][2] : (Rgb)0x3A3046 } };
       scSprite(TW_MARK[n], 7, cx - 7 * ms / 2, wy + 2 * s, ms, mk, 2);
     }
     char lab[6];
     snprintf(lab, sizeof(lab), "%dF", n);
     twPlaque(x0 + 6, top + (H - 18) / 2 + 1, lab, won);
+    {  // the floor guide: its type's name out to the left, in its light (Fedor: plan the friends for the floors)
+      const char *ty = TYPE_NAME[TOWER_TYPE[n]];
+      int tx = x0 - 12 - textW(ty, 2), ty0 = top + (H - 16) / 2 + 1;
+      setSize(2);
+      gfx->setTextColor(sc565(TW_INK));
+      for (int k = 0; k < 4; k++) {
+        setCur(tx + (k == 0 ? -2 : k == 1 ? 2 : 0), ty0 + (k == 2 ? -2 : k == 3 ? 2 : 0));
+        printT(ty);
+      }
+      gfx->setTextColor(sc565(TW_COL[n][1]));
+      setCur(tx, ty0);
+      printT(ty);
+    }
     if (won) {  // its badge, hung beside the window
       static const char *const BD[9] = { "..xxxxx..", ".xLcccLx.", "xLcccccdx", "xccMMMccx", "xccMMMcdx", ".xcccccx.", "..xcccx..", "...xdx...", "....x...." };
       const ScKey bk[5] = { { 'x', TW_INK }, { 'L', TW_COL[n][1] }, { 'c', TW_COL[n][0] }, { 'd', TW_COL[n][2] }, { 'M', 0xFFFFFF } };
@@ -620,6 +653,15 @@ static void twPaintTowerScene(int arg) {
   if (best < TOWER_LEGEND) {
     twPlus(x1 + 10, y - 50);
     twBall(true, x1 + 32, y - 58, 2);
+  } else {  // the Legend beaten: its challenges' medals there instead, gold once done (a tap shows them)
+    twChalX0 = x1 + 8, twChalY0 = y - 58;
+    for (int k = 0; k < 3; k++) {
+      int mx = twChalX0 + 14 + k * 30, my = twChalY0 + 16;
+      bool done = (arg >> 4 & 7) >> k & 1;
+      gfx->fillCircle(mx, my, 13, sc565(TW_INK));
+      gfx->fillCircle(mx, my, 11, done ? sc565(0xF0C04A) : sc565(0x4A4058));
+      gfx->fillCircle(mx, my, 6, done ? sc565(0xFFE27A) : sc565(0x3A3046));
+    }
   }
   setSize(2);  // "LEGEND" on a plaque across the battlements, under Mewtwo
   const char *lg = T(S_LEGEND);
@@ -733,7 +775,10 @@ static void twFloorTitle(uint8_t step, char *b, int n) {
 // ===================================================================== the views
 #define TW_DIM(a) ((a) << 8)
 
-static void twBackTower(int dim) { v2Cached(0x3E000000 + (pet.towerBest | TW_DIM(dim)), twPaintTowerScene, pet.towerBest | TW_DIM(dim)); }
+static void twBackTower(int dim) {
+  int a = pet.towerBest | (pet.towerChal & TOWER_CH_ALL) << 4 | TW_DIM(dim);
+  v2Cached(0x3E000000 + a, twPaintTowerScene, a);
+}
 static void twBackHall(uint8_t fl, int dim) { v2Cached(0x3E100000 + (fl | TW_DIM(dim)), twPaintHall, fl | TW_DIM(dim)); }
 static void twBackLegend(int dim) { v2Cached(0x3E200000 + TW_DIM(dim), twPaintLegend, TW_DIM(dim)); }
 
@@ -846,7 +891,7 @@ static int twTeamSlotX(int i, int n) { return n == 3 ? 100 + i * 133 : n == 2 ? 
 static void twViewTeam() {
   twBackHall(TOWER_LEGEND, 115);
   scScreen();
-  char b[32];
+  char b[64];
   v2SignIn(v2Caps(T(S_YOUR_TEAM), b, sizeof(b)), 30, C565(0x5a, 0x3a, 0x98), C565(0x8a, 0x6a, 0xd0));
   int n = 1 + twPickN;
   for (int i = 0; i < n; i++) {
@@ -865,6 +910,10 @@ static void twViewTeam() {
     gfx->setTextColor(V2_ON_DARK);
     v2Wrapped(T(S_TAP_CHANGE), 274, 300, 20, 2);
   }
+  if (pet.towerCheer) {  // friends cheer after lost climbs: more HP this time
+    snprintf(b, sizeof(b), T(S_CHEER_FMT), TOWER_CHEER_PCT * pet.towerCheer);
+    twChip(b, CX, 74, C565(0xc0, 0x84, 0x10));
+  }
   v2LabelButton(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1, T(S_GO), C565(0x58, 0xb8, 0x68));
   v2CloseX();
 }
@@ -881,45 +930,61 @@ static void twFoeStand(uint8_t fl, uint16_t hp) {
   gfx->fillRoundRect(175, 203, 116, 6, 3, sc565(0xD8D2BD));
   gfx->fillRect(175, 203, 116 * pct / 100, 6, pct >= 50 ? UI_BAR_OK : pct >= 25 ? C565(0xf0, 0xc0, 0x4a) : UI_BAR_BAD);
 }
-// your team's cards; crossed: the one just drained, a red X over it
+// text with a dark rim, straight on the hall (no box behind it)
+static void twRimText(const char *t, int cx, int y, uint16_t col) {
+  setSize(2);
+  int x = cx - textW(t, 2) / 2;
+  gfx->setTextColor(sc565(TW_INK));
+  for (int k = 0; k < 8; k++) {
+    static const int8_t D[8][2] = { { -2, 0 }, { 2, 0 }, { 0, -2 }, { 0, 2 }, { -2, -2 }, { 2, -2 }, { -2, 2 }, { 2, 2 } };
+    setCur(x + D[k][0], y + D[k][1]);
+    printT(t);
+  }
+  gfx->setTextColor(col);
+  setCur(x, y);
+  printT(t);
+}
+// your team, each on a dais in the hall (Fedor: "a version of this screen without white boxes"): its name, HP and
+// the hint, Strong on a green dais with a glow; crossed: the one just drained, a red X over it
 static void twCards(int crossed) {
   int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
   for (int i = 0; i < n; i++) {
     TwMember &m = twTeam[i];
-    int cx0 = x0 + i * (w + gap), cx1 = cx0 + w, y0 = 234;
+    int cx0 = x0 + i * (w + gap), cx1 = cx0 + w, mx = (cx0 + cx1) / 2;
     bool out = !m.f.hp;
     int8_t hint = towerHint(DEX_TBL[m.dex].type, DEX_TBL[twFoeDex].type);
-    gfx->fillRoundRect(cx0 - 3, y0 - 3, w + 6, 138 + 6, 12, hint > 0 && !out ? sc565(0x3F9A4C) : V2_RIM);
-    gfx->fillRoundRect(cx0, y0, w, 138, 10, out ? sc565(0xE4E4EA) : UI_WHITE);
-    twThumb(thumbs.getForm(m.dex, m.shiny), (cx0 + cx1) / 2, y0 + 76, 2, out ? (Rgb)0x9A9AA8 : SC_NONE);
-    const char *nm = dexName(m.dex);
+    if (hint > 0 && !out) twGlow(mx, 292, 54, 0x8AD06A, 150);
+    twDais(mx, 290, 104, out ? (Rgb)0x6A6478 : hint > 0 ? (Rgb)0x4FA04F : hint < 0 ? (Rgb)0xA84848 : (Rgb)0x9A6AD8);
+    twThumb(thumbs.getForm(m.dex, m.shiny), mx, 302, 2, out ? (Rgb)0x6A6478 : SC_NONE);
     char nb[16];
-    snprintf(nb, sizeof(nb), "%.9s", nm);
-    gfx->setTextColor(out ? V2_INK_MUTED : UI_INK);
-    setCur((cx0 + cx1) / 2 - textW(nb, 2) / 2, y0 + 82);
-    printT(nb);
-    gfx->fillRoundRect(cx0 + 10, y0 + 101, w - 20, 10, 4, sc565(0xD8D2BD));
+    snprintf(nb, sizeof(nb), "%.9s", dexName(m.dex));
+    twRimText(nb, mx, 318, out ? sc565(0x9A96A8) : UI_WHITE);
+    gfx->fillRoundRect(cx0 + 10, 339, w - 20, 10, 4, sc565(TW_INK));
+    gfx->fillRoundRect(cx0 + 12, 341, w - 24, 6, 3, sc565(0x4A4458));
     if (!out) {
       int pct = m.f.hp * 100 / m.f.maxHp;
-      gfx->fillRect(cx0 + 12, y0 + 103, (w - 24) * pct / 100, 6, pct >= 50 ? UI_BAR_OK : pct >= 25 ? C565(0xf0, 0xc0, 0x4a) : UI_BAR_BAD);
+      gfx->fillRect(cx0 + 12, 341, (w - 24) * pct / 100, 6, pct >= 50 ? UI_BAR_OK : pct >= 25 ? C565(0xf0, 0xc0, 0x4a) : UI_BAR_BAD);
     }
     const char *h = out ? T(S_FAINTED) : hint > 0 ? T(S_STRONG) : hint < 0 ? T(S_WEAK) : "";
-    uint16_t hc = out ? V2_INK_MUTED : hint > 0 ? sc565(0x3F9A4C) : sc565(0xC84040);
-    int tw2 = textW(h, 2) + (hint && !out ? 16 : 0), tx = (cx0 + cx1) / 2 - tw2 / 2;
-    if (hint && !out) {
-      for (int r = 0; r < 3; r++) {  // a little triangle: up for Strong, down for Weak
-        int half = hint > 0 ? r : 2 - r;
-        gfx->fillRect(tx + 4 - half * 2, y0 + 118 + r * 2, 2 + half * 4, 2, hc);
+    uint16_t hc = out ? sc565(0x9A96A8) : hint > 0 ? sc565(0x9AE07A) : sc565(0xFF8A7A);
+    if (*h) {
+      int tw2 = textW(h, 2) + (hint && !out ? 16 : 0), tx = mx - tw2 / 2;
+      if (hint && !out) {
+        for (int r = 0; r < 3; r++) {  // a little triangle: up for Strong, down for Weak
+          int half = hint > 0 ? r : 2 - r;
+          gfx->fillRect(tx + 4 - half * 2 - 2, 359 + r * 2 - 2, 2 + half * 4 + 4, 6, sc565(TW_INK));
+        }
+        for (int r = 0; r < 3; r++) {
+          int half = hint > 0 ? r : 2 - r;
+          gfx->fillRect(tx + 4 - half * 2, 359 + r * 2, 2 + half * 4, 2, hc);
+        }
       }
-      tx += 16;
+      twRimText(h, mx + (hint && !out ? 8 : 0), 355, hc);
     }
-    gfx->setTextColor(hc);
-    setCur(tx, y0 + 116);
-    printT(h);
-    if (i == crossed) {  // crossed out: a thick red X over the card
+    if (i == crossed) {  // crossed out: a thick red X over it
       for (int t = -3; t <= 3; t++) {
-        gfx->drawLine(cx0 + 10 + t, y0 + 10, cx1 - 10 + t, y0 + 128, UI_BAR_BAD);
-        gfx->drawLine(cx1 - 10 + t, y0 + 10, cx0 + 10 + t, y0 + 128, UI_BAR_BAD);
+        gfx->drawLine(cx0 + 10 + t, 236, cx1 - 10 + t, 370, UI_BAR_BAD);
+        gfx->drawLine(cx1 - 10 + t, 236, cx0 + 10 + t, 370, UI_BAR_BAD);
       }
     }
   }
@@ -1009,30 +1074,62 @@ static void twViewOver() {
   v2SignIn(T(S_CLIMB_OVER), 30, C565(0x6a, 0x30, 0x30), C565(0xc8, 0x40, 0x40));
   twDais(233, 130, 110, TW_COL[fl][0]);
   twThumb(thumbs.getForm(twBeatBy, false), 233, 144, 3);
-  char b[48];
+  char b[96];
   if (twBeatStep > TOWER_FLOORS) snprintf(b, sizeof(b), "%s - %s", dexName(twBeatBy), T(S_LEGEND));
   else snprintf(b, sizeof(b), T(S_BEAT_YOU_FMT), dexName(twBeatBy), twBeatStep);
   twChip(b, 233, 156);
   v2Panel(70, 196, 396, 376, 10);
-  gfx->setTextColor(UI_INK);
-  setSize(2);
-  setCur(centerX(T(S_TRAINING), 2), 208);
-  printT(T(S_TRAINING));
-  uint8_t theirs = TOWER_TRAIN[twBeatStep], yours = towerTrainAvg(pet.trAtk, pet.trDef, pet.trSpe);
-  const char *lab[2] = { dexName(twBeatBy), T(S_YOURS) };
-  uint8_t val[2] = { theirs, yours };
-  for (int k = 0; k < 2; k++) {
-    int yy = 234 + k * 28;
-    char nb[12];
-    snprintf(nb, sizeof(nb), "%.7s", lab[k]);
-    gfx->setTextColor(UI_INK);
-    setCur(88, yy);
-    printT(nb);
-    gfx->fillRoundRect(180, yy + 2, 192, 12, 4, sc565(0xD8D2BD));
-    gfx->fillRoundRect(180, yy + 2, 192 * val[k] / 100 + 4, 12, 4, k ? UI_BAR_OK : sc565(TW_COL[fl][0]));
+  // what to try next (Fedor: "a kid who loses at 7F should know exactly what to try next"): a type that's Strong
+  // against it, or else the training the team is shortest of, with its training against yours
+  char tip[200];
+  uint8_t kind = TOWER_TIP_ATK;
+  if (twRan) {
+    snprintf(tip, sizeof(tip), "%s", T(S_TWR_TIP));
+  } else {
+    int16_t team[TOWER_TEAM];
+    for (int i = 0; i < twTeamN; i++) team[i] = twTeam[i].dex;
+    uint8_t strong[2], ns = towerStrongTypes(DEX_TBL[twBeatBy].type, strong);
+    char types[24];
+    snprintf(types, sizeof(types), ns > 1 ? "%s/%s" : "%s", ns ? TYPE_NAME[strong[0]] : "", ns > 1 ? TYPE_NAME[strong[1]] : "");
+    kind = towerTip(twLastDex, twBeatBy, team, twTeamN, pet.trAtk, pet.trDef, pet.trSpe);
+    switch (kind) {
+      case TOWER_TIP_WEAK: snprintf(tip, sizeof(tip), T(S_TIP_WEAK_FMT), dexName(twLastDex), TYPE_NAME[DEX_TBL[twBeatBy].type], types); break;
+      case TOWER_TIP_NOSTRONG: snprintf(tip, sizeof(tip), T(S_TIP_NOSTRONG_FMT), TYPE_NAME[DEX_TBL[twBeatBy].type], types); break;
+      case TOWER_TIP_DEF: snprintf(tip, sizeof(tip), "%s", T(S_TIP_DEF)); break;
+      case TOWER_TIP_SPD: snprintf(tip, sizeof(tip), "%s", T(S_TIP_SPD)); break;
+      default: snprintf(tip, sizeof(tip), "%s", T(S_TIP_ATK)); break;
+    }
   }
-  gfx->setTextColor(V2_INK_MUTED);
-  v2Wrapped(T(S_TWR_TIP), 296, 280, 20, 3);
+  bool cheer = !twRan && pet.towerCheer && pet.towerBest < TOWER_LEGEND;
+  if (kind == TOWER_TIP_WEAK || kind == TOWER_TIP_NOSTRONG) {  // a type to bring: the tip has the panel
+    gfx->setTextColor(UI_INK);
+    int n = v2Wrapped(tip, 0, 300, 24, 5, -1, false);
+    v2Wrapped(tip, (cheer ? 278 : 286) - n * 12, 300, 24, 5);
+  } else {
+    gfx->setTextColor(UI_INK);
+    setSize(2);
+    setCur(centerX(T(S_TRAINING), 2), 208);
+    printT(T(S_TRAINING));
+    uint8_t theirs = TOWER_TRAIN[twBeatStep], yours = towerTrainAvg(pet.trAtk, pet.trDef, pet.trSpe);
+    const char *lab[2] = { dexName(twBeatBy), T(S_YOURS) };
+    uint8_t val[2] = { theirs, yours };
+    for (int k = 0; k < 2; k++) {
+      int yy = 234 + k * 28;
+      char nb[12];
+      snprintf(nb, sizeof(nb), "%.7s", lab[k]);
+      gfx->setTextColor(UI_INK);
+      setCur(88, yy);
+      printT(nb);
+      gfx->fillRoundRect(180, yy + 2, 192, 12, 4, sc565(0xD8D2BD));
+      gfx->fillRoundRect(180, yy + 2, 192 * val[k] / 100 + 4, 12, 4, k ? UI_BAR_OK : sc565(TW_COL[fl][0]));
+    }
+    gfx->setTextColor(V2_INK_MUTED);
+    v2Wrapped(tip, 292, 300, 20, 3);
+  }
+  if (cheer) {  // the friends will cheer the next climb: a gold ribbon on the panel's foot
+    snprintf(b, sizeof(b), T(S_CHEER_NEXT_FMT), TOWER_CHEER_PCT * pet.towerCheer);
+    twChip(b, CX, 362, C565(0xc0, 0x84, 0x10));
+  }
   v2CloseX();
 }
 // 11: the Legend: its first guardian, and a shadow
@@ -1068,7 +1165,7 @@ static void twViewMaster() {
   for (int i = 0; i < 3; i++)
     if (pet.hofDex[i]) twThumb(thumbs.getForm(pet.hofDex[i], pet.hofShiny >> i & 1), 140 + i * 92, 300, 2);
   v2Panel(104, 334, 362, 384, 8);
-  twBall(true, 112, 340, 2);
+  twBall((twGot & 2) != 0, 112, 340, 2);  // the Master Ball the first time, an Ultra Ball after
   char b[32];
   gfx->setTextColor(C565(0x78, 0x48, 0xb8));
   setSize(2);
@@ -1078,6 +1175,28 @@ static void twViewMaster() {
   gfx->setTextColor(V2_INK_MUTED);
   setCur(160, 362);
   printT(b);
+  v2CloseX();
+}
+
+// 13: the challenges, once the Legend is beaten: three medals, gold once done, NEW! on those this climb did
+static void twViewChal() {
+  twBackLegend(96);
+  scScreen();
+  v2SignIn(T(S_CHALLENGES), 30, C565(0x8a, 0x6a, 0x10), C565(0xf0, 0xc0, 0x4a));
+  v2Panel(64, 96, 402, 372, 10);
+  gfx->setTextColor(V2_INK_MUTED);
+  v2Wrapped(T(S_CH_HOW), 112, 300, 20, 2);
+  static const StrId CH[3] = { S_CH_NOFAINT, S_CH_ONESTAR, S_CH_BASE };
+  for (int k = 0; k < 3; k++) {
+    int y = 166 + k * 64;
+    bool done = pet.towerChal >> k & 1, fresh = twChalNew >> k & 1;
+    gfx->fillCircle(104, y + 14, 19, sc565(TW_INK));
+    gfx->fillCircle(104, y + 14, 16, done ? sc565(0xF0C04A) : sc565(0xC8C4D0));
+    gfx->fillCircle(104, y + 14, 8, done ? sc565(0xFFE27A) : sc565(0xE4E2EA));
+    gfx->setTextColor(done ? UI_INK : V2_INK_MUTED);
+    v2Wrapped(T(CH[k]), y + (v2Wrapped(T(CH[k]), 0, 220, 18, 2, 136, false) > 1 ? 0 : 8), 220, 18, 2, 136);
+    if (fresh) twChip(T(S_TWR_NEW), 340, y + 30, C565(0x3c, 0x8a, 0x4c));
+  }
   v2CloseX();
 }
 
@@ -1095,6 +1214,7 @@ void towerRender() {
     case TW_OVER: twViewOver(); break;
     case TW_LEGEND: twViewLegend(); break;
     case TW_MASTER: twViewMaster(); break;
+    case TW_CHAL: twViewChal(); break;
   }
 }
 
@@ -1137,6 +1257,12 @@ void towerTap(int16_t x, int16_t y) {
   if (closeHit(x, y)) { towerBack(); return; }
   switch (twView) {
     case TW_TOWER:
+      if (pet.towerBest >= TOWER_LEGEND && x >= twChalX0 - 4 && x <= twChalX0 + 104 && y >= twChalY0 - 8 && y <= twChalY0 + 40) {
+        sfxPlay(SFX_TAP);  // the challenge medals: what they are
+        twChalNew = 0;
+        twView = TW_CHAL;
+        return;
+      }
       if ((y >= TW_CLIMB_Y0 - 6 && y <= TW_CLIMB_Y1 + 6 && x >= TW_CLIMB_X0 - 6 && x <= TW_CLIMB_X1 + 6) ||
           (y >= 40 && y < TW_BASE && abs(x - CX) <= 90))  // the button, or the tower itself
         twClimbTapped();
@@ -1200,7 +1326,8 @@ void towerTap(int16_t x, int16_t y) {
     case TW_LEGEND:
       if (y >= TW_CLIMB_Y0 - 6 && y <= TW_CLIMB_Y1 + 6 && x >= TW_CLIMB_X0 - 6 && x <= TW_CLIMB_X1 + 6) { sfxPlay(SFX_TAP); twView = TW_LEAD; }
       break;
-    case TW_OVER: case TW_MASTER: sfxPlay(SFX_TAP); twView = TW_TOWER; break;
+    case TW_MASTER: sfxPlay(SFX_TAP); twView = TW_CHAL; break;  // then the challenges (new, or what they are)
+    case TW_OVER: case TW_CHAL: sfxPlay(SFX_TAP); twView = TW_TOWER; break;
   }
 }
 
