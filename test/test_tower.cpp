@@ -53,6 +53,20 @@ TEST(tower, guardians_are_bosses_and_drain) {
   CHECK_EQ((int)towerDrain(90, 100), 100);
 }
 
+TEST(tower, the_legend_never_sends_one_your_team_cant_touch) {
+  // Tauros (Normal) and Gengar (Ghost): neither can hurt the other, so that fight would never end
+  CHECK(towerStalemate(128, 100, 94, 102));
+  CHECK(!towerStalemate(6, 100, 94, 102));
+  const int16_t normals[3] = { 128, 143, 6 };
+  for (uint8_t roll = 0; roll < 8; roll++) {
+    int16_t d = towerLegendDex(100, roll, normals, 3, 100);
+    CHECK(d >= 1 && d <= DEX_COUNT);
+    for (int i = 0; i < 3; i++) CHECK(!towerStalemate(normals[i], 100, d, towerLevel(TOWER_LEGEND, 100)));
+  }
+  const int16_t fire[3] = { 6, 9, 3 };  // a team with nothing stuck meets the rolled type
+  for (uint8_t roll = 0; roll < 4; roll++) CHECK_EQ((int)towerLegendDex(100, roll, fire, 3, 100), (int)towerGuardianDex(TOWER_LEGEND, 100, roll));
+}
+
 TEST(tower, hints_and_healing) {
   CHECK_EQ((int)towerHint(TY_FIRE, TY_GRASS), 1);
   CHECK_EQ((int)towerHint(TY_WATER, TY_GRASS), -1);
@@ -87,6 +101,7 @@ static bool simFight(BtlFighter &me, BtlFighter &foe) {
       if (!me.hp) return false;
     }
   }
+  me.hp = 0;  // (a fight that never ends counts as lost, so a climb can't loop)
   return false;
 }
 static int simScore(const BtlFighter &m, const BtlFighter &foe) {  // what the lead screen's hint says, then HP
@@ -98,7 +113,9 @@ static int simClimb(const int16_t team[3], uint8_t lvl, uint8_t stars, uint8_t t
   for (int i = 0; i < 3; i++) t[i] = towerFriend(team[i], lvl, stars, ta, td, ts);
   int reached = 0;
   for (uint8_t step = 1; step <= TOWER_STEPS; step++) {
-    BtlFighter foe = towerGuardian(step, towerGuardianDex(step, lvl, rnd(250)), lvl);
+    int16_t fd = towerGuardianDex(step, lvl, rnd(250));
+    if (step == TOWER_LEGEND) fd = towerLegendDex(lvl, (uint8_t)rnd(250), team, 3, lvl);
+    BtlFighter foe = towerGuardian(step, fd, lvl);
     for (;;) {
       int best = -1;
       for (int i = 0; i < 3; i++)
@@ -134,10 +151,14 @@ TEST(tower, a_mid_team_passes_gate_1_but_not_gate_2) {
 }
 
 TEST(tower, the_legend_is_hard_even_for_the_best) {
+  // Fedor: a stacked team (Lv 100, three 3-star Pokemon, ATK and SPD full, DEF 60) that plays it well clears it
+  // about 1 time in 4: hard, but not impossible
   gSeed = 13;
-  const int16_t team[3] = { 6, 9, 26 };
-  int top = simPct(team, 100, 3, 100, 15, 100, TOWER_STEPS);
-  CHECK(top >= 3 && top <= 30);
-  CHECK(simPct(team, 100, 3, 100, 15, 100, 8) >= 20);
-  CHECK(simPct(team, 100, 3, 100, 15, 100, 8) <= 80);  // 8F is no walk either
+  const int16_t stacked[3] = { 130, 135, 149 };  // Gyarados, Jolteon, Dragonite
+  int top = simPct(stacked, 100, 3, 100, 60, 100, TOWER_STEPS);
+  CHECK(top >= 12 && top <= 45);
+  const int16_t team[3] = { 6, 9, 26 };  // less DEF, a weaker mix: rarely
+  CHECK(simPct(team, 100, 3, 100, 15, 100, TOWER_STEPS) <= 10);
+  int eight = simPct(team, 100, 3, 100, 15, 100, 8);
+  CHECK(eight >= 10 && eight <= 70);  // 8F is no walk either
 }

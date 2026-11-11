@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Knomi Tower's test copy of PokeMacGochi, apart from the real app: its own save folder, its own buddy port (it never
 # visits the real pets), no auto-update, and another bundle id. It opens on Travel with a Pokemon ready to climb.
-#   tools/tower_test.sh [strong|new]     strong: a Lv 100 Charizard and a Pokedex of 3-star friends (the default)
+#   tools/tower_test.sh [strong|new]     strong: a stacked Lv 100 Charizard (DEF 60) and 3-star friends (the default)
 #                                        new: a Lv 15 Charmander with a few friends, to see where a new team stops
 # The test state isn't saved (NOSAVE): each launch starts the same. The Terminal window takes console commands too
 # (TOWERBEST n, TOWERSTEP n, ZONES, TOWER...). Close the app with its menu (the Poke Ball) or Cmd-Q.
@@ -24,7 +24,7 @@ seed() {
     echo "TOWERPET 4 15 30 2 20"
     for d in 7 25 1 16; do echo "CATCH $d"; done
   else
-    echo "TOWERPET 6 100 100 15 100"
+    echo "TOWERPET 6 100 100 60 100"  # stacked: the 1-in-4 team (DEF 60, about two weeks of good care)
     for d in 9 26 135 149 94 65 131 130 3 25 59 112; do echo "CATCH $d"; echo "STARS $d 3"; done
   fi
   echo ZONES

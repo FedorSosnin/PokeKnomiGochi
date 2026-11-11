@@ -364,7 +364,7 @@ static NSCursor *fingerCursor(bool pressed) {
     self.layer.masksToBounds = YES;
     self.layer.contentsGravity = kCAGravityResize;
     self.layer.minificationFilter = kCAFilterTrilinear;
-    self.layer.magnificationFilter = kCAFilterNearest;
+    self.layer.magnificationFilter = kCAFilterLinear;  // the canvas is 466 px: a stretch that is not a whole number, so nearest doubled every ~5th row and column (blocky, uneven text at Large)
     self.layer.backgroundColor = NSColor.blackColor.CGColor;
     [self addTrackingArea:[[NSTrackingArea alloc]
                               initWithRect:NSZeroRect

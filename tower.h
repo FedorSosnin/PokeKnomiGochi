@@ -25,11 +25,13 @@
 // game's biggest, so the same training as the rest made it all but unbeatable)
 static const uint8_t TOWER_TYPE[TOWER_LEGEND + 1] = { 0, TY_ROCK, TY_WATER, TY_ELECTRIC, TY_GRASS, TY_POISON, TY_PSYCHIC, TY_FIRE, TY_GROUND, TY_NORMAL };
 static const uint8_t TOWER_LVL_BONUS[TOWER_STEPS + 1] = { 0, 0, 0, 1, 1, 2, 2, 2, 3, 2, 0 };
-static const uint8_t TOWER_TRAIN[TOWER_STEPS + 1] = { 0, 28, 40, 50, 56, 66, 74, 82, 88, 84, 64 };
+// (Fedor's target: a stacked team, Lv 100, three 3-star Pokemon, ATK and SPD trained full, DEF 60, the right types and
+// leads, clears the whole tower about 1 time in 4; tools/tower_sim.cpp and the climbs in test/test_tower.cpp check it)
+static const uint8_t TOWER_TRAIN[TOWER_STEPS + 1] = { 0, 28, 40, 50, 56, 66, 80, 88, 94, 90, 78 };
 static const uint8_t TOWER_GENE[TOWER_STEPS + 1] = { 0, 94, 96, 98, 100, 101, 102, 104, 106, 104, 100 };
 // a guardian is a boss: more HP than its level gives, % (Fedor: "way too easy ... I got those pokeballs without even
 // being hit"), so a fight lasts long enough to hurt
-static const uint8_t TOWER_HP_PCT[TOWER_STEPS + 1] = { 0, 110, 115, 120, 125, 140, 150, 160, 175, 105, 100 };
+static const uint8_t TOWER_HP_PCT[TOWER_STEPS + 1] = { 0, 110, 115, 120, 125, 140, 165, 175, 190, 105, 100 };
 static const uint8_t TOWER_LEGEND_TYPES[4] = { TY_ICE, TY_FIGHTING, TY_GHOST, TY_DRAGON };
 
 // the floor a step of the climb is on: steps 1..8 are the floors, 9 and 10 the Legend
@@ -77,6 +79,31 @@ inline int16_t towerGuardianDex(uint8_t step, uint8_t petLvl, uint8_t roll) {
   uint8_t lvl = towerLevel(step, petLvl);
   if (step == TOWER_LEGEND) return towerSpecies(TOWER_LEGEND_TYPES[roll % 4], lvl, 0);  // the Legend: the type's strongest
   return towerSpecies(TOWER_TYPE[step], lvl, roll);
+}
+
+// true when neither can hurt the other: none of either one's moves does anything to the other (a Normal Pokemon
+// and a Ghost: the fight would never end)
+inline bool towerNoHarm(int16_t a, uint8_t aLvl, int16_t b) {
+  BtlMoves m = btlMovesFor(a, aLvl, b);
+  for (int i = 0; i < m.count; i++)
+    if (btlEffect(MOVE_TBL[m.ids[i]].type, DEX_TBL[b].type)) return false;
+  return true;
+}
+inline bool towerStalemate(int16_t a, uint8_t aLvl, int16_t b, uint8_t bLvl) {
+  return towerNoHarm(a, aLvl, b) && towerNoHarm(b, bLvl, a);
+}
+
+// the Legend's first guardian for this team: the rolled type, or the next of the four that none of the team is
+// stuck against (a team with a Normal Pokemon never meets a Ghost it can't touch and that can't touch it)
+inline int16_t towerLegendDex(uint8_t petLvl, uint8_t roll, const int16_t *team, uint8_t n, uint8_t teamLvl) {
+  uint8_t gl = towerLevel(TOWER_LEGEND, petLvl);
+  for (uint8_t k = 0; k < 4; k++) {
+    int16_t d = towerGuardianDex(TOWER_LEGEND, petLvl, (uint8_t)(roll % 4 + k));
+    bool stuck = false;
+    for (uint8_t i = 0; i < n; i++) stuck = stuck || towerStalemate(team[i], teamLvl, d, gl);
+    if (!stuck) return d;
+  }
+  return towerGuardianDex(TOWER_LEGEND, petLvl, roll);
 }
 
 inline BtlFighter towerGuardian(uint8_t step, int16_t dex, uint8_t petLvl) {

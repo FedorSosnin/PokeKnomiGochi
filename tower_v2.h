@@ -367,6 +367,11 @@ static bool twPicked(int16_t dex, bool shiny) {
 static void twRollFoe() {
   twFoeRoll = (uint8_t)random(250);
   twFoeDex = towerGuardianDex(twStep, twLevel(), twFoeRoll);
+  if (twStep == TOWER_LEGEND) {  // never one the team can't touch and that can't touch it (Normal and Ghost)
+    int16_t team[TOWER_TEAM];
+    for (int i = 0; i < twTeamN; i++) team[i] = twTeam[i].dex;
+    twFoeDex = towerLegendDex(twLevel(), twFoeRoll, team, twTeamN, twLevel());
+  }
   twFoe = towerGuardian(twStep, twFoeDex, twLevel());
   if (twStep == TOWER_LEGEND) twLegendFirst = twFoeDex;
 }
