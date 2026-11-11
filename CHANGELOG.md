@@ -9,6 +9,7 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 ## [Unreleased]
 
 - **Both balls' bars after a battle:** at the end of a battle, the Ultra Ball's and the Master Ball's bars come up together in a panel in the middle of the screen, and this battle's step fills in on each, its number turning green. Before, only the Ultra Ball's bar showed, along the bottom. When a battle earns a ball, its bar fills up first, then the ball's moment.
+- **Pages slide:** turning a page in a menu, with the side buttons or a swipe, now slides the old page out and the new one in from that side, instead of swapping them at once: the card, Settings, the Pokédex grid and its entries, a zone's grid and entries, the trophy shelves and medal cards, a buddy's pages, the trade grid, the Wi-Fi list and the time zones. The room behind stays still and only the board, panel or grid moves; the side buttons, the page line and the X stay put. On the Knomi the new page is drawn once and the slide just moves the two pictures, so it runs faster than the menus usually redraw.
 - **Progress page tidied:** on the card's Progress page, the evolution lines sit closer under the level's bar, without the big gap.
 
 ## [2.0.7] - 2026-11-11

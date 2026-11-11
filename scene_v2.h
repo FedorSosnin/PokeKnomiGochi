@@ -1870,3 +1870,4 @@ static void v2DrawPoops(int n, bool party) {
 #include "repel_v2.h"    // the Repel
 #include "radial_v2.h"   // the radial menu: a hold on the Pokemon
 #include "about_v2.h"    // Settings' first page's rows, and the About page with the coin
+#include "slide_v2.h"    // a menu's pages slide as they turn

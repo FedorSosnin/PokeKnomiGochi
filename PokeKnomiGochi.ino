@@ -647,6 +647,9 @@ void ensureMon() {
   }
 }
 
+#if UI_V2
+static bool v2Sliding();  // V2: a menu's page sliding (slide_v2.h, with the scene)
+#endif
 // loop timing, for lag reports: the slowest pass since the last HEALTH line, and its parts
 static uint32_t loopNetMs = 0, loopDrawMs = 0, loopMaxMs = 0, loopSlowCount = 0;
 
@@ -815,6 +818,9 @@ void loop() {
   uint32_t interval = frameIntervalMs(pc);
 #ifdef BOARD_HOST
   if (interval > 150) interval = 150;  // no battery to protect, the pet stays alive at idle
+#endif
+#if UI_V2
+  if (interval && v2Sliding()) interval = V2_SLIDE_FRAME_MS;  // V2: a page sliding (slide_v2.h)
 #endif
   bool drewFrame = false;
   // a medal or streak earned away from home (in a battle, a game...) slides down once you're back
@@ -2298,6 +2304,12 @@ uint32_t lastScreenKey = 0;
 
 // Draws a frame and returns true if it flushed it to the panel.
 bool render() {
+#if UI_V2
+  if (v2Sliding()) {  // V2: a page sliding: its frames are made from the two pages, nothing drawn (slide_v2.h)
+    gfx->flush();
+    return true;
+  }
+#endif
   if (!galleryOpen && zoneScreen != ZS_ZONE) dexGridUnload();  // off the grids: their shinies go
   if (staticScreen()) {
     uint32_t k = screenKey();
@@ -5990,6 +6002,9 @@ int wifiKeyAt(int16_t x, int16_t y) {
 }
 
 #define WIFI_ROWS 5
+#if UI_V2
+static_assert(WIFI_ROWS == V2_SLIDE_WIFI_ROWS, "slide_v2.h counts the Wi-Fi list's pages with this");
+#endif
 #define WIFI_ROW_Y 88
 #define WIFI_ROW_H 48
 
@@ -9376,6 +9391,7 @@ void tradeTap(int16_t x, int16_t y) {
 #define ZONE_BTN_H 38
 #define ZONE_PAGE_Y 386
 #define ZONE_CLOSE_Y V2_CLOSE_Y
+static_assert(ZONE_BTN_Y - 2 == V2_SLIDE_ZONE_Y && DEXG_PAGE_Y - 2 == V2_SLIDE_DEX_Y, "slide_v2.h keeps these still");
 #else
 #define ZONE_BTN_X 123
 #define ZONE_BTN_W 220
@@ -10993,6 +11009,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
 // Drawn last on every frame (from the canvas flush): the outline on the control and its
 // large copy beside the finger, in the Wi-Fi keyboard's colours.
 void pressOverlay() {
+#if UI_V2
+  v2SlideFrame();  // V2: a page turning slides; each paged menu's frame kept for it (slide_v2.h)
+#endif
 #if UI_V2 && defined(BOARD_HOST)
   v2HoverOverlay();  // V2 on a computer and the web: the control under the mouse lifted (hover_v2.h)
 #endif

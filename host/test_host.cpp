@@ -9,6 +9,7 @@
 #include <ctime>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include "U8g2lib.h"
 #include "buddy_net.h"
 #include "audio.h"
@@ -943,6 +944,49 @@ static void testGame() {
         CHECK(pressTargetAt(164, 340, pt));
         tapAt(233, 422);  // the X
         CHECK(!clockOpen);
+        runTicks(200);
+      }
+      {  // a menu's page turning slides (Fedor: "make the left and right arrows through the menus 'slide' the menu
+         // screens over"): the card's Training page, the side button: for a moment neither page, the page line already
+         // the new one's; then the Progress page, still; a swipe back slides too (slide_v2.h)
+        extern bool cardOpen, cardAch;
+        extern uint8_t cardPage;
+        extern ScaledCanvas *gfx;
+        const uint16_t *fb = gfx->getFramebuffer();
+        auto grab = [&]() { return std::vector<uint16_t>(fb, fb + 466 * 466); };
+        auto rows = [](const std::vector<uint16_t> &a, const std::vector<uint16_t> &b, int y0, int y1) {
+          return std::equal(a.begin() + y0 * 466, a.begin() + y1 * 466, b.begin() + y0 * 466);
+        };
+        cardOpen = true;
+        cardAch = false;
+        cardPage = 2;
+        runTicks(400);
+        std::vector<uint16_t> from = grab();
+        hostPointer(436, 228, true);  // the side button (tapAt() would wait past the slide)
+        runTicks(150);
+        hostPointer(436, 228, false);
+        runTicks(120);
+        CHECK(cardPage == 3);
+        std::vector<uint16_t> mid = grab();
+        runTicks(500);
+        std::vector<uint16_t> to = grab();
+        CHECK(!rows(mid, from, 0, 377) && !rows(mid, to, 0, 377));  // on the way
+        CHECK(rows(mid, to, 377, 466) && !rows(from, to, 377, 466));  // "Page 4 of 7" from the start
+        runTicks(300);
+        CHECK(grab() == to);  // landed, and still
+        for (int i = 0; i <= 6; i++) {  // a swipe right: back
+          hostPointer(100 + 280 * i / 6, 300, true);
+          runTicks(30);
+        }
+        hostPointer(380, 300, false);
+        runTicks(120);
+        CHECK(cardPage == 2);
+        mid = grab();
+        CHECK(!rows(mid, from, 0, 377) && !rows(mid, to, 0, 377));
+        runTicks(600);
+        CHECK(rows(grab(), from, 0, 466));  // the Training page again, as it was
+        cardOpen = false;
+        cardPage = 0;
         runTicks(200);
       }
       {  // yours from behind in a battle, facing the foe (Fedor: "like in pokemon blue"): Charizard's pack has its
