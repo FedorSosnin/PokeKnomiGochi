@@ -1,7 +1,7 @@
 // A headless run of the host build for screenshots and checks: no window, a script of steps, PPM files out.
 //   clang++ -std=c++17 -O2 -I host tools/host_shot.cpp build/host/libpokehost.a -framework CoreFoundation -o build/host_shot
 //   build/host_shot <resources> <save dir> <script>
-// Script lines: WAIT ms | SER <console line> | TAP x y | SWIPE x0 y0 x1 y1 | HOVER x y (-1 -1: off) | SHOT file.ppm
+// Script lines: WAIT ms | SER <console line> | TAP x y | SWIPE x0 y0 x1 y1 | TAPQ x y (no wait after) | HOVER x y (-1 -1: off) | SHOT file.ppm
 // Run it with POKEMACGOCHI_BUDDY_PORT set to a test port, as every test copy is, so it never meets a real Knomi.
 #include "host.h"
 #include <stdio.h>
@@ -34,6 +34,9 @@ int main(int argc, char **argv) {
     else if (sscanf(line, "TAP %d %d", &a, &b) == 2) {
       hostPointer(a, b, true); run(120);
       hostPointer(a, b, false); run(400);
+    } else if (sscanf(line, "TAPQ %d %d", &a, &b) == 2) {  // a tap, and on at once (to catch what follows it)
+      hostPointer(a, b, true); run(60);
+      hostPointer(a, b, false); run(20);
     } else if (sscanf(line, "HOVER %d %d", &a, &b) == 2) {  // the mouse over the screen, no button (a computer's hover)
       hostPointerHoverAt(a, b); run(200);
     } else if (sscanf(line, "SWIPE %d %d %d %d", &a, &b, &c, &d) == 4) {
