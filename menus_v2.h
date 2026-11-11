@@ -638,10 +638,12 @@ static void v2Clock(const char *langCode) {
                   C565(0x4f, 0x93, 0xc4));
     v2LabelButton(136, 343, 330, 385, "OK", C565(0x58, 0xb8, 0x68), UI_WHITE, 4);  // (size 4: crisp on the Knomi)
   } else {
+#ifdef BOARD_KNOMI_V2  // (the question is the Knomi's, a computer's too)
     {
       V2_HOVER(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1 - V2_RESET_X0, V2_RESET_Y1 - V2_RESET_Y0);
       v2LabelButton(V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1, V2_RESET_Y1, T(S_RESET_BTN), UI_BAR_BAD);  // asks first
     }
+#endif
     v2PageOf(V2_CLOCK_PAGES, 0);
   }
   drawPageArrows(0, V2_CLOCK_PAGES, V2_PAGE_ARROW_Y);  // on to the Knomi's Wi-Fi, or About

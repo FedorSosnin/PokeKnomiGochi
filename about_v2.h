@@ -27,6 +27,7 @@ static const char *const V2_LANG_NAMES[LANG_COUNT] = { "Espa\244ol", "English", 
 #define V2_LANG_BTN_X1 370
 #define V2_SET_ROW_H 36
 
+#ifdef BOARD_KNOMI_V2  // (the time zones are the Knomi's, and a computer's: the Waveshare has none)
 static void v2SetTzRect(int &x0, int &x1, char *b, int n) {  // as wide as the city needs
   int i = clockTzIndex();
   snprintf(b, n, "%s >", TIME_ZONES[i >= 0 ? i : TIME_ZONE_DEFAULT].city);
@@ -36,6 +37,7 @@ static void v2SetTzRect(int &x0, int &x1, char *b, int n) {  // as wide as the c
   x0 = CX - w / 2;
   x1 = CX + w / 2;
 }
+#endif
 static void v2SetLabel(const char *s, int y) {
   gfx->setTextColor(UI_INK);
   setSize(2);
@@ -46,12 +48,15 @@ static void v2SetLabel(const char *s, int y) {
 static void v2SettingsRows() {
   char b[40];
   setSize(2);
+#ifdef BOARD_KNOMI_V2
   if (clockTzUi) {
     int x0, x1;
     v2SetTzRect(x0, x1, b, sizeof(b));
     V2_HOVER(x0, V2_SET_TZ_Y0, x1 - x0, V2_SET_TZ_Y1 - V2_SET_TZ_Y0);
     v2LabelButton(x0, V2_SET_TZ_Y0, x1, V2_SET_TZ_Y1, b, C565(0x4f, 0x93, 0xc4));
-  } else {
+  } else
+#endif
+  {
     gfx->setTextColor(C565(0x3c, 0x8a, 0x4c));
     setCur(centerX(T(S_SET_AUTO), 2), V2_SET_TZ_Y0 + 9);
     printT(T(S_SET_AUTO));
@@ -72,6 +77,7 @@ static bool v2InRow(int16_t x, int16_t y, int y0) {
 }
 // a tap on the page (its X and START OVER have been asked first): every tap here is the page's
 static void v2SettingsTap(int16_t x, int16_t y) {
+#ifdef BOARD_KNOMI_V2
   if (clockTzUi && y >= V2_SET_TZ_Y0 - 6 && y <= V2_SET_TZ_Y1 + 6) {
     char b[40];
     int x0, x1;
@@ -82,6 +88,7 @@ static void v2SettingsTap(int16_t x, int16_t y) {
     }
     return;
   }
+#endif
   if (v2InRow(x, y, V2_SND_Y)) {
     audioSetEnabled(!audioEnabled());
     if (audioEnabled()) sfxPlay(SFX_TAP);  // confirms when turned on
@@ -96,18 +103,22 @@ static void v2SettingsTap(int16_t x, int16_t y) {
 // the press preview's (press.h)
 static bool v2SettingsPress(int16_t x, int16_t y, PressTarget &t) {
   static char b[40];
+#ifdef BOARD_KNOMI_V2
   if (clockTzUi && y >= V2_SET_TZ_Y0 - 6 && y <= V2_SET_TZ_Y1 + 6) {
     int x0, x1;
     v2SetTzRect(x0, x1, b, sizeof(b));
     return x >= x0 - 6 && x <= x1 + 6 && v2PressSet(t, x0, V2_SET_TZ_Y0, x1 - x0, V2_SET_TZ_Y1 - V2_SET_TZ_Y0, b);
   }
+#endif
   if (v2InRow(x, y, V2_SND_Y)) return v2PressSet(t, V2_SND_SW_X, V2_SND_Y, 72, V2_SET_ROW_H, T(S_SOUND));
   if (v2InRow(x, y, V2_LANG_Y)) {
     snprintf(b, sizeof(b), "%s >", V2_LANG_NAMES[gLang]);
     return v2PressSet(t, V2_LANG_BTN_X0, V2_LANG_Y, V2_LANG_BTN_X1 - V2_LANG_BTN_X0, V2_SET_ROW_H, b);
   }
+#ifdef BOARD_KNOMI_V2  // START OVER (it asks with the Knomi's own question)
   if (x >= V2_RESET_X0 && x <= V2_RESET_X1 && y >= V2_RESET_Y0 && y <= V2_RESET_Y1)
     return v2PressSet(t, V2_RESET_X0, V2_RESET_Y0, V2_RESET_X1 - V2_RESET_X0, V2_RESET_Y1 - V2_RESET_Y0, T(S_RESET_BTN));
+#endif
   return false;
 }
 
