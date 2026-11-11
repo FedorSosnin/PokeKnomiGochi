@@ -22,5 +22,5 @@
 #if UI_V2
 #define V2_TOWER_ME(own) towerMePmd(own)
 #else
-#define V2_TOWER_ME(own) (own)
+#define V2_TOWER_ME(own) own  // (no brackets: V1 keeps its tokens)
 #endif

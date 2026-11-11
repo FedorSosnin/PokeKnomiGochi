@@ -87,13 +87,19 @@ enum : uint32_t {
   MED_ZONE_MANSION = 1UL << 20, MED_ZONE_FIELD = 1UL << 21,
   // the end game: 3, 5 and 10 Pokemon raised to level 100 (lv100Count)
   MED_LV100_3 = 1UL << 22, MED_LV100_5 = 1UL << 23, MED_LV100_10 = 1UL << 24,
+#if UI_V2
   // V2: Knomi Tower beaten, its Legend won (tower_v2.h); its badge goes in the case with the zones' badges
   MED_TOWER = 1UL << 25,
+#endif
 };
 #define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer
 #define MED_FIRST_ZONE 17  // MED_ZONE_FOREST's bit: the zone medals have their own card page
 #define MED_FIRST_LV100 22  // MED_LV100_3's bit: the level 100 medals too
-#define MED_COUNT 26
+#if UI_V2
+#define MED_COUNT 26  // (V2: with Knomi Tower's)
+#else
+#define MED_COUNT 25
+#endif
 #define LEVEL_MAX 100  // past it a Pokemon would be too strong to battle: it stays at 100
 // Every form in the Pokedex has 1-3 stars: its genes, kept simple. A raised one's are the band of its
 // genes' average (90-96, 97-103, 104-110); a catch rolls them: 1 star 50%, 2 stars 35%, 3 stars 15%

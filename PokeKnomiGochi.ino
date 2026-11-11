@@ -239,7 +239,11 @@ bool playKeysUi = true;   // the cards add the arrow keys (a computer, the web).
 #else
 bool playKeysUi = false;  // ...or keep to tilting and touch (the Knomi)
 #endif
+#if UI_V2
 enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE, ZS_TOWER };  // ZS_TOWER: V2's Knomi Tower (tower_v2.h)
+#else
+enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE };
+#endif
 ZoneScreen zoneScreen = ZS_NONE;
 uint8_t zoneCur = 0, zonePage = 0;
 int8_t bZone = -1;                  // this battle is in a zone; -1 = random
@@ -3778,32 +3782,6 @@ void startBattleWith(int16_t dex) {
 
 void startBattle() { startBattleWith(0); }
 
-#if UI_V2
-// V2: a Knomi Tower fight (tower_v2.h): me is the member of your team who fights (its HP as the climb left it), foe the
-// floor's guardian. The battle is the usual one, in the floor's hall
-void startTowerFight(const BtlFighter &me, const BtlFighter &foe) {
-  if (battleOpen || !pmd.loaded) return;
-  wildPmd.load(foe.dex, false);
-  if (!wildPmd.loaded) return;
-  bTower = true;
-  bZone = -1;
-  bFromIsland = false;
-  bFoeShiny = false;
-  bMe = me;
-  partyBoostFighter(bMe);
-  bFoe = foe;
-  bMeMoves = btlMovesFor(bMe.dex, bMe.level, foe.dex);
-  bFoeMoves = btlMovesFor(foe.dex, foe.level, bMe.dex);
-  bShownMe = bMe.hp;
-  bShownFoe = bFoe.hp;
-  bWon = false;
-  bGain = 0;
-  battleOpen = true;
-  battleSetPhase(BP_INTRO);
-  sfxPlay(SFX_PLAY);
-  Serial.printf("tower: #%d Lv.%u vs #%d Lv.%u\n", bMe.dex, bMe.level, foe.dex, foe.level);
-}
-#endif
 
 void closeBattle() {
   if (bPvp) buddyBattleClosed();
@@ -4727,9 +4705,9 @@ void renderBattle() {
     bShownMe += (bMe.hp - bShownMe) * 0.28f;
     bShownFoe += (bFoe.hp - bShownFoe) * 0.28f;
     drawBattleFighter(wildPmd, false, BTL_FOE_X, BTL_FOE_GROUND V2_PLUS(v2BtlBobFoe), 3);  // (V2: riding its base's bob)
-    PmdMon &meMon = V2_TOWER_ME(pmd);  // (V2: in Knomi Tower, whoever of your team fights)
-    drawBattleFighter(meMon, true, BTL_ME_X, BTL_ME_GROUND V2_PLUS(v2BtlBobMe), 4);
-    drawMoveFx(BTL_ME_X, (BTL_ME_GROUND + pmdTopY(meMon, BTL_ME_GROUND, 4)) / 2 V2_PLUS(v2BtlBobMe),
+    // (V2: in Knomi Tower, whoever of your team fights)
+    drawBattleFighter(V2_TOWER_ME(pmd), true, BTL_ME_X, BTL_ME_GROUND V2_PLUS(v2BtlBobMe), 4);
+    drawMoveFx(BTL_ME_X, (BTL_ME_GROUND + pmdTopY(V2_TOWER_ME(pmd), BTL_ME_GROUND, 4)) / 2 V2_PLUS(v2BtlBobMe),
                BTL_FOE_X, (BTL_FOE_GROUND + pmdTopY(wildPmd, BTL_FOE_GROUND, 3)) / 2 V2_PLUS(v2BtlBobFoe));
     drawBattlePanel(72, 64, bFoe, bShownFoe, false);
     drawBattlePanel(226, 256, bMe, bShownMe, true);

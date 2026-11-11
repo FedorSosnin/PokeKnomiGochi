@@ -384,7 +384,7 @@ class TestHowToPlayCards(unittest.TestCase):
             self.assertEqual(len(rows), len(self.LANGS))
             for li, row in enumerate(rows):  # a row per language, a medal per column
                 lang = self.LANGS[li]
-                self.assertEqual(len(row), 25)
+                self.assertEqual(len(row), 26)  # (with Knomi Tower's badge)
                 for m, lit in enumerate(row):
                     text = self.chars(lit)
                     n = self.lines(text, lang in ('JA', 'KO'))

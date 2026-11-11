@@ -439,6 +439,30 @@ static void twClimbTapped() {
   twView = twPickReady() ? TW_TEAM : TW_PICK;  // last time's team, or nobody to pick: straight to the team
 }
 
+// a Knomi Tower fight: me is the member of your team who fights (its HP as the climb left it), foe the
+// floor's guardian. The battle is the usual one, in the floor's hall (here, not in the sketch: V1 keeps its tokens)
+static void startTowerFight(const BtlFighter &me, const BtlFighter &foe) {
+  if (battleOpen || !pmd.loaded) return;
+  wildPmd.load(foe.dex, false);
+  if (!wildPmd.loaded) return;
+  bTower = true;
+  bZone = -1;
+  bFromIsland = false;
+  bFoeShiny = false;
+  bMe = me;
+  partyBoostFighter(bMe);
+  bFoe = foe;
+  bMeMoves = btlMovesFor(bMe.dex, bMe.level, foe.dex);
+  bFoeMoves = btlMovesFor(foe.dex, foe.level, bMe.dex);
+  bShownMe = bMe.hp;
+  bShownFoe = bFoe.hp;
+  bWon = false;
+  bGain = 0;
+  battleOpen = true;
+  battleSetPhase(BP_INTRO);
+  sfxPlay(SFX_PLAY);
+  Serial.printf("tower: #%d Lv.%u vs #%d Lv.%u\n", bMe.dex, bMe.level, foe.dex, foe.level);
+}
 static void twFight(int i) {
   if (i < 0 || i >= twTeamN || !twTeam[i].f.hp) return;
   twFighting = i;

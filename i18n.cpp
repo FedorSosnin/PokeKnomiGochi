@@ -707,7 +707,10 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 };
 
 // Medal names in their three lengths [language][medal].
-static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
+// every medal's words, V2's Knomi Tower badge's too: V1 counts one fewer (MED_COUNT) and never asks for it
+#define MED_TEXTS 26
+static_assert(MED_COUNT <= MED_TEXTS, "a medal without words");
+static const char *const MED_NAME[LANG_COUNT][MED_TEXTS] = {
   { "Nv.10", "Nv.25", "Nv.50", "BAYA", "RACHA 7", "VINCULO", "FORMA TOPE", "EN FORMA",
     "VARIOCOLOR", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Nv.100", "AMIGO", "FIESTA", "JUGAR", "BOSQUE", "PLAYA", "CUEVA", "MANSION", "CAMPO", "Nv.100 x3", "Nv.100 x5", "Nv.100 x10", "TORRE KNOMI" },
   { "Lv.10", "Lv.25", "Lv.50", "BERRY", "7 STREAK", "BOND", "TOP FORM", "IN SHAPE",
@@ -725,7 +728,7 @@ static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Lv.10", "Lv.25", "Lv.50", "열매", "연속 7일", "유대", "최고 컨디션", "건강함",
     "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "Lv.100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10", "타워 마스터" },
 };
-static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
+static const char *const MED_LBL[LANG_COUNT][MED_TEXTS] = {
   { "Nv10", "Nv25", "Nv50", "BAYA", "7DIAS", "VINC", "TOPE", "SANO",
     "VARIO", "DEX10", "DEX50", "DEX100", "DEX151", "Nv100", "AMIGO", "FIESTA", "JUEGO", "BOSQUE", "PLAYA", "CUEVA", "MANS", "CAMPO", "100x3", "100x5", "100x10", "TORRE" },
   { "Lv10", "Lv25", "Lv50", "BERRY", "7DAYS", "BOND", "TOP", "FIT",
@@ -743,7 +746,7 @@ static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Lv10", "Lv25", "Lv50", "열매", "7일", "유대", "최고", "건강",
     "이로치", "도감10", "도감50", "도감100", "도감151", "Lv100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판", "100x3", "100x5", "100x10", "타워" },
 };
-static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
+static const char *const MED_DSC[LANG_COUNT][MED_TEXTS] = {
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAYA HALLADA",
     "RACHA 7 DIAS", "VINCULO MAX", "FORMA FINAL", "EN FORMA",
     "VARIOCOLOR", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "PRIMER AMIGO", "FIESTA DE 5", "JUGAR JUNTOS", "BOSQUE 100%", "PLAYA 100%", "CUEVA 100%", "MANSION 100%", "CAMPO 100%", "NV.100 x3", "NV.100 x5", "NV.100 x10", "TORRE SUPERADA" },
@@ -771,7 +774,7 @@ static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
 };
 
 // How to earn each medal, a sentence or two for its card on the achievements [language][medal].
-static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
+static const char *const MED_HOW[LANG_COUNT][MED_TEXTS] = {
   {  // ES
     "Llega al nivel 10.",
     "Llega al nivel 25.",
