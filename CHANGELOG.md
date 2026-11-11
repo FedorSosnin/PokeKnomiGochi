@@ -6,7 +6,7 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [Unreleased]
+## [2.1.0] - 2026-11-11
 
 - **Knomi Tower:** a new islet at the end of Travel's pier, with a tower of eight type floors and the Legend at the top, then Mewtwo. Climb with your Pokémon and two Pokédex friends, HP carrying over from fight to fight. Every fight fills the balls' bars, and beating the Legend earns a Master Ball every time, plus the Tower Master badge and a Hall of Fame the first time. Also: a floor guide, Strong/Weak picks worked out from the fight itself, a tip after a lost climb, friends who cheer (+5% HP per lost climb, up to +15%), and three challenges once it's beaten. Travel gets a second page: the map slides out along the pier to the tower.
 - **Both balls' bars after a battle:** at the end of a battle, the Ultra Ball's and the Master Ball's bars come up together in a panel in the middle of the screen, and this battle's step fills in on each, its number turning green. Before, only the Ultra Ball's bar showed, along the bottom. When a battle earns a ball, its bar fills up first, then the ball's moment.
