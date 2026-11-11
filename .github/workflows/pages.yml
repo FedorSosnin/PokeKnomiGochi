@@ -33,8 +33,9 @@ jobs:
           # PokeWebGochi lives at its own address only (a second one would keep a second save)
           mkdir -p site/play
           printf '<!doctype html><meta charset="utf-8"><title>PokeWebGochi</title><meta http-equiv="refresh" content="0; url=https://pokewebgochi.3dprintsos.com/"><a href="https://pokewebgochi.3dprintsos.com/">PokeWebGochi has moved</a>\n' > site/play/index.html
-      - uses: actions/upload-pages-artifact@v3
+      # (v5 of both: with v3 and v4 the deploy stopped finding the uploaded site, "Found 0 artifact(s)", 2.0.7)
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

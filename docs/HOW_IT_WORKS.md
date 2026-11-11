@@ -123,7 +123,7 @@ Kept with you from one Pokémon to the next, up to 99 of each. Each has its own 
 | 🟣 **Master Ball** | Every 100 of those battles | Always catches the Pokémon it hits |
 | 🧴 **Repel** | Every 20 minutes of mini games actually played | Spray it from the backpack: for 3 of the game's minutes, weaker wild Pokémon stay away |
 
-Running away, battles with buddies and PokeDungeon don't count toward the balls. On the catch screen, the balls you hold sit in a row, each the button for its throw: with both a Master and an Ultra Ball, the Master Ball, the Poké Ball in the middle, then the Ultra Ball.
+At the end of each of those battles, both balls' bars come up in the middle of the screen and this battle's step fills in on each. Running away, battles with buddies and PokeDungeon don't count toward the balls. On the catch screen, the balls you hold sit in a row, each the button for its throw: with both a Master and an Ultra Ball, the Master Ball, the Poké Ball in the middle, then the Ultra Ball.
 
 While a Repel works, wild encounters, and zones you've caught everything in, bring no Pokémon below your Pokémon's level and no species whose base stats add up to less than yours (if that leaves nobody, the usual pick). In a zone you haven't finished, every Pokémon there except its legendary is equally likely, and the legendary keeps its 1 in 100. Shiny odds don't change. It runs out while the Knomi is off, too. The backpack shows a badge with its minutes left, and a Repel used while one runs does nothing.
 

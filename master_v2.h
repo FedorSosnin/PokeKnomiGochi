@@ -120,40 +120,56 @@ static void v2SpecialBall(int x, int y, int s) { v2SpecialBallTurned(s, 0, x, y,
 
 // ----- the bars: the ball, how many you hold, the fights to the next -----
 // the ball at (x, y) at 2x, the bar and "7/25" to its right, w in all; full: the fight that just earned one (25/25,
-// before its moment), the ball it earned not counted yet
-static void v2BallBar(bool master, int x, int y, int w, bool full) {
+// before its moment), the ball it earned not counted yet. k: how much of this fight's step shows, 0 to 1 (its number
+// counts it, in green, once it's all in)
+static void v2BallBar(bool master, int x, int y, int w, bool full, float k = 1) {
   if (master) v2MasterBall(x, y, 2);
   else v2UltraBall(x, y, 2);
   uint8_t n = master ? MASTER_FIGHTS : ULTRA_FIGHTS, held = master ? pet.masterBalls : pet.ultraBalls;
   uint8_t steps = full ? n : master ? pet.masterBar : pet.ultraBar;
   if (full && held) held--;
   if (held) drawCountBadge(x + 34, y + 4, held);
+  bool in = k >= 1 || !steps;
   char b[12];
-  snprintf(b, sizeof(b), "%u/%u", steps, n);
+  snprintf(b, sizeof(b), "%u/%u", in ? steps : steps - 1, n);
   bool cjk = classicFontBegin();
   setSize(2);
-  int tw = textW(b, 2), bx = x + 50, bw = w - 50 - tw - 10;
+  int tw = textW("100/100", 2), bx = x + 50, bw = w - 50 - tw - 10;  // (room for the longest: the bars line up)
   gfx->fillRoundRect(bx, y + 11, bw, 15, 6, C565(0xd8, 0xd2, 0xbd));
-  int fw = (bw - 4) * steps / n;
+  int fw = (int)((bw - 4) * (in ? steps : steps - 1 + (k < 0 ? 0 : k)) / n);
   if (fw > 2) gfx->fillRoundRect(bx + 2, y + 13, fw, 11, 5, master ? v2MasterInk('q') : C565(0xd0, 0xa0, 0x20));
-  gfx->setTextColor(V2_INK_MUTED);
-  setCur(x + w - tw, y + 11);
+  gfx->setTextColor(in && steps ? C565(0x3c, 0x8a, 0x4c) : V2_INK_MUTED);
+  setCur(x + w - textW(b, 2), y + 11);
   printT(b);
   classicFontEnd(cjk);
 }
 
 // ----- a fight's end -----
 static uint8_t v2MasterNew = 0;     // what this fight earned: 1 a Master Ball, 2 an Ultra Ball (battleFinish())
-#define V2_MASTER_SHOW_MS 1500      // the end as usual first, then the Master Ball's moment
-#define V2_MASTER_END_MS 6500       // ...until the catch or home (a tap from V2_MASTER_SKIP_MS)
-#define V2_MASTER_SKIP_MS 3000
-// t: since the end came up. The Ultra Ball's bar in a small panel under the lines (the nearer one); or, past
-// V2_MASTER_SHOW_MS of a fight that earned a ball, the gold burst: its name on the ribbon, the ball big with sparkles,
-// what it does, how many (a Master Ball's, when the fight earned both)
+#define V2_BARS_SHOW_MS 1000        // the end's lines first, then the balls' bars come up in a panel
+#define V2_BARS_IN_MS 180           // ...rising in as the scene dims
+#define V2_BARS_FILL_MS 450         // ...then this fight's step fills in on each
+#define V2_MASTER_SHOW_MS 2400      // a fight that earned a ball: its bar full, then the ball's moment
+#define V2_MASTER_END_MS 7400       // ...until the catch or home (a tap from V2_MASTER_SKIP_MS)
+#define V2_MASTER_SKIP_MS 3900
+// the balls' bars over the dimmed fight, t since they came up: the Ultra Ball's over the Master Ball's in a panel in
+// the middle, rising in, this fight's step filling in on both; gone with the fight (Fedor: "have them come up in a
+// 'modal' show progress and go away"; there was room at the bottom for one bar, the Ultra Ball's)
+static void v2BarsModal(uint32_t t) {
+  float in = t >= V2_BARS_IN_MS ? 1 : t / (float)V2_BARS_IN_MS;
+  v2DimFrame((int)(115 * in));
+  int y0 = 178 + SNAP2((int)(16 * (1 - in)));
+  v2Panel(V2_CARD_X0, y0, V2_CARD_X1, y0 + 110, 10);  // (as wide as the card's)
+  float k = t < V2_BARS_IN_MS + 150 ? 0 : (t - V2_BARS_IN_MS - 150) / (float)V2_BARS_FILL_MS;
+  v2BallBar(false, V2_CARD_L, y0 + 14, V2_CARD_R - V2_CARD_L, v2MasterNew & 2, k);
+  v2BallBar(true, V2_CARD_L, y0 + 62, V2_CARD_R - V2_CARD_L, v2MasterNew & 1, k);
+}
+// t: since the end came up. Past V2_BARS_SHOW_MS the balls' bars; past V2_MASTER_SHOW_MS of a fight that earned a
+// ball, the gold burst: its name on the ribbon, the ball big with sparkles, what it does, how many (a Master Ball's,
+// when the fight earned both)
 static void v2MasterEnd(uint32_t t) {
   if (!v2MasterNew || t < V2_MASTER_SHOW_MS) {
-    v2Panel(126, 406, 340, 438, 10);  // (under the second line's box; inside the round edge)
-    v2BallBar(false, 132, 404, 200, v2MasterNew & 2);
+    if (t >= V2_BARS_SHOW_MS) v2BarsModal(t - V2_BARS_SHOW_MS);
     return;
   }
   bool master = v2MasterNew & 1;

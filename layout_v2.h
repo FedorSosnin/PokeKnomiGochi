@@ -64,6 +64,7 @@ static const int16_t V2_BTN[5][2] = { {90, 336}, {158, 392}, {232, 408}, {306, 3
 // the X is red: #e8503a with a #3a4a5a rim and a lighter top
 // page buttons: every paged screen, left and right, blue #4f93c4 discs r 22
 #define V2_PAGE_ARROW_Y 228
+#define V2_SLIDE_FRAME_MS 30  // while a menu's page slides, a frame this often (slide_v2.h)
 #define V2_PAGE_ARROW_L 36
 #define V2_PAGE_ARROW_R 430
 #define V2_PAGE_ARROW_R_PX 22
