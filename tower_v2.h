@@ -554,6 +554,7 @@ static void twPaintTowerScene(int arg) {
   }
   static const int16_t STAR[2][2] = { { 64, 60 }, { 396, 96 } };
   for (auto &st : STAR) {
+    if (best >= TOWER_LEGEND && st[0] < 100) continue;  // (the challenge medals are there: it read as a "+")
     scGridRect(st[0], st[1] - 8, st[0] + 4, st[1] + 12, 0xFFF3DC);
     scGridRect(st[0] - 8, st[1], st[0] + 12, st[1] + 4, 0xFFF3DC);
   }
@@ -631,10 +632,6 @@ static void twPaintTowerScene(int arg) {
       const ScKey bk[5] = { { 'x', TW_INK }, { 'L', TW_COL[n][1] }, { 'c', TW_COL[n][0] }, { 'd', TW_COL[n][2] }, { 'M', 0xFFFFFF } };
       scSprite(BD, 9, x1 - 30, top + (H - 18) / 2, 2, bk, 5);
     }
-    if (gate && best < n) {  // a gate's balls wait beside it, until they're won the first time
-      twPlus(x1 + 10, y - 28);
-      for (int k = 0; k < towerGateUltras(n); k++) twBall(false, x1 + 32 + k * 36, y - 36, 2);
-    }
     y = top - 4;
   }
   // the Legend: a terrace with battlements at the top, Mewtwo's shadow hovering over it (drawn each frame by the view);
@@ -650,11 +647,10 @@ static void twPaintTowerScene(int arg) {
     scRect(bx + 4, y - 24, bx + 7, y - 13, TW_ST);
   }
   twRoofY = y - 24;
-  if (best < TOWER_LEGEND) {
-    twPlus(x1 + 10, y - 50);
-    twBall(true, x1 + 32, y - 58, 2);
-  } else {  // the Legend beaten: its challenges' medals there instead, gold once done (a tap shows them)
-    twChalX0 = x1 + 8, twChalY0 = y - 58;
+  twPlus(x1 + 10, y - 50);  // the Master Ball it pays, every time it's beaten
+  twBall(true, x1 + 32, y - 58, 2);
+  if (best >= TOWER_LEGEND) {  // the Legend beaten: its challenges' medals on the other side, gold once done (a tap shows them)
+    twChalX0 = x0 - 104, twChalY0 = y - 58;
     for (int k = 0; k < 3; k++) {
       int mx = twChalX0 + 14 + k * 30, my = twChalY0 + 16;
       bool done = (arg >> 4 & 7) >> k & 1;
@@ -1066,7 +1062,7 @@ static int twLeadAt(int16_t x, int16_t y) {
     if (x >= x0 + i * (w + gap) - 4 && x <= x0 + i * (w + gap) + w + 4) return i;
   return -1;
 }
-// 08 / 09: a floor won: its badge (or a gate's), then on
+// 08: a floor won: its badge, then on
 static void twViewWon() {
   uint8_t fl = twStep;
   twBackHall(fl, 140);
@@ -1074,31 +1070,18 @@ static void twViewWon() {
   twShield(CX, 84, 10, fl, true);
   for (int k = 1; k <= TOWER_FLOORS; k++) twShield(CX - 4 * 30 + (k - 1) * 30 + 15, 238, 2, k, k <= fl);  // this climb's
   char b[40];
-  bool gate = (twGot >> 4) && towerIsGate(fl);  // (a gate's balls come only the first time it's passed)
-  if (gate) snprintf(b, sizeof(b), T(S_GATE_FMT), 1);  // (8F: the one gate below the Legend)
-  else snprintf(b, sizeof(b), T(S_BADGE_FMT), TYPE_NAME[TOWER_TYPE[fl]]);
-  if (gate) v2SignIn(b, 30, C565(0x8a, 0x6a, 0x10), C565(0xf0, 0xc0, 0x4a));
-  else v2SignIn(b, 30, sc565(TW_COL[fl][2]), sc565(TW_COL[fl][0]));
+  snprintf(b, sizeof(b), T(S_BADGE_FMT), TYPE_NAME[TOWER_TYPE[fl]]);
+  v2SignIn(b, 30, sc565(TW_COL[fl][2]), sc565(TW_COL[fl][0]));
   v2Panel(96, 284, 370, 380, 10);
   gfx->setTextColor(UI_INK);
   setSize(2);
-  if (gate) snprintf(b, sizeof(b), T(S_BADGE_FMT), TYPE_NAME[TOWER_TYPE[fl]]);
-  else snprintf(b, sizeof(b), T(S_FLOOR_WON_FMT), fl);
+  snprintf(b, sizeof(b), T(S_FLOOR_WON_FMT), fl);
   setCur(centerX(b, 2), 296);
   printT(b);
-  uint8_t ultras = twGot >> 4;
-  if (ultras) {
-    snprintf(b, sizeof(b), T(S_ULTRA_GOT_FMT), ultras);
-    int tw2 = textW(b, 2) + 44, tx = CX - tw2 / 2;
-    twBall(false, tx, 316, 2);
-    gfx->setTextColor(C565(0xb8, 0x8a, 0x10));
-    setCur(tx + 44, 326);
-    printT(b);
-  }
   if (fl < TOWER_FLOORS) snprintf(b, sizeof(b), T(S_NEXT_FMT), fl + 1, TYPE_NAME[TOWER_TYPE[fl + 1]]);
   else snprintf(b, sizeof(b), "%s!", T(S_LEGEND));
   gfx->setTextColor(C565(0x3c, 0x8a, 0x4c));
-  setCur(centerX(b, 2), ultras ? 356 : 334);
+  setCur(centerX(b, 2), 334);
   printT(b);
   v2CloseX();
 }
@@ -1205,12 +1188,12 @@ static void twViewMaster() {
   for (int i = 0; i < 3; i++)
     if (pet.hofDex[i]) twThumb(thumbs.getForm(pet.hofDex[i], pet.hofShiny >> i & 1), 140 + i * 92, 300, 2);
   v2Panel(104, 334, 362, 384, 8);
-  twBall((twGot & 2) != 0, 112, 340, 2);  // the Master Ball the first time, an Ultra Ball after
+  twBall(true, 112, 340, 2);  // the Master Ball it pays
   char b[32];
   gfx->setTextColor(C565(0x78, 0x48, 0xb8));
   setSize(2);
   setCur(160, 342);
-  printT((twGot & 2) ? T(S_MASTER_PLUS) : "+1 Ultra Ball");
+  printT((twGot & 2) ? T(S_MASTER_PLUS) : "");  // (none if you hold the most already)
   snprintf(b, sizeof(b), "Lv %u", pet.hofLevel);
   gfx->setTextColor(V2_INK_MUTED);
   setCur(160, 362);

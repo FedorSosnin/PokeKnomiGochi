@@ -8,11 +8,8 @@
 TEST(tower, floors_types_and_gates) {
   CHECK_EQ((int)TOWER_TYPE[1], (int)TY_ROCK);
   CHECK_EQ((int)TOWER_TYPE[8], (int)TY_GROUND);
-  CHECK(towerIsGate(8) && towerIsGate(TOWER_LEGEND));
-  CHECK(!towerIsGate(1) && !towerIsGate(4) && !towerIsGate(7));
-  CHECK_EQ((int)towerGateUltras(4), 0);  // 4F pays nothing: the balls are a real challenge (Fedor)
-  CHECK_EQ((int)towerGateUltras(8), 1);
-  CHECK_EQ((int)towerGateUltras(5), 0);
+  CHECK(towerIsGate(TOWER_LEGEND));  // only the Legend pays (a Master Ball); the fights fill the balls' bars (Fedor)
+  CHECK(!towerIsGate(1) && !towerIsGate(4) && !towerIsGate(8));
   CHECK_EQ((int)towerFloorOf(9), TOWER_LEGEND);
   CHECK_EQ((int)towerFloorOf(10), TOWER_LEGEND);
   CHECK_EQ(TOWER_FIGHT_ENERGY * TOWER_STEPS, TOWER_ENERGY_MIN);  // a whole climb uses the whole bar

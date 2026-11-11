@@ -81,7 +81,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Ball", "Lanzar %s",
     "Toca una Ball y luego LANZAR.", "Toca LANZAR.", "Inclina para apuntar",
     "Sonido", "Idioma", "Acerca de", "Por 3DPrintSOS - Fedor", "Escan\202alo con el m\242vil",
-    "Salvajes", "Todos", "Torre", "TORRE KNOMI", "SUBIR!", "LEYENDA", "Sube desde 1F con tu Pokemon y 2 amigos. Los PS no se recuperan. En las puertas ganas Poke Balls, y la Leyenda espera arriba!", "A SUBIR!", "Para subir hace falta toda la energ\241a", "ELIGE 2 AMIGOS", "VAMOS!", "Qui\202n va primero?", "Fuerte", "D\202bil", "Debilitado", "%dF superado!", "Sigue: %dF %s", "PUERTA %d SUPERADA!", "+%d Ultra Ball", "FIN DE LA SUBIDA", "%s gan\242 en %dF", "Tuyo", "Gana combates, juega y empieza con los Fuertes", "Vence a los dos!", "LUCHAR!", "MAESTRO DE LA TORRE!", "+1 Master Ball", "MEDALLA %s", "MEDALLAS %d/%d", "SALON DE LA FAMA",  // Knomi Tower
+    "Salvajes", "Todos", "Torre", "TORRE KNOMI", "SUBIR!", "LEYENDA", "Sube desde 1F con tu Pokemon y 2 amigos. Los PS no se recuperan. Cada combate llena tus barras de Balls. Vence a la Leyenda: Master Ball!", "A SUBIR!", "Para subir hace falta toda la energ\241a", "ELIGE 2 AMIGOS", "VAMOS!", "Qui\202n va primero?", "Fuerte", "D\202bil", "Debilitado", "%dF superado!", "Sigue: %dF %s", "PUERTA %d SUPERADA!", "+%d Ultra Ball", "FIN DE LA SUBIDA", "%s gan\242 en %dF", "Tuyo", "Gana combates, juega y empieza con los Fuertes", "Vence a los dos!", "LUCHAR!", "MAESTRO DE LA TORRE!", "+1 Master Ball", "MEDALLA %s", "MEDALLAS %d/%d", "SALON DE LA FAMA",  // Knomi Tower
     "TU EQUIPO", "Toca un amigo para cambiarlo",  // Knomi Tower: the team before a climb
     "Mejor: %dF",  // Knomi Tower: the island tag, your best climb
     "%s absorbe a %s!",  // Knomi Tower: a guardian drains one of yours
@@ -164,7 +164,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Ball", "Throw %s",
     "Tap a ball, then THROW.", "Tap THROW.", "Lean to aim",
     "Sound", "Language", "About", "Made by 3DPrintSOS - Fedor", "Scan it with your phone",
-    "Wild", "All", "Tower", "KNOMI TOWER", "CLIMB!", "LEGEND", "Climb from 1F with your Pokemon and 2 friends. HP carries over. Gates earn Poke Balls, and the Legend waits at the top!", "LET'S CLIMB!", "A climb needs a full energy bar", "PICK 2 FRIENDS", "GO!", "Who goes first?", "Strong", "Weak", "Fainted", "%dF won!", "Next: %dF %s", "GATE %d PASSED!", "+%d Ultra Ball", "CLIMB OVER", "%s won on %dF", "Yours", "Win battles, play games, and lead with Strong picks", "Beat both!", "FIGHT!", "TOWER MASTER!", "+1 Master Ball", "%s BADGE", "BADGES %d/%d", "HALL OF FAME",  // Knomi Tower
+    "Wild", "All", "Tower", "KNOMI TOWER", "CLIMB!", "LEGEND", "Climb from 1F with your Pokemon and 2 friends. HP carries over. Every fight fills your ball bars. Beat the Legend for a Master Ball!", "LET'S CLIMB!", "A climb needs a full energy bar", "PICK 2 FRIENDS", "GO!", "Who goes first?", "Strong", "Weak", "Fainted", "%dF won!", "Next: %dF %s", "GATE %d PASSED!", "+%d Ultra Ball", "CLIMB OVER", "%s won on %dF", "Yours", "Win battles, play games, and lead with Strong picks", "Beat both!", "FIGHT!", "TOWER MASTER!", "+1 Master Ball", "%s BADGE", "BADGES %d/%d", "HALL OF FAME",  // Knomi Tower
     "YOUR TEAM", "Tap a friend to change it",  // Knomi Tower: the team before a climb
     "Best: %dF",  // Knomi Tower: the island tag, your best climb
     "%s drains %s!",  // Knomi Tower: a guardian drains one of yours
@@ -247,7 +247,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Ball", "Lancer %s",
     "Touche une Ball, puis LANCER.", "Touche LANCER.", "Penche pour viser",
     "Son", "Langue", "A propos", "Par 3DPrintSOS - Fedor", "Scanne avec ton portable",
-    "Sauvages", "Tous", "Tour", "TOUR KNOMI", "GRIMPER!", "L\220GENDE", "Grimpe depuis 1F avec ton Pokemon et 2 amis. Les PV restent. Les portes rapportent des Poke Balls, et la L\202gende attend au sommet!", "ON GRIMPE!", "Pour grimper, il faut toute l'\202nergie", "CHOISIS 2 AMIS", "GO!", "Qui commence?", "Fort", "Faible", "K.O.", "%dF gagn\202!", "Suite: %dF %s", "PORTE %d PASS\220E!", "+%d Hyper Ball", "FIN DE L'ASCENSION", "%s a gagn\202 au %dF", "Toi", "Gagne des combats, joue, et commence par les Forts", "Bats les deux!", "COMBATTRE!", "MAITRE DE LA TOUR!", "+1 Master Ball", "BADGE %s", "BADGES %d/%d", "TEMPLE DE LA RENOMM\220E",  // Knomi Tower
+    "Sauvages", "Tous", "Tour", "TOUR KNOMI", "GRIMPER!", "L\220GENDE", "Grimpe depuis 1F avec ton Pokemon et 2 amis. Les PV restent. Chaque combat remplit tes barres de Balls. Bats la L\202gende: une Master Ball!", "ON GRIMPE!", "Pour grimper, il faut toute l'\202nergie", "CHOISIS 2 AMIS", "GO!", "Qui commence?", "Fort", "Faible", "K.O.", "%dF gagn\202!", "Suite: %dF %s", "PORTE %d PASS\220E!", "+%d Hyper Ball", "FIN DE L'ASCENSION", "%s a gagn\202 au %dF", "Toi", "Gagne des combats, joue, et commence par les Forts", "Bats les deux!", "COMBATTRE!", "MAITRE DE LA TOUR!", "+1 Master Ball", "BADGE %s", "BADGES %d/%d", "TEMPLE DE LA RENOMM\220E",  // Knomi Tower
     "TON \220QUIPE", "Touche un ami pour le changer",  // Knomi Tower: the team before a climb
     "Record: %dF",  // Knomi Tower: the island tag, your best climb
     "%s draine %s!",  // Knomi Tower: a guardian drains one of yours
@@ -335,7 +335,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202ball", "%s werfen",
     "Tippe einen Ball an, dann WERFEN.", "Tippe auf WERFEN.", "Neigen zum Zielen",
     "Ton", "Sprache", "Info", "Von 3DPrintSOS - Fedor", "Mit dem Handy scannen",
-    "Wild", "Alle", "Turm", "KNOMI-TURM", "KLETTERN!", "LEGENDE", "Klettere ab 1F mit deinem Pokemon und 2 Freunden. Die KP bleiben. Tore bringen Pokeb\204lle, und oben wartet die Legende!", "LOS GEHT'S!", "Zum Klettern braucht es volle Energie", "WAEHLE 2 FREUNDE", "LOS!", "Wer f\204ngt an?", "Stark", "Schwach", "Besiegt", "%dF geschafft!", "Weiter: %dF %s", "TOR %d GESCHAFFT!", "+%d Hyperball", "AUFSTIEG VORBEI", "%s gewann auf %dF", "Du", "Gewinne K\204mpfe, spiele und schick zuerst die Starken", "Besiege beide!", "KAEMPFEN!", "TURMMEISTER!", "+1 Meisterball", "%s-ORDEN", "ORDEN %d/%d", "RUHMESHALLE",  // Knomi Tower
+    "Wild", "Alle", "Turm", "KNOMI-TURM", "KLETTERN!", "LEGENDE", "Klettere ab 1F mit deinem Pokemon und 2 Freunden. Die KP bleiben. Jeder Kampf f\201llt deine Ball-Leisten. Besiege die Legende: ein Meisterball!", "LOS GEHT'S!", "Zum Klettern braucht es volle Energie", "WAEHLE 2 FREUNDE", "LOS!", "Wer f\204ngt an?", "Stark", "Schwach", "Besiegt", "%dF geschafft!", "Weiter: %dF %s", "TOR %d GESCHAFFT!", "+%d Hyperball", "AUFSTIEG VORBEI", "%s gewann auf %dF", "Du", "Gewinne K\204mpfe, spiele und schick zuerst die Starken", "Besiege beide!", "KAEMPFEN!", "TURMMEISTER!", "+1 Meisterball", "%s-ORDEN", "ORDEN %d/%d", "RUHMESHALLE",  // Knomi Tower
     "DEIN TEAM", "Tippe einen Freund an, um ihn zu tauschen",  // Knomi Tower: the team before a climb
     "Bestes: %dF",  // Knomi Tower: the island tag, your best climb
     "%s saugt %s aus!",  // Knomi Tower: a guardian drains one of yours
@@ -418,7 +418,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Ball", "Lancia %s",
     "Tocca una Ball, poi LANCIA.", "Tocca LANCIA.", "Inclina per mirare",
     "Suono", "Lingua", "Info", "Di 3DPrintSOS - Fedor", "Scansiona col telefono",
-    "Selvatici", "Tutti", "Torre", "TORRE KNOMI", "SALI!", "LEGGENDA", "Sali dal 1F con il tuo Pokemon e 2 amici. I PS restano. Alle porte vinci Poke Ball, e la Leggenda aspetta in cima!", "SALIAMO!", "Per salire serve tutta l'energia", "SCEGLI 2 AMICI", "VIA!", "Chi va per primo?", "Forte", "Debole", "Esausto", "%dF vinto!", "Poi: %dF %s", "PORTA %d SUPERATA!", "+%d Ultra Ball", "SALITA FINITA", "%s ha vinto al %dF", "Tuo", "Vinci lotte, gioca e inizia con i Forti", "Battili entrambi!", "LOTTA!", "MAESTRO DELLA TORRE!", "+1 Master Ball", "MEDAGLIA %s", "MEDAGLIE %d/%d", "ALBO D'ORO",  // Knomi Tower
+    "Selvatici", "Tutti", "Torre", "TORRE KNOMI", "SALI!", "LEGGENDA", "Sali dal 1F con il tuo Pokemon e 2 amici. I PS restano. Ogni lotta riempie le barre delle Ball. Batti la Leggenda: una Master Ball!", "SALIAMO!", "Per salire serve tutta l'energia", "SCEGLI 2 AMICI", "VIA!", "Chi va per primo?", "Forte", "Debole", "Esausto", "%dF vinto!", "Poi: %dF %s", "PORTA %d SUPERATA!", "+%d Ultra Ball", "SALITA FINITA", "%s ha vinto al %dF", "Tuo", "Vinci lotte, gioca e inizia con i Forti", "Battili entrambi!", "LOTTA!", "MAESTRO DELLA TORRE!", "+1 Master Ball", "MEDAGLIA %s", "MEDAGLIE %d/%d", "ALBO D'ORO",  // Knomi Tower
     "LA TUA SQUADRA", "Tocca un amico per cambiarlo",  // Knomi Tower: the team before a climb
     "Record: %dF",  // Knomi Tower: the island tag, your best climb
     "%s assorbe %s!",  // Knomi Tower: a guardian drains one of yours
@@ -501,7 +501,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Bola", "Lan\207ar %s",
     "Toca numa Bola e depois em LAN\207AR.", "Toca em LAN\207AR.", "Inclina para mirar",
     "Som", "Idioma", "Sobre", "Por 3DPrintSOS - Fedor", "L\210 com o telem\242vel",
-    "Selvagens", "Todos", "Torre", "TORRE KNOMI", "SUBIR!", "LENDA", "Suba do 1F com seu Pokemon e 2 amigos. Os PS continuam. Nos portoes ganha Poke Balls, e a Lenda espera no topo!", "VAMOS!", "Para subir precisa de toda a energia", "ESCOLHA 2 AMIGOS", "VAI!", "Quem vai primeiro?", "Forte", "Fraco", "Desmaiado", "%dF vencido!", "Pr\242ximo: %dF %s", "PORTAO %d VENCIDO!", "+%d Ultra Ball", "FIM DA SUBIDA", "%s venceu no %dF", "Seu", "Ven\207a batalhas, jogue e comece com os Fortes", "Ven\207a os dois!", "LUTAR!", "MESTRE DA TORRE!", "+1 Master Ball", "INSIGNIA %s", "INSIGNIAS %d/%d", "HALL DA FAMA",  // Knomi Tower
+    "Selvagens", "Todos", "Torre", "TORRE KNOMI", "SUBIR!", "LENDA", "Suba do 1F com seu Pokemon e 2 amigos. Os PS continuam. Cada batalha enche suas barras de Balls. Ven\207a a Lenda: uma Master Ball!", "VAMOS!", "Para subir precisa de toda a energia", "ESCOLHA 2 AMIGOS", "VAI!", "Quem vai primeiro?", "Forte", "Fraco", "Desmaiado", "%dF vencido!", "Pr\242ximo: %dF %s", "PORTAO %d VENCIDO!", "+%d Ultra Ball", "FIM DA SUBIDA", "%s venceu no %dF", "Seu", "Ven\207a batalhas, jogue e comece com os Fortes", "Ven\207a os dois!", "LUTAR!", "MESTRE DA TORRE!", "+1 Master Ball", "INSIGNIA %s", "INSIGNIAS %d/%d", "HALL DA FAMA",  // Knomi Tower
     "SUA EQUIPE", "Toque um amigo para troc\240-lo",  // Knomi Tower: the team before a climb
     "Recorde: %dF",  // Knomi Tower: the island tag, your best climb
     "%s absorve %s!",  // Knomi Tower: a guardian drains one of yours
@@ -607,7 +607,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "モンスターボール", "%sを なげる",
     "ボールを えらんで なげるを タッチ。", "なげるを タッチ。", "かたむけて ねらう",
     "サウンド", "げんご", "じょうほう", "つくった ひと: 3DPrintSOS - Fedor", "スマホで よみとってね",
-    "やせい", "すべて", "タワー", "ノーミタワー", "のぼる!", "でんせつ", "1Fから じぶんの ポケモンと ともだち 2ひきで のぼろう! HPは そのまま。 ゲートで モンスターボールを ゲットして、 てっぺんには でんせつが まってる!", "のぼろう!", "のぼるには げんきが まんタンじゃないと", "ともだちを 2ひき", "GO!", "だれが さきに いく?", "つよい", "よわい", "ひんし", "%dF クリア!", "つぎ: %dF %s", "ゲート %d とっぱ!", "ハイパーボール +%d", "ここまで", "%sに %dFで まけた", "じぶん", "バトルで かって ゲームで あそんで、 つよい ポケモンから だそう", "ふたりとも たおせ!", "たたかう!", "タワーマスター!", "マスターボール +1", "%s バッジ", "バッジ %d/%d", "でんどういり",  // Knomi Tower
+    "やせい", "すべて", "タワー", "ノーミタワー", "のぼる!", "でんせつ", "1Fから じぶんの ポケモンと ともだち 2ひきで のぼろう! HPは そのまま。 バトルで ボールの ゲージが たまる。 でんせつに かつと マスターボール!", "のぼろう!", "のぼるには げんきが まんタンじゃないと", "ともだちを 2ひき", "GO!", "だれが さきに いく?", "つよい", "よわい", "ひんし", "%dF クリア!", "つぎ: %dF %s", "ゲート %d とっぱ!", "ハイパーボール +%d", "ここまで", "%sに %dFで まけた", "じぶん", "バトルで かって ゲームで あそんで、 つよい ポケモンから だそう", "ふたりとも たおせ!", "たたかう!", "タワーマスター!", "マスターボール +1", "%s バッジ", "バッジ %d/%d", "でんどういり",  // Knomi Tower
     "じぶんの チーム", "ともだちを タッチで こうたい",  // Knomi Tower: the team before a climb
     "さいこう %dF",  // Knomi Tower: the island tag, your best climb
     "%sは %sの ちからを すいとった!",  // Knomi Tower: a guardian drains one of yours
@@ -695,7 +695,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "몬스터볼", "%s 던지기",
     "볼을 고르고 던지기를 눌러요.", "던지기를 눌러요.", "기울여서 조준",
     "소리", "언어", "정보", "만든 사람: 3DPrintSOS - Fedor", "휴대폰으로 스캔하세요",
-    "야생", "전체", "타워", "노미 타워", "오르기!", "전설", "포켓몬과 친구 2마리와 함께 1F부터 오르자! HP는 그대로야. 관문에서 몬스터볼을 얻고, 꼭대기에는 전설이 기다려!", "올라가자!", "오르려면 에너지가 가득 차야 해", "친구 2마리 고르기", "가자!", "누가 먼저 갈까?", "유리", "불리", "기절", "%dF 클리어!", "다음: %dF %s", "관문 %d 돌파!", "하이퍼볼 +%d", "도전 끝", "%s에게 %dF에서 졌어", "내 팀", "배틀에서 이기고 게임을 하고, 유리한 포켓몬부터 내보내자", "둘 다 이겨라!", "싸우기!", "타워 마스터!", "마스터볼 +1", "%s 배지", "배지 %d/%d", "명예의 전당",  // Knomi Tower
+    "야생", "전체", "타워", "노미 타워", "오르기!", "전설", "포켓몬과 친구 2마리와 함께 1F부터 오르자! HP는 그대로야. 배틀마다 볼 게이지가 차고, 전설을 이기면 마스터볼!", "올라가자!", "오르려면 에너지가 가득 차야 해", "친구 2마리 고르기", "가자!", "누가 먼저 갈까?", "유리", "불리", "기절", "%dF 클리어!", "다음: %dF %s", "관문 %d 돌파!", "하이퍼볼 +%d", "도전 끝", "%s에게 %dF에서 졌어", "내 팀", "배틀에서 이기고 게임을 하고, 유리한 포켓몬부터 내보내자", "둘 다 이겨라!", "싸우기!", "타워 마스터!", "마스터볼 +1", "%s 배지", "배지 %d/%d", "명예의 전당",  // Knomi Tower
     "내 팀", "친구를 눌러 바꾸기",  // Knomi Tower: the team before a climb
     "최고 %dF",  // Knomi Tower: the island tag, your best climb
     "%s, %s의 힘을 흡수했다!",  // Knomi Tower: a guardian drains one of yours

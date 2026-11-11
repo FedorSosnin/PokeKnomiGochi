@@ -3889,8 +3889,8 @@ void battleTap(int16_t x, int16_t y) {
 void battleFinish(bool won) {
   bWon = won;
 #if UI_V2
-  if (bTower) {  // V2: Knomi Tower's fights don't fill the balls' bars (they'd make the tower a farm) and pay at its gates
-    v2MasterNew = 0;
+  if (bTower) {  // V2: a Knomi Tower fight fills the balls' bars like any (Fedor); the rest of its end is the climb's
+    v2MasterNew = pet.fightPays();
     bGain = 0;
     sfxPlay(won ? SFX_LEVEL : SFX_DENY);
     battleSetPhase(BP_END);
@@ -4817,7 +4817,7 @@ void renderBattle() {
         battleCenterLine(b, 380);
       }
 #if UI_V2
-      if (!bPvp && !bTower) v2MasterEnd(millis() - bPhaseT);  // V2: the Master Ball's bar, or the one it earned
+      if (!bPvp) v2MasterEnd(millis() - bPhaseT);  // V2: the Master Ball's bar, or the one it earned
 #endif
       break;
     }

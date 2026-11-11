@@ -875,16 +875,14 @@ void Pet::towerFightWon(bool petFought) {
 uint8_t Pet::towerFloorWon(uint8_t floor) {
   if (floor < 1 || floor > TOWER_LEGEND) return 0;
   uint8_t got = 0;
-  if (floor > towerBest) {  // the first time: its badge, and a gate's balls
+  if (floor > towerBest) {  // the first time: a new best
     towerBest = floor;
     towerCheer = 0;  // a new best: the cheering starts over
     got |= 1;
-    uint8_t u = towerGateUltras(floor);
-    ultraBalls = ultraBalls + u > ULTRA_MAX ? ULTRA_MAX : ultraBalls + u;
-    got |= u << 4;
-    if (floor == TOWER_LEGEND) {
-      if (masterBalls < MASTER_MAX) masterBalls++;
-      got |= 2;
+  }
+  if (floor == TOWER_LEGEND) {  // the Legend beaten: a Master Ball, every time (tower.h)
+    if (masterBalls < MASTER_MAX) masterBalls++, got |= 2;
+    {
       if (!(trainerMedals & MED_TOWER)) {  // the tower beaten: its badge, celebrated as any medal
         trainerMedals |= MED_TOWER;
         totalMedals++;
@@ -892,9 +890,6 @@ uint8_t Pet::towerFloorWon(uint8_t floor) {
         medalUntil = millis() + CELEBRATE_MS;
       }
     }
-  } else if (floor == TOWER_LEGEND) {  // the Legend again: an Ultra Ball, about what a bar of wild battles earns
-    if (ultraBalls < ULTRA_MAX) ultraBalls++;
-    got |= 1 << 4;
   }
   save();
   return got;
