@@ -308,7 +308,10 @@ static void v2Travel2() {
     scGridRect(gx, gy - 8, gx + 4, gy + 12, 0xF0E0FF);
     scGridRect(gx - 8, gy, gx + 12, gy + 4, 0xF0E0FF);
   }
-  twThumb(thumbs.getForm(DEX_MEWTWO, false), TW_IX, feet, 3, 0x2A1A4C);
+  const uint8_t *mt = thumbs.getForm(DEX_MEWTWO, false);
+  for (int k = 0; k < 4; k++)  // the same purple rim as on the tower screen
+    twThumb(mt, TW_IX + (k == 0 ? -2 : k == 1 ? 2 : 0), feet + (k == 2 ? -2 : k == 3 ? 2 : 0), 3, 0x9A6AD8);
+  twThumb(mt, TW_IX, feet, 3, 0x2A1A4C);
   char cnt[24];  // your best climb: the highest floor won, the Legend, or nothing yet
   if (pet.towerBest >= TOWER_LEGEND) snprintf(cnt, sizeof(cnt), "%s", T(S_LEGEND));
   else if (pet.towerBest) snprintf(cnt, sizeof(cnt), T(S_TWR_BEST_FMT), pet.towerBest);
@@ -507,6 +510,13 @@ static void twDim(int a256) {
 
 // the tower screen (tower3.py tower_screen()): a dusk sky over the sea, the main island far off, the islet's rock,
 // and the tower, storey by storey; arg: the best floor won, then (bits 8..) how much to dim it
+// a gold plus in front of a reward, so it reads as one to win (thick, outlined: not a sparkle)
+static void twPlus(int x, int y) {
+  static const char *const P[7] = { "..kkk..", "..kgk..", "kkkgkkk", "kgggggk", "kkkgkkk", "..kgk..", "..kkk.." };
+  const ScKey k[2] = { { 'k', TW_INK }, { 'g', 0xF0C04A } };
+  scSprite(P, 7, x, y, 3, k, 2);
+}
+static int twRoofY = 70;  // the tower screen's roof, where Mewtwo's shadow hovers
 #define TW_BASE 300  // the tower's foot on its islet
 #define TW_HOR 284   // the horizon
 static void twPaintTowerScene(int arg) {
@@ -548,7 +558,7 @@ static void twPaintTowerScene(int arg) {
   scOval(scE(233 - 150, TW_BASE - 10, 233 + 150, TW_BASE + 50), 0x6A6478, 0x8A8098, 0x4A4458);
   scOval(scE(233 - 136, TW_BASE - 14, 233 + 136, TW_BASE + 12), 0x4F9A55, 0x79BD4F);
   // the tower: 8 storeys, each on a ledge, tapering upward (tower())
-  static const uint8_t HS[8] = { 24, 24, 22, 22, 22, 20, 20, 20 };
+  static const uint8_t HS[8] = { 22, 22, 20, 20, 20, 18, 18, 18 };  // (short enough for Mewtwo's shadow on top)
   int y = TW_BASE, cx = 233;
   for (int n = 1; n <= TOWER_FLOORS; n++) {
     int H = HS[n - 1], half = (84 - (n - 1) * 5) / 4 * 4, x0 = cx - half, x1 = cx + half, top = y - H;
@@ -567,7 +577,7 @@ static void twPaintTowerScene(int arg) {
       const ScKey dk[3] = { { 'x', TW_INK }, { 'w', 0x6A4428 }, { 'b', 0x3A2414 } };
       scSprite(DOOR, 7, cx - 12, top - 4, 3, dk, 3);
     } else {  // an arched window: lit in its type's light with its mark, or dark
-      int s = H >= 22 ? 3 : 2, ms = s == 3 ? 2 : 1, wy = top + (H - 7 * s) / 2;
+      int s = H >= 21 ? 3 : 2, ms = s == 3 ? 2 : 1, wy = top + (H - 7 * s) / 2;
       static const char *const WIN[7] = { "..xxxx..", ".xggggx.", "xggggggx", "xggggggx", "xggggggx", "xggggggx", "xxxxxxxx" };
       if (won) twGlow(cx, wy + 3 * s, 8 * s + 2, TW_COL[n][1], 115);
       const ScKey wk[2] = { { 'x', TW_INK }, { 'g', won ? scMix(TW_COL[n][1], 0xFFFFFF, .35) : (Rgb)0x2A2236 } };
@@ -584,34 +594,32 @@ static void twPaintTowerScene(int arg) {
       scSprite(BD, 9, x1 - 30, top + (H - 18) / 2, 2, bk, 5);
     }
     if (gate && best < n) {  // a gate's balls wait beside it, until they're won the first time
-      for (int k = 0; k < towerGateUltras(n); k++) twBall(false, x1 + 14 + k * 36, y - 36, 2);
+      twPlus(x1 + 10, y - 28);
+      for (int k = 0; k < towerGateUltras(n); k++) twBall(false, x1 + 32 + k * 36, y - 36, 2);
     }
     y = top - 4;
   }
-  // the Legend: a terrace, two pillars, a gold lintel, the Master Ball in its glow (a crown once it's yours)
-  int half = 56, x0 = cx - half, x1 = cx + half, t = y - 40;
-  twGlow(cx, t + 4, 70, 0xD0B0F8, 128);
-  for (int px : { x0 + 8, x1 - 16 }) {
-    for (int cy = t; cy < y; cy += 4) {
-      scCell(px, cy, TW_ST_L);
-      scCell(px + 4, cy, TW_ST_D);
-    }
-    scRect(px - 4, t - 4, px + 11, t - 1, TW_INK);
-    scRect(px - 4, t - 8, px + 11, t - 5, TW_ST_L);
-  }
-  scRect(x0 - 8, t - 12, x1 + 7, t - 9, TW_INK);
-  for (int x = x0 - 8; x < x1 + 8; x += 4) scCell(x, t - 16, scMod(x / 4, 2) ? 0xF0C04A : 0xC08410);
+  // the Legend: a terrace with battlements at the top, Mewtwo's shadow hovering over it (drawn each frame by the view);
+  // "LEGEND" on a plaque to its left, the Master Ball to its right until it's won (Fedor: "the shadow of mewtwo moving
+  // around slightly and move the master ball off to the side like the ultra ball")
+  int half = 48, x0 = cx - half, x1 = cx + half;
   twStone(x0, y - 12, x1, y);
-  scRect(cx - 18, y - 24, cx + 17, y - 13, 0x5A3A98);
-  scRect(cx - 18, y - 24, cx + 17, y - 21, 0x9A6AD8);
-  if (best < TOWER_LEGEND) twBall(true, cx - 18, y - 58, 2);
-  else {
-    const ScKey ck[2] = { { 'x', 0xF0C04A }, { 'o', 0xFFF0B0 } };
-    scSprite(TW_MARK[TOWER_LEGEND], 7, cx - 14, y - 52, 4, ck, 2);
+  scRect(x0 - 4, y - 12, x0 - 1, y - 1, TW_INK);
+  scRect(x1, y - 12, x1 + 3, y - 1, TW_INK);
+  for (int bx = x0; bx < x1; bx += 16) {  // battlements
+    scRect(bx - 4, y - 24, bx + 7, y - 13, TW_INK);
+    scRect(bx, y - 24, bx + 3, y - 13, TW_ST_L);
+    scRect(bx + 4, y - 24, bx + 7, y - 13, TW_ST);
   }
-  setSize(2);  // its name on a purple plaque over the lintel
+  twRoofY = y - 24;
+  if (best < TOWER_LEGEND) {
+    twPlus(x1 + 10, y - 50);
+    twBall(true, x1 + 32, y - 58, 2);
+  }
+  setSize(2);  // "LEGEND" on a plaque across the battlements, under Mewtwo
   const char *lg = T(S_LEGEND);
-  int w = textW(lg, 2) + 16, lx = cx - w / 2, ly = t - 40;
+  int w = textW(lg, 2) + 16, lx = cx - w / 2, ly = y - 22;
+  twRoofY = ly - 3;
   gfx->fillRect(lx - 3, ly - 3, w + 6, 27, sc565(TW_INK));
   gfx->fillRect(lx, ly, w, 21, sc565(0x5A3A98));
   gfx->fillRect(lx, ly, w, 3, sc565(0x9A6AD8));
@@ -739,6 +747,15 @@ static void twSignFloor(uint8_t step) {
 #define TW_CLIMB_Y1 370
 static void twViewTower() {
   twBackTower(0);
+  scScreen();
+  uint32_t now = millis();  // Mewtwo's shadow hovers over the roof, bobbing and drifting a little
+  int bob = SNAP2((int)lroundf(-3 + 3 * sinf(now * (6.2831853f / 2400)))), sway = SNAP2((int)lroundf(3 * sinf(now * (6.2831853f / 5200))));
+  int feet = twRoofY - 4 + bob;
+  twGlow(CX + sway, feet - 26, 50, 0xC8A0F8, 200);
+  const uint8_t *mt = thumbs.getForm(DEX_MEWTWO, false);
+  for (int k = 0; k < 4; k++)  // a soft purple rim round the shadow, so it reads against the night
+    twThumb(mt, CX + sway + (k == 0 ? -2 : k == 1 ? 2 : 0), feet + (k == 2 ? -2 : k == 3 ? 2 : 0), 2, 0x9A6AD8);
+  twThumb(mt, CX + sway, feet, 2, 0x2A1A4C);
   v2LabelButton(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1, T(S_CLIMB), C565(0x58, 0xb8, 0x68));
   v2CloseX();
 }
