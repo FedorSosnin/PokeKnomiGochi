@@ -18,3 +18,9 @@
 #else
 #define V2_PLUS(d)
 #endif
+// the sprite of your side in a battle: in V2's Knomi Tower, whoever of your team fights (tower_v2.h); else yours
+#if UI_V2
+#define V2_TOWER_ME(own) towerMePmd(own)
+#else
+#define V2_TOWER_ME(own) (own)
+#endif

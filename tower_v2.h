@@ -1,0 +1,1061 @@
+// V2: Knomi Tower (Fedor's gym, "tower style: you move up only by winning"). menus_v2.h includes this at its end.
+// The rules are tower.h's; the plan and its mockups are in the planning notes (knomi-tower/PLAN.md, mockups/views,
+// scripts/pages.py, views.py, tower3.py), and these painters follow them.
+//
+// Travel gets a second page: the map panned east across the water, where a pier off the island's Cave coast
+// becomes a bridge to the tower's islet, Mewtwo's shadow hovering over its top. Tapping the tower opens it: the
+// whole tower at sunset, your badges on its floors, CLIMB! at its foot. A climb is your Pokemon and 2 friends from
+// the Pokedex, 8 floors and the Legend, on one full energy bar.
+#include "tower.h"
+
+// ===================================================================== art helpers (tower3.py, views.py, pages.py)
+#define TW_INK 0x1B1B25
+#define TW_ST 0xA49AB4    // stone
+#define TW_ST_L 0xC8C0D4  // ...lit
+#define TW_ST_D 0x7A7090  // ...shaded
+#define TW_ST_M 0x8A8098  // ...mortar
+#define TW_HALL_LEGEND 15  // the Legend's hall (a type is 0..14)
+
+// each floor's colours (TYPES in tower3.py): [floor] = fill, light, dark; [9] the Legend
+static const Rgb TW_COL[TOWER_LEGEND + 1][3] = {
+  { 0, 0, 0 },
+  { 0xA08A58, 0xC8B080, 0x6E5C38 },  // rock
+  { 0x3F8FD8, 0x7CC0F0, 0x2A62A0 },  // water
+  { 0xF0C030, 0xFFE27A, 0xB88A10 },  // electric
+  { 0x4FA04F, 0x8AD06A, 0x2F6E34 },  // grass
+  { 0x9A5AB8, 0xC08AD8, 0x6A3A88 },  // poison
+  { 0xE05A90, 0xF59AB8, 0xA83A68 },  // psychic
+  { 0xF07030, 0xFFA868, 0xB04A18 },  // fire
+  { 0xC08A48, 0xE0B878, 0x8A5A28 },  // ground
+  { 0x9A6AD8, 0xD0B0F8, 0x5A3A98 },  // the Legend
+};
+// 7 x 7 marks, 'x' ink, 'o' light: [floor], [9] the Legend's crown
+static const char *const TW_MARK[TOWER_LEGEND + 1][7] = {
+  { "", "", "", "", "", "", "" },
+  { "..xxx..", ".xooox.", "xoooxxx", "xooxxxx", "xxxxxxx", ".xxxxx.", "..xxx.." },
+  { "...x...", "..xox..", ".xooox.", "xoooxxx", "xooxxxx", ".xxxxx.", "..xxx.." },
+  { "...xxx.", "..xox..", ".xox...", "xooxxx.", "..xox..", ".xox...", "xx....." },
+  { "....xxx", "..xxoox", ".xooxox", "xoxoxox", "xoxxox.", "xxoxx..", "x......" },
+  { "..xxx..", ".xooox.", "xoxoxox", "xoooooo", ".xxxxx.", ".x.x.x.", "......." },
+  { ".xxxxx.", "xoooooo", "xoxxxox", "xoxoxox", "xoxxxox", "xoooooo", ".xxxxx." },
+  { "...x...", "..xox..", ".xox.x.", ".xooxox", "xoooxox", "xooooox", ".xxxxx." },
+  { "......x", ".....xx", "..x.xox", ".xoxoox", "xooxoox", "xoooxox", "xxxxxxx" },
+  { "x..x..x", "xoxoxox", "xooooox", "xooooox", "xxxxxxx", "x.....x", "xxxxxxx" },
+};
+
+// a soft light on what's drawn: each 4 px cell pulled toward col, the outer part on a checker (glow())
+static void twGlow(int cx, int cy, int r, Rgb col, int a256) {
+  uint16_t c = sc565(col);
+  for (int y = scFl4(cy - r) * 4; y < cy + r; y += 4)
+    for (int x = scFl4(cx - r) * 4; x < cx + r; x += 4) {
+      if (x < 0 || y < 0 || x > V2_W - 4 || y > V2_W - 4) continue;
+      float d = hypotf(x + 2 - cx, y + 2 - cy);
+      if (d >= r) continue;
+      if (d > r * 0.6f && (scFl4(x) + scFl4(y)) % 2) continue;
+      int a = (int)(a256 * (1 - d / r));
+      for (int j = 0; j < 4; j++) {
+        uint16_t *p = scFb + (y + j) * V2_W + x;
+        for (int i = 0; i < 4; i++) p[i] = v2Blend(p[i], c, a);
+      }
+    }
+}
+
+// bricks on the grid: 2-cell courses, offset each course; lit on the left, shaded on the right (stone_wall())
+static void twStone(int x0, int y0, int x1, int y1, bool dark = false) {
+  Rgb st = dark ? 0x6A6080 : TW_ST, lt = dark ? 0x847A98 : TW_ST_L, sh = dark ? 0x4A4258 : TW_ST_D, mo = dark ? 0x584E6C : TW_ST_M;
+  for (int cy = y0; cy < y1; cy += 4) {
+    int course = (cy - y0) / 8;
+    for (int cx = x0; cx < x1; cx += 4) {
+      Rgb c = st;
+      bool mortar = (cy - y0) % 8 == 0 || ((cx - x0) / 4 + course * 3) % 6 == 0;
+      if (mortar) c = mo;
+      else if (((cx - x0) / 4 + course * 2) % 7 == 3) c = scMix(st, sh, .35);
+      if (cx < x0 + 8) c = mortar ? scMix(lt, mo, .5) : lt;
+      if (cx >= x1 - 12) c = mortar ? scMix(sh, mo, .5) : sh;
+      scCell(cx, cy, c);
+    }
+  }
+}
+
+// a floor's badge: a crest in its colours with its mark inside, s px a cell (shield())
+static void twShield(int cx, int top, int s, uint8_t floor, bool won) {
+  static const char *const ROWS[14] = { "..xxxxxxxxx..", ".xLLLLLLLLLx.", "xLLccccccccdx", "xLccccccccccx", "xLccccccccccx",
+                                        "xLccccccccccx", "xLccccccccccx", "xLccccccccccx", ".xLcccccccdx.", ".xLcccccccdx.",
+                                        "..xLcccccdx..", "...xLcccdx...", "....xxdxx....", ".....xxx....." };
+  Rgb col = won ? TW_COL[floor][0] : 0x3A3046, lit = won ? TW_COL[floor][1] : 0x4A4058, dk = won ? TW_COL[floor][2] : 0x2A2236;
+  const ScKey k[4] = { { 'x', TW_INK }, { 'L', lit }, { 'c', col }, { 'd', dk } };
+  scSprite(ROWS, 14, cx - 13 * s / 2, top, s, k, 4);
+  const ScKey m[2] = { { 'x', won ? (Rgb)0xFFFFFF : (Rgb)0x5A5068 }, { 'o', won ? lit : (Rgb)0x4A4058 } };
+  scSprite(TW_MARK[floor], 7, cx - 7 * s / 2, top + 3 * s, s, m, 2);
+}
+
+// the game's own Ultra and Master Balls (master_v2.h), s px a cell
+static void twBall(bool master, int x, int y, int s) {
+  const ScKey u[7] = { { 'q', 0x3A3A48 }, { 'Q', 0x262630 }, { 'y', 0xF8D040 }, { 'w', 0xFFFFFF }, { 's', 0xAAB0BC }, { 'S', 0x787E8C }, { 'k', TW_INK } };
+  const ScKey mk[7] = { { 'q', 0x7848B8 }, { 'Q', 0x4E2C80 }, { 'm', 0xE85AA8 }, { 'w', 0xFFFFFF }, { 's', 0xAAB0BC }, { 'S', 0x787E8C }, { 'k', TW_INK } };
+  scSprite(master ? SPR_V2_MASTER_BALL : SPR_V2_ULTRA_BALL, 18, x, y, s, master ? mk : u, 7);
+}
+
+// a small wooden plaque with a label ("3F"), lit when won
+static void twPlaque(int x, int y, const char *s, bool won) {
+  setSize(2);
+  int w = textW(s, 2) + 10;
+  gfx->fillRect(x - 2, y - 2, w + 4, 22, sc565(TW_INK));
+  gfx->fillRect(x, y, w, 18, sc565(won ? 0x5A3A22 : 0x3A2A1E));
+  gfx->fillRect(x, y, w, 2, sc565(won ? 0x8A5A30 : 0x4A3626));
+  gfx->setTextColor(sc565(won ? 0xFFF3DC : 0xA08A70));
+  setCur(x + 5, y + 3);
+  printT(s);
+}
+
+// a plank walk: dark rails, planks across, posts down into the water (planks())
+#define TW_PIER_Y 268
+static void twPlanks(int x0, int x1, int y) {
+  for (int cx = scFl4(x0) * 4; cx < x1; cx += 4) {
+    for (int cy = y; cy < y + 20; cy += 4) {
+      Rgb c = (cy == y || cy == y + 16) ? 0x6A4428 : (scMod(cx / 4, 3) == 0 ? 0xD8A468 : scMod(cx / 4, 3) == 1 ? 0xC8955C : 0xA87648);
+      scCell(cx, cy, c);
+    }
+    if (scMod(cx / 4, 6) == 0) {
+      scCell(cx, y + 20, 0x4A2E18);
+      scCell(cx, y + 24, 0x3A6A98);
+    }
+  }
+}
+
+// Travel's first page: the pier off the Cave's coast, at the height the bridge has on page 2
+static void twPierPaint() {
+  int x = V2_W - 4;
+  while (x > 233 && !v2IsleLand(x, TW_PIER_Y + 10)) x -= 4;
+  twPlanks(x - 8, V2_W, TW_PIER_Y);
+}
+
+// ===================================================================== Travel, page 2: the tower's islet
+#define TW_SHIFT 300                // page 2 is the map panned this far east
+#define TW_IX 300                   // the islet's middle
+#define TW_IY 236
+#define TW_IR 112
+static bool twOnIslet(int x, int y) {
+  float a = atan2f(y - TW_IY, x - TW_IX);
+  return hypotf((x - TW_IX) * 1.05f, y - TW_IY) < TW_IR + 7 * sinf(5 * a + 2) + 4 * sinf(9 * a);
+}
+static uint8_t twIsleCell(int i, int j) {  // page 2's cells: the island shifted (its regions), or the islet (6)
+  int x = i * 4 + 2, y = j * 4 + 2;
+  if (i < 0 || j < 0 || x >= V2_W || y >= V2_W) return 0;
+  if (twOnIslet(x, y)) return 0x80 | 6;
+  if (v2IsleLand(x + TW_SHIFT, y)) return 0x80 | v2IsleRegion(x + TW_SHIFT, y);
+  return 0;
+}
+// the tower in the map's style: five storeys (lit windows for the floors won), gold gate ledges with pennants,
+// torches at the door, battlements on top (grand_tower()); returns the roof's y
+static int twMapTower(int cx, int base, uint8_t best) {
+  static const uint8_t ST[5][3] = { { 56, 24, 0 }, { 52, 22, 1 }, { 48, 22, 0 }, { 44, 22, 1 }, { 40, 20, 0 } };  // half, h, gold
+  int y = base;
+  for (int n = 0; n < 5; n++) {
+    int half = ST[n][0], h = ST[n][1], top = y - h;
+    twStone(cx - half, top, cx + half, y);
+    scRect(cx - half - 4, top, cx - half - 1, y - 1, TW_INK);
+    scRect(cx + half, top, cx + half + 3, y - 1, TW_INK);
+    if (n == 0) {  // the door: an arch of dark wood, two torches
+      static const char *const DOOR[5] = { "..xxxx..", ".xbbbbx.", "xbbwbbbx", "xbbwbbbx", "xbbwbbbx" };
+      const ScKey dk[3] = { { 'x', TW_INK }, { 'b', 0x6A4428 }, { 'w', 0x3A2414 } };
+      scSprite(DOOR, 5, cx - 16, y - 20, 4, dk, 3);
+      static const char *const TORCH[4] = { ".f.", "fyf", ".x.", ".x." };
+      const ScKey tk[3] = { { 'f', 0xF07030 }, { 'y', 0xFFE27A }, { 'x', TW_INK } };
+      for (int tx : { cx - 30, cx + 26 }) {
+        twGlow(tx + 2, y - 16, 16, 0xFFB050, 128);
+        scSprite(TORCH, 4, tx - 4, y - 22, 3, tk, 3);
+      }
+    } else {  // two windows: lit for the floors won (two floors a storey)
+      static const char *const WIN[4] = { ".xx.", "xwwx", "xwwx", "xxxx" };
+      for (int k = 0; k < 2; k++) {
+        int wx = cx + (k ? half / 2 - 4 : -half / 2 - 4);
+        bool on = best >= (n - 1) * 2 + k + 1;
+        if (on) twGlow(wx + 6, top + 10, 14, 0xFFE27A, 115);
+        const ScKey wk[2] = { { 'x', TW_INK }, { 'w', on ? (Rgb)0xFFE27A : (Rgb)0x2A2236 } };
+        scSprite(WIN, 4, wx - 2, top + 3, 3, wk, 2);
+      }
+    }
+    scRect(cx - half - 8, y, cx + half + 7, y + 3, TW_INK);  // the ledge
+    scRect(cx - half - 4, y - 4, cx + half + 3, y - 1, ST[n][2] ? 0xF0C04A : 0xD8D0E4);
+    if (ST[n][2]) {  // a gate: a gold pennant at each end of its ledge
+      static const char *const PR[3] = { "xx..", "xxxx", "xx.." }, *const PL[3] = { "..xx", "xxxx", "..xx" };
+      const ScKey pk[1] = { { 'x', 0xF0C04A } };
+      scRect(cx - half - 8, y - 28, cx - half - 5, y - 1, TW_INK);
+      scSprite(PL, 3, cx - half - 20, y - 28, 4, pk, 1);
+      scRect(cx + half + 4, y - 28, cx + half + 7, y - 1, TW_INK);
+      scSprite(PR, 3, cx + half + 8, y - 28, 4, pk, 1);
+    }
+    y = top - 4;
+  }
+  int half = 44;  // the roof: a ledge and battlements
+  scRect(cx - half - 4, y - 4, cx + half + 3, y + 3, TW_INK);
+  scRect(cx - half, y - 4, cx + half - 1, y - 1, TW_ST_L);
+  for (int bx = cx - half; bx < cx + half; bx += 16) {
+    scRect(bx - 4, y - 16, bx + 7, y - 5, TW_INK);
+    scRect(bx, y - 16, bx + 3, y - 5, TW_ST_L);
+    scRect(bx + 4, y - 16, bx + 7, y - 5, TW_ST);
+  }
+  return y;
+}
+static int twMapRoof = 0;  // where the roof is, for Mewtwo's shadow over it (page 2's life)
+static void twPaintIsle2(int best) {
+  static const Rgb FILL[7] = { 0x8FCE7A, 0x6C7190, 0xECDCAC, 0x2E2758, 0x3F8A4C, 0x5F9E3E, 0x8A8098 };
+  static const Rgb LIT[7] = { 0xA6DC90, 0x8A8FA6, 0xF8ECC4, 0x3E3470, 0x58B868, 0x79BD4F, 0xA49AB4 };
+  for (int j = 0; j * 4 < V2_W; j++)
+    for (int i = 0; i * 4 < V2_W; i++) {
+      int cx = i * 4, cy = j * 4;
+      uint8_t c0 = twIsleCell(i, j);
+      if (!c0) {
+        bool near = twIsleCell(i, j - 1) || twIsleCell(i, j + 1) || twIsleCell(i - 1, j) || twIsleCell(i + 1, j);
+        scCell(cx, cy, near && (i + j) % 2 ? V2_SEA_L : V2_SEA);
+        continue;
+      }
+      int z = c0 & 7;
+      uint8_t r = twIsleCell(i + 1, j), d = twIsleCell(i, j + 1);
+      bool edge = (r && (r & 7) != z) || (d && (d & 7) != z);
+      bool coast = !(twIsleCell(i, j - 1) && twIsleCell(i, j + 1) && twIsleCell(i - 1, j) && twIsleCell(i + 1, j));
+      Rgb c;
+      if (coast) c = z != 2 ? 0xE2CF98 : 0xF8ECC4;
+      else if (edge) c = (i + j) % 2 == 0 ? 0x1B1B25 : scMix(FILL[z], 0x1B1B25, .4);
+      else if (!twIsleCell(i, j - 2) || (twIsleCell(i, j - 1) & 7) != z) c = LIT[z];
+      else c = FILL[z];
+      scCell(cx, cy, c);
+    }
+  // the islet: a grassy top, a cliff on its south face, a ring of boulders
+  scOval(scE(TW_IX - 84, TW_IY - 70, TW_IX + 84, TW_IY + 62), 0x5F9E3E, 0x79BD4F);
+  for (int cy = 0; cy < V2_W; cy += 4)
+    for (int cx = 0; cx < V2_W; cx += 4)
+      if (twOnIslet(cx + 2, cy + 2) && !twOnIslet(cx + 2, cy + 14)) scCell(cx, cy, scMod(cx / 4, 3) ? 0x5A5068 : 0x4A4258);
+  for (int k = 0; k < 10; k++) {
+    float a = k * 0.63f + (k * 37 % 10) * 0.03f, rr = TW_IR - 14;
+    int rx = TW_IX + (int)(rr * cosf(a)), ry = TW_IY + (int)(rr * .92f * sinf(a));
+    if (abs(ry - (TW_PIER_Y + 10)) < 24 && rx < TW_IX) continue;  // the bridge's landing stays clear
+    scOval(scE(rx - 8, ry - 6, rx + 8, ry + 6), 0x6A6478, 0xA49AB4);
+  }
+  // the bridge (page 1's pier) and a flagstone path to the door
+  int x1 = 4;
+  while (!twOnIslet(x1, TW_PIER_Y + 10) && x1 < V2_W) x1 += 4;
+  twPlanks(0, x1 + 8, TW_PIER_Y);
+  int base = TW_IY + 54;
+  for (int cx = x1 + 8; cx < TW_IX - 8; cx += 4)
+    for (int cy = TW_PIER_Y; cy < TW_PIER_Y + 20; cy += 4) scCell(cx, cy, ((cx / 8 + cy / 8) % 2) ? TW_ST_L : TW_ST);
+  for (int cy = base; cy < TW_PIER_Y + 20; cy += 4)
+    for (int cx = TW_IX - 16; cx < TW_IX + 16; cx += 4) scCell(cx, cy, ((cx / 8 + cy / 8) % 2) ? TW_ST_L : TW_ST);
+  // rocks out in the water, each in foam; gulls
+  static const int16_t ROCK[4][3] = { { 420, 330, 10 }, { 190, 360, 8 }, { 440, 170, 7 }, { 176, 150, 6 } };
+  for (auto &r : ROCK) {
+    scOval(scE(r[0] - r[2] - 6, r[1] - r[2] + 2, r[0] + r[2] + 6, r[1] + r[2] + 6), 0xBFE0F0);
+    scOval(scE(r[0] - r[2], r[1] - r[2], r[0] + r[2], r[1] + r[2]), 0x6A6478, 0xA49AB4, 0x4A4458);
+  }
+  static const char *const GULL[3] = { "x...x", ".x.x.", "..x.." };
+  const ScKey gk[1] = { { 'x', 0xFFFFFF } };
+  static const int16_t GULLS[4][2] = { { 116, 112 }, { 140, 96 }, { 412, 400 }, { 88, 372 } };
+  for (auto &g : GULLS) scSprite(GULL, 3, g[0], g[1], 2, gk, 1);
+  twMapRoof = twMapTower(TW_IX, base, (uint8_t)best);
+}
+
+// a thumbnail (thumbs.bin) standing with its feet at (cx, feet), s px a pixel; sil: one colour, a shadow
+static void twThumb(const uint8_t *b, int cx, int feet, int s, Rgb sil = SC_NONE, bool grey = false) {
+  if (!b) return;
+  int w = b[0], h = b[1], n = b[2];
+  const uint8_t *pal = b + 3, *d = pal + n * 2;
+  int l = w, r = -1, bot = -1;
+  for (int i = 0; i < w * h; i++)
+    if (d[i] != 0xFF) {
+      if (i % w < l) l = i % w;
+      if (i % w > r) r = i % w;
+      bot = i / w;
+    }
+  if (bot < 0) return;
+  int x0 = SNAP2(cx - (l + r + 1) * s / 2), y0 = SNAP2(feet - (bot + 1) * s);
+  uint16_t sc = sil != SC_NONE ? sc565(sil) : 0;
+  for (int y = 0; y < h; y++)
+    for (int x = 0; x < w; x++) {
+      uint8_t k = d[y * w + x];
+      if (k == 0xFF) continue;
+      uint16_t c = sil != SC_NONE ? sc : (uint16_t)(pal[k * 2] | (pal[k * 2 + 1] << 8));
+      if (grey) c = v2Blend(c, sc565(0xAAB0BC), 170);
+      gfx->fillRect(x0 + x * s, y0 + y * s, s, s, c);
+    }
+}
+
+// Travel's second page (pages.py page2): drawn every frame, Mewtwo's shadow bobbing over the tower
+static void v2Travel2() {
+  v2Cached(0x3D100000 + pet.towerBest, twPaintIsle2, pet.towerBest);
+  scScreen();
+  uint32_t now = millis();
+  int bob = SNAP2((int)lroundf(-4 + 4 * sinf(now * (6.2831853f / 2400))));  // it hovers: 0 to 8 px up and back
+  int feet = twMapRoof - 22 + bob;
+  twGlow(TW_IX, feet - 42, 76, 0xC8A0F8, 190);
+  static const int8_t SP[4][2] = { { -58, -70 }, { 54, -54 }, { -40, -100 }, { 40, -92 } };
+  for (int i = 0; i < 4; i++) {  // sparkles, twinkling in turn
+    if ((now / 400 + i) % 4 == 0) continue;
+    int gx = TW_IX + SP[i][0], gy = feet + SP[i][1];
+    scGridRect(gx, gy - 8, gx + 4, gy + 12, 0xF0E0FF);
+    scGridRect(gx - 8, gy, gx + 12, gy + 4, 0xF0E0FF);
+  }
+  twThumb(thumbs.getForm(DEX_MEWTWO, false), TW_IX, feet, 3, 0x2A1A4C);
+  char cnt[8];
+  snprintf(cnt, sizeof(cnt), "%u/%u", pet.towerBest > TOWER_FLOORS ? TOWER_FLOORS : pet.towerBest, TOWER_FLOORS);
+  v2IsleTag(T(S_TOWER), cnt, TW_IX, TW_IY + 62, 0x9A6AD8);
+  v2PageArrow(36, V2_PAGE_ARROW_Y, -1);
+  char b[32];
+  v2SignIn(v2Caps(T(S_TOWER_TITLE), b, sizeof(b)), 18, C565(0x5a, 0x3a, 0x98), C565(0x8a, 0x6a, 0xd0));
+  v2CloseX();
+}
+
+// ===================================================================== the climb
+enum TwView : uint8_t { TW_TOWER, TW_HOW, TW_TIRED, TW_PICK, TW_LEAD, TW_WON, TW_OVER, TW_LEGEND, TW_MASTER };
+static TwView twView = TW_TOWER;
+struct TwMember { int16_t dex; bool shiny, isPet; BtlFighter f; };
+static TwMember twTeam[TOWER_TEAM];
+static uint8_t twTeamN = 0, twStep = 0, twGot = 0, twFoeRoll = 0;
+static int16_t twFoeDex = 0, twLegendFirst = 0;
+static int8_t twFighting = -1;   // the member in the fight now
+static bool twRan = false;
+static int16_t twBeatBy = 0;     // who ended the climb, and where
+static uint8_t twBeatStep = 0;
+static PmdMon twPmd[2];          // the friends' sprites, for their fights
+static uint8_t twPickPage = 0, twPickN = 0;
+static int16_t twPickDex[2];
+static bool twPickShiny[2];
+
+PmdMon &towerMePmd(PmdMon &own) {  // the sprite of whoever fights for you (renderBattle)
+  if (bTower && twFighting > 0 && twPmd[twFighting - 1].loaded) return twPmd[twFighting - 1];
+  return own;
+}
+uint8_t towerHall() { return twStep >= 1 && twStep <= TOWER_FLOORS ? twStep : TOWER_LEGEND; }  // the hall of the fight now
+
+static uint8_t twLevel() { return btlCapLevel(pet.level()); }
+
+// the forms you can pick as friends: every one in the Pokedex but the one you're raising
+static int twFormCount() { return pet.formCount(); }
+static int16_t twFormAt(int i, bool &shiny) { return pet.formAt(i, shiny); }
+static bool twAllowed(int16_t dex, bool shiny) {
+  return !(dex == pet.speciesId && shiny == pet.shiny) && btlMinLevel(dex) <= twLevel();
+}
+static bool twPicked(int16_t dex, bool shiny) {
+  for (int i = 0; i < twPickN; i++)
+    if (twPickDex[i] == dex && twPickShiny[i] == shiny) return true;
+  return false;
+}
+
+// the guardian of the step now (rolled once a step)
+static void twRollFoe() {
+  twFoeRoll = (uint8_t)random(250);
+  twFoeDex = towerGuardianDex(twStep, twLevel(), twFoeRoll);
+  if (twStep == TOWER_LEGEND) twLegendFirst = twFoeDex;
+}
+
+static void twStartClimb() {
+  uint8_t lvl = twLevel();
+  twTeamN = 0;
+  twTeam[twTeamN++] = { pet.speciesId, pet.shiny, true, petFighter(lvl) };
+  for (int i = 0; i < twPickN && twTeamN < TOWER_TEAM; i++) {
+    int16_t d = twPickDex[i];
+    bool sh = twPickShiny[i];
+    twTeam[twTeamN] = { d, sh, false, towerFriend(d, lvl, pet.starsOf(d, sh), pet.trAtk, pet.trDef, pet.trSpe) };
+    twPmd[twTeamN - 1].load(d, sh);
+    twTeamN++;
+    pet.towerPick[i] = d;
+    pet.towerPickShiny[i] = sh;
+  }
+  pet.towerSave();
+  twStep = 1;
+  twRan = false;
+  twRollFoe();
+  twView = TW_LEAD;
+  Serial.printf("tower: climb with %d, Lv %u\n", twTeamN, lvl);
+}
+
+static void twEndClimb() {
+  twPmd[0].unload();
+  twPmd[1].unload();
+  twFighting = -1;
+}
+
+void towerOpen() {  // from Travel's second page
+  zoneScreen = ZS_TOWER;
+  twView = TW_TOWER;
+  twEndClimb();
+  sfxPlay(SFX_TAP);
+}
+
+static void twClimbTapped() {
+  if (pet.sleeping || pet.isEgg() || pet.ceremony) { sfxPlay(SFX_DENY); return; }
+  sfxPlay(SFX_TAP);
+  if (!pet.towerHowSeen) { twView = TW_HOW; return; }
+  if (pet.energy < TOWER_ENERGY_MIN) { twView = TW_TIRED; return; }
+  // the friends picked last time, if they can still come
+  twPickN = 0;
+  for (int i = 0; i < 2; i++)
+    if (pet.towerPick[i] && pet.hasForm(pet.towerPick[i], pet.towerPickShiny[i]) && twAllowed(pet.towerPick[i], pet.towerPickShiny[i]) &&
+        !twPicked(pet.towerPick[i], pet.towerPickShiny[i])) {
+      twPickDex[twPickN] = pet.towerPick[i];
+      twPickShiny[twPickN++] = pet.towerPickShiny[i];
+    }
+  twPickPage = 0;
+  twView = TW_PICK;
+}
+
+static void twFight(int i) {
+  if (i < 0 || i >= twTeamN || !twTeam[i].f.hp) return;
+  twFighting = i;
+  BtlFighter foe = towerGuardian(twStep, twFoeDex, twLevel());
+  startTowerFight(twTeam[i].f, foe);
+  if (!battleOpen) twFighting = -1;
+}
+
+// a fight's end (closeBattle): HP back to the team, then the next step, a badge, or the end
+void towerFightEnded(bool won, bool ran) {
+  zoneScreen = ZS_TOWER;
+  if (twFighting < 0) { twView = TW_TOWER; return; }
+  TwMember &m = twTeam[twFighting];
+  m.f.hp = bMe.hp > m.f.maxHp ? m.f.maxHp : bMe.hp;  // (Party Boost only lifts its stats, not its HP)
+  bool petFought = m.isPet;
+  twFighting = -1;
+  if (ran) {  // RUN always works here, and ends the climb (no loss)
+    twBeatBy = twFoeDex, twBeatStep = twStep, twRan = true;
+    twEndClimb();
+    twView = TW_OVER;
+    return;
+  }
+  if (!won) {
+    m.f.hp = 0;
+    bool any = false;
+    for (int i = 0; i < twTeamN; i++) any |= twTeam[i].f.hp > 0;
+    if (any) { twView = TW_LEAD; return; }  // who's next
+    twBeatBy = twFoeDex, twBeatStep = twStep;
+    pet.towerLost();
+    twEndClimb();
+    twView = TW_OVER;
+    return;
+  }
+  pet.towerFightWon(petFought);
+  if (twStep <= TOWER_FLOORS) {
+    twGot = pet.towerFloorWon(twStep);
+    for (int i = 0; i < twTeamN; i++) twTeam[i].f.hp = towerHeal(twTeam[i].f.hp, twTeam[i].f.maxHp);
+    twView = TW_WON;
+    if (twGot) sfxPlay(SFX_MEDAL);
+    return;
+  }
+  if (twStep == TOWER_LEGEND) {  // the Legend's first fight: now Mewtwo
+    twStep++;
+    twRollFoe();
+    twView = TW_LEAD;
+    return;
+  }
+  // the Legend won: Tower Master
+  bool first = pet.towerBest < TOWER_LEGEND;
+  twGot = pet.towerFloorWon(TOWER_LEGEND);
+  if (first) {
+    pet.hofShiny = 0;
+    for (int i = 0; i < 3; i++) {
+      pet.hofDex[i] = i < twTeamN ? twTeam[i].dex : 0;
+      if (i < twTeamN && twTeam[i].shiny) pet.hofShiny |= 1 << i;
+    }
+    pet.hofLevel = twLevel();
+    pet.hofEpoch = pet.lastSeenEpoch;
+    pet.towerSave();
+  }
+  sfxPlay(SFX_MEDAL);
+  twEndClimb();
+  twView = TW_MASTER;
+}
+
+// ===================================================================== painters
+// the dimmed variants of a scene: everything pulled toward the night tint (rooms2_px.py dim())
+static void twDim(int a256) {
+  uint16_t t = sc565(0x120E22);
+  uint16_t *p = (uint16_t *)gfx->getFramebuffer();
+  for (int i = 0; i < V2_W * V2_W; i++) p[i] = v2Blend(p[i], t, a256);
+}
+
+// the tower screen (tower3.py tower_screen()): a dusk sky over the sea, the main island far off, the islet's rock,
+// and the tower, storey by storey; arg: the best floor won, then (bits 8..) how much to dim it
+static void twPaintTowerScene(int arg) {
+  uint8_t best = arg & 15;
+  const Rgb SKY[5] = { 0x262A5E, 0x3A3C7C, 0x6A4E94, 0xB06A8E, 0xF0946E };
+  const int16_t SE[6] = { 0, 90, 170, 240, 296, 340 };
+  scBands(SKY, SE, 5, 0, V2_W);
+  for (int k = 0; k < 34; k++) {  // stars
+    int x = (k * 137 + 41) % V2_W / 4 * 4, y = (k * 71 + 13) % 160 / 4 * 4;
+    scCell(x, y, k % 4 ? 0xFFF3DC : 0xB8C0F0);
+  }
+  static const int16_t STAR[2][2] = { { 64, 70 }, { 396, 112 } };
+  for (auto &st : STAR) {
+    scGridRect(st[0], st[1] - 8, st[0] + 4, st[1] + 12, 0xFFF3DC);
+    scGridRect(st[0] - 8, st[1], st[0] + 12, st[1] + 4, 0xFFF3DC);
+  }
+  static const char *const CL[5] = { "....xxxxx.......", "..xxxxxxxxx.xx..", ".xxxxxxxxxxxxxxx", "xxxxxxxxxxxxxxxx", ".llllllllllllll." };
+  const ScKey c1[2] = { { 'x', 0x8A5E9A }, { 'l', 0xE08A8A } }, c2[2] = { { 'x', 0x9A6496 }, { 'l', 0xF09A84 } };
+  scSprite(CL, 5, 30, 214, 4, c1, 2);
+  scSprite(CL, 5, 330, 236, 4, c2, 2);
+  // the sea, the main island low on the horizon (a lit window, the Cave's peak), crests catching the sunset
+  const Rgb SEA[2] = { 0x3A5A98, 0x2F4C88 };
+  const int16_t EE[3] = { 332, 400, V2_W };
+  scBands(SEA, EE, 2, 0, V2_W);
+  for (int cy = 312; cy < 332; cy += 4)
+    for (int cx = 0; cx < 170; cx += 4) {
+      float h = 14 + 8 * sinf(cx / 30.0f) + (cx > 110 && cx < 150 ? 6 : 0) + (cx > 120 && cx < 140 ? 10 : 0);
+      if (332 - cy < h) scCell(cx, cy, 0x4A3A70);
+    }
+  scCell(52, 320, 0xF8D870);
+  for (int k = 0; k < 40; k++) {
+    int x = (k * 211 + 7) % V2_W / 4 * 4, y = (340 + (k * 53) % 126) / 4 * 4;
+    Rgb c = y < 372 ? 0xF0A888 : 0x6F94D0;
+    scCell(x, y, c);
+    scCell(x + 4, y, c);
+  }
+  // the islet: foam, rock, grass on top, tufts
+  scOval(scE(233 - 158, 342, 233 + 158, 402), 0xBFE0F0);
+  scOval(scE(233 - 150, 338, 233 + 150, 398), 0x6A6478, 0x8A8098, 0x4A4458);
+  scOval(scE(233 - 136, 334, 233 + 136, 360), 0x4F9A55, 0x79BD4F);
+  // the tower: 8 storeys, each on a ledge, tapering upward (tower())
+  static const uint8_t HS[8] = { 32, 32, 28, 28, 28, 24, 24, 24 };
+  int y = 348, cx = 233;
+  for (int n = 1; n <= TOWER_FLOORS; n++) {
+    int H = HS[n - 1], half = (84 - (n - 1) * 5) / 4 * 4, x0 = cx - half, x1 = cx + half, top = y - H;
+    bool won = n <= best;
+    twStone(x0, top, x1, y);
+    scRect(x0 - 4, top, x0 - 1, y - 1, TW_INK);
+    scRect(x1, top, x1 + 3, y - 1, TW_INK);
+    bool gate = towerIsGate(n);
+    for (int x = x0 - 8; x < x1 + 8; x += 4) {  // the ledge it stands on (gold on a gate)
+      bool end = x == x0 - 8 || x == x1 + 4;
+      scCell(x, y, end ? TW_INK : gate ? 0xC08410 : 0x5A5068);
+      scCell(x, y - 4, end ? TW_INK : gate ? (scMod(x / 4, 2) ? 0xF0C04A : 0xFFE27A) : 0xD8D0E4);
+    }
+    if (n == 1) {  // the door
+      static const char *const DOOR[7] = { "..xxxx..", ".xwwwwx.", "xwwbwwwx", "xwwbwwwx", "xbbbbbbx", "xwwbwwwx", "xwwbwwwx" };
+      const ScKey dk[3] = { { 'x', TW_INK }, { 'w', 0x6A4428 }, { 'b', 0x3A2414 } };
+      scSprite(DOOR, 7, cx - 16, top + 4, 4, dk, 3);
+    } else {  // an arched window: lit in its type's light with its mark, or dark
+      int s = 3, wy = top + (H - 21) / 2;
+      static const char *const WIN[7] = { "..xxxx..", ".xggggx.", "xggggggx", "xggggggx", "xggggggx", "xggggggx", "xxxxxxxx" };
+      if (won) twGlow(cx, wy + 9, 26, TW_COL[n][1], 115);
+      const ScKey wk[2] = { { 'x', TW_INK }, { 'g', won ? scMix(TW_COL[n][1], 0xFFFFFF, .35) : (Rgb)0x2A2236 } };
+      scSprite(WIN, 7, cx - 4 * s, wy, s, wk, 2);
+      const ScKey mk[2] = { { 'x', won ? TW_COL[n][0] : (Rgb)0x4A4058 }, { 'o', won ? TW_COL[n][2] : (Rgb)0x3A3046 } };
+      scSprite(TW_MARK[n], 7, cx - 7, wy + 6, 2, mk, 2);
+    }
+    char lab[6];
+    snprintf(lab, sizeof(lab), "%dF", n);
+    twPlaque(x0 + 6, top + (H - 18) / 2 + 1, lab, won);
+    if (won) {  // its badge, hung beside the window
+      static const char *const BD[9] = { "..xxxxx..", ".xLcccLx.", "xLcccccdx", "xccMMMccx", "xccMMMcdx", ".xcccccx.", "..xcccx..", "...xdx...", "....x...." };
+      const ScKey bk[5] = { { 'x', TW_INK }, { 'L', TW_COL[n][1] }, { 'c', TW_COL[n][0] }, { 'd', TW_COL[n][2] }, { 'M', 0xFFFFFF } };
+      scSprite(BD, 9, x1 - 38, top + (H - 27) / 2 + 1, 3, bk, 5);
+    }
+    if (gate && !won) {  // a gate's balls wait beside it
+      for (int k = 0; k < towerGateUltras(n); k++) twBall(false, x1 + 14 + k * 36, y - 36, 2);
+    }
+    y = top - 4;
+  }
+  // the Legend: a terrace, two pillars, a gold lintel, the Master Ball in its glow (a crown once it's yours)
+  int half = 56, x0 = cx - half, x1 = cx + half, t = y - 40;
+  twGlow(cx, t + 4, 70, 0xD0B0F8, 128);
+  for (int px : { x0 + 8, x1 - 16 }) {
+    for (int cy = t; cy < y; cy += 4) {
+      scCell(px, cy, TW_ST_L);
+      scCell(px + 4, cy, TW_ST_D);
+    }
+    scRect(px - 4, t - 4, px + 11, t - 1, TW_INK);
+    scRect(px - 4, t - 8, px + 11, t - 5, TW_ST_L);
+  }
+  scRect(x0 - 8, t - 12, x1 + 7, t - 9, TW_INK);
+  for (int x = x0 - 8; x < x1 + 8; x += 4) scCell(x, t - 16, scMod(x / 4, 2) ? 0xF0C04A : 0xC08410);
+  twStone(x0, y - 12, x1, y);
+  scRect(cx - 18, y - 24, cx + 17, y - 13, 0x5A3A98);
+  scRect(cx - 18, y - 24, cx + 17, y - 21, 0x9A6AD8);
+  if (best < TOWER_LEGEND) twBall(true, cx - 18, y - 58, 2);
+  else {
+    const ScKey ck[2] = { { 'x', 0xF0C04A }, { 'o', 0xFFF0B0 } };
+    scSprite(TW_MARK[TOWER_LEGEND], 7, cx - 14, y - 52, 4, ck, 2);
+  }
+  setSize(2);  // its name on a purple plaque over the lintel
+  const char *lg = T(S_LEGEND);
+  int w = textW(lg, 2) + 16, lx = cx - w / 2, ly = t - 40;
+  gfx->fillRect(lx - 3, ly - 3, w + 6, 27, sc565(TW_INK));
+  gfx->fillRect(lx, ly, w, 21, sc565(0x5A3A98));
+  gfx->fillRect(lx, ly, w, 3, sc565(0x9A6AD8));
+  gfx->setTextColor(sc565(0xFFE27A));
+  setCur(lx + 8, ly + 5);
+  printT(lg);
+  if (arg >> 8) twDim(arg >> 8);
+}
+
+// a floor's hall (views.py hall()): stone walls, pillars, its banners, torches, flags and a red runner; arg: the
+// floor (9: the Legend's) and (bits 8..) how much to dim it
+static void twPaintHall(int arg) {
+  uint8_t fl = arg & 15;
+  Rgb col = TW_COL[fl][0], lit = TW_COL[fl][1], dk = TW_COL[fl][2];
+  twStone(0, 0, V2_W, 252, true);
+  for (int px : { 64, 402 }) {  // two pillars, lit from the left
+    static const Rgb PC[9] = { TW_INK, TW_ST_L, TW_ST_L, TW_ST, TW_ST, TW_ST, TW_ST_D, TW_ST_D, TW_INK };
+    for (int cy = 20; cy < 252; cy += 4)
+      for (int k = 0; k < 9; k++) scCell(px - 16 + k * 4, cy, PC[k]);
+    scRect(px - 24, 16, px + 23, 27, TW_INK);
+    scRect(px - 20, 16, px + 19, 23, TW_ST_L);
+  }
+  static const char *const TAIL[4] = { "x.....x", "xx...xx", "xxx.xxx", "xxxxxxx" };
+  for (int bx : { 150, 316 }) {  // banners in its colours, its mark on each
+    scRect(bx - 28, 36, bx + 27, 175, TW_INK);
+    scRect(bx - 24, 36, bx + 23, 167, col);
+    scRect(bx - 24, 36, bx - 17, 167, lit);
+    scRect(bx + 16, 36, bx + 23, 167, dk);
+    scRect(bx - 30, 30, bx + 29, 37, 0xC08410);
+    const ScKey tk[1] = { { 'x', col } };
+    scSprite(TAIL, 4, bx - 14, 168, 4, tk, 1);
+    const ScKey mk[2] = { { 'x', 0xFFFFFF }, { 'o', lit } };
+    scSprite(TW_MARK[fl], 7, bx - 14, 84, 4, mk, 2);
+  }
+  static const char *const TORCH[8] = { "..f..", ".fyf.", "fyyyf", ".fyf.", "xxxxx", ".xxx.", "..x..", "..x.." };
+  const ScKey fk[3] = { { 'f', 0xF07030 }, { 'y', 0xFFE27A }, { 'x', TW_INK } };
+  for (int tx : { 233 - 36, 233 + 28 }) {
+    twGlow(tx + 4, 92, 52, 0xFFB050, 115);
+    scSprite(TORCH, 8, tx - 6, 80, 3, fk, 3);
+  }
+  for (int ty = 252; ty < V2_W; ty += 24)  // flagstones in its dark tones
+    for (int tx = 0; tx < V2_W; tx += 24) {
+      Rgb c = scMix(col, 0x2A2236, (tx / 24 + ty / 24) % 2 ? .45 : .62);
+      scRect(tx, ty, tx + 23, ty + 23, c);
+      scRect(tx, ty, tx + 23, ty + 3, scMix(c, 0xFFFFFF, .12));
+    }
+  scRect(0, 248, V2_W - 1, 255, TW_INK);
+  for (int cy = 256; cy < V2_W; cy += 4) {  // a runner toward you
+    float half = 40 + (cy - 256) * .35f;
+    for (int cx = scFl4((int)(233 - half)) * 4; cx < 233 + half; cx += 4) {
+      bool edge = cx < 233 - half + 8 || cx > 233 + half - 8;
+      scCell(cx, cy, edge ? 0xC08410 : scMod(cy / 4, 2) ? 0xA83A3A : 0x983232);
+    }
+  }
+  if (arg >> 8) twDim(arg >> 8);
+}
+
+// the Legend's terrace at night (views.py legend_scene()): two great pillars, a gold lintel, the Master Ball glowing
+static void twPaintLegend(int arg) {
+  const Rgb SKY[3] = { 0x141432, 0x22224A, 0x3A2A68 };
+  const int16_t SE[4] = { 0, 120, 230, 300 };
+  scBands(SKY, SE, 3, 0, V2_W);
+  for (int k = 0; k < 60; k++) scCell((k * 151 + 29) % V2_W / 4 * 4, (k * 83 + 7) % 260 / 4 * 4, k % 3 ? 0xFFF3DC : 0xB8C0F0);
+  twGlow(233, 150, 120, 0xD0B0F8, 140);
+  static const Rgb PC[9] = { TW_INK, TW_ST_L, TW_ST_L, TW_ST, TW_ST, TW_ST, TW_ST_D, TW_ST_D, TW_INK };
+  for (int px : { 96, 346 })
+    for (int cy = 64; cy < 300; cy += 4)
+      for (int k = 0; k < 9; k++) scCell(px - 16 + k * 4, cy, PC[k]);
+  scRect(60, 52, 405, 67, TW_INK);
+  scRect(64, 52, 401, 63, TW_ST_L);
+  for (int x = 64; x < 402; x += 4) scCell(x, 48, scMod(x / 4, 2) ? 0xF0C04A : 0xC08410);
+  scRect(0, 296, V2_W - 1, 303, TW_INK);
+  for (int ty = 304; ty < V2_W; ty += 24)
+    for (int tx = 0; tx < V2_W; tx += 24) {
+      Rgb c = (tx / 24 + ty / 24) % 2 ? 0x3A2A68 : 0x2E2258;
+      scRect(tx, ty, tx + 23, ty + 23, c);
+      scRect(tx, ty, tx + 23, ty + 3, scMix(c, 0xFFFFFF, .1));
+    }
+  scRect(205, 166, 260, 181, 0x5A3A98);
+  scRect(205, 166, 260, 169, 0x9A6AD8);
+  twBall(true, 215, 128, 2);
+  if (arg >> 8) twDim(arg >> 8);
+}
+
+// a stone dais under a Pokemon (dais2())
+static void twDais(int cx, int y, int w, Rgb col) {
+  scOval(scE(cx - w / 2, y + 6, cx + w / 2, y + 30), TW_INK);
+  scOval(scE(cx - w / 2 + 4, y, cx + w / 2 - 4, y + 22), scMix(col, 0x5A5068, .5), scMix(col, 0xFFFFFF, .3), scMix(col, TW_INK, .5));
+}
+// a small rounded chip with white text (chip())
+static void twChip(const char *s, int cx, int y, uint16_t col = V2_RIM) {
+  setSize(2);
+  int w = textW(s, 2) + 16;
+  gfx->fillRoundRect(cx - w / 2 - 3, y - 3, w + 6, 26, 8, sc565(TW_INK));
+  gfx->fillRoundRect(cx - w / 2, y, w, 20, 6, col);
+  gfx->setTextColor(UI_WHITE);
+  setCur(cx - textW(s, 2) / 2, y + 3);
+  printT(s);
+}
+// a floor's title for its board: "4F GRASS", or the Legend's
+static void twFloorTitle(uint8_t step, char *b, int n) {
+  if (step > TOWER_FLOORS) snprintf(b, n, "%s %d/2", T(S_LEGEND), step - TOWER_FLOORS);
+  else snprintf(b, n, "%dF %s", step, TYPE_NAME[TOWER_TYPE[step]]);
+}
+
+// ===================================================================== the views
+#define TW_DIM(a) ((a) << 8)
+
+static void twBackTower(int dim) { v2Cached(0x3E000000 + (pet.towerBest | TW_DIM(dim)), twPaintTowerScene, pet.towerBest | TW_DIM(dim)); }
+static void twBackHall(uint8_t fl, int dim) { v2Cached(0x3E100000 + (fl | TW_DIM(dim)), twPaintHall, fl | TW_DIM(dim)); }
+static void twBackLegend(int dim) { v2Cached(0x3E200000 + TW_DIM(dim), twPaintLegend, TW_DIM(dim)); }
+
+static void twSignFloor(uint8_t step) {
+  char b[32];
+  twFloorTitle(step, b, sizeof(b));
+  uint8_t fl = towerFloorOf(step);
+  v2SignIn(b, 30, sc565(TW_COL[fl][2]), sc565(TW_COL[fl][0]));
+}
+
+// 02: the tower, CLIMB! at its foot
+static void twViewTower() {
+  twBackTower(0);
+  v2LabelButton(150, 358, 316, 388, T(S_CLIMB), C565(0x58, 0xb8, 0x68));
+  v2CloseX();
+}
+// 03: the first visit's card
+static void twViewHow() {
+  twBackTower(115);
+  char b[32];
+  v2SignIn(v2Caps(T(S_TOWER_TITLE), b, sizeof(b)), 60, C565(0x5a, 0x3a, 0x98), C565(0x8a, 0x6a, 0xd0));
+  v2Panel(80, 100, 386, 338, 10);
+  gfx->setTextColor(UI_INK);
+  v2Wrapped(T(S_TWR_HOW), 122, 280, 22, 6);
+  v2LabelButton(130, 270, 336, 308, T(S_LETS_CLIMB), C565(0x58, 0xb8, 0x68));
+  v2CloseX();
+}
+// 04: not enough energy
+static void twViewTired() {
+  twBackTower(128);
+  v2Panel(92, 132, 374, 318, 10);
+  drawPmdAct(pmd.has(PMD_SLEEP) ? PMD_SLEEP : PMD_IDLE, CX, 214, millis(), true, false, 3);
+  gfx->setTextColor(UI_INK);
+  v2Wrapped(T(S_TWR_TIRED), 226, 250, 20, 2);
+  gfx->fillRoundRect(132, 276, 202, 16, 5, V2_RIM);
+  gfx->fillRect(135, 279, (int)(196L * pet.energy / 100), 10, C565(0xf0, 0xc0, 0x4a));
+  gfx->fillRect(135 + 196 * TOWER_ENERGY_MIN / 100, 277, 2, 14, UI_WHITE);  // where a climb can start
+  v2CloseX();
+}
+// 05: pick 2 friends (3 x 3 on a page)
+#define TW_PICK_X 136
+#define TW_PICK_Y 112
+#define TW_PICK_DX 97
+#define TW_PICK_DY 88
+static int twPickPages() { int n = twFormCount(); return n ? (n + 8) / 9 : 1; }
+static void twViewPick() {
+  twBackHall(TOWER_LEGEND, 115);
+  char b[32];
+  v2SignIn(v2Caps(T(S_PICK_FRIENDS), b, sizeof(b)), 30, C565(0x5a, 0x3a, 0x98), C565(0x8a, 0x6a, 0xd0));
+  gfx->fillRoundRect(86 - 3, 70 - 3, 295 + 6, 271 + 6, 12, V2_RIM);
+  gfx->fillRoundRect(86, 70, 295, 271, 10, sc565(0xF4F6FA));
+  for (int i = 0; i < 9; i++) {
+    bool sh;
+    int16_t d = twFormAt(twPickPage * 9 + i, sh);
+    if (!d) break;
+    int cx = TW_PICK_X + (i % 3) * TW_PICK_DX, cy = TW_PICK_Y + (i / 3) * TW_PICK_DY;
+    bool picked = twPicked(d, sh), ok = twAllowed(d, sh), mine = d == pet.speciesId && sh == pet.shiny;
+    gfx->fillRoundRect(cx - 42, cy - 38, 85, 77, 8, picked ? sc565(0xD4F0D0) : sc565(0xDDE4EE));
+    if (picked) for (int k = 0; k < 4; k++) gfx->drawRoundRect(cx - 42 + k, cy - 38 + k, 85 - 2 * k, 77 - 2 * k, 8, sc565(0x3F9A4C));
+    twThumb(thumbs.getForm(d, sh), cx, cy + 30, 2, ok ? SC_NONE : (Rgb)0xAAB0BC);
+    if (sh) drawShinyMark(cx - 40, cy - 40, 80);
+    if (picked) {
+      int k = twPickDex[0] == d && twPickShiny[0] == sh ? 1 : 2;
+      gfx->fillCircle(cx + 31, cy - 25, 10, sc565(0x3F9A4C));
+      snprintf(b, sizeof(b), "%d", k);
+      gfx->setTextColor(UI_WHITE);
+      setCur(cx + 26, cy - 31);
+      printT(b);
+    } else if (mine) {
+      twChip("YOU", cx, cy + 14);
+    } else if (!ok) {
+      snprintf(b, sizeof(b), "Lv%d", btlMinLevel(d));
+      twChip(b, cx, cy + 14);
+    }
+  }
+  drawPageArrows(twPickPage, twPickPages(), V2_PAGE_ARROW_Y);
+  v2LabelButton(160, 352, 306, 384, T(S_GO), twPickN == 2 || twPickN == twFormCount() ? C565(0x58, 0xb8, 0x68) : C565(0x8e, 0x8c, 0x96));
+  v2CloseX();
+}
+// 06: who goes first (and after a faint, who's next)
+static void twViewLead() {
+  uint8_t fl = towerFloorOf(twStep);
+  twBackHall(fl, 77);
+  scScreen();
+  twSignFloor(twStep);
+  twDais(233, 150, 120, TW_COL[fl][0]);
+  twThumb(thumbs.getForm(twFoeDex, false), 233, 164, 3);
+  char b[32];
+  snprintf(b, sizeof(b), "Lv %d", towerLevel(twStep, twLevel()));
+  twChip(b, 233, 176);
+  gfx->setTextColor(UI_WHITE);
+  setSize(2);
+  setCur(centerX(T(S_WHO_FIRST), 2), 210);
+  printT(T(S_WHO_FIRST));
+  int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
+  for (int i = 0; i < n; i++) {
+    TwMember &m = twTeam[i];
+    int cx0 = x0 + i * (w + gap), cx1 = cx0 + w, y0 = 234;
+    bool out = !m.f.hp;
+    int8_t hint = towerHint(DEX_TBL[m.dex].type, DEX_TBL[twFoeDex].type);
+    gfx->fillRoundRect(cx0 - 3, y0 - 3, w + 6, 138 + 6, 12, hint > 0 && !out ? sc565(0x3F9A4C) : V2_RIM);
+    gfx->fillRoundRect(cx0, y0, w, 138, 10, out ? sc565(0xE4E4EA) : UI_WHITE);
+    twThumb(thumbs.getForm(m.dex, m.shiny), (cx0 + cx1) / 2, y0 + 76, 2, out ? (Rgb)0x9A9AA8 : SC_NONE);
+    const char *nm = dexName(m.dex);
+    char nb[16];
+    snprintf(nb, sizeof(nb), "%.9s", nm);
+    gfx->setTextColor(out ? V2_INK_MUTED : UI_INK);
+    setCur((cx0 + cx1) / 2 - textW(nb, 2) / 2, y0 + 82);
+    printT(nb);
+    gfx->fillRoundRect(cx0 + 10, y0 + 101, w - 20, 10, 4, sc565(0xD8D2BD));
+    if (!out) {
+      int pct = m.f.hp * 100 / m.f.maxHp;
+      gfx->fillRect(cx0 + 12, y0 + 103, (w - 24) * pct / 100, 6, pct >= 50 ? UI_BAR_OK : pct >= 25 ? C565(0xf0, 0xc0, 0x4a) : UI_BAR_BAD);
+    }
+    const char *h = out ? T(S_FAINTED) : hint > 0 ? T(S_STRONG) : hint < 0 ? T(S_WEAK) : "";
+    uint16_t hc = out ? V2_INK_MUTED : hint > 0 ? sc565(0x3F9A4C) : sc565(0xC84040);
+    int tw2 = textW(h, 2) + (hint && !out ? 16 : 0), tx = (cx0 + cx1) / 2 - tw2 / 2;
+    if (hint && !out) {
+      for (int r = 0; r < 3; r++) {  // a little triangle: up for Strong, down for Weak
+        int half = hint > 0 ? r : 2 - r;
+        gfx->fillRect(tx + 4 - half * 2, y0 + 118 + r * 2, 2 + half * 4, 2, hc);
+      }
+      tx += 16;
+    }
+    gfx->setTextColor(hc);
+    setCur(tx, y0 + 116);
+    printT(h);
+  }
+  v2CloseX();
+}
+static int twLeadAt(int16_t x, int16_t y) {
+  int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
+  if (y < 230 || y > 376) return -1;
+  for (int i = 0; i < n; i++)
+    if (x >= x0 + i * (w + gap) - 4 && x <= x0 + i * (w + gap) + w + 4) return i;
+  return -1;
+}
+// 08 / 09: a floor won: its badge (or a gate's), then on
+static void twViewWon() {
+  uint8_t fl = twStep;
+  twBackHall(fl, 140);
+  scScreen();
+  twShield(CX, 92, 12, fl, true);
+  char b[40];
+  bool gate = (twGot & 1) && towerIsGate(fl);
+  if (gate) snprintf(b, sizeof(b), T(S_GATE_FMT), fl == 4 ? 1 : 2);
+  else snprintf(b, sizeof(b), T(S_BADGE_FMT), TYPE_NAME[TOWER_TYPE[fl]]);
+  if (gate) v2SignIn(b, 30, C565(0x8a, 0x6a, 0x10), C565(0xf0, 0xc0, 0x4a));
+  else v2SignIn(b, 30, sc565(TW_COL[fl][2]), sc565(TW_COL[fl][0]));
+  v2Panel(96, 284, 370, 380, 10);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  if (gate) snprintf(b, sizeof(b), T(S_BADGE_FMT), TYPE_NAME[TOWER_TYPE[fl]]);
+  else snprintf(b, sizeof(b), T(S_FLOOR_WON_FMT), fl);
+  setCur(centerX(b, 2), 296);
+  printT(b);
+  uint8_t ultras = twGot >> 4;
+  if (ultras) {
+    snprintf(b, sizeof(b), T(S_ULTRA_GOT_FMT), ultras);
+    int tw2 = textW(b, 2) + 44, tx = CX - tw2 / 2;
+    twBall(false, tx, 316, 2);
+    gfx->setTextColor(C565(0xb8, 0x8a, 0x10));
+    setCur(tx + 44, 326);
+    printT(b);
+  }
+  if (fl < TOWER_FLOORS) snprintf(b, sizeof(b), T(S_NEXT_FMT), fl + 1, TYPE_NAME[TOWER_TYPE[fl + 1]]);
+  else snprintf(b, sizeof(b), "%s!", T(S_LEGEND));
+  gfx->setTextColor(C565(0x3c, 0x8a, 0x4c));
+  setCur(centerX(b, 2), ultras ? 356 : 334);
+  printT(b);
+  v2CloseX();
+}
+// 10: the climb's over: who and where, its training against yours, one tip
+static void twViewOver() {
+  uint8_t fl = towerFloorOf(twBeatStep);
+  twBackHall(fl, 158);
+  scScreen();
+  v2SignIn(T(S_CLIMB_OVER), 30, C565(0x6a, 0x30, 0x30), C565(0xc8, 0x40, 0x40));
+  twDais(233, 130, 110, TW_COL[fl][0]);
+  twThumb(thumbs.getForm(twBeatBy, false), 233, 144, 3);
+  char b[48];
+  if (twBeatStep > TOWER_FLOORS) snprintf(b, sizeof(b), "%s - %s", dexName(twBeatBy), T(S_LEGEND));
+  else snprintf(b, sizeof(b), T(S_BEAT_YOU_FMT), dexName(twBeatBy), twBeatStep);
+  twChip(b, 233, 156);
+  v2Panel(70, 196, 396, 376, 10);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(T(S_TRAINING), 2), 208);
+  printT(T(S_TRAINING));
+  uint8_t theirs = TOWER_TRAIN[fl], yours = towerTrainAvg(pet.trAtk, pet.trDef, pet.trSpe);
+  const char *lab[2] = { dexName(twBeatBy), T(S_YOURS) };
+  uint8_t val[2] = { theirs, yours };
+  for (int k = 0; k < 2; k++) {
+    int yy = 234 + k * 28;
+    char nb[12];
+    snprintf(nb, sizeof(nb), "%.7s", lab[k]);
+    gfx->setTextColor(UI_INK);
+    setCur(88, yy);
+    printT(nb);
+    gfx->fillRoundRect(180, yy + 2, 192, 12, 4, sc565(0xD8D2BD));
+    gfx->fillRoundRect(180, yy + 2, 192 * val[k] / 100 + 4, 12, 4, k ? UI_BAR_OK : sc565(TW_COL[fl][0]));
+  }
+  gfx->setTextColor(V2_INK_MUTED);
+  v2Wrapped(T(S_TWR_TIP), 296, 280, 20, 3);
+  v2CloseX();
+}
+// 11: the Legend: its first guardian, and a shadow
+static void twViewLegend() {
+  twBackLegend(0);
+  scScreen();
+  char b[32];
+  v2SignIn(T(S_LEGEND), 16, C565(0x5a, 0x3a, 0x98), C565(0x8a, 0x6a, 0xd0));
+  twDais(140, 262, 130, 0x9A6AD8);
+  twDais(326, 262, 130, 0x9A6AD8);
+  twThumb(thumbs.getForm(twFoeDex, false), 140, 276, 3);
+  twThumb(thumbs.getForm(DEX_MEWTWO, false), 326, 276, 3, 0x0E0A24);
+  snprintf(b, sizeof(b), "Lv %d", towerLevel(TOWER_LEGEND, twLevel()));
+  twChip(b, 140, 282);
+  twChip("???", 326, 282);
+  v2Panel(96, 316, 370, 344, 8);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(centerX(T(S_BEAT_BOTH), 2), 322);
+  printT(T(S_BEAT_BOTH));
+  v2LabelButton(160, 356, 306, 386, T(S_FIGHT), C565(0x9a, 0x6a, 0xd8));
+  v2CloseX();
+}
+// 12: Tower Master: the Hall of Fame photo
+static void twViewMaster() {
+  twBackLegend(64);
+  scScreen();
+  v2SignIn(T(S_TOWER_MASTER), 16, C565(0x8a, 0x6a, 0x10), C565(0xf0, 0xc0, 0x4a));
+  scRect(80, 196, 385, 325, TW_INK);
+  scRect(84, 200, 381, 321, 0xC08410);
+  scRect(92, 208, 373, 313, 0xFFF0B0);
+  scRect(96, 212, 369, 277, 0x7CC4EA);
+  scRect(96, 278, 369, 309, 0x79BD4F);
+  for (int i = 0; i < 3; i++)
+    if (pet.hofDex[i]) twThumb(thumbs.getForm(pet.hofDex[i], pet.hofShiny >> i & 1), 140 + i * 92, 300, 2);
+  v2Panel(104, 334, 362, 384, 8);
+  twBall(true, 112, 340, 2);
+  char b[32];
+  gfx->setTextColor(C565(0x78, 0x48, 0xb8));
+  setSize(2);
+  setCur(160, 342);
+  printT((twGot & 2) ? T(S_MASTER_PLUS) : "+1 Ultra Ball");
+  snprintf(b, sizeof(b), "Lv %u", pet.hofLevel);
+  gfx->setTextColor(V2_INK_MUTED);
+  setCur(160, 362);
+  printT(b);
+  v2CloseX();
+}
+
+void towerRender() {
+  if (twView != TW_LEAD && twView != TW_PICK && twView != TW_WON && twView != TW_LEGEND) {}
+  switch (twView) {
+    case TW_TOWER: twViewTower(); break;
+    case TW_HOW: twViewHow(); break;
+    case TW_TIRED: twViewTired(); break;
+    case TW_PICK: twViewPick(); break;
+    case TW_LEAD: twViewLead(); break;
+    case TW_WON: twViewWon(); break;
+    case TW_OVER: twViewOver(); break;
+    case TW_LEGEND: twViewLegend(); break;
+    case TW_MASTER: twViewMaster(); break;
+  }
+}
+
+static void twNextAfterWin() {
+  if (twStep >= TOWER_FLOORS) {  // 8F done: the Legend
+    twStep = TOWER_LEGEND;
+    twRollFoe();
+    twView = TW_LEGEND;
+    return;
+  }
+  twStep++;
+  twRollFoe();
+  twView = TW_LEAD;
+}
+
+// testing (TOWERSTEP): a climb under way jumps to step n (9: the Legend's intro)
+void towerJump(uint8_t step) {
+  if (!twTeamN || step < 1 || step > TOWER_STEPS) return;
+  twStep = step;
+  twRollFoe();
+  twView = step == TOWER_LEGEND ? TW_LEGEND : TW_LEAD;
+}
+
+// the X, or a swipe down: back a step
+void towerBack() {
+  sfxPlay(SFX_TAP);
+  switch (twView) {
+    case TW_TOWER: zoneScreen = ZS_PICK; v2IslePage = 1; break;  // back to the islet on Travel
+    case TW_LEAD: case TW_WON: case TW_LEGEND:  // leaving mid-climb ends it (no loss)
+      twBeatBy = twFoeDex, twBeatStep = twStep, twRan = true;
+      twEndClimb();
+      twView = TW_OVER;
+      break;
+    default: twView = TW_TOWER; twEndClimb(); break;
+  }
+}
+
+void towerTap(int16_t x, int16_t y) {
+  if (closeHit(x, y)) { towerBack(); return; }
+  switch (twView) {
+    case TW_TOWER:
+      if (y >= 352 && y <= 394 && x >= 144 && x <= 322) twClimbTapped();
+      break;
+    case TW_HOW:
+      if (y >= 264 && y <= 314 && x >= 124 && x <= 342) {
+        pet.towerHowSeen = true;
+        pet.towerSave();
+        twClimbTapped();
+      }
+      break;
+    case TW_TIRED: sfxPlay(SFX_TAP); twView = TW_TOWER; break;
+    case TW_PICK: {
+      if (int d = pageArrowAt(x, y, twPickPage, twPickPages(), V2_PAGE_ARROW_Y)) {
+        sfxPlay(SFX_TAP);
+        twPickPage += d;
+        return;
+      }
+      if (y >= 346 && y <= 392 && x >= 154 && x <= 312) {
+        if (twPickN == 2 || twPickN == twFormCount()) twStartClimb();
+        else sfxPlay(SFX_DENY);
+        return;
+      }
+      int col = (x - (TW_PICK_X - 46)) / TW_PICK_DX, row = (y - (TW_PICK_Y - 42)) / TW_PICK_DY;
+      if (x < TW_PICK_X - 46 || y < TW_PICK_Y - 42 || col > 2 || row > 2) return;
+      bool sh;
+      int16_t d = twFormAt(twPickPage * 9 + row * 3 + col, sh);
+      if (!d) return;
+      if (twPicked(d, sh)) {  // a second tap takes it out
+        int k = twPickDex[0] == d && twPickShiny[0] == sh ? 0 : 1;
+        if (k == 0 && twPickN == 2) twPickDex[0] = twPickDex[1], twPickShiny[0] = twPickShiny[1];
+        twPickN--;
+        sfxPlay(SFX_TAP);
+      } else if (twAllowed(d, sh) && twPickN < 2) {
+        twPickDex[twPickN] = d;
+        twPickShiny[twPickN++] = sh;
+        sfxPlay(SFX_TAP);
+      } else {
+        sfxPlay(SFX_DENY);
+      }
+      break;
+    }
+    case TW_LEAD: {
+      int i = twLeadAt(x, y);
+      if (i >= 0 && twTeam[i].f.hp) { sfxPlay(SFX_TAP); twFight(i); }
+      else if (i >= 0) sfxPlay(SFX_DENY);
+      break;
+    }
+    case TW_WON: sfxPlay(SFX_TAP); twNextAfterWin(); break;
+    case TW_LEGEND:
+      if (y >= 350 && y <= 392 && x >= 154 && x <= 312) { sfxPlay(SFX_TAP); twView = TW_LEAD; }
+      break;
+    case TW_OVER: case TW_MASTER: sfxPlay(SFX_TAP); twView = TW_TOWER; break;
+  }
+}
+
+// Travel: its page arrows, and the tower on page 2. True if it took the tap
+bool v2TravelTap(int16_t x, int16_t y) {
+  int dx = x - (v2IslePage ? 36 : 430), dy = y - V2_PAGE_ARROW_Y;
+  if (dx * dx + dy * dy < 32 * 32) {
+    sfxPlay(SFX_TAP);
+    v2IslePage = !v2IslePage;
+    return true;
+  }
+  if (!v2IslePage) return false;
+  bool tower = twOnIslet(x, y) || (abs(x - TW_IX) < 70 && y > 40 && y < TW_IY + 110);
+  if (tower) towerOpen();
+  return true;  // page 2: nothing else to tap but the X
+}

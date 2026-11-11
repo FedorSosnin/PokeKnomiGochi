@@ -1571,9 +1571,23 @@ static void scBase(int8_t zone, uint8_t tod, int x, int y, int hw, int up, int d
   }
   scGradeTod = 0;
 }
+static void twPaintHall(int arg);  // Knomi Tower's halls (tower_v2.h)
+#define V2_ZONE_TOWER 16           // a battle's zone from here up: Knomi Tower's hall of that floor
 static void scBattle(int key) {  // key: (zone + 1) * 8 + tod * 2 + bases
   int8_t zone = key / 8 - 1;
   uint8_t tod = key / 2 % 4;
+  if (zone >= V2_ZONE_TOWER) {  // Knomi Tower: the floor's hall, two stone daises
+    twPaintHall(zone - V2_ZONE_TOWER);
+    if (!(key & 1)) return;
+    for (int k = 0; k < 2; k++) {
+      int x = k ? v2BtlMe[0] : v2BtlFoe[0], y = k ? v2BtlMe[1] : v2BtlFoe[1], hw = k ? 100 : 80, up = k ? 28 : 24, down = k ? 22 : 16;
+      ScEll e = scE(x - hw, y - up, x + hw, y + down);
+      scOval(scE(e.x0, e.y0 + 8, e.x1, e.y1 + 8), 0x3A3046);
+      scOval(e, 0x8A8098, 0xC8C0D4);
+      scOval(scE(e.x0 + 18, e.y0 + 8, e.x1 - 18, e.y1 - 6), 0xA49AB4);
+    }
+    return;
+  }
   scBattleSky = true;  // the sun or the moon up out of the wild Pokemon's way
   if (zone < 0) scMeadowBattle(tod);
   else scPaint(zone, zone == Z_CAVE || zone == Z_MANSION ? 0 : tod);
@@ -1870,3 +1884,4 @@ static void v2DrawPoops(int n, bool party) {
 #include "repel_v2.h"    // the Repel
 #include "radial_v2.h"   // the radial menu: a hold on the Pokemon
 #include "about_v2.h"    // Settings' first page's rows, and the About page with the coin
+#include "tower_v2.h"    // Knomi Tower: Travel's second page and the climb

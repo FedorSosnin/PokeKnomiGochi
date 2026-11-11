@@ -306,6 +306,7 @@ public:
   // bit 0 a new badge, 1 a Master Ball, then the Ultra Balls in bits 4..7
   uint8_t towerFloorWon(uint8_t floor);
   void towerLost();  // all three fainted: a loss, as a battle's
+  void towerSave() { save(); }  // a pick, the Hall of Fame: kept at once
 #endif
   // first game: the player picks a starter (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }
