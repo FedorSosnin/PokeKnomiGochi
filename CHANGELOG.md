@@ -6,7 +6,7 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [Unreleased]
+## [2.0.5] - 2026-11-10
 
 - **The backpack is in the middle:** the icons along the bottom are now the Game Boy, the map, the **backpack** (in the middle, where your thumb is), the moon and the bath. The backpack is the one you tap most, so it's no longer out at the edge.
 
