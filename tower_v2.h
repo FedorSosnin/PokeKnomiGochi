@@ -109,7 +109,7 @@ static void twPlaque(int x, int y, const char *s, bool won) {
 }
 
 // a plank walk: dark rails, planks across, posts down into the water (planks())
-#define TW_PIER_Y 268
+#define TW_PIER_Y 288
 static void twPlanks(int x0, int x1, int y) {
   for (int cx = scFl4(x0) * 4; cx < x1; cx += 4) {
     for (int cy = y; cy < y + 20; cy += 4) {
@@ -145,7 +145,7 @@ static void twPierPaint() { twPlanks(twPierX0(), V2_W, TW_PIER_Y); }
 // ===================================================================== Travel, page 2: the tower's islet
 #define TW_SHIFT 300                // page 2 is the map panned this far east
 #define TW_IX 300                   // the islet's middle
-#define TW_IY 236
+#define TW_IY 256                   // (low enough that Mewtwo's shadow clears the title plate)
 #define TW_IR 112
 static bool twOnIslet(int x, int y) {
   float a = atan2f(y - TW_IY, x - TW_IX);
