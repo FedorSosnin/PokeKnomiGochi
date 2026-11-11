@@ -10791,7 +10791,7 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return pressSet(t, GAME_XY[g][0] - GAME_ICON_R, GAME_XY[g][1] - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, gameLabel(g));
   }
 #if UI_V2
-  if (zoneScreen == ZS_TOWER) return v2PressNav(x, y, t, 0, 0, 0, true);  // V2: Knomi Tower's X (its taps go to towerTap)
+  if (zoneScreen == ZS_TOWER) return towerPressAt(x, y, t);  // V2: Knomi Tower: its buttons, the Pokemon to pick, the X (tower_v2.h)
 #endif
   if (zoneScreen == ZS_PICK) {
     int z = zonePickAt(x, y);

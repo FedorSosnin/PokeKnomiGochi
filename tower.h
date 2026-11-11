@@ -21,7 +21,7 @@
 #define TOWER_DRAIN_PCT 30  // a guardian keeps its HP from one of yours to the next, and drains the one it beats
 #define DEX_MEWTWO 150
 #define TOWER_CHEER_MAX 3   // friends cheer after a lost climb: up to this many in a row...
-#define TOWER_CHEER_PCT 10  // ...each this much more HP for the whole team, until a new best floor
+#define TOWER_CHEER_PCT 5   // ...each this much more HP for the whole team, until a new best floor (Fedor: 10 made a 4th try too easy)
 
 // by step: floor n (1..8) at [n]; [9] the Legend's first fight, [10] Mewtwo (its own numbers: its base stats are the
 // game's biggest, so the same training as the rest made it all but unbeatable)

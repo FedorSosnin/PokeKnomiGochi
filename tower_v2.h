@@ -858,6 +858,7 @@ static void twViewPick() {
     int16_t d = twPickList(twPickPage * DEXG_PAGE + i, sh);
     if (!d) break;
     int x = DEXG_X + (i % DEXG_COLS) * DEXG_CELL, y = DEXG_Y + (i / DEXG_COLS) * DEXG_CELL, cx = x + DEXG_CELL / 2, cy = y + DEXG_CELL / 2;
+    V2_HOVER(x, y, DEXG_CELL, DEXG_CELL);  // under the mouse: it lifts (hover_v2.h)
     bool ok = twAllowed(d, sh);
     if (const uint8_t *t = thumbs.getForm(d, sh)) {
       int box[4];
@@ -898,6 +899,7 @@ static void twViewTeam() {
     int16_t d = i ? twPickDex[i - 1] : pet.speciesId;
     bool sh = i ? twPickShiny[i - 1] : pet.shiny;
     int cx = twTeamSlotX(i, n);
+    V2_HOVER(cx - 60, 100, i ? 120 : 0, 168);  // a friend under the mouse lifts (a tap changes it); your own stays
     twDais(cx, 180, 112, i ? (Rgb)0x9A6AD8 : (Rgb)0x58B868);
     twThumb(thumbs.getForm(d, sh), cx, 194, 3);
     char nb[16];
@@ -930,6 +932,9 @@ static void twFoeStand(uint8_t fl, uint16_t hp) {
   gfx->fillRoundRect(175, 203, 116, 6, 3, sc565(0xD8D2BD));
   gfx->fillRect(175, 203, 116 * pct / 100, 6, pct >= 50 ? UI_BAR_OK : pct >= 25 ? C565(0xf0, 0xc0, 0x4a) : UI_BAR_BAD);
 }
+void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS);
+#define TW_LEAD_Y0 236  // the lead screen's team: where each one can be picked
+#define TW_LEAD_Y1 372
 // text with a dark rim, straight on the hall (no box behind it)
 static void twRimText(const char *t, int cx, int y, uint16_t col) {
   setSize(2);
@@ -945,20 +950,32 @@ static void twRimText(const char *t, int cx, int y, uint16_t col) {
   printT(t);
 }
 // your team, each on a dais in the hall (Fedor: "a version of this screen without white boxes"): its name, HP and
-// the hint, Strong on a green dais with a glow; crossed: the one just drained, a red X over it
+// the hint, Strong on a green dais with a glow; a fainted one asleep there, "Fainted" under it
 static void twCards(int crossed) {
   int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
   for (int i = 0; i < n; i++) {
     TwMember &m = twTeam[i];
     int cx0 = x0 + i * (w + gap), cx1 = cx0 + w, mx = (cx0 + cx1) / 2;
+    (void)cx1;
+    V2_HOVER(cx0, TW_LEAD_Y0, w, TW_LEAD_Y1 - TW_LEAD_Y0);  // under the mouse: it lifts, like a button (hover_v2.h)
     bool out = !m.f.hp;
     int8_t hint = towerHint(DEX_TBL[m.dex].type, DEX_TBL[twFoeDex].type);
     if (hint > 0 && !out) twGlow(mx, 292, 54, 0x8AD06A, 150);
-    twDais(mx, 290, 104, out ? (Rgb)0x6A6478 : hint > 0 ? (Rgb)0x4FA04F : hint < 0 ? (Rgb)0xA84848 : (Rgb)0x9A6AD8);
-    twThumb(thumbs.getForm(m.dex, m.shiny), mx, 302, 2, out ? (Rgb)0x6A6478 : SC_NONE);
+    twDais(mx, 290, 104, out ? (Rgb)0x9A6AD8 : hint > 0 ? (Rgb)0x4FA04F : hint < 0 ? (Rgb)0xA84848 : (Rgb)0x9A6AD8);
+    PmdMon &pm = m.isPet ? pmd : twPmd[i > 0 ? i - 1 : 0];
+    if (out && pm.has(PMD_SLEEP)) {  // fainted: asleep on its dais (Fedor: "instead of the x and gray"), a Zz over it
+      uint32_t now = millis();
+      drawPmdActM(pm, PMD_SLEEP, mx, 304, now, true, false, 2);
+      for (int z = 0; z < 2; z++) {
+        int ph = (int)((now / 40 + z * 25) % 50);
+        twRimText(z ? "z" : "Z", mx + 30 + z * 10 + ph / 10, 270 - z * 10 - ph / 5, sc565(0xD8D0F8));
+      }
+    } else {
+      twThumb(thumbs.getForm(m.dex, m.shiny), mx, 302, 2);
+    }
     char nb[16];
     snprintf(nb, sizeof(nb), "%.9s", dexName(m.dex));
-    twRimText(nb, mx, 318, out ? sc565(0x9A96A8) : UI_WHITE);
+    twRimText(nb, mx, 318, UI_WHITE);
     gfx->fillRoundRect(cx0 + 10, 339, w - 20, 10, 4, sc565(TW_INK));
     gfx->fillRoundRect(cx0 + 12, 341, w - 24, 6, 3, sc565(0x4A4458));
     if (!out) {
@@ -981,12 +998,7 @@ static void twCards(int crossed) {
       }
       twRimText(h, mx + (hint && !out ? 8 : 0), 355, hc);
     }
-    if (i == crossed) {  // crossed out: a thick red X over it
-      for (int t = -3; t <= 3; t++) {
-        gfx->drawLine(cx0 + 10 + t, 236, cx1 - 10 + t, 370, UI_BAR_BAD);
-        gfx->drawLine(cx1 - 10 + t, 236, cx0 + 10 + t, 370, UI_BAR_BAD);
-      }
-    }
+    (void)crossed;  // (the one just drained is asleep like the rest: no X)
   }
 }
 static void twViewLead() {
@@ -1025,7 +1037,7 @@ static void twViewDrain() {
 }
 static int twLeadAt(int16_t x, int16_t y) {
   int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
-  if (y < 230 || y > 376) return -1;
+  if (y < TW_LEAD_Y0 - 6 || y > TW_LEAD_Y1 + 4) return -1;
   for (int i = 0; i < n; i++)
     if (x >= x0 + i * (w + gap) - 4 && x <= x0 + i * (w + gap) + w + 4) return i;
   return -1;
@@ -1329,6 +1341,54 @@ void towerTap(int16_t x, int16_t y) {
     case TW_MASTER: sfxPlay(SFX_TAP); twView = TW_CHAL; break;  // then the challenges (new, or what they are)
     case TW_OVER: case TW_CHAL: sfxPlay(SFX_TAP); twView = TW_TOWER; break;
   }
+}
+
+// what a press (or, with a mouse, the hover) would land on: the screen's button, a Pokemon that can be picked, a
+// challenge medal, the page arrows or the X (pressTargetAt)
+bool towerPressAt(int16_t x, int16_t y, PressTarget &t) {
+  auto inBtn = [&](int x0, int y0, int x1, int y1) { return x >= x0 - 6 && x <= x1 + 6 && y >= y0 - 6 && y <= y1 + 6; };
+  switch (twView) {
+    case TW_TOWER:
+      if (pet.towerBest >= TOWER_LEGEND && x >= twChalX0 - 4 && x <= twChalX0 + 104 && y >= twChalY0 - 8 && y <= twChalY0 + 40)
+        return v2PressSet(t, twChalX0, twChalY0, 96, 32, T(S_CHALLENGES));
+      if (inBtn(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1))
+        return v2PressSet(t, TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1 - TW_CLIMB_X0, TW_CLIMB_Y1 - TW_CLIMB_Y0, T(S_CLIMB));
+      break;
+    case TW_HOW:
+      if (inBtn(116, 262, 350, 314)) return v2PressSet(t, 116, 262, 234, 52, T(S_LETS_CLIMB));
+      break;
+    case TW_LEGEND:
+      if (inBtn(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1))
+        return v2PressSet(t, TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1 - TW_CLIMB_X0, TW_CLIMB_Y1 - TW_CLIMB_Y0, T(S_FIGHT));
+      break;
+    case TW_TEAM: {
+      if (inBtn(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1))
+        return v2PressSet(t, TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1 - TW_CLIMB_X0, TW_CLIMB_Y1 - TW_CLIMB_Y0, T(S_GO));
+      int n = 1 + twPickN;
+      for (int i = 1; i < n; i++)
+        if (abs(x - twTeamSlotX(i, n)) < 60 && y > 100 && y < 268) return v2PressSet(t, twTeamSlotX(i, n) - 60, 100, 120, 168, dexName(twPickDex[i - 1]));
+      break;
+    }
+    case TW_PICK: {
+      if (x >= DEXG_X && y >= DEXG_Y && x < DEXG_X + DEXG_COLS * DEXG_CELL && y < DEXG_Y + 3 * DEXG_CELL) {
+        int c = (x - DEXG_X) / DEXG_CELL, r = (y - DEXG_Y) / DEXG_CELL;
+        bool sh;
+        int16_t d = twPickList(twPickPage * DEXG_PAGE + r * DEXG_COLS + c, sh);
+        if (d && (twAllowed(d, sh) || twPicked(d, sh))) return v2PressSet(t, DEXG_X + c * DEXG_CELL, DEXG_Y + r * DEXG_CELL, DEXG_CELL, DEXG_CELL, dexName(d));
+      }
+      return v2PressNav(x, y, t, twPickPage, twPickPages(), V2_PAGE_ARROW_Y, true);
+    }
+    case TW_LEAD: {
+      int i = twLeadAt(x, y);
+      if (i >= 0 && twTeam[i].f.hp) {
+        int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
+        return v2PressSet(t, x0 + i * (w + gap), TW_LEAD_Y0, w, TW_LEAD_Y1 - TW_LEAD_Y0, dexName(twTeam[i].dex));
+      }
+      break;
+    }
+    default: break;
+  }
+  return v2PressNav(x, y, t, 0, 0, 0, true);
 }
 
 // Travel: its page arrows, and the tower on page 2. True if it took the tap

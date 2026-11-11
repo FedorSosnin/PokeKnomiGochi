@@ -165,7 +165,7 @@ TEST(tower, the_legend_is_hard_even_for_the_best) {
 
 TEST(tower, friends_cheer_adds_hp_up_to_three_times) {
   CHECK_EQ((int)towerCheerHp(100, 0), 100);
-  CHECK_EQ((int)towerCheerHp(100, 2), 120);
+  CHECK_EQ((int)towerCheerHp(100, 2), 100 + 2 * TOWER_CHEER_PCT);
   CHECK_EQ((int)towerCheerHp(100, 9), 100 + TOWER_CHEER_PCT * TOWER_CHEER_MAX);  // never past the most
 }
 
