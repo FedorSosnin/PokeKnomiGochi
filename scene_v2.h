@@ -791,6 +791,16 @@ static void scDisc(int x, int y, int r, Rgb col, int ox, int oy) {
 }
 static const int16_t SC_STARS[10][2] = { {70, 130}, {118, 96}, {160, 158}, {342, 74}, {334, 196},
                                          {404, 120}, {96, 200}, {268, 152}, {392, 176}, {196, 140} };  // clear of the name
+// In a battle the sun and the moon that sit on the right at home, by the name, go up over the wild Pokemon's head
+// and a little left of it: at home's place they were behind it (Fedor: "When battling at the beach at night, the moon
+// is behind the pokemon you are battling. Often making the sprite look like it has an issue. Lets move the moon
+// upward, higher into the sky and slightly left"); the day's sun on the Beach and in the Forest, the Mansion's moon,
+// and a wild battle's sun and moon (scMeadowBattle), too
+#define V2_BTL_SUN_X 300
+#define V2_BTL_SUN_Y 66
+static bool scBattleSky = false;  // painting a battle's backdrop (scBattle)
+static int scSunX(int home) { return scBattleSky ? V2_BTL_SUN_X : home; }
+static int scSunY(int home) { return scBattleSky ? V2_BTL_SUN_Y : home; }
 // the sun in its halo, fading out in a checker; at night a crescent moon and square stars
 static void scSun(const ScPal &p, bool night, int x, int y) {
   Rgb mid = scMix(p.top, p.bot, .5);
@@ -1117,7 +1127,7 @@ static void scGraveyard(int dx, int dy) {
 static void scMansionZone() {
   const ScPal p = scMansionPal();
   scSky(p.top, p.bot);
-  scSun(p, true, 372, 128);
+  scSun(p, true, scSunX(372), scSunY(128));
   scCloud(p, 60, 150, 3);
   scStdHills(p, 1, true);
   scMansionFar(p);
@@ -1147,17 +1157,17 @@ static void scPaint(uint8_t zone, uint8_t tod) {
       scCloud(p, 260, 110, 4);
       scCloud(p, 330, 182, 3);
     } else if (zone == Z_FOREST) {
-      scSun(p, false, 352, 128);
+      scSun(p, false, scSunX(352), scSunY(128));
       scCloud(p, 118, 104, 4);
     } else {
-      scSun(p, false, 352, 128);
+      scSun(p, false, scSunX(352), scSunY(128));
       scCloud(p, 116, 104, 4);
       scCloud(p, 292, 184, 4);
     }
   } else {  // the dusk or night sky, the same over every zone
     const ScPal &s = tod == 2 ? SC_NIGHT : SC_DUSK_SKY;
     scSky(s.top, s.bot);
-    scSun(s, tod == 2, 352, 128);
+    scSun(s, tod == 2, scSunX(352), scSunY(128));
     scCloud(s, 116, 104, 4);
     scCloud(s, 292, 184, 4);
   }
@@ -1498,8 +1508,8 @@ static void scMeadowBattle(uint8_t tod) {
   const ScPal &p = SC_DAY;
   const ScPal &s = tod == 2 ? SC_NIGHT : tod == 1 ? SC_DUSK_SKY : SC_DAY;
   scSky(s.top, s.bot);
-  scSun(s, tod == 2, 110, 120);
-  scCloud(s, 300, 90, 3);
+  scSun(s, tod == 2, V2_BTL_SUN_X, V2_BTL_SUN_Y);  // up where the zones' battles have it (it was under the wild one's
+  scCloud(s, 128, 146, 3);                       // name, at 110, 120; Fedor: "Move the sun up as well"), the cloud left
   scGradeTod = tod;
   static const ScEll nearB[1] = { { -400, 250, 866, 1100 } };  // the near hill comes up higher than at home
   ScLayer L[3] = { { p.far, SC_FAR, 2 }, { p.mid, SC_MID, 2 }, { p.near, nearB, 1 } };
@@ -1508,6 +1518,34 @@ static void scMeadowBattle(uint8_t tod) {
   for (auto &t : trees) scRole(SPR_V2_TREE, 10, t[0], t[1], 3, p, p.mid);
   scHills(L, 3, p.lit, 2);
   scGradeTod = 0;
+}
+// The earth a base stands on (Fedor: "For all the floating pads that the pokemon are on, can we add a chunk of earth
+// under it. Would be nice to add a bit more "weight" to it"): a rocky lump hanging under the pad, from just under its
+// top down to a blunt point depth px lower, on the 4 px grid. Lit from the upper left as the scene is: its left edge
+// light, its right edge and bottom dark, a darker stratum now and then and a few pebbles, in the zone's earth (brown
+// dirt under grass, packed sand on the Beach, rock in the Cave and the Mansion)
+static void scEarthChunk(int8_t zone, int cx, int y0, int hw, int depth) {
+  Rgb mid = 0x8A5A36, lit = 0xA8744A, dark = 0x5E3A24, deep = 0x3F2618, stone = 0xB8A890;  // dirt
+  if (zone == Z_BEACH) mid = 0xC8A46A, lit = 0xDCBC84, dark = 0xA07A48, deep = 0x7A5A34, stone = 0xF2E6C8;
+  else if (zone == Z_CAVE) mid = 0x5A5568, lit = 0x726C82, dark = 0x3E3A4A, deep = 0x2A2734, stone = 0x8C86A0;
+  else if (zone == Z_MANSION) mid = 0x3A3048, lit = 0x4E4262, dark = 0x262034, deep = 0x181424, stone = 0x6A5E80;
+  int top = y0 / 4 * 4, rows = depth / 4;
+  for (int i = 0; i <= rows; i++) {
+    float t = i / (float)rows;
+    int w = (int)(hw * 0.8f * powf(1 - t, 1.15f)) + 6;
+    int jl = ((i * 5 + cx / 4) % 3 - 1) * 4, jr = ((i * 7 + cx / 4) % 3 - 1) * 4;  // a rocky edge, the same each time
+    int x0 = (cx - w + jl) / 4 * 4, x1 = (cx + w + jr) / 4 * 4, y = top + i * 4;
+    bool stratum = i % 4 == 2;
+    for (int x = x0; x <= x1; x += 4) {
+      Rgb c = t > 0.55f ? scMix(mid, dark, (t - 0.55f) * 1.6f) : mid;
+      if (stratum) c = scMix(c, dark, .45);
+      if (x <= x0 + 4) c = lit;                  // the light from the upper left
+      if (x >= x1 - 4) c = dark;                 // its shaded side
+      if (x == x1 || i == rows) c = deep;        // and its outline, right and below
+      else if (x > x0 + 4 && x < x1 - 8 && ((x / 4) * 13 + (y / 4) * 7) % 29 == 0) c = stone;  // a pebble
+      scCell(x, y, c);
+    }
+  }
 }
 // a base under feet at (x, y): hw either side, up above them and down below (as battle_hud has them), in the
 // zone's colours (the Forest's and the meadow's are the mockups'; the others have their ground's colour, lit
@@ -1523,6 +1561,7 @@ static void scBase(int8_t zone, uint8_t tod, int x, int y, int hw, int up, int d
   }
   scGradeTod = zone == Z_CAVE || zone == Z_MANSION ? 0 : tod;
   ScEll e = scE(x - hw, y - up, x + hw, y + down);
+  scEarthChunk(zone, x, y + down - 4, hw, mine ? 48 : 40);  // the earth under it, the pad on top
   scOval(scE(e.x0, e.y0 + 8, e.x1, e.y1 + 8), under);
   scOval(e, fill, lit);
   if (zone < 0) {  // the meadow's: a lighter middle and grass at its foot (where g_battle has them)
@@ -1535,8 +1574,10 @@ static void scBase(int8_t zone, uint8_t tod, int x, int y, int hw, int up, int d
 static void scBattle(int key) {  // key: (zone + 1) * 8 + tod * 2 + bases
   int8_t zone = key / 8 - 1;
   uint8_t tod = key / 2 % 4;
+  scBattleSky = true;  // the sun or the moon up out of the wild Pokemon's way
   if (zone < 0) scMeadowBattle(tod);
   else scPaint(zone, zone == Z_CAVE || zone == Z_MANSION ? 0 : tod);
+  scBattleSky = false;
   if (!(key & 1)) return;
   scBase(zone, tod, v2BtlFoe[0], v2BtlFoe[1], 80, 24, 16, false);
   scBase(zone, tod, v2BtlMe[0], v2BtlMe[1], 100, 28, 22, true);

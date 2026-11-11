@@ -6,6 +6,11 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [Unreleased]
+
+- **The moon and the sun out of the way:** in a battle the moon (and the sun by day) sits higher and a little left, over the wild Pokémon instead of behind it, where it looked like part of the sprite. Wild Encounter's sun, which hid under the wild Pokémon's name, moved up there too.
+- **The battle pads float on earth:** each pad your Pokémon and the wild one stand on now has a chunk of earth under it, a floating island: dirt under the grass, packed sand on the Beach, rock in the Cave and at the Mansion.
+
 ## [2.0.6] - 2026-11-11
 
 - **Your Pokémon faces its foe:** in a battle your Pokémon is seen from behind, facing the wild one up to its right, as in the Game Boy games: standing, attacking and taking a hit. Every Pokémon's sprites now have these back views (a few without them still face you).
