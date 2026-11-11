@@ -4627,10 +4627,10 @@ void renderBattle() {
     // the on-screen HP chases the real one
     bShownMe += (bMe.hp - bShownMe) * 0.28f;
     bShownFoe += (bFoe.hp - bShownFoe) * 0.28f;
-    drawBattleFighter(wildPmd, false, BTL_FOE_X, BTL_FOE_GROUND, 3);
-    drawBattleFighter(pmd, true, BTL_ME_X, BTL_ME_GROUND, 4);
-    drawMoveFx(BTL_ME_X, (BTL_ME_GROUND + pmdTopY(pmd, BTL_ME_GROUND, 4)) / 2,
-               BTL_FOE_X, (BTL_FOE_GROUND + pmdTopY(wildPmd, BTL_FOE_GROUND, 3)) / 2);
+    drawBattleFighter(wildPmd, false, BTL_FOE_X, BTL_FOE_GROUND V2_PLUS(v2BtlBobFoe), 3);  // (V2: riding its base's bob)
+    drawBattleFighter(pmd, true, BTL_ME_X, BTL_ME_GROUND V2_PLUS(v2BtlBobMe), 4);
+    drawMoveFx(BTL_ME_X, (BTL_ME_GROUND + pmdTopY(pmd, BTL_ME_GROUND, 4)) / 2 V2_PLUS(v2BtlBobMe),
+               BTL_FOE_X, (BTL_FOE_GROUND + pmdTopY(wildPmd, BTL_FOE_GROUND, 3)) / 2 V2_PLUS(v2BtlBobFoe));
     drawBattlePanel(72, 64, bFoe, bShownFoe, false);
     drawBattlePanel(226, 256, bMe, bShownMe, true);
   } else {

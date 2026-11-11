@@ -12,3 +12,9 @@
 #else
 #define V2_AND(c)
 #endif
+// an amount only V2 adds: `y V2_PLUS(d)` is `y + (d)` with V2 and plain `y` with V1
+#if UI_V2
+#define V2_PLUS(d) + (d)
+#else
+#define V2_PLUS(d)
+#endif

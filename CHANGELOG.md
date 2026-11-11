@@ -10,6 +10,7 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 
 - **The moon and the sun out of the way:** in a battle the moon (and the sun by day) sits higher and a little left, over the wild Pokémon instead of behind it, where it looked like part of the sprite. Wild Encounter's sun, which hid under the wild Pokémon's name, moved up there too.
 - **The battle pads float on earth:** each pad your Pokémon and the wild one stand on now has a chunk of earth under it, a floating island: dirt under the grass, packed sand on the Beach, rock in the Cave and at the Mansion.
+- **The pads hover:** both pads bob gently, each in its own time, with the Pokémon riding them, and yours casts a shadow on the ground below, smaller as it rises.
 
 ## [2.0.6] - 2026-11-11
 

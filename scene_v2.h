@@ -1582,11 +1582,60 @@ static void scBattle(int key) {  // key: (zone + 1) * 8 + tod * 2 + bases
   scBase(zone, tod, v2BtlFoe[0], v2BtlFoe[1], 80, 24, 16, false);
   scBase(zone, tod, v2BtlMe[0], v2BtlMe[1], 100, 28, 22, true);
 }
+// The bases hover, each bobbing gently on its own (a few pixels, every 2.6 s, the wild one's half a beat behind), and
+// yours casts a shadow on the ground under it, smaller as it rises (Fedor: "Lets add a shadow under the one holding
+// our pokemon to make it look like its hovering a bit off the ground. Maybe add a slight bob to it to give them both
+// that hover effect"). The fighters ride with them (renderBattle). The scene and the scene with its bases are each
+// painted once; every frame the scene goes down, then your base's shadow, then each base's pixels (where the two
+// differ) at its height now, on the 2 px grid
+#define V2_PAD_BOB_MS 2600
+#define V2_PAD_SHADOW_Y 410  // your base's shadow, on the ground under the earth's point
+static int v2BtlBobMe = 0, v2BtlBobFoe = 0;  // how far each base is from where it's painted now (renderBattle)
+static uint16_t *v2BtlBases = nullptr;        // the battle's scene with its bases
+static int v2BtlBasesKey = -1;
+static int v2PadBob(uint32_t now, float phase) {
+  return SNAP2((int)lroundf(3.0f * sinf(now * (6.2831853f / V2_PAD_BOB_MS) + phase)));
+}
+static void v2PadBlit(uint16_t *fb, const uint16_t *s, const uint16_t *b, int cx, int cy, int hw, int up, int down, int dy) {
+  int x0 = cx - hw - 8, x1 = cx + hw + 8, y0 = cy - up - 8, y1 = cy + down + 64;  // the base and the earth under it
+  if (x0 < 0) x0 = 0;
+  if (x1 > V2_W - 1) x1 = V2_W - 1;
+  if (y0 < 0) y0 = 0;
+  if (y1 > V2_W - 1) y1 = V2_W - 1;
+  for (int y = y0; y <= y1; y++) {
+    int ty = y + dy;
+    if (ty < 0 || ty >= V2_W) continue;
+    for (int x = x0; x <= x1; x++)
+      if (b[y * V2_W + x] != s[y * V2_W + x]) fb[ty * V2_W + x] = b[y * V2_W + x];
+  }
+}
 // zone: the battle's Travel zone, or -1 for a wild battle (the meadow); bases: false for the catch
 static void v2BattleScene(int zone, bool bases, int foeX, int foeY, int meX, int meY) {
   v2BtlFoe[0] = foeX, v2BtlFoe[1] = foeY, v2BtlMe[0] = meX, v2BtlMe[1] = meY;
-  int key = (zone + 1) * 8 + v2HourTod() * 2 + (bases ? 1 : 0);
-  v2Cached(200 + key, scBattle, key);
+  int key = (zone + 1) * 8 + v2HourTod() * 2;
+  v2BtlBobMe = v2BtlBobFoe = 0;
+  if (!bases) {
+    v2Cached(200 + key, scBattle, key);
+    return;
+  }
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  if (!v2BtlBases) v2BtlBases = (uint16_t *)ps_malloc(V2_W * V2_W * sizeof(uint16_t));
+  if (v2BtlBases && v2BtlBasesKey != key) {  // the scene with its bases, once
+    v2Cached(200 + key + 1, scBattle, key + 1);
+    memcpy(v2BtlBases, fb, V2_W * V2_W * sizeof(uint16_t));
+    v2BtlBasesKey = key;
+  }
+  v2Cached(200 + key, scBattle, key);  // the scene alone (and v2SceneBuf holds it)
+  if (!v2BtlBases || !v2SceneBuf) {  // (no room for the pictures: the bases where they're painted)
+    v2Cached(200 + key + 1, scBattle, key + 1);
+    return;
+  }
+  uint32_t now = millis();
+  v2BtlBobMe = v2PadBob(now, 0);
+  v2BtlBobFoe = v2PadBob(now, 2.4f);
+  v2PetShadow(meX, V2_PAD_SHADOW_Y, 58 + 3 * v2BtlBobMe);  // higher (bob < 0): a smaller shadow
+  v2PadBlit(fb, v2SceneBuf, v2BtlBases, foeX, foeY, 80, 24, 16, v2BtlBobFoe);
+  v2PadBlit(fb, v2SceneBuf, v2BtlBases, meX, meY, 100, 28, 22, v2BtlBobMe);
 }
 
 static void v2TiltScene() { uint8_t t = v2HourTod(); v2Cached(100 + t, scTilt, t); }
