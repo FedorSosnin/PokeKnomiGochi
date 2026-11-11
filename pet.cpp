@@ -884,6 +884,12 @@ uint8_t Pet::towerFloorWon(uint8_t floor) {
     if (floor == TOWER_LEGEND) {
       if (masterBalls < MASTER_MAX) masterBalls++;
       got |= 2;
+      if (!(trainerMedals & MED_TOWER)) {  // the tower beaten: its badge, celebrated as any medal
+        trainerMedals |= MED_TOWER;
+        totalMedals++;
+        newMedal = MED_TOWER;
+        medalUntil = millis() + CELEBRATE_MS;
+      }
     }
   } else if (floor == TOWER_LEGEND) {  // the Legend again: an Ultra Ball, about what a bar of wild battles earns
     if (ultraBalls < ULTRA_MAX) ultraBalls++;

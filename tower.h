@@ -18,13 +18,18 @@
 #define TOWER_ENERGY_MIN 90 // a climb needs a full bar...
 #define TOWER_FIGHT_ENERGY 9  // ...and each fight won uses this much: a whole climb uses it all
 #define TOWER_HEAL_PCT 20   // HP back between floors, for each one still standing
+#define TOWER_DRAIN_PCT 30  // a guardian keeps its HP from one of yours to the next, and drains the one it beats
 #define DEX_MEWTWO 150
 
-// floor n (1..8) at [n]; [9] is the Legend
+// by step: floor n (1..8) at [n]; [9] the Legend's first fight, [10] Mewtwo (its own numbers: its base stats are the
+// game's biggest, so the same training as the rest made it all but unbeatable)
 static const uint8_t TOWER_TYPE[TOWER_LEGEND + 1] = { 0, TY_ROCK, TY_WATER, TY_ELECTRIC, TY_GRASS, TY_POISON, TY_PSYCHIC, TY_FIRE, TY_GROUND, TY_NORMAL };
-static const uint8_t TOWER_LVL_BONUS[TOWER_LEGEND + 1] = { 0, 0, 0, 1, 1, 2, 2, 2, 3, 3 };
-static const uint8_t TOWER_TRAIN[TOWER_LEGEND + 1] = { 0, 28, 40, 50, 58, 66, 74, 82, 88, 90 };
-static const uint8_t TOWER_GENE[TOWER_LEGEND + 1] = { 0, 94, 96, 98, 100, 101, 102, 104, 106, 106 };
+static const uint8_t TOWER_LVL_BONUS[TOWER_STEPS + 1] = { 0, 0, 0, 1, 1, 2, 2, 2, 3, 2, 0 };
+static const uint8_t TOWER_TRAIN[TOWER_STEPS + 1] = { 0, 28, 40, 50, 56, 66, 74, 82, 88, 84, 64 };
+static const uint8_t TOWER_GENE[TOWER_STEPS + 1] = { 0, 94, 96, 98, 100, 101, 102, 104, 106, 104, 100 };
+// a guardian is a boss: more HP than its level gives, % (Fedor: "way too easy ... I got those pokeballs without even
+// being hit"), so a fight lasts long enough to hurt
+static const uint8_t TOWER_HP_PCT[TOWER_STEPS + 1] = { 0, 110, 115, 120, 125, 140, 150, 160, 175, 105, 100 };
 static const uint8_t TOWER_LEGEND_TYPES[4] = { TY_ICE, TY_FIGHTING, TY_GHOST, TY_DRAGON };
 
 // the floor a step of the climb is on: steps 1..8 are the floors, 9 and 10 the Legend
@@ -60,7 +65,7 @@ inline int16_t towerSpecies(uint8_t type, uint8_t lvl, uint8_t roll) {
 }
 
 inline uint8_t towerLevel(uint8_t step, uint8_t petLvl) {
-  int l = petLvl + TOWER_LVL_BONUS[towerFloorOf(step)];
+  int l = petLvl + TOWER_LVL_BONUS[step];
   return l > BTL_LEVEL_CAP ? BTL_LEVEL_CAP : l < 2 ? 2 : (uint8_t)l;
 }
 
@@ -74,12 +79,13 @@ inline int16_t towerGuardianDex(uint8_t step, uint8_t petLvl, uint8_t roll) {
 }
 
 inline BtlFighter towerGuardian(uint8_t step, int16_t dex, uint8_t petLvl) {
-  uint8_t fl = towerFloorOf(step), lvl = towerLevel(step, petLvl), tr = TOWER_TRAIN[fl], g = TOWER_GENE[fl];
+  uint8_t lvl = towerLevel(step, petLvl), tr = TOWER_TRAIN[step], g = TOWER_GENE[step];
   const DexEntry &d = DEX_TBL[dex];
   BtlFighter f;
   f.dex = dex;
   f.level = lvl;
-  f.hp = f.maxHp = btlMaxHp(d.bHp, lvl);
+  uint32_t hp = (uint32_t)btlMaxHp(d.bHp, lvl) * TOWER_HP_PCT[step] / 100;
+  f.hp = f.maxHp = hp > 65535 ? 65535 : (uint16_t)hp;
   f.atk = btlStat(d.bAtk, g, lvl, tr);
   f.def = btlStat(d.bDef, g, lvl, tr);
   f.spe = btlStat(d.bSpe, g, lvl, tr);
@@ -113,6 +119,12 @@ inline int8_t towerHint(uint8_t mine, uint8_t theirs) {
 inline uint16_t towerHeal(uint16_t hp, uint16_t maxHp) {
   if (!hp) return 0;
   uint32_t v = hp + (uint32_t)maxHp * TOWER_HEAL_PCT / 100;
+  return v > maxHp ? maxHp : (uint16_t)v;
+}
+
+// a guardian that beat one of yours drains it: this much of its own HP back (never past full)
+inline uint16_t towerDrain(uint16_t hp, uint16_t maxHp) {
+  uint32_t v = hp + (uint32_t)maxHp * TOWER_DRAIN_PCT / 100;
   return v > maxHp ? maxHp : (uint16_t)v;
 }
 

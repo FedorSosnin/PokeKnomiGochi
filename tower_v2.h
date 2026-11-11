@@ -170,7 +170,8 @@ static int twMapTower(int cx, int base, uint8_t best) {
       static const char *const WIN[4] = { ".xx.", "xwwx", "xwwx", "xxxx" };
       for (int k = 0; k < 2; k++) {
         int wx = cx + (k ? half / 2 - 4 : -half / 2 - 4);
-        bool on = best >= (n - 1) * 2 + k + 1;
+        bool on = true;
+        (void)best;
         if (on) twGlow(wx + 6, top + 10, 14, 0xFFE27A, 115);
         const ScKey wk[2] = { { 'x', TW_INK }, { 'w', on ? (Rgb)0xFFE27A : (Rgb)0x2A2236 } };
         scSprite(WIN, 4, wx - 2, top + 3, 3, wk, 2);
@@ -296,8 +297,10 @@ static void v2Travel2() {
     scGridRect(gx - 8, gy, gx + 12, gy + 4, 0xF0E0FF);
   }
   twThumb(thumbs.getForm(DEX_MEWTWO, false), TW_IX, feet, 3, 0x2A1A4C);
-  char cnt[8];
-  snprintf(cnt, sizeof(cnt), "%u/%u", pet.towerBest > TOWER_FLOORS ? TOWER_FLOORS : pet.towerBest, TOWER_FLOORS);
+  char cnt[24];  // your best climb: the highest floor won, the Legend, or nothing yet
+  if (pet.towerBest >= TOWER_LEGEND) snprintf(cnt, sizeof(cnt), "%s", T(S_LEGEND));
+  else if (pet.towerBest) snprintf(cnt, sizeof(cnt), T(S_TWR_BEST_FMT), pet.towerBest);
+  else snprintf(cnt, sizeof(cnt), "- -");
   v2IsleTag(T(S_TOWER), cnt, TW_IX, TW_IY + 62, 0x9A6AD8);
   v2PageArrow(36, V2_PAGE_ARROW_Y, -1);
   char b[32];
@@ -306,12 +309,16 @@ static void v2Travel2() {
 }
 
 // ===================================================================== the climb
-enum TwView : uint8_t { TW_TOWER, TW_HOW, TW_TIRED, TW_PICK, TW_LEAD, TW_WON, TW_OVER, TW_LEGEND, TW_MASTER };
+enum TwView : uint8_t { TW_TOWER, TW_HOW, TW_TIRED, TW_PICK, TW_TEAM, TW_LEAD, TW_DRAIN, TW_WON, TW_OVER, TW_LEGEND, TW_MASTER };
 static TwView twView = TW_TOWER;
 struct TwMember { int16_t dex; bool shiny, isPet; BtlFighter f; };
 static TwMember twTeam[TOWER_TEAM];
 static uint8_t twTeamN = 0, twStep = 0, twGot = 0, twFoeRoll = 0;
 static int16_t twFoeDex = 0, twLegendFirst = 0;
+static BtlFighter twFoe;             // the guardian now: its HP stays from one of yours to the next (Fedor)
+static int8_t twDrained = -1;        // the one it just drained (TW_DRAIN), and its HP before and after
+static uint16_t twDrainFrom = 0, twDrainTo = 0;
+static uint32_t twDrainT0 = 0;
 static int8_t twFighting = -1;   // the member in the fight now
 static bool twRan = false;
 static int16_t twBeatBy = 0;     // who ended the climb, and where
@@ -345,6 +352,7 @@ static bool twPicked(int16_t dex, bool shiny) {
 static void twRollFoe() {
   twFoeRoll = (uint8_t)random(250);
   twFoeDex = towerGuardianDex(twStep, twLevel(), twFoeRoll);
+  twFoe = towerGuardian(twStep, twFoeDex, twLevel());
   if (twStep == TOWER_LEGEND) twLegendFirst = twFoeDex;
 }
 
@@ -382,6 +390,7 @@ void towerOpen() {  // from Travel's second page
   sfxPlay(SFX_TAP);
 }
 
+static bool twPickReady();
 static void twClimbTapped() {
   if (pet.sleeping || pet.isEgg() || pet.ceremony) { sfxPlay(SFX_DENY); return; }
   sfxPlay(SFX_TAP);
@@ -396,14 +405,13 @@ static void twClimbTapped() {
       twPickShiny[twPickN++] = pet.towerPickShiny[i];
     }
   twPickPage = 0;
-  twView = TW_PICK;
+  twView = twPickReady() ? TW_TEAM : TW_PICK;  // last time's team, or nobody to pick: straight to the team
 }
 
 static void twFight(int i) {
   if (i < 0 || i >= twTeamN || !twTeam[i].f.hp) return;
   twFighting = i;
-  BtlFighter foe = towerGuardian(twStep, twFoeDex, twLevel());
-  startTowerFight(twTeam[i].f, foe);
+  startTowerFight(twTeam[i].f, twFoe);  // (as the last fight left it)
   if (!battleOpen) twFighting = -1;
 }
 
@@ -421,11 +429,23 @@ void towerFightEnded(bool won, bool ran) {
     twView = TW_OVER;
     return;
   }
-  if (!won) {
+  if (!won) {  // it beat one of yours: it keeps its HP, and drains that one (Fedor: "a screen where his health goes
+               // up and one of my pokemon cards gets crossed out")
+    int beaten = &m - twTeam;
     m.f.hp = 0;
+    twFoe.hp = bFoe.hp;
     bool any = false;
     for (int i = 0; i < twTeamN; i++) any |= twTeam[i].f.hp > 0;
-    if (any) { twView = TW_LEAD; return; }  // who's next
+    if (any) {
+      twDrained = beaten;
+      twDrainFrom = twFoe.hp;
+      twFoe.hp = towerDrain(twFoe.hp, twFoe.maxHp);
+      twDrainTo = twFoe.hp;
+      twDrainT0 = millis();
+      sfxPlay(SFX_DENY);
+      twView = TW_DRAIN;
+      return;
+    }
     twBeatBy = twFoeDex, twBeatStep = twStep;
     pet.towerLost();
     twEndClimb();
@@ -440,7 +460,8 @@ void towerFightEnded(bool won, bool ran) {
     if (twGot) sfxPlay(SFX_MEDAL);
     return;
   }
-  if (twStep == TOWER_LEGEND) {  // the Legend's first fight: now Mewtwo
+  if (twStep == TOWER_LEGEND) {  // the Legend's first fight: now Mewtwo (a little HP back first)
+    for (int i = 0; i < twTeamN; i++) twTeam[i].f.hp = towerHeal(twTeam[i].f.hp, twTeam[i].f.maxHp);
     twStep++;
     twRollFoe();
     twView = TW_LEAD;
@@ -474,50 +495,52 @@ static void twDim(int a256) {
 
 // the tower screen (tower3.py tower_screen()): a dusk sky over the sea, the main island far off, the islet's rock,
 // and the tower, storey by storey; arg: the best floor won, then (bits 8..) how much to dim it
+#define TW_BASE 300  // the tower's foot on its islet
+#define TW_HOR 284   // the horizon
 static void twPaintTowerScene(int arg) {
   uint8_t best = arg & 15;
   const Rgb SKY[5] = { 0x262A5E, 0x3A3C7C, 0x6A4E94, 0xB06A8E, 0xF0946E };
-  const int16_t SE[6] = { 0, 90, 170, 240, 296, 340 };
+  const int16_t SE[6] = { 0, 76, 140, 196, 244, 290 };
   scBands(SKY, SE, 5, 0, V2_W);
   for (int k = 0; k < 34; k++) {  // stars
-    int x = (k * 137 + 41) % V2_W / 4 * 4, y = (k * 71 + 13) % 160 / 4 * 4;
+    int x = (k * 137 + 41) % V2_W / 4 * 4, y = (k * 71 + 13) % 130 / 4 * 4;
     scCell(x, y, k % 4 ? 0xFFF3DC : 0xB8C0F0);
   }
-  static const int16_t STAR[2][2] = { { 64, 70 }, { 396, 112 } };
+  static const int16_t STAR[2][2] = { { 64, 60 }, { 396, 96 } };
   for (auto &st : STAR) {
     scGridRect(st[0], st[1] - 8, st[0] + 4, st[1] + 12, 0xFFF3DC);
     scGridRect(st[0] - 8, st[1], st[0] + 12, st[1] + 4, 0xFFF3DC);
   }
   static const char *const CL[5] = { "....xxxxx.......", "..xxxxxxxxx.xx..", ".xxxxxxxxxxxxxxx", "xxxxxxxxxxxxxxxx", ".llllllllllllll." };
   const ScKey c1[2] = { { 'x', 0x8A5E9A }, { 'l', 0xE08A8A } }, c2[2] = { { 'x', 0x9A6496 }, { 'l', 0xF09A84 } };
-  scSprite(CL, 5, 30, 214, 4, c1, 2);
-  scSprite(CL, 5, 330, 236, 4, c2, 2);
+  scSprite(CL, 5, 30, 180, 4, c1, 2);
+  scSprite(CL, 5, 330, 200, 4, c2, 2);
   // the sea, the main island low on the horizon (a lit window, the Cave's peak), crests catching the sunset
   const Rgb SEA[2] = { 0x3A5A98, 0x2F4C88 };
-  const int16_t EE[3] = { 332, 400, V2_W };
+  const int16_t EE[3] = { TW_HOR, 380, V2_W };
   scBands(SEA, EE, 2, 0, V2_W);
-  for (int cy = 312; cy < 332; cy += 4)
+  for (int cy = TW_HOR - 20; cy < TW_HOR; cy += 4)
     for (int cx = 0; cx < 170; cx += 4) {
       float h = 14 + 8 * sinf(cx / 30.0f) + (cx > 110 && cx < 150 ? 6 : 0) + (cx > 120 && cx < 140 ? 10 : 0);
-      if (332 - cy < h) scCell(cx, cy, 0x4A3A70);
+      if (TW_HOR - cy < h) scCell(cx, cy, 0x4A3A70);
     }
-  scCell(52, 320, 0xF8D870);
+  scCell(52, TW_HOR - 12, 0xF8D870);
   for (int k = 0; k < 40; k++) {
-    int x = (k * 211 + 7) % V2_W / 4 * 4, y = (340 + (k * 53) % 126) / 4 * 4;
-    Rgb c = y < 372 ? 0xF0A888 : 0x6F94D0;
+    int x = (k * 211 + 7) % V2_W / 4 * 4, y = (TW_HOR + 8 + (k * 53) % (V2_W - TW_HOR - 8)) / 4 * 4;
+    Rgb c = y < TW_HOR + 40 ? 0xF0A888 : 0x6F94D0;
     scCell(x, y, c);
     scCell(x + 4, y, c);
   }
   // the islet: foam, rock, grass on top, tufts
-  scOval(scE(233 - 158, 342, 233 + 158, 402), 0xBFE0F0);
-  scOval(scE(233 - 150, 338, 233 + 150, 398), 0x6A6478, 0x8A8098, 0x4A4458);
-  scOval(scE(233 - 136, 334, 233 + 136, 360), 0x4F9A55, 0x79BD4F);
+  scOval(scE(233 - 158, TW_BASE - 6, 233 + 158, TW_BASE + 54), 0xBFE0F0);
+  scOval(scE(233 - 150, TW_BASE - 10, 233 + 150, TW_BASE + 50), 0x6A6478, 0x8A8098, 0x4A4458);
+  scOval(scE(233 - 136, TW_BASE - 14, 233 + 136, TW_BASE + 12), 0x4F9A55, 0x79BD4F);
   // the tower: 8 storeys, each on a ledge, tapering upward (tower())
-  static const uint8_t HS[8] = { 32, 32, 28, 28, 28, 24, 24, 24 };
-  int y = 348, cx = 233;
+  static const uint8_t HS[8] = { 24, 24, 22, 22, 22, 20, 20, 20 };
+  int y = TW_BASE, cx = 233;
   for (int n = 1; n <= TOWER_FLOORS; n++) {
     int H = HS[n - 1], half = (84 - (n - 1) * 5) / 4 * 4, x0 = cx - half, x1 = cx + half, top = y - H;
-    bool won = n <= best;
+    bool won = false;  // (a climb's badges are its own: Fedor, "contained to each of the tower runs")
     twStone(x0, top, x1, y);
     scRect(x0 - 4, top, x0 - 1, y - 1, TW_INK);
     scRect(x1, top, x1 + 3, y - 1, TW_INK);
@@ -530,15 +553,15 @@ static void twPaintTowerScene(int arg) {
     if (n == 1) {  // the door
       static const char *const DOOR[7] = { "..xxxx..", ".xwwwwx.", "xwwbwwwx", "xwwbwwwx", "xbbbbbbx", "xwwbwwwx", "xwwbwwwx" };
       const ScKey dk[3] = { { 'x', TW_INK }, { 'w', 0x6A4428 }, { 'b', 0x3A2414 } };
-      scSprite(DOOR, 7, cx - 16, top + 4, 4, dk, 3);
+      scSprite(DOOR, 7, cx - 12, top - 4, 3, dk, 3);
     } else {  // an arched window: lit in its type's light with its mark, or dark
-      int s = 3, wy = top + (H - 21) / 2;
+      int s = H >= 22 ? 3 : 2, ms = s == 3 ? 2 : 1, wy = top + (H - 7 * s) / 2;
       static const char *const WIN[7] = { "..xxxx..", ".xggggx.", "xggggggx", "xggggggx", "xggggggx", "xggggggx", "xxxxxxxx" };
-      if (won) twGlow(cx, wy + 9, 26, TW_COL[n][1], 115);
+      if (won) twGlow(cx, wy + 3 * s, 8 * s + 2, TW_COL[n][1], 115);
       const ScKey wk[2] = { { 'x', TW_INK }, { 'g', won ? scMix(TW_COL[n][1], 0xFFFFFF, .35) : (Rgb)0x2A2236 } };
       scSprite(WIN, 7, cx - 4 * s, wy, s, wk, 2);
       const ScKey mk[2] = { { 'x', won ? TW_COL[n][0] : (Rgb)0x4A4058 }, { 'o', won ? TW_COL[n][2] : (Rgb)0x3A3046 } };
-      scSprite(TW_MARK[n], 7, cx - 7, wy + 6, 2, mk, 2);
+      scSprite(TW_MARK[n], 7, cx - 7 * ms / 2, wy + 2 * s, ms, mk, 2);
     }
     char lab[6];
     snprintf(lab, sizeof(lab), "%dF", n);
@@ -546,9 +569,9 @@ static void twPaintTowerScene(int arg) {
     if (won) {  // its badge, hung beside the window
       static const char *const BD[9] = { "..xxxxx..", ".xLcccLx.", "xLcccccdx", "xccMMMccx", "xccMMMcdx", ".xcccccx.", "..xcccx..", "...xdx...", "....x...." };
       const ScKey bk[5] = { { 'x', TW_INK }, { 'L', TW_COL[n][1] }, { 'c', TW_COL[n][0] }, { 'd', TW_COL[n][2] }, { 'M', 0xFFFFFF } };
-      scSprite(BD, 9, x1 - 38, top + (H - 27) / 2 + 1, 3, bk, 5);
+      scSprite(BD, 9, x1 - 30, top + (H - 18) / 2, 2, bk, 5);
     }
-    if (gate && !won) {  // a gate's balls wait beside it
+    if (gate && best < n) {  // a gate's balls wait beside it, until they're won the first time
       for (int k = 0; k < towerGateUltras(n); k++) twBall(false, x1 + 14 + k * 36, y - 36, 2);
     }
     y = top - 4;
@@ -696,10 +719,15 @@ static void twSignFloor(uint8_t step) {
   v2SignIn(b, 30, sc565(TW_COL[fl][2]), sc565(TW_COL[fl][0]));
 }
 
-// 02: the tower, CLIMB! at its foot
+// 02: the tower, CLIMB! under it: as wide as the zones' SEARCH and 52 px tall, well clear of the X (Fedor: "too close to
+// the X and too small ... too hard to press on the Knomi"). A tap on the tower climbs too
+#define TW_CLIMB_X0 101
+#define TW_CLIMB_Y0 318
+#define TW_CLIMB_X1 365
+#define TW_CLIMB_Y1 370
 static void twViewTower() {
   twBackTower(0);
-  v2LabelButton(150, 358, 316, 388, T(S_CLIMB), C565(0x58, 0xb8, 0x68));
+  v2LabelButton(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1, T(S_CLIMB), C565(0x58, 0xb8, 0x68));
   v2CloseX();
 }
 // 03: the first visit's card
@@ -710,7 +738,7 @@ static void twViewHow() {
   v2Panel(80, 100, 386, 338, 10);
   gfx->setTextColor(UI_INK);
   v2Wrapped(T(S_TWR_HOW), 122, 280, 22, 6);
-  v2LabelButton(130, 270, 336, 308, T(S_LETS_CLIMB), C565(0x58, 0xb8, 0x68));
+  v2LabelButton(116, 262, 350, 314, T(S_LETS_CLIMB), C565(0x58, 0xb8, 0x68));
   v2CloseX();
 }
 // 04: not enough energy
@@ -728,11 +756,7 @@ static void twViewTired() {
 // 05: pick 2 friends: the Pokedex's own grid (Fedor: "no need to boxes behind the pokemon. Keep the pokedex looking
 // like what we currently have built"): the dimmed room, the board with how many are picked, the sprites in its light
 // panel, page arrows and "Page 1 of 3"; a pick gets a green numbered disc, a form your level doesn't allow yet is a
-// shadow with the level it needs. GO! sits by the X
-#define TW_GO_X 300
-#define TW_GO_Y 394
-#define TW_GO_W 84
-#define TW_GO_H 32
+// shadow with the level it needs. The second pick goes on to the team page (05b), which has GO!
 static int twPickList(int i, bool &sh) {  // the i-th pickable form: every one in the Pokedex but your own
   int n = twFormCount(), k = 0;
   for (int j = 0; j < n; j++) {
@@ -779,24 +803,52 @@ static void twViewPick() {
   }
   drawDexGridPage(twPickPage, twPickPages(), DEXG_PAGE_Y);
   drawPageArrows(twPickPage, twPickPages(), V2_PAGE_ARROW_Y);
-  v2LabelButton(TW_GO_X, TW_GO_Y, TW_GO_X + TW_GO_W, TW_GO_Y + TW_GO_H, T(S_GO), twPickReady() ? UI_BAR_OK : C565(0x8e, 0x8c, 0x96));
+  v2CloseX();
+}
+
+// 05b: your team (Fedor: "Maybe the go button is in a summary page"): your Pokemon and the two friends on their
+// daises, a tap on a friend changes them (back to the grid), GO! where the tower's CLIMB! is: wide, 52 px, clear of the X
+static int twTeamSlotX(int i, int n) { return n == 3 ? 100 + i * 133 : n == 2 ? 166 + i * 134 : 233; }
+static void twViewTeam() {
+  twBackHall(TOWER_LEGEND, 115);
+  scScreen();
+  char b[32];
+  v2SignIn(v2Caps(T(S_YOUR_TEAM), b, sizeof(b)), 30, C565(0x5a, 0x3a, 0x98), C565(0x8a, 0x6a, 0xd0));
+  int n = 1 + twPickN;
+  for (int i = 0; i < n; i++) {
+    int16_t d = i ? twPickDex[i - 1] : pet.speciesId;
+    bool sh = i ? twPickShiny[i - 1] : pet.shiny;
+    int cx = twTeamSlotX(i, n);
+    twDais(cx, 180, 112, i ? (Rgb)0x9A6AD8 : (Rgb)0x58B868);
+    twThumb(thumbs.getForm(d, sh), cx, 194, 3);
+    char nb[16];
+    snprintf(nb, sizeof(nb), "%.9s", i ? dexName(d) : (pet.nick[0] ? pet.nick : dexName(d)));
+    twChip(nb, cx, 216, i ? sc565(0x5A3A98) : sc565(0x3C8A4C));
+    uint8_t st = i ? pet.starsOf(d, sh) : pet.petStars();
+    if (st) drawStars(cx, 254, DEXG_STAR_R, st);
+  }
+  if (twPickN) {
+    gfx->setTextColor(V2_ON_DARK);
+    v2Wrapped(T(S_TAP_CHANGE), 274, 300, 20, 2);
+  }
+  v2LabelButton(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1, T(S_GO), C565(0x58, 0xb8, 0x68));
   v2CloseX();
 }
 // 06: who goes first (and after a faint, who's next)
-static void twViewLead() {
-  uint8_t fl = towerFloorOf(twStep);
-  twBackHall(fl, 77);
-  scScreen();
-  twSignFloor(twStep);
+// the guardian on its dais, its level, and its HP bar (it carries over now): hp shown as given
+static void twFoeStand(uint8_t fl, uint16_t hp) {
   twDais(233, 150, 120, TW_COL[fl][0]);
   twThumb(thumbs.getForm(twFoeDex, false), 233, 164, 3);
   char b[32];
   snprintf(b, sizeof(b), "Lv %d", towerLevel(twStep, twLevel()));
   twChip(b, 233, 176);
-  gfx->setTextColor(UI_WHITE);
-  setSize(2);
-  setCur(centerX(T(S_WHO_FIRST), 2), 210);
-  printT(T(S_WHO_FIRST));
+  int pct = twFoe.maxHp ? hp * 100 / twFoe.maxHp : 0;
+  gfx->fillRoundRect(173, 201, 120, 10, 4, sc565(TW_INK));
+  gfx->fillRoundRect(175, 203, 116, 6, 3, sc565(0xD8D2BD));
+  gfx->fillRect(175, 203, 116 * pct / 100, 6, pct >= 50 ? UI_BAR_OK : pct >= 25 ? C565(0xf0, 0xc0, 0x4a) : UI_BAR_BAD);
+}
+// your team's cards; crossed: the one just drained, a red X over it
+static void twCards(int crossed) {
   int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
   for (int i = 0; i < n; i++) {
     TwMember &m = twTeam[i];
@@ -830,8 +882,47 @@ static void twViewLead() {
     gfx->setTextColor(hc);
     setCur(tx, y0 + 116);
     printT(h);
+    if (i == crossed) {  // crossed out: a thick red X over the card
+      for (int t = -3; t <= 3; t++) {
+        gfx->drawLine(cx0 + 10 + t, y0 + 10, cx1 - 10 + t, y0 + 128, UI_BAR_BAD);
+        gfx->drawLine(cx1 - 10 + t, y0 + 10, cx0 + 10 + t, y0 + 128, UI_BAR_BAD);
+      }
+    }
   }
+}
+static void twViewLead() {
+  uint8_t fl = towerFloorOf(twStep);
+  twBackHall(fl, 77);
+  scScreen();
+  twSignFloor(twStep);
+  twFoeStand(fl, twFoe.hp);
+  gfx->setTextColor(UI_WHITE);
+  setSize(2);
+  setCur(centerX(T(S_WHO_FIRST), 2), 214);
+  printT(T(S_WHO_FIRST));
+  twCards(-1);
   v2CloseX();
+}
+// 06b: a guardian drains the one it beat: its HP climbs, that one's card is crossed out (then who's next)
+#define TW_DRAIN_MS 1600
+static void twViewDrain() {
+  uint8_t fl = towerFloorOf(twStep);
+  twBackHall(fl, 77);
+  scScreen();
+  twSignFloor(twStep);
+  uint32_t t = millis() - twDrainT0;
+  float k = t >= TW_DRAIN_MS ? 1 : (float)t / TW_DRAIN_MS;
+  twGlow(233, 120, 70, 0xC8A0F8, (int)(200 * (1 - k * .5f)));
+  twFoeStand(fl, (uint16_t)(twDrainFrom + (twDrainTo - twDrainFrom) * k));
+  char b[64], a1[12], a2[12];
+  snprintf(a1, sizeof(a1), "%s", dexName(twFoeDex));
+  snprintf(a2, sizeof(a2), "%s", dexName(twTeam[twDrained].dex));
+  snprintf(b, sizeof(b), T(S_DRAIN_FMT), a1, a2);
+  gfx->setTextColor(sc565(0xF0E0FF));
+  v2Wrapped(b, 214, 330, 18, 1);
+  twCards(twDrained);
+  v2CloseX();
+  if (t > 3600) twDrained = -1, twView = TW_LEAD;  // left alone, it moves on by itself
 }
 static int twLeadAt(int16_t x, int16_t y) {
   int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
@@ -845,9 +936,10 @@ static void twViewWon() {
   uint8_t fl = twStep;
   twBackHall(fl, 140);
   scScreen();
-  twShield(CX, 92, 12, fl, true);
+  twShield(CX, 84, 10, fl, true);
+  for (int k = 1; k <= TOWER_FLOORS; k++) twShield(CX - 4 * 30 + (k - 1) * 30 + 15, 238, 2, k, k <= fl);  // this climb's
   char b[40];
-  bool gate = (twGot & 1) && towerIsGate(fl);
+  bool gate = (twGot >> 4) && towerIsGate(fl);  // (a gate's balls come only the first time it's passed)
   if (gate) snprintf(b, sizeof(b), T(S_GATE_FMT), fl == 4 ? 1 : 2);
   else snprintf(b, sizeof(b), T(S_BADGE_FMT), TYPE_NAME[TOWER_TYPE[fl]]);
   if (gate) v2SignIn(b, 30, C565(0x8a, 0x6a, 0x10), C565(0xf0, 0xc0, 0x4a));
@@ -892,7 +984,7 @@ static void twViewOver() {
   setSize(2);
   setCur(centerX(T(S_TRAINING), 2), 208);
   printT(T(S_TRAINING));
-  uint8_t theirs = TOWER_TRAIN[fl], yours = towerTrainAvg(pet.trAtk, pet.trDef, pet.trSpe);
+  uint8_t theirs = TOWER_TRAIN[twBeatStep], yours = towerTrainAvg(pet.trAtk, pet.trDef, pet.trSpe);
   const char *lab[2] = { dexName(twBeatBy), T(S_YOURS) };
   uint8_t val[2] = { theirs, yours };
   for (int k = 0; k < 2; k++) {
@@ -915,19 +1007,18 @@ static void twViewLegend() {
   scScreen();
   char b[32];
   v2SignIn(T(S_LEGEND), 16, C565(0x5a, 0x3a, 0x98), C565(0x8a, 0x6a, 0xd0));
-  twDais(140, 262, 130, 0x9A6AD8);
-  twDais(326, 262, 130, 0x9A6AD8);
-  twThumb(thumbs.getForm(twFoeDex, false), 140, 276, 3);
-  twThumb(thumbs.getForm(DEX_MEWTWO, false), 326, 276, 3, 0x0E0A24);
+  twDais(140, 216, 130, 0x9A6AD8);
+  twDais(326, 216, 130, 0x9A6AD8);
+  twThumb(thumbs.getForm(twFoeDex, false), 140, 230, 3);
+  twThumb(thumbs.getForm(DEX_MEWTWO, false), 326, 230, 3, 0x0E0A24);
   snprintf(b, sizeof(b), "Lv %d", towerLevel(TOWER_LEGEND, twLevel()));
-  twChip(b, 140, 282);
-  twChip("???", 326, 282);
-  v2Panel(96, 316, 370, 344, 8);
-  gfx->setTextColor(UI_INK);
+  twChip(b, 140, 240);
+  twChip("???", 326, 240);
+  gfx->setTextColor(UI_WHITE);
   setSize(2);
-  setCur(centerX(T(S_BEAT_BOTH), 2), 322);
+  setCur(centerX(T(S_BEAT_BOTH), 2), 280);
   printT(T(S_BEAT_BOTH));
-  v2LabelButton(160, 356, 306, 386, T(S_FIGHT), C565(0x9a, 0x6a, 0xd8));
+  v2LabelButton(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1, T(S_FIGHT), C565(0x9a, 0x6a, 0xd8));
   v2CloseX();
 }
 // 12: Tower Master: the Hall of Fame photo
@@ -963,7 +1054,9 @@ void towerRender() {
     case TW_HOW: twViewHow(); break;
     case TW_TIRED: twViewTired(); break;
     case TW_PICK: twViewPick(); break;
+    case TW_TEAM: twViewTeam(); break;
     case TW_LEAD: twViewLead(); break;
+    case TW_DRAIN: twViewDrain(); break;
     case TW_WON: twViewWon(); break;
     case TW_OVER: twViewOver(); break;
     case TW_LEGEND: twViewLegend(); break;
@@ -996,11 +1089,12 @@ void towerBack() {
   sfxPlay(SFX_TAP);
   switch (twView) {
     case TW_TOWER: zoneScreen = ZS_PICK; v2IslePage = 1; break;  // back to the islet on Travel
-    case TW_LEAD: case TW_WON: case TW_LEGEND:  // leaving mid-climb ends it (no loss)
+    case TW_LEAD: case TW_DRAIN: case TW_WON: case TW_LEGEND:  // leaving mid-climb ends it (no loss)
       twBeatBy = twFoeDex, twBeatStep = twStep, twRan = true;
       twEndClimb();
       twView = TW_OVER;
       break;
+    case TW_PICK: twView = twPickReady() ? TW_TEAM : TW_TOWER; break;
     default: twView = TW_TOWER; twEndClimb(); break;
   }
 }
@@ -1009,10 +1103,12 @@ void towerTap(int16_t x, int16_t y) {
   if (closeHit(x, y)) { towerBack(); return; }
   switch (twView) {
     case TW_TOWER:
-      if (y >= 352 && y <= 394 && x >= 144 && x <= 322) twClimbTapped();
+      if ((y >= TW_CLIMB_Y0 - 6 && y <= TW_CLIMB_Y1 + 6 && x >= TW_CLIMB_X0 - 6 && x <= TW_CLIMB_X1 + 6) ||
+          (y >= 40 && y < TW_BASE && abs(x - CX) <= 90))  // the button, or the tower itself
+        twClimbTapped();
       break;
     case TW_HOW:
-      if (y >= 264 && y <= 314 && x >= 124 && x <= 342) {
+      if (y >= 256 && y <= 320 && x >= 110 && x <= 356) {
         pet.towerHowSeen = true;
         pet.towerSave();
         twClimbTapped();
@@ -1023,11 +1119,6 @@ void towerTap(int16_t x, int16_t y) {
       if (int d = pageArrowAt(x, y, twPickPage, twPickPages(), V2_PAGE_ARROW_Y)) {
         sfxPlay(SFX_TAP);
         twPickPage += d;
-        return;
-      }
-      if (x >= TW_GO_X - 6 && x <= TW_GO_X + TW_GO_W + 6 && y >= TW_GO_Y - 8 && y <= TW_GO_Y + TW_GO_H + 8) {
-        if (twPickReady()) twStartClimb();
-        else sfxPlay(SFX_DENY);
         return;
       }
       if (x < DEXG_X || y < DEXG_Y || x >= DEXG_X + DEXG_COLS * DEXG_CELL || y >= DEXG_Y + 3 * DEXG_CELL) return;
@@ -1043,11 +1134,28 @@ void towerTap(int16_t x, int16_t y) {
         twPickDex[twPickN] = d;
         twPickShiny[twPickN++] = sh;
         sfxPlay(SFX_TAP);
+        if (twPickReady()) twView = TW_TEAM;  // both picked: the team, and GO!
       } else {
         sfxPlay(SFX_DENY);
       }
       break;
     }
+    case TW_TEAM: {
+      if (y >= TW_CLIMB_Y0 - 6 && y <= TW_CLIMB_Y1 + 6 && x >= TW_CLIMB_X0 - 6 && x <= TW_CLIMB_X1 + 6) { twStartClimb(); return; }
+      int n = 1 + twPickN;
+      for (int i = 1; i < n; i++)  // a friend: change it (out of the team, back to the grid)
+        if (abs(x - twTeamSlotX(i, n)) < 60 && y > 100 && y < 268) {
+          sfxPlay(SFX_TAP);
+          if (i == 1 && twPickN == 2) twPickDex[0] = twPickDex[1], twPickShiny[0] = twPickShiny[1];
+          twPickN--;
+          twView = TW_PICK;
+          return;
+        }
+      break;
+    }
+    case TW_DRAIN:  // on to who's next (once the bar has climbed)
+      if (millis() - twDrainT0 > TW_DRAIN_MS / 2) { sfxPlay(SFX_TAP); twDrained = -1; twView = TW_LEAD; }
+      break;
     case TW_LEAD: {
       int i = twLeadAt(x, y);
       if (i >= 0 && twTeam[i].f.hp) { sfxPlay(SFX_TAP); twFight(i); }
@@ -1056,7 +1164,7 @@ void towerTap(int16_t x, int16_t y) {
     }
     case TW_WON: sfxPlay(SFX_TAP); twNextAfterWin(); break;
     case TW_LEGEND:
-      if (y >= 350 && y <= 392 && x >= 154 && x <= 312) { sfxPlay(SFX_TAP); twView = TW_LEAD; }
+      if (y >= TW_CLIMB_Y0 - 6 && y <= TW_CLIMB_Y1 + 6 && x >= TW_CLIMB_X0 - 6 && x <= TW_CLIMB_X1 + 6) { sfxPlay(SFX_TAP); twView = TW_LEAD; }
       break;
     case TW_OVER: case TW_MASTER: sfxPlay(SFX_TAP); twView = TW_TOWER; break;
   }

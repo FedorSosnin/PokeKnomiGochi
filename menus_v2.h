@@ -809,8 +809,8 @@ static void trArt(const TrArt &a, int x, int base, int s, bool won, Rgb sil = TR
 // where each medal stands in the room: the middle of its bottom edge (V2_TROPHY_ORDER walks them in this order)
 static void trSpot(int m, int &x, int &base) {
   static const int16_t STATUE_X[4] = { 118, 176, 234, 292 }, CUP_X[4] = { 127, 190, 257, 330 };
-  if (m >= 17 && m <= 21) {  // the badges, each in the middle of its place in the case
-    x = 153 + (m - 17) * 40;
+  if ((m >= 17 && m <= 21) || m == 25) {  // the badges, each in the middle of its place in the case (25: Knomi Tower's, last)
+    x = 148 + (m == 25 ? 5 : m - 17) * 34;
     base = 80 + TR_ART_SMALL[m].h;  // (2 px a pixel: half its height under the middle, 80)
   } else if (m >= 9 && m <= 12) x = STATUE_X[m - 9], base = 170;
   else if (m == 8) x = 350, base = 170;
@@ -824,7 +824,7 @@ static int8_t trHoverGroup = -1;  // the group under the mouse: left out of the 
 static void trMedal(int m, bool bare) {
   int x, base;
   trSpot(m, x, base);
-  if (m >= 17 && m <= 21) trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare), 0x4A1620, 0x3A1018);  // shadows in the velvet
+  if ((m >= 17 && m <= 21) || m == 25) trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare), 0x4A1620, 0x3A1018);  // shadows in the velvet
   else trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare));
 }
 static void trRoom(bool bare) {

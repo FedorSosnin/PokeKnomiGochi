@@ -1134,8 +1134,18 @@ void handleSerial() {
   } else if (line.startsWith("TOWERBEST ") && pet.noSave) {  // V2: "TOWERBEST n": floors already won (testing)
     pet.towerBest = (uint8_t)line.substring(10).toInt();
     Serial.println("DONE");
+  } else if (line == "TROPHIES") {  // V2: the trophy room (testing)
+    zoneScreen = ZS_NONE;
+    cardOpen = cardAch = true;
+    cardPage = 0;
+    achDetail = -1;
+    achGroup = -1;
+    Serial.println("DONE");
   } else if (line == "TOWERWIN" && pet.noSave) {  // V2: the tower fight under way is won (testing)
     if (battleOpen && bTower && bPhase < BP_END) { bFoe.hp = 0; battleFinish(true); }
+    Serial.println("DONE");
+  } else if (line == "TOWERLOSE" && pet.noSave) {  // V2: ...or lost, its guardian a third down (testing)
+    if (battleOpen && bTower && bPhase < BP_END) { bFoe.hp -= bFoe.hp / 3; bMe.hp = 0; battleFinish(false); }
     Serial.println("DONE");
   } else if (line.startsWith("TOWERSTEP ") && pet.noSave) {  // V2: "TOWERSTEP n": a climb under way jumps to step n (testing)
     towerJump((uint8_t)line.substring(10).toInt());

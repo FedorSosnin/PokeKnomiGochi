@@ -46,6 +46,13 @@ TEST(tower, friends_take_your_training_and_their_stars) {
   CHECK_EQ((int)(a.atk - c.atk), 100);
 }
 
+TEST(tower, guardians_are_bosses_and_drain) {
+  BtlFighter a = towerGuardian(5, 66, 60);
+  CHECK(a.maxHp > btlMaxHp(DEX_TBL[66].bHp, towerLevel(5, 60)));  // more HP than its level gives
+  CHECK_EQ((int)towerDrain(10, 100), 10 + TOWER_DRAIN_PCT);
+  CHECK_EQ((int)towerDrain(90, 100), 100);
+}
+
 TEST(tower, hints_and_healing) {
   CHECK_EQ((int)towerHint(TY_FIRE, TY_GRASS), 1);
   CHECK_EQ((int)towerHint(TY_WATER, TY_GRASS), -1);
@@ -98,9 +105,10 @@ static int simClimb(const int16_t team[3], uint8_t lvl, uint8_t stars, uint8_t t
         if (t[i].hp && (best < 0 || simScore(t[i], foe) > simScore(t[best], foe))) best = i;
       if (best < 0) return reached;
       if (simFight(t[best], foe)) break;
+      foe.hp = towerDrain(foe.hp, foe.maxHp);  // it keeps its HP, and drains the one it beat
     }
     reached = step;
-    if (step < TOWER_LEGEND)
+    if (step < TOWER_STEPS)
       for (auto &m : t) m.hp = towerHeal(m.hp, m.maxHp);
   }
   return reached;
@@ -121,7 +129,7 @@ TEST(tower, a_new_team_stops_before_the_first_gate) {
 TEST(tower, a_mid_team_passes_gate_1_but_not_gate_2) {
   gSeed = 12;
   const int16_t team[3] = { 6, 9, 26 };
-  CHECK(simPct(team, 45, 2, 80, 6, 60, 4) >= 60);
+  CHECK(simPct(team, 45, 2, 80, 6, 60, 4) >= 20);
   CHECK(simPct(team, 45, 2, 80, 6, 60, 8) <= 10);
 }
 
@@ -129,6 +137,7 @@ TEST(tower, the_legend_is_hard_even_for_the_best) {
   gSeed = 13;
   const int16_t team[3] = { 6, 9, 26 };
   int top = simPct(team, 100, 3, 100, 15, 100, TOWER_STEPS);
-  CHECK(top >= 5 && top <= 45);
-  CHECK(simPct(team, 100, 3, 100, 15, 100, 8) >= 60);
+  CHECK(top >= 3 && top <= 30);
+  CHECK(simPct(team, 100, 3, 100, 15, 100, 8) >= 20);
+  CHECK(simPct(team, 100, 3, 100, 15, 100, 8) <= 80);  // 8F is no walk either
 }

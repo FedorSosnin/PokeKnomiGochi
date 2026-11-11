@@ -53,6 +53,8 @@ static const ExpectedFmt EXPECTED[] = {
   { S_BEAT_YOU_FMT, "%s,%d" },
   { S_BADGE_FMT, "%s" },
   { S_BADGES_FMT, "%d,%d" },
+  { S_TWR_BEST_FMT, "%d" },
+  { S_DRAIN_FMT, "%s,%s" },
 #endif
   { S_ZONE_CAUGHT_FMT, "%d,%d" },
   { S_POKEDEX_FMT,     "%u" },
