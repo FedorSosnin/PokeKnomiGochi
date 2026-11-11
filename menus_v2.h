@@ -537,10 +537,11 @@ static void v2CardTraining() {
 }
 static void v2CardItem(int which);  // (repel_v2.h: an item's own page: 0 the Ultra Ball, 1 the Master Ball, 2 the Repel)
 // Progress: the level big, its bar and what's left to the next; then evolution: when, and the slip-ups holding it back
+// (12 px between the two, not 24: Fedor, "max evolution should probably be a bit closer to each other")
 static void v2CardProgress() {
   const DexEntry &d = DEX_TBL[pet.speciesId];
   v2Sign(T(S_PROGRESS));
-  int y = v2CardPanel(32 + 12 + 18 + 10 + 16 + 24 + 16 + 8 + 16 + 8 + 16);
+  int y = v2CardPanel(32 + 12 + 18 + 10 + 16 + 12 + 16 + 8 + 16 + 8 + 16);
   char lv[10];
   snprintf(lv, sizeof(lv), T(S_LVL_FMT), pet.level());
   gfx->setTextColor(UI_INK);
@@ -556,7 +557,7 @@ static void v2CardProgress() {
   setSize(2);
   setCur(centerX(nx, 2), y + 72);
   printT(nx);
-  setCur(centerX(T(S_EVO_LABEL), 2), y + 112);
+  setCur(centerX(T(S_EVO_LABEL), 2), y + 100);
   printT(T(S_EVO_LABEL));
   char evoBuf[32];
   const char *evo;
@@ -574,12 +575,12 @@ static void v2CardProgress() {
     }
   }
   gfx->setTextColor(evoCol);
-  setCur(centerX(evo, 2), y + 136);
+  setCur(centerX(evo, 2), y + 124);
   printT(evo);
   char ms[24];  // the slip-ups, which hold evolution back
   snprintf(ms, sizeof(ms), T(S_MISTAKES_FMT), pet.careMistakes);
   gfx->setTextColor(pet.careMistakes > 0 ? UI_BAR_BAD : C565(0x3c, 0x8a, 0x4c));
-  setCur(centerX(ms, 2), y + 160);
+  setCur(centerX(ms, 2), y + 148);
   printT(ms);
 }
 // the card's four pages (the medals' pages are still V1's: step 5b)

@@ -6,6 +6,11 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [Unreleased]
+
+- **Both balls' bars after a battle:** at the end of a battle, the Ultra Ball's and the Master Ball's bars come up together in a panel in the middle of the screen, and this battle's step fills in on each, its number turning green. Before, only the Ultra Ball's bar showed, along the bottom. When a battle earns a ball, its bar fills up first, then the ball's moment.
+- **Progress page tidied:** on the card's Progress page, the evolution lines sit closer under the level's bar, without the big gap.
+
 ## [2.0.7] - 2026-11-11
 
 - **The moon and the sun out of the way:** in a battle the moon (and the sun by day) sits higher and a little left, over the wild Pokémon instead of behind it, where it looked like part of the sprite. Wild Encounter's sun, which hid under the wild Pokémon's name, moved up there too.
