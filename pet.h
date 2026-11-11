@@ -290,6 +290,22 @@ public:
   uint8_t repelMinutesLeft() const { return repelOn() ? (uint8_t)(repelUntil - lifeMin) : 0; }
   bool repelKeepsAway(int16_t dex) const;  // a running Repel keeps this species away from a wild encounter
   bool zoneComplete(uint8_t zone) const;
+  // V2: Knomi Tower (tower.h). The trainer's, like the balls: kept through a goodbye. towerBest is the highest
+  // floor ever won (9: the Legend, Tower Master); a badge per floor comes from it. The Hall of Fame keeps the
+  // three that first won the Legend
+  uint8_t towerBest = 0;
+  bool towerHowSeen = false;          // the first visit's "how it works" card
+  int16_t towerPick[2] = { 0, 0 };    // the two friends last picked, offered first next time
+  bool towerPickShiny[2] = { false, false };
+  int16_t hofDex[3] = { 0, 0, 0 };
+  uint8_t hofShiny = 0, hofLevel = 0;  // hofShiny: a bit for each of the three
+  uint32_t hofEpoch = 0;               // when (lastSeenEpoch, local time)
+  // a tower fight won: uses its energy; petFought: your own Pokemon won it, and gets a win's usual effects
+  void towerFightWon(bool petFought);
+  // floor (1..8, or the Legend's 9) climbed: the badge, and a gate's balls the first time. Returns what it gave:
+  // bit 0 a new badge, 1 a Master Ball, then the Ultra Balls in bits 4..7
+  uint8_t towerFloorWon(uint8_t floor);
+  void towerLost();  // all three fainted: a loss, as a battle's
 #endif
   // first game: the player picks a starter (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }
