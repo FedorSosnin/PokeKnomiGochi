@@ -1426,6 +1426,17 @@ bool towerPressAt(int16_t x, int16_t y, PressTarget &t) {
   return v2PressNav(x, y, t, 0, 0, 0, true);
 }
 
+// Travel's press (and, with a mouse, hover) targets of its own: the page arrow, and on page 2 the tower and the X.
+// 1: t set; -1: page 2, nothing there; 0: page 1 away from its arrow (the zones' wedges, pressTargetAt)
+int v2TravelPressAt(int16_t x, int16_t y, PressTarget &t) {
+  int ax = v2IslePage ? 36 : 430, dx = x - ax, dy = y - V2_PAGE_ARROW_Y;
+  if (dx * dx + dy * dy < 32 * 32) return v2PressSet(t, ax - CLOSE_R, V2_PAGE_ARROW_Y - CLOSE_R, 2 * CLOSE_R, 2 * CLOSE_R, v2IslePage ? "<" : ">") ? 1 : -1;
+  if (!v2IslePage) return 0;  // (pressing the arrow showed the Cave's name: Fedor's map, both islands)
+  if (twOnIslet(x, y) || (abs(x - TW_IX) < 70 && y > 40 && y < TW_IY + 110))
+    return v2PressSet(t, TW_IX - 70, TW_IY - 150, 140, 260, T(S_TOWER)) ? 1 : -1;
+  return v2PressNav(x, y, t, 0, 0, 0, true) ? 1 : -1;
+}
+
 // Travel: its page arrows, and the tower on page 2. True if it took the tap
 bool v2TravelTap(int16_t x, int16_t y) {
   int dx = x - (v2IslePage ? 36 : 430), dy = y - V2_PAGE_ARROW_Y;
