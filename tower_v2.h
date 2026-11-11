@@ -899,7 +899,7 @@ static void twViewTeam() {
     int16_t d = i ? twPickDex[i - 1] : pet.speciesId;
     bool sh = i ? twPickShiny[i - 1] : pet.shiny;
     int cx = twTeamSlotX(i, n);
-    V2_HOVER(cx - 60, 100, i ? 120 : 0, 168);  // a friend under the mouse lifts (a tap changes it); your own stays
+    V2_HOVER_DIFF(cx - 60, 100, i ? 120 : 0, 168);  // a friend under the mouse lifts, dais and all (a tap changes it)
     twDais(cx, 180, 112, i ? (Rgb)0x9A6AD8 : (Rgb)0x58B868);
     twThumb(thumbs.getForm(d, sh), cx, 194, 3);
     char nb[16];
@@ -957,9 +957,9 @@ static void twCards(int crossed) {
     TwMember &m = twTeam[i];
     int cx0 = x0 + i * (w + gap), cx1 = cx0 + w, mx = (cx0 + cx1) / 2;
     (void)cx1;
-    V2_HOVER(cx0, TW_LEAD_Y0, w, TW_LEAD_Y1 - TW_LEAD_Y0);  // under the mouse: it lifts, like a button (hover_v2.h)
+    V2_HOVER_DIFF(cx0, TW_LEAD_Y0, w, TW_LEAD_Y1 - TW_LEAD_Y0);  // under the mouse: its whole dais lifts, like a button
     bool out = !m.f.hp;
-    int8_t hint = towerHint(DEX_TBL[m.dex].type, DEX_TBL[twFoeDex].type);
+    int8_t hint = towerMatchup(m.f, twFoe);  // (the fight itself, as HP stands now)
     if (hint > 0 && !out) twGlow(mx, 292, 54, 0x8AD06A, 150);
     twDais(mx, 290, 104, out ? (Rgb)0x9A6AD8 : hint > 0 ? (Rgb)0x4FA04F : hint < 0 ? (Rgb)0xA84848 : (Rgb)0x9A6AD8);
     PmdMon &pm = m.isPet ? pmd : twPmd[i > 0 ? i - 1 : 0];
@@ -1098,15 +1098,19 @@ static void twViewOver() {
   if (twRan) {
     snprintf(tip, sizeof(tip), "%s", T(S_TWR_TIP));
   } else {
-    int16_t team[TOWER_TEAM];
-    for (int i = 0; i < twTeamN; i++) team[i] = twTeam[i].dex;
-    uint8_t strong[2], ns = towerStrongTypes(DEX_TBL[twBeatBy].type, strong);
+    BtlFighter team[TOWER_TEAM], foe = towerGuardian(twBeatStep, twBeatBy, twLevel());
+    const BtlFighter *last = nullptr;
+    for (int i = 0; i < twTeamN; i++) {
+      team[i] = twTeam[i].f;
+      if (twTeam[i].dex == twLastDex) last = &twTeam[i].f;
+    }
+    uint8_t strong[2], ns = towerStrongTypes(twBeatBy, foe.level, strong);
     char types[24];
     snprintf(types, sizeof(types), ns > 1 ? "%s/%s" : "%s", ns ? TYPE_NAME[strong[0]] : "", ns > 1 ? TYPE_NAME[strong[1]] : "");
-    kind = towerTip(twLastDex, twBeatBy, team, twTeamN, pet.trAtk, pet.trDef, pet.trSpe);
+    kind = towerTip(last, foe, team, twTeamN, pet.trAtk, pet.trDef, pet.trSpe);
     switch (kind) {
-      case TOWER_TIP_WEAK: snprintf(tip, sizeof(tip), T(S_TIP_WEAK_FMT), dexName(twLastDex), TYPE_NAME[DEX_TBL[twBeatBy].type], types); break;
-      case TOWER_TIP_NOSTRONG: snprintf(tip, sizeof(tip), T(S_TIP_NOSTRONG_FMT), TYPE_NAME[DEX_TBL[twBeatBy].type], types); break;
+      case TOWER_TIP_WEAK: snprintf(tip, sizeof(tip), T(S_TIP_WEAK_FMT), dexName(twLastDex), dexName(twBeatBy), types); break;
+      case TOWER_TIP_NOSTRONG: snprintf(tip, sizeof(tip), T(S_TIP_NOSTRONG_FMT), dexName(twBeatBy), types); break;
       case TOWER_TIP_DEF: snprintf(tip, sizeof(tip), "%s", T(S_TIP_DEF)); break;
       case TOWER_TIP_SPD: snprintf(tip, sizeof(tip), "%s", T(S_TIP_SPD)); break;
       default: snprintf(tip, sizeof(tip), "%s", T(S_TIP_ATK)); break;

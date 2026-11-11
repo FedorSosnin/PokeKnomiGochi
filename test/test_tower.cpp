@@ -105,7 +105,7 @@ static bool simFight(BtlFighter &me, BtlFighter &foe) {
   return false;
 }
 static int simScore(const BtlFighter &m, const BtlFighter &foe) {  // what the lead screen's hint says, then HP
-  return towerHint(DEX_TBL[m.dex].type, DEX_TBL[foe.dex].type) * 1000 + m.hp * 100 / m.maxHp;
+  return towerMargin(m, foe) * 1000 + m.hp * 100 / m.maxHp;  // (a sensible player: the least bad when all are Weak)
 }
 // how far a climb gets: 0 none, 1..8 floors, 9 the Legend's first fight, 10 the whole tower
 static int simClimb(const int16_t team[3], uint8_t lvl, uint8_t stars, uint8_t ta, uint8_t td, uint8_t ts) {
@@ -169,25 +169,43 @@ TEST(tower, friends_cheer_adds_hp_up_to_three_times) {
   CHECK_EQ((int)towerCheerHp(100, 9), 100 + TOWER_CHEER_PCT * TOWER_CHEER_MAX);  // never past the most
 }
 
+TEST(tower, the_hint_comes_from_the_fight_not_just_the_types) {
+  // Rhydon (Ground) against Kabutops (Rock): Ground beats Rock, but Kabutops' Water move and its speed win (Fedor)
+  BtlFighter rhydon = towerFriend(112, 100, 3, 100, 25, 100), kabutops = towerGuardian(1, 141, 100);
+  CHECK(towerMatchup(rhydon, kabutops) <= 0);
+  BtlFighter blastoise = towerFriend(9, 100, 3, 100, 25, 100), charizard = towerFriend(6, 100, 3, 100, 25, 100), golem = towerGuardian(1, 76, 100);
+  CHECK_EQ((int)towerMatchup(blastoise, golem), 1);
+  CHECK_EQ((int)towerMatchup(charizard, golem), -1);
+  BtlFighter tired = blastoise;
+  tired.hp = 1;  // the HP each has now counts
+  CHECK_EQ((int)towerMatchup(tired, golem), -1);
+}
+
 TEST(tower, the_end_says_which_types_to_bring) {
   uint8_t t[2];
-  CHECK_EQ((int)towerStrongTypes(TY_ROCK, t), 2);
-  CHECK((t[0] == TY_WATER || t[1] == TY_WATER) && (t[0] == TY_GRASS || t[1] == TY_GRASS || t[0] == TY_GROUND || t[1] == TY_GROUND));
-  CHECK_EQ((int)towerStrongTypes(TY_PSYCHIC, t), 1);  // only Bug, in the first games' chart
-  CHECK_EQ((int)t[0], (int)TY_BUG);
-  for (uint8_t ty = 0; ty < TY_COUNT; ty++) {  // whatever it names is Strong there
-    uint8_t n = towerStrongTypes(ty, t);
-    for (uint8_t k = 0; k < n; k++) CHECK(towerHint(t[k], ty) > 0);
+  CHECK(towerStrongTypes(76, 100, t) >= 1);  // Golem
+  CHECK(t[0] == TY_WATER || t[0] == TY_GRASS || t[0] == TY_GROUND || t[0] == TY_FIGHTING);
+  int n = towerStrongTypes(141, 100, t);  // Kabutops has a Water move: never Ground or Fire
+  for (int k = 0; k < n; k++) CHECK(t[k] != TY_GROUND && t[k] != TY_FIRE);
+  for (int16_t d = 1; d <= DEX_COUNT; d++) {  // whatever it names hits that one hard, and takes no hard hit back
+    uint8_t m = towerStrongTypes(d, 100, t);
+    BtlMoves fm = btlMovesFor(d, 100, 0);
+    for (uint8_t k = 0; k < m; k++) {
+      CHECK(btlEffect(t[k], DEX_TBL[d].type) > 2);
+      for (int i = 0; i < fm.count; i++) CHECK(btlEffect(MOVE_TBL[fm.ids[i]].type, t[k]) <= 2);
+    }
   }
 }
 
 TEST(tower, the_tip_fits_how_the_climb_was_lost) {
-  const int16_t fire[3] = { 6, 4, 5 }, mixed[3] = { 6, 4, 9 };  // three Fire, or two Fire and Blastoise; vs Golem (Rock)
-  CHECK_EQ((int)towerTip(5, 76, fire, 3, 100, 25, 100), (int)TOWER_TIP_WEAK);       // the last one was Weak
-  CHECK_EQ((int)towerTip(0, 76, fire, 3, 100, 25, 100), (int)TOWER_TIP_NOSTRONG);   // nobody was Strong
-  CHECK_EQ((int)towerTip(9, 76, mixed, 3, 100, 25, 100), (int)TOWER_TIP_DEF);       // the right one lost: training, the shortest
-  CHECK_EQ((int)towerTip(9, 76, mixed, 3, 10, 25, 100), (int)TOWER_TIP_ATK);
-  CHECK_EQ((int)towerTip(9, 76, mixed, 3, 100, 25, 5), (int)TOWER_TIP_SPD);
+  BtlFighter golem = towerGuardian(1, 76, 100), fire[3], mixed[3];
+  const int16_t f[3] = { 6, 5, 4 }, m[3] = { 6, 4, 9 };  // three Fire, or two Fire and Blastoise
+  for (int i = 0; i < 3; i++) fire[i] = towerFriend(f[i], 100, 3, 100, 25, 100), mixed[i] = towerFriend(m[i], 100, 3, 100, 25, 100);
+  CHECK_EQ((int)towerTip(&fire[0], golem, fire, 3, 100, 25, 100), (int)TOWER_TIP_WEAK);      // the last one was Weak
+  CHECK_EQ((int)towerTip(nullptr, golem, fire, 3, 100, 25, 100), (int)TOWER_TIP_NOSTRONG);   // nobody was Strong
+  CHECK_EQ((int)towerTip(&mixed[2], golem, mixed, 3, 100, 25, 100), (int)TOWER_TIP_DEF);     // the right one lost: training
+  CHECK_EQ((int)towerTip(&mixed[2], golem, mixed, 3, 10, 25, 100), (int)TOWER_TIP_ATK);
+  CHECK_EQ((int)towerTip(&mixed[2], golem, mixed, 3, 100, 25, 5), (int)TOWER_TIP_SPD);
 }
 
 TEST(tower, challenges_after_the_legend) {

@@ -145,6 +145,34 @@ inline int8_t towerHint(uint8_t mine, uint8_t theirs) {
   return s > 0 ? 1 : s < 0 ? -1 : 0;
 }
 
+// what a hit of a's does to t, about (the middle of its damage roll)
+inline uint32_t towerHit(const BtlFighter &a, const BtlFighter &t, uint8_t mv) {
+  return btlDamage(a.level, MOVE_TBL[mv], a.atk, t.def, DEX_TBL[a.dex].type, DEX_TBL[t.dex].type, 92);
+}
+// the lead screen's hint, from the fight itself (Fedor: Rhydon was "Strong" against Kabutops by their types, and
+// Kabutops' Water move beat it easily): your best move, the guardian's moves as often as it uses them, the HP each has
+// now and who goes first. 1 Strong: yours should win with a turn to spare; -1 Weak: it should lose; 0 too close
+// ...and how many turns yours would have to spare (negative: short), -99 if it can't hurt it
+inline int16_t towerMargin(const BtlFighter &me, const BtlFighter &foe) {
+  BtlMoves mm = btlMovesFor(me.dex, me.level, foe.dex), fm = btlMovesFor(foe.dex, foe.level, me.dex);
+  uint32_t mine = 0, theirs = 0;
+  for (int i = 0; i < mm.count; i++) {
+    uint32_t h = towerHit(me, foe, mm.ids[i]);
+    if (h > mine) mine = h;
+  }
+  if (fm.count == 2) theirs = (towerHit(foe, me, fm.ids[1]) * 70 + towerHit(foe, me, fm.ids[0]) * 30) / 100;  // (btlWildMove)
+  else theirs = towerHit(foe, me, fm.ids[0]);
+  if (!mine) return -99;
+  if (!theirs) return 99;
+  int32_t a = (foe.hp + mine - 1) / mine, b = (me.hp + theirs - 1) / theirs;  // the turns each needs
+  int32_t margin = (btlPlayerFirst(me.spe, foe.spe, 1) && me.spe != foe.spe ? b : b - 1) - a;
+  return margin > 99 ? 99 : margin < -99 ? -99 : (int16_t)margin;
+}
+inline int8_t towerMatchup(const BtlFighter &me, const BtlFighter &foe) {
+  int16_t m = towerMargin(me, foe);
+  return m >= 1 ? 1 : m < 0 ? -1 : 0;
+}
+
 // HP back between floors (never past full)
 inline uint16_t towerHeal(uint16_t hp, uint16_t maxHp) {
   if (!hp) return 0;
@@ -171,25 +199,33 @@ inline uint16_t towerCheerHp(uint16_t hp, uint8_t cheer) {
 
 // ---- the climb's end says what to try next (Fedor: "a kid who loses at 7F should know exactly what to try")
 enum : uint8_t { TOWER_TIP_WEAK, TOWER_TIP_NOSTRONG, TOWER_TIP_ATK, TOWER_TIP_DEF, TOWER_TIP_SPD };
-// the types Strong against a guardian's (the lead screen's hint), the best first: up to 2, how many
-inline uint8_t towerStrongTypes(uint8_t foe, uint8_t out[2]) {
-  uint8_t n = 0;
-  for (int pass = 0; pass < 2 && n < 2; pass++)  // first those that hit it hard and take little back, then the rest
+// the types to bring against a guardian: they hit it hard, and none of its moves hits them hard (Kabutops is Rock
+// but has a Water move: not Ground), those its moves barely touch first; up to 2, how many
+inline uint8_t towerStrongTypes(int16_t foeDex, uint8_t foeLvl, uint8_t out[2]) {
+  uint8_t foe = DEX_TBL[foeDex].type, n = 0;
+  BtlMoves fm = btlMovesFor(foeDex, foeLvl, 0);
+  for (int pass = 0; pass < 2 && n < 2; pass++)
     for (uint8_t t = 0; t < TY_COUNT && n < 2; t++) {
-      if (towerHint(t, foe) <= 0 || (n && out[0] == t)) continue;
-      bool best = btlEffect(t, foe) > 2 && btlEffect(foe, t) <= 2;
-      if (best == (pass == 0)) out[n++] = t;
+      if (btlEffect(t, foe) <= 2 || (n && out[0] == t)) continue;
+      uint8_t worst = 0;
+      for (int i = 0; i < fm.count; i++) {
+        uint8_t e = btlEffect(MOVE_TBL[fm.ids[i]].type, t);
+        if (e > worst) worst = e;
+      }
+      if (worst > 2) continue;
+      if ((worst < 2) == (pass == 0)) out[n++] = t;
     }
   return n;
 }
-// what the end screen says: the one beaten last was Weak against it, or nobody was Strong (both: try a type that is),
-// or else the training the team is shortest of
-inline uint8_t towerTip(int16_t lastDex, int16_t foeDex, const int16_t *team, uint8_t n, uint8_t ta, uint8_t td, uint8_t ts) {
-  uint8_t foe = DEX_TBL[foeDex].type, strong[2];
-  if (towerStrongTypes(foe, strong)) {
-    if (lastDex && towerHint(DEX_TBL[lastDex].type, foe) < 0) return TOWER_TIP_WEAK;
+// what the end screen says, the fights taken fresh (full HP each): the one beaten last was Weak against it, or nobody
+// was Strong (both: try a type that is), or else the training the team is shortest of
+inline uint8_t towerTip(const BtlFighter *last, const BtlFighter &foe, const BtlFighter *team, uint8_t n, uint8_t ta, uint8_t td, uint8_t ts) {
+  auto fresh = [](BtlFighter f) { f.hp = f.maxHp; return f; };
+  uint8_t strong[2];
+  if (towerStrongTypes(foe.dex, foe.level, strong)) {
+    if (last && towerMatchup(fresh(*last), fresh(foe)) < 0) return TOWER_TIP_WEAK;
     bool any = false;
-    for (uint8_t i = 0; i < n; i++) any = any || towerHint(DEX_TBL[team[i]].type, foe) > 0;
+    for (uint8_t i = 0; i < n; i++) any = any || towerMatchup(fresh(team[i]), fresh(foe)) > 0;
     if (!any) return TOWER_TIP_NOSTRONG;
   }
   return td <= ta && td <= ts ? TOWER_TIP_DEF : ts <= ta ? TOWER_TIP_SPD : TOWER_TIP_ATK;
