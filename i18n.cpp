@@ -81,6 +81,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Ball", "Lanzar %s",
     "Toca una Ball y luego LANZAR.", "Toca LANZAR.", "Inclina para apuntar",
     "Sonido", "Idioma", "Acerca de", "Por 3DPrintSOS - Fedor", "Escan\202alo con el m\242vil",
+    "Salvajes", "Todos", "Torre", "TORRE KNOMI", "SUBIR!", "LEYENDA", "Sube desde 1F con tu Pokemon y 2 amigos. Los PS no se recuperan. Cada combate llena tus barras de Balls. Vence a la Leyenda: Master Ball!", "A SUBIR!", "Para subir hace falta toda la energ\241a", "ELIGE 2 AMIGOS", "VAMOS!", "Qui\202n va primero?", "Fuerte", "D\202bil", "Debilitado", "%dF superado!", "Sigue: %dF %s", "PUERTA %d SUPERADA!", "+%d Ultra Ball", "FIN DE LA SUBIDA", "%s gan\242 en %dF", "Tuyo", "Gana combates, juega y empieza con los Fuertes", "Vence a los dos!", "LUCHAR!", "MAESTRO DE LA TORRE!", "+1 Master Ball", "MEDALLA %s", "MEDALLAS %d/%d", "SALON DE LA FAMA",  // Knomi Tower
+    "TU EQUIPO", "Toca un amigo para cambiarlo",  // Knomi Tower: the team before a climb
+    "Mejor: %dF",  // Knomi Tower: the island tag, your best climb
+    "%s absorbe a %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s era D\202bil contra %s. Prueba un amigo %s!", "Nadie era Fuerte contra %s. Prueba un amigo %s!", "Gana batallas para entrenar ATQ, y empieza con los Fuertes!", "Cuidarlo cada d\241a entrena DEF. Empieza con los Fuertes!", "Juega minijuegos para entrenar VEL, y empieza con los Fuertes!",  // Knomi Tower: what to try next
+    "Tus amigos te animan! +%d%% PS", "Pr\242xima: +%d%% PS",  // Knomi Tower: friends cheer
+    "RETOS", "Vence la torre otra vez con:", "Nadie debilitado", "Dos amigos de 1 estrella", "Ning\243n Pokemon evolucionado", "NUEVO!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- EN ----------------
@@ -157,6 +164,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Ball", "Throw %s",
     "Tap a ball, then THROW.", "Tap THROW.", "Lean to aim",
     "Sound", "Language", "About", "Made by 3DPrintSOS - Fedor", "Scan it with your phone",
+    "Wild", "All", "Tower", "KNOMI TOWER", "CLIMB!", "LEGEND", "Climb from 1F with your Pokemon and 2 friends. HP carries over. Every fight fills your ball bars. Beat the Legend for a Master Ball!", "LET'S CLIMB!", "A climb needs a full energy bar", "PICK 2 FRIENDS", "GO!", "Who goes first?", "Strong", "Weak", "Fainted", "%dF won!", "Next: %dF %s", "GATE %d PASSED!", "+%d Ultra Ball", "CLIMB OVER", "%s won on %dF", "Yours", "Win battles, play games, and lead with Strong picks", "Beat both!", "FIGHT!", "TOWER MASTER!", "+1 Master Ball", "%s BADGE", "BADGES %d/%d", "HALL OF FAME",  // Knomi Tower
+    "YOUR TEAM", "Tap a friend to change it",  // Knomi Tower: the team before a climb
+    "Best: %dF",  // Knomi Tower: the island tag, your best climb
+    "%s drains %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s was Weak against %s. Try a %s friend!", "No one was Strong against %s. Try a %s friend!", "Win battles to train ATK, and lead with your Strong picks!", "Good care every day trains DEF. Lead with your Strong picks!", "Play mini games to train SPD, and lead with your Strong picks!",  // Knomi Tower: what to try next
+    "Friends cheer! +%d%% HP", "Next climb: +%d%% HP",  // Knomi Tower: friends cheer
+    "CHALLENGES", "Beat the tower again with:", "No one fainting", "Two 1-star friends", "No evolved Pokemon", "NEW!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- FR ----------------
@@ -233,6 +247,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Ball", "Lancer %s",
     "Touche une Ball, puis LANCER.", "Touche LANCER.", "Penche pour viser",
     "Son", "Langue", "A propos", "Par 3DPrintSOS - Fedor", "Scanne avec ton portable",
+    "Sauvages", "Tous", "Tour", "TOUR KNOMI", "GRIMPER!", "L\220GENDE", "Grimpe depuis 1F avec ton Pokemon et 2 amis. Les PV restent. Chaque combat remplit tes barres de Balls. Bats la L\202gende: une Master Ball!", "ON GRIMPE!", "Pour grimper, il faut toute l'\202nergie", "CHOISIS 2 AMIS", "GO!", "Qui commence?", "Fort", "Faible", "K.O.", "%dF gagn\202!", "Suite: %dF %s", "PORTE %d PASS\220E!", "+%d Hyper Ball", "FIN DE L'ASCENSION", "%s a gagn\202 au %dF", "Toi", "Gagne des combats, joue, et commence par les Forts", "Bats les deux!", "COMBATTRE!", "MAITRE DE LA TOUR!", "+1 Master Ball", "BADGE %s", "BADGES %d/%d", "TEMPLE DE LA RENOMM\220E",  // Knomi Tower
+    "TON \220QUIPE", "Touche un ami pour le changer",  // Knomi Tower: the team before a climb
+    "Record: %dF",  // Knomi Tower: the island tag, your best climb
+    "%s draine %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s \202tait Faible contre %s. Essaie un ami %s!", "Personne n'\202tait Fort contre %s. Essaie un ami %s!", "Gagne des combats pour l'ATQ, et commence par les Forts!", "De bons soins chaque jour entra\214nent la DEF. Commence par les Forts!", "Joue aux mini-jeux pour la VIT, et commence par les Forts!",  // Knomi Tower: what to try next
+    "Tes amis t'encouragent! +%d%% PV", "Prochaine: +%d%% PV",  // Knomi Tower: friends cheer
+    "DEFIS", "Bats la tour encore avec:", "Personne K.O.", "Deux amis 1 \202toile", "Aucun Pokemon \202volu\202", "NOUVEAU!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- DE ----------------
@@ -314,6 +335,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202ball", "%s werfen",
     "Tippe einen Ball an, dann WERFEN.", "Tippe auf WERFEN.", "Neigen zum Zielen",
     "Ton", "Sprache", "Info", "Von 3DPrintSOS - Fedor", "Mit dem Handy scannen",
+    "Wild", "Alle", "Turm", "KNOMI-TURM", "KLETTERN!", "LEGENDE", "Klettere ab 1F mit deinem Pokemon und 2 Freunden. Die KP bleiben. Jeder Kampf f\201llt deine Ball-Leisten. Besiege die Legende: ein Meisterball!", "LOS GEHT'S!", "Zum Klettern braucht es volle Energie", "WAEHLE 2 FREUNDE", "LOS!", "Wer f\204ngt an?", "Stark", "Schwach", "Besiegt", "%dF geschafft!", "Weiter: %dF %s", "TOR %d GESCHAFFT!", "+%d Hyperball", "AUFSTIEG VORBEI", "%s gewann auf %dF", "Du", "Gewinne K\204mpfe, spiele und schick zuerst die Starken", "Besiege beide!", "KAEMPFEN!", "TURMMEISTER!", "+1 Meisterball", "%s-ORDEN", "ORDEN %d/%d", "RUHMESHALLE",  // Knomi Tower
+    "DEIN TEAM", "Tippe einen Freund an, um ihn zu tauschen",  // Knomi Tower: the team before a climb
+    "Bestes: %dF",  // Knomi Tower: the island tag, your best climb
+    "%s saugt %s aus!",  // Knomi Tower: a guardian drains one of yours
+    "%s war Schwach gegen %s. Probier einen %s-Freund!", "Keiner war Stark gegen %s. Probier einen %s-Freund!", "Gewinne K\204mpfe f\201r ANG, und fang mit den Starken an!", "Gute Pflege jeden Tag trainiert VER. Fang mit den Starken an!", "Spiele Minispiele f\201r INI, und fang mit den Starken an!",  // Knomi Tower: what to try next
+    "Freunde feuern dich an! +%d%% KP", "N\204chstes Mal: +%d%% KP",  // Knomi Tower: friends cheer
+    "HERAUSFORDERUNGEN", "Besiege den Turm noch mal mit:", "Keiner besiegt", "Zwei 1-Stern-Freunde", "Kein entwickeltes Pokemon", "NEU!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- IT ----------------
@@ -390,6 +418,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Ball", "Lancia %s",
     "Tocca una Ball, poi LANCIA.", "Tocca LANCIA.", "Inclina per mirare",
     "Suono", "Lingua", "Info", "Di 3DPrintSOS - Fedor", "Scansiona col telefono",
+    "Selvatici", "Tutti", "Torre", "TORRE KNOMI", "SALI!", "LEGGENDA", "Sali dal 1F con il tuo Pokemon e 2 amici. I PS restano. Ogni lotta riempie le barre delle Ball. Batti la Leggenda: una Master Ball!", "SALIAMO!", "Per salire serve tutta l'energia", "SCEGLI 2 AMICI", "VIA!", "Chi va per primo?", "Forte", "Debole", "Esausto", "%dF vinto!", "Poi: %dF %s", "PORTA %d SUPERATA!", "+%d Ultra Ball", "SALITA FINITA", "%s ha vinto al %dF", "Tuo", "Vinci lotte, gioca e inizia con i Forti", "Battili entrambi!", "LOTTA!", "MAESTRO DELLA TORRE!", "+1 Master Ball", "MEDAGLIA %s", "MEDAGLIE %d/%d", "ALBO D'ORO",  // Knomi Tower
+    "LA TUA SQUADRA", "Tocca un amico per cambiarlo",  // Knomi Tower: the team before a climb
+    "Record: %dF",  // Knomi Tower: the island tag, your best climb
+    "%s assorbe %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s era Debole contro %s. Prova un amico %s!", "Nessuno era Forte contro %s. Prova un amico %s!", "Vinci lotte per allenare ATT, e inizia con i Forti!", "Cure ogni giorno allenano DIF. Inizia con i Forti!", "Gioca ai minigiochi per VEL, e inizia con i Forti!",  // Knomi Tower: what to try next
+    "Gli amici fanno il tifo! +%d%% PS", "Prossima: +%d%% PS",  // Knomi Tower: friends cheer
+    "SFIDE", "Batti di nuovo la torre con:", "Nessuno esausto", "Due amici da 1 stella", "Nessun Pokemon evoluto", "NUOVO!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- PT ----------------
@@ -466,6 +501,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pok\202 Bola", "Lan\207ar %s",
     "Toca numa Bola e depois em LAN\207AR.", "Toca em LAN\207AR.", "Inclina para mirar",
     "Som", "Idioma", "Sobre", "Por 3DPrintSOS - Fedor", "L\210 com o telem\242vel",
+    "Selvagens", "Todos", "Torre", "TORRE KNOMI", "SUBIR!", "LENDA", "Suba do 1F com seu Pokemon e 2 amigos. Os PS continuam. Cada batalha enche suas barras de Balls. Ven\207a a Lenda: uma Master Ball!", "VAMOS!", "Para subir precisa de toda a energia", "ESCOLHA 2 AMIGOS", "VAI!", "Quem vai primeiro?", "Forte", "Fraco", "Desmaiado", "%dF vencido!", "Pr\242ximo: %dF %s", "PORTAO %d VENCIDO!", "+%d Ultra Ball", "FIM DA SUBIDA", "%s venceu no %dF", "Seu", "Ven\207a batalhas, jogue e comece com os Fortes", "Ven\207a os dois!", "LUTAR!", "MESTRE DA TORRE!", "+1 Master Ball", "INSIGNIA %s", "INSIGNIAS %d/%d", "HALL DA FAMA",  // Knomi Tower
+    "SUA EQUIPE", "Toque um amigo para troc\240-lo",  // Knomi Tower: the team before a climb
+    "Recorde: %dF",  // Knomi Tower: the island tag, your best climb
+    "%s absorve %s!",  // Knomi Tower: a guardian drains one of yours
+    "%s era Fraco contra %s. Tente um amigo %s!", "Ninguem era Forte contra %s. Tente um amigo %s!", "Ven\207a batalhas para treinar ATQ, e comece com os Fortes!", "Cuidar todo dia treina DEF. Comece com os Fortes!", "Jogue minijogos para treinar VEL, e comece com os Fortes!",  // Knomi Tower: what to try next
+    "Seus amigos torcem! +%d%% PS", "Pr\242xima: +%d%% PS",  // Knomi Tower: friends cheer
+    "DESAFIOS", "Ven\207a a torre de novo com:", "Ninguem desmaiado", "Dois amigos de 1 estrela", "Nenhum Pokemon evoluido", "NOVO!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- JA ----------------
@@ -565,6 +607,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "モンスターボール", "%sを なげる",
     "ボールを えらんで なげるを タッチ。", "なげるを タッチ。", "かたむけて ねらう",
     "サウンド", "げんご", "じょうほう", "つくった ひと: 3DPrintSOS - Fedor", "スマホで よみとってね",
+    "やせい", "すべて", "タワー", "ノーミタワー", "のぼる!", "でんせつ", "1Fから じぶんの ポケモンと ともだち 2ひきで のぼろう! HPは そのまま。 バトルで ボールの ゲージが たまる。 でんせつに かつと マスターボール!", "のぼろう!", "のぼるには げんきが まんタンじゃないと", "ともだちを 2ひき", "GO!", "だれが さきに いく?", "つよい", "よわい", "ひんし", "%dF クリア!", "つぎ: %dF %s", "ゲート %d とっぱ!", "ハイパーボール +%d", "ここまで", "%sに %dFで まけた", "じぶん", "バトルで かって ゲームで あそんで、 つよい ポケモンから だそう", "ふたりとも たおせ!", "たたかう!", "タワーマスター!", "マスターボール +1", "%s バッジ", "バッジ %d/%d", "でんどういり",  // Knomi Tower
+    "じぶんの チーム", "ともだちを タッチで こうたい",  // Knomi Tower: the team before a climb
+    "さいこう %dF",  // Knomi Tower: the island tag, your best climb
+    "%sは %sの ちからを すいとった!",  // Knomi Tower: a guardian drains one of yours
+    "%sは %sに よわかった。 %sの ともだちを ためそう!", "%sに つよい ポケモンが いなかった。 %sの ともだちを ためそう!", "バトルに かって こうげきを きたえよう。 つよい ポケモンから だそう!", "まいにち おせわすると ぼうぎょが きたえられる。 つよい ポケモンから だそう!", "ミニゲームで すばやさを きたえよう。 つよい ポケモンから だそう!",  // Knomi Tower: what to try next
+    "ともだちの おうえん! HP +%d%%", "つぎは HP +%d%%",  // Knomi Tower: friends cheer
+    "チャレンジ", "もういちど タワーを クリア:", "だれも たおれない", "ほし 1つの ともだち 2ひき", "しんかしていない ポケモンだけ", "NEW!",  // Knomi Tower: challenges
 #endif
   },
   // ---------------- KO ----------------
@@ -646,6 +695,13 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "몬스터볼", "%s 던지기",
     "볼을 고르고 던지기를 눌러요.", "던지기를 눌러요.", "기울여서 조준",
     "소리", "언어", "정보", "만든 사람: 3DPrintSOS - Fedor", "휴대폰으로 스캔하세요",
+    "야생", "전체", "타워", "노미 타워", "오르기!", "전설", "포켓몬과 친구 2마리와 함께 1F부터 오르자! HP는 그대로야. 배틀마다 볼 게이지가 차고, 전설을 이기면 마스터볼!", "올라가자!", "오르려면 에너지가 가득 차야 해", "친구 2마리 고르기", "가자!", "누가 먼저 갈까?", "유리", "불리", "기절", "%dF 클리어!", "다음: %dF %s", "관문 %d 돌파!", "하이퍼볼 +%d", "도전 끝", "%s에게 %dF에서 졌어", "내 팀", "배틀에서 이기고 게임을 하고, 유리한 포켓몬부터 내보내자", "둘 다 이겨라!", "싸우기!", "타워 마스터!", "마스터볼 +1", "%s 배지", "배지 %d/%d", "명예의 전당",  // Knomi Tower
+    "내 팀", "친구를 눌러 바꾸기",  // Knomi Tower: the team before a climb
+    "최고 %dF",  // Knomi Tower: the island tag, your best climb
+    "%s, %s의 힘을 흡수했다!",  // Knomi Tower: a guardian drains one of yours
+    "%s, %s에 약했어. %s 친구를 데려가 봐!", "%s에 강한 포켓몬이 없었어. %s 친구를 데려가 봐!", "배틀에 이겨서 공격을 단련하고, 유리한 포켓몬부터 내보내!", "매일 잘 돌보면 방어가 단련돼. 유리한 포켓몬부터 내보내!", "미니게임으로 스피드를 단련하고, 유리한 포켓몬부터 내보내!",  // Knomi Tower: what to try next
+    "친구들의 응원! HP +%d%%", "다음 도전: HP +%d%%",  // Knomi Tower: friends cheer
+    "챌린지", "타워를 다시 클리어:", "아무도 기절하지 않기", "별 1개 친구 2마리", "진화하지 않은 포켓몬만", "NEW!",  // Knomi Tower: challenges
 #endif
   },
 };
@@ -653,65 +709,65 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
 // Medal names in their three lengths [language][medal].
 static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Nv.10", "Nv.25", "Nv.50", "BAYA", "RACHA 7", "VINCULO", "FORMA TOPE", "EN FORMA",
-    "VARIOCOLOR", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Nv.100", "AMIGO", "FIESTA", "JUGAR", "BOSQUE", "PLAYA", "CUEVA", "MANSION", "CAMPO", "Nv.100 x3", "Nv.100 x5", "Nv.100 x10" },
+    "VARIOCOLOR", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Nv.100", "AMIGO", "FIESTA", "JUGAR", "BOSQUE", "PLAYA", "CUEVA", "MANSION", "CAMPO", "Nv.100 x3", "Nv.100 x5", "Nv.100 x10", "TORRE KNOMI" },
   { "Lv.10", "Lv.25", "Lv.50", "BERRY", "7 STREAK", "BOND", "TOP FORM", "IN SHAPE",
-    "SHINY!", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "BUDDY", "PARTY", "PLAYMATE", "FOREST", "BEACH", "CAVE", "MANSION", "FIELD", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
+    "SHINY!", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "BUDDY", "PARTY", "PLAYMATE", "FOREST", "BEACH", "CAVE", "MANSION", "FIELD", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10", "TOWER MASTER" },
   { "Niv.10", "Niv.25", "Niv.50", "BAIE", "SERIE 7", "LIEN", "FORME MAX", "EN FORME",
-    "CHROMATIQUE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "COPAIN", "FETE", "JOUER", "FORET", "PLAGE", "GROTTE", "MANOIR", "CHAMP", "Niv.100 x3", "Niv.100 x5", "Niv.100 x10" },
+    "CHROMATIQUE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "COPAIN", "FETE", "JOUER", "FORET", "PLAGE", "GROTTE", "MANOIR", "CHAMP", "Niv.100 x3", "Niv.100 x5", "Niv.100 x10", "MAITRE TOUR" },
   { "Lv.10", "Lv.25", "Lv.50", "BEERE", "7 SERIE", "BINDUNG", "ENDFORM", "FIT",
-    "SCHILLERND", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "KUMPEL", "PARTY", "SPIELEN", "WALD", "STRAND", "HOEHLE", "SPUKHAUS", "WIESE", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
+    "SCHILLERND", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "KUMPEL", "PARTY", "SPIELEN", "WALD", "STRAND", "HOEHLE", "SPUKHAUS", "WIESE", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10", "TURMMEISTER" },
   { "Lv.10", "Lv.25", "Lv.50", "BACCA", "SERIE 7", "LEGAME", "FORMA MAX", "IN FORMA",
-    "CROMATICO", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "AMICO", "FESTA", "GIOCARE", "FORESTA", "SPIAGGIA", "GROTTA", "VILLA", "PRATO", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
+    "CROMATICO", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Lv.100", "AMICO", "FESTA", "GIOCARE", "FORESTA", "SPIAGGIA", "GROTTA", "VILLA", "PRATO", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10", "TORRE KNOMI" },
   { "Niv.10", "Niv.25", "Niv.50", "BAGA", "SEQ 7", "LACO", "FORMA MAX", "EM FORMA",
-    "BRILHANTE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "AMIGO", "FESTA", "JOGAR", "FLORESTA", "PRAIA", "CAVERNA", "SOLAR", "CAMPO", "Niv.100 x3", "Niv.100 x5", "Niv.100 x10" },
+    "BRILHANTE", "DEX 10", "DEX 50", "DEX 100", "DEX 151", "Niv.100", "AMIGO", "FESTA", "JOGAR", "FLORESTA", "PRAIA", "CAVERNA", "SOLAR", "CAMPO", "Niv.100 x3", "Niv.100 x5", "Niv.100 x10", "MESTRE TORRE" },
   { "Lv.10", "Lv.25", "Lv.50", "きのみ", "7にち", "なかよし", "さいしゅう", "げんき",
-    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "Lv.100", "ともだち", "パーティ", "あそぼう", "もり", "うみべ", "どうくつ", "やかた", "のはら", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
+    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "Lv.100", "ともだち", "パーティ", "あそぼう", "もり", "うみべ", "どうくつ", "やかた", "のはら", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10", "タワーマスター" },
   { "Lv.10", "Lv.25", "Lv.50", "열매", "연속 7일", "유대", "최고 컨디션", "건강함",
-    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "Lv.100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10" },
+    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "Lv.100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판", "Lv.100 x3", "Lv.100 x5", "Lv.100 x10", "타워 마스터" },
 };
 static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Nv10", "Nv25", "Nv50", "BAYA", "7DIAS", "VINC", "TOPE", "SANO",
-    "VARIO", "DEX10", "DEX50", "DEX100", "DEX151", "Nv100", "AMIGO", "FIESTA", "JUEGO", "BOSQUE", "PLAYA", "CUEVA", "MANS", "CAMPO", "100x3", "100x5", "100x10" },
+    "VARIO", "DEX10", "DEX50", "DEX100", "DEX151", "Nv100", "AMIGO", "FIESTA", "JUEGO", "BOSQUE", "PLAYA", "CUEVA", "MANS", "CAMPO", "100x3", "100x5", "100x10", "TORRE" },
   { "Lv10", "Lv25", "Lv50", "BERRY", "7DAYS", "BOND", "TOP", "FIT",
-    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "BUDDY", "PARTY", "PLAY", "FOREST", "BEACH", "CAVE", "MANSN", "FIELD", "100x3", "100x5", "100x10" },
+    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "BUDDY", "PARTY", "PLAY", "FOREST", "BEACH", "CAVE", "MANSN", "FIELD", "100x3", "100x5", "100x10", "TOWER" },
   { "Niv10", "Niv25", "Niv50", "BAIE", "7JRS", "LIEN", "MAX", "FORME",
-    "CHROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "COPAIN", "FETE", "JEU", "FORET", "PLAGE", "GROTTE", "MANOIR", "CHAMP", "100x3", "100x5", "100x10" },
+    "CHROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "COPAIN", "FETE", "JEU", "FORET", "PLAGE", "GROTTE", "MANOIR", "CHAMP", "100x3", "100x5", "100x10", "TOUR" },
   { "Lv10", "Lv25", "Lv50", "BEERE", "7TAGE", "BND", "END", "FIT",
-    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "KUMPEL", "PARTY", "SPIEL", "WALD", "STRAND", "HOEHLE", "SPUK", "WIESE", "100x3", "100x5", "100x10" },
+    "SHINY", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "KUMPEL", "PARTY", "SPIEL", "WALD", "STRAND", "HOEHLE", "SPUK", "WIESE", "100x3", "100x5", "100x10", "TURM" },
   { "Lv10", "Lv25", "Lv50", "BACCA", "7GG", "LEG", "MAX", "FIT",
-    "CROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "AMICO", "FESTA", "GIOCO", "FOREST", "SPIAGG", "GROTTA", "VILLA", "PRATO", "100x3", "100x5", "100x10" },
+    "CROMA", "DEX10", "DEX50", "DEX100", "DEX151", "Lv100", "AMICO", "FESTA", "GIOCO", "FOREST", "SPIAGG", "GROTTA", "VILLA", "PRATO", "100x3", "100x5", "100x10", "TORRE" },
   { "Niv10", "Niv25", "Niv50", "BAGA", "7DIAS", "LACO", "MAX", "FIT",
-    "BRILHO", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "AMIGO", "FESTA", "JOGO", "FLORES", "PRAIA", "CAVERN", "SOLAR", "CAMPO", "100x3", "100x5", "100x10" },
+    "BRILHO", "DEX10", "DEX50", "DEX100", "DEX151", "Niv100", "AMIGO", "FESTA", "JOGO", "FLORES", "PRAIA", "CAVERN", "SOLAR", "CAMPO", "100x3", "100x5", "100x10", "TORRE" },
   { "Lv10", "Lv25", "Lv50", "きのみ", "7にち", "なかよし", "しんか", "げんき",
-    "いろ", "ずかん10", "ずかん50", "ずかん100", "ずかん151", "Lv100", "とも", "パーティ", "あそび", "もり", "うみべ", "どうくつ", "やかた", "のはら", "100x3", "100x5", "100x10" },
+    "いろ", "ずかん10", "ずかん50", "ずかん100", "ずかん151", "Lv100", "とも", "パーティ", "あそび", "もり", "うみべ", "どうくつ", "やかた", "のはら", "100x3", "100x5", "100x10", "タワー" },
   { "Lv10", "Lv25", "Lv50", "열매", "7일", "유대", "최고", "건강",
-    "이로치", "도감10", "도감50", "도감100", "도감151", "Lv100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판", "100x3", "100x5", "100x10" },
+    "이로치", "도감10", "도감50", "도감100", "도감151", "Lv100", "친구", "파티", "놀이", "숲", "해변", "동굴", "저택", "들판", "100x3", "100x5", "100x10", "타워" },
 };
 static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAYA HALLADA",
     "RACHA 7 DIAS", "VINCULO MAX", "FORMA FINAL", "EN FORMA",
-    "VARIOCOLOR", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "PRIMER AMIGO", "FIESTA DE 5", "JUGAR JUNTOS", "BOSQUE 100%", "PLAYA 100%", "CUEVA 100%", "MANSION 100%", "CAMPO 100%", "NV.100 x3", "NV.100 x5", "NV.100 x10" },
+    "VARIOCOLOR", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "PRIMER AMIGO", "FIESTA DE 5", "JUGAR JUNTOS", "BOSQUE 100%", "PLAYA 100%", "CUEVA 100%", "MANSION 100%", "CAMPO 100%", "NV.100 x3", "NV.100 x5", "NV.100 x10", "TORRE SUPERADA" },
   { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BERRY FOUND",
     "7 DAY STREAK", "MAX BOND", "FINAL FORM", "IN SHAPE",
-    "SHINY FOUND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "FIRST BUDDY", "PARTY OF 5", "PLAY TOGETHER", "FOREST 100%", "BEACH 100%", "CAVE 100%", "MANSION 100%", "FIELD 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10" },
+    "SHINY FOUND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "FIRST BUDDY", "PARTY OF 5", "PLAY TOGETHER", "FOREST 100%", "BEACH 100%", "CAVE 100%", "MANSION 100%", "FIELD 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10", "TOWER MASTER" },
   { "NIVEAU 10", "NIVEAU 25", "NIVEAU 50", "BAIE TROUVEE",
     "SERIE 7 JOURS", "LIEN MAX", "FORME FINALE", "EN FORME",
-    "CHROMATIQUE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEAU 100", "1ER COPAIN", "FETE A 5", "JOUER ENSEMBLE", "FORET 100%", "PLAGE 100%", "GROTTE 100%", "MANOIR 100%", "CHAMP 100%", "NIV.100 x3", "NIV.100 x5", "NIV.100 x10" },
+    "CHROMATIQUE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEAU 100", "1ER COPAIN", "FETE A 5", "JOUER ENSEMBLE", "FORET 100%", "PLAGE 100%", "GROTTE 100%", "MANOIR 100%", "CHAMP 100%", "NIV.100 x3", "NIV.100 x5", "NIV.100 x10", "TOUR VAINCUE" },
   { "LEVEL 10", "LEVEL 25", "LEVEL 50", "BEERE GEFUNDEN",
     "7 TAGE SERIE", "MAX BINDUNG", "ENDFORM", "FIT",
-    "SCHILLERND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "1. KUMPEL", "PARTY ZU 5", "MITSPIELEN", "WALD 100%", "STRAND 100%", "HOEHLE 100%", "SPUKHAUS 100%", "WIESE 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10" },
+    "SCHILLERND", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LEVEL 100", "1. KUMPEL", "PARTY ZU 5", "MITSPIELEN", "WALD 100%", "STRAND 100%", "HOEHLE 100%", "SPUKHAUS 100%", "WIESE 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10", "TURM BEZWUNGEN" },
   { "LIVELLO 10", "LIVELLO 25", "LIVELLO 50", "BACCA TROVATA",
     "SERIE 7 GIORNI", "LEGAME MAX", "FORMA FINALE", "IN FORMA",
-    "CROMATICO", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LIVELLO 100", "PRIMO AMICO", "FESTA DA 5", "GIOCO INSIEME", "FORESTA 100%", "SPIAGGIA 100%", "GROTTA 100%", "VILLA 100%", "PRATO 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10" },
+    "CROMATICO", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "LIVELLO 100", "PRIMO AMICO", "FESTA DA 5", "GIOCO INSIEME", "FORESTA 100%", "SPIAGGIA 100%", "GROTTA 100%", "VILLA 100%", "PRATO 100%", "LV.100 x3", "LV.100 x5", "LV.100 x10", "TORRE VINTA" },
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAGA ACHADA",
     "SEQ 7 DIAS", "LACO MAX", "FORMA FINAL", "EM FORMA",
-    "BRILHANTE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "AMIGO NOVO", "FESTA DE 5", "JOGAR JUNTOS", "FLORESTA 100%", "PRAIA 100%", "CAVERNA 100%", "SOLAR 100%", "CAMPO 100%", "NIV.100 x3", "NIV.100 x5", "NIV.100 x10" },
+    "BRILHANTE", "POKEDEX 10", "POKEDEX 50", "POKEDEX 100", "POKEDEX 151", "NIVEL 100", "AMIGO NOVO", "FESTA DE 5", "JOGAR JUNTOS", "FLORESTA 100%", "PRAIA 100%", "CAVERNA 100%", "SOLAR 100%", "CAMPO 100%", "NIV.100 x3", "NIV.100 x5", "NIV.100 x10", "TORRE VENCIDA" },
   { "レベル 10", "レベル 25", "レベル 50", "きのみ はっけん",
     "7にち れんぞく", "なかよし MAX", "さいしゅうしんか", "げんきいっぱい",
-    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "レベル 100", "はじめての ともだち", "5ひき パーティ", "いっしょに あそぶ", "もり 100%", "うみべ 100%", "どうくつ 100%", "やかた 100%", "のはら 100%", "レベル100 x3", "レベル100 x5", "レベル100 x10" },
+    "いろちがい", "ずかん 10", "ずかん 50", "ずかん 100", "ずかん 151", "レベル 100", "はじめての ともだち", "5ひき パーティ", "いっしょに あそぶ", "もり 100%", "うみべ 100%", "どうくつ 100%", "やかた 100%", "のはら 100%", "レベル100 x3", "レベル100 x5", "レベル100 x10", "タワー せいは" },
   { "레벨 10", "레벨 25", "레벨 50", "열매 발견",
     "연속 7일", "유대감 최대", "최종 진화", "건강함",
-    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "레벨 100", "첫 친구", "5마리 파티", "함께 놀기", "숲 100%", "해변 100%", "동굴 100%", "저택 100%", "들판 100%", "레벨100 x3", "레벨100 x5", "레벨100 x10" },
+    "이로치", "도감 10", "도감 50", "도감 100", "도감 151", "레벨 100", "첫 친구", "5마리 파티", "함께 놀기", "숲 100%", "해변 100%", "동굴 100%", "저택 100%", "들판 100%", "레벨100 x3", "레벨100 x5", "레벨100 x10", "타워 정복" },
 };
 
 // How to earn each medal, a sentence or two for its card on the achievements [language][medal].
@@ -741,7 +797,7 @@ static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
     "Atrapa todos los Pokemon de la zona Campo, legendario incluido.",
     "Cr\241a 3 Pokemon hasta el nivel 100.",
     "Cr\241a 5 Pokemon hasta el nivel 100.",
-    "Cr\241a 10 Pokemon hasta el nivel 100.",
+    "Cr\241a 10 Pokemon hasta el nivel 100.", "Sube la Torre Knomi y vence a la Leyenda de arriba.",
   },
   {  // EN
     "Reach level 10.",
@@ -768,7 +824,7 @@ static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
     "Catch every Pokemon in the Field zone, legendary included.",
     "Raise 3 Pokemon to level 100.",
     "Raise 5 Pokemon to level 100.",
-    "Raise 10 Pokemon to level 100.",
+    "Raise 10 Pokemon to level 100.", "Climb Knomi Tower and beat the Legend at its top.",
   },
   {  // FR
     "Atteins le niveau 10.",
@@ -795,7 +851,7 @@ static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
     "Attrape tous les Pokemon de la zone Champ, l\202gendaire compris.",
     "Fais monter 3 Pokemon au niveau 100.",
     "Fais monter 5 Pokemon au niveau 100.",
-    "Fais monter 10 Pokemon au niveau 100.",
+    "Fais monter 10 Pokemon au niveau 100.", "Grimpe la Tour Knomi et bats la L\202gende au sommet.",
   },
   {  // DE
     "Erreiche Level 10.",
@@ -822,7 +878,7 @@ static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
     "Fang alle Pokemon der Zone Wiese, das legend\204re eingeschlossen.",
     "Bring 3 Pokemon auf Level 100.",
     "Bring 5 Pokemon auf Level 100.",
-    "Bring 10 Pokemon auf Level 100.",
+    "Bring 10 Pokemon auf Level 100.", "Erklimme den Knomi-Turm und besiege oben die Legende.",
   },
   {  // IT
     "Raggiungi il livello 10.",
@@ -849,7 +905,7 @@ static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
     "Cattura tutti i Pokemon della zona Prato, leggendario compreso.",
     "Porta 3 Pokemon al livello 100.",
     "Porta 5 Pokemon al livello 100.",
-    "Porta 10 Pokemon al livello 100.",
+    "Porta 10 Pokemon al livello 100.", "Scala la Torre Knomi e batti la Leggenda in cima.",
   },
   {  // PT
     "Chega ao n\241vel 10.",
@@ -876,7 +932,7 @@ static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
     "Apanha todos os Pokemon da zona Campo, o lend\240rio inclu\241do.",
     "Leva 3 Pokemon ao n\241vel 100.",
     "Leva 5 Pokemon ao n\241vel 100.",
-    "Leva 10 Pokemon ao n\241vel 100.",
+    "Leva 10 Pokemon ao n\241vel 100.", "Suba a Torre Knomi e ven\207a a Lenda no topo.",
   },
   {  // JA
     "レベル10に しよう!",
@@ -903,7 +959,7 @@ static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
     "のはらの ポケモンを でんせつも ふくめて ぜんぶ つかまえよう!",
     "ポケモン 3ひきを レベル100まで そだてよう!",
     "ポケモン 5ひきを レベル100まで そだてよう!",
-    "ポケモン 10ぴきを レベル100まで そだてよう!",
+    "ポケモン 10ぴきを レベル100まで そだてよう!", "ノーミタワーを のぼって てっぺんの でんせつに かとう!",
   },
   {  // KO
     "레벨 10에 도달해요.",
@@ -930,7 +986,7 @@ static const char *const MED_HOW[LANG_COUNT][MED_COUNT] = {
     "들판의 포켓몬을 전설까지 모두 잡아요.",
     "포켓몬 3마리를 레벨 100까지 키워요.",
     "포켓몬 5마리를 레벨 100까지 키워요.",
-    "포켓몬 10마리를 레벨 100까지 키워요.",
+    "포켓몬 10마리를 레벨 100까지 키워요.", "노미 타워를 올라 꼭대기의 전설을 이기자!",
   },
 };
 

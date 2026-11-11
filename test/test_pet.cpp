@@ -2132,3 +2132,38 @@ TEST(trade, only_the_form_you_raise_stays) {
   CHECK(p.canTrade(25, true));  // the shiny one can go
   CHECK_EQ(p.tradeableCount(), (uint16_t)1);
 }
+
+#if UI_V2
+#include "../tower.h"
+// ---------------------------------------------------------------- Knomi Tower (pet.cpp's part)
+TEST(tower, friends_cheer_after_lost_climbs_until_a_new_best) {
+  Pet p;
+  makePet(p, 4);
+  for (int i = 0; i < 5; i++) p.towerLost();
+  CHECK_EQ((int)p.towerCheer, TOWER_CHEER_MAX);  // up to three
+  p.towerFloorWon(1);
+  CHECK_EQ((int)p.towerCheer, 0);  // a new best: it starts over
+  p.towerLost();
+  p.towerFloorWon(1);  // not a new best: it stays
+  CHECK_EQ((int)p.towerCheer, 1);
+  p.towerSave();
+  Pet q;
+  q.begin();
+  CHECK_EQ((int)q.towerCheer, 1);  // kept
+  p.towerBest = TOWER_LEGEND;
+  p.towerCheer = 0;
+  p.towerLost();
+  CHECK_EQ((int)p.towerCheer, 0);  // once the Legend is beaten, no more cheering (the challenges are its own)
+}
+
+TEST(tower, challenges_are_kept_and_new_only_once) {
+  Pet p;
+  makePet(p, 4);
+  CHECK_EQ((int)p.towerChalDone(TOWER_CH_NOFAINT), TOWER_CH_NOFAINT);
+  CHECK_EQ((int)p.towerChalDone(TOWER_CH_NOFAINT), 0);
+  CHECK_EQ((int)p.towerChalDone(TOWER_CH_NOFAINT | TOWER_CH_BASE), TOWER_CH_BASE);
+  Pet q;
+  q.begin();
+  CHECK_EQ((int)q.towerChal, TOWER_CH_NOFAINT | TOWER_CH_BASE);
+}
+#endif

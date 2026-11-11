@@ -810,8 +810,8 @@ static void trArt(const TrArt &a, int x, int base, int s, bool won, Rgb sil = TR
 // where each medal stands in the room: the middle of its bottom edge (V2_TROPHY_ORDER walks them in this order)
 static void trSpot(int m, int &x, int &base) {
   static const int16_t STATUE_X[4] = { 118, 176, 234, 292 }, CUP_X[4] = { 127, 190, 257, 330 };
-  if (m >= 17 && m <= 21) {  // the badges, each in the middle of its place in the case
-    x = 153 + (m - 17) * 40;
+  if ((m >= 17 && m <= 21) || m == 25) {  // the badges, each in the middle of its place in the case (25: Knomi Tower's, last)
+    x = 148 + (m == 25 ? 5 : m - 17) * 34;
     base = 80 + TR_ART_SMALL[m].h;  // (2 px a pixel: half its height under the middle, 80)
   } else if (m >= 9 && m <= 12) x = STATUE_X[m - 9], base = 170;
   else if (m == 8) x = 350, base = 170;
@@ -825,7 +825,7 @@ static int8_t trHoverGroup = -1;  // the group under the mouse: left out of the 
 static void trMedal(int m, bool bare) {
   int x, base;
   trSpot(m, x, base);
-  if (m >= 17 && m <= 21) trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare), 0x4A1620, 0x3A1018);  // shadows in the velvet
+  if ((m >= 17 && m <= 21) || m == 25) trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare), 0x4A1620, 0x3A1018);  // shadows in the velvet
   else trArt(TR_ART_SMALL[m], x, base, 2, v2Won(m, bare));
 }
 static void trRoom(bool bare) {
@@ -1270,6 +1270,9 @@ static void v2IsleSpot(int k, int &x, int &y) {  // where wedge k's landmark sta
 }
 // The island without what moves: the waves, the pines, the palms and the tall grass are drawn every frame
 // (v2IsleLife()), and the coast's foam and the mansion's windows over it.
+static uint8_t v2IslePage = 0;  // V2: Travel's page: 0 the island, 1 Knomi Tower's islet (tower_v2.h)
+static void twPierPaint();       // the pier off the Cave's coast, toward the tower (tower_v2.h)
+static bool twOnPier(int x, int y);  // ...and where it is: the foam and the waves keep off it
 static void v2PaintIsle(int) {
   static const Rgb FILL[6] = { 0x8FCE7A, 0x6C7190, 0xECDCAC, 0x2E2758, 0x3F8A4C, 0x5F9E3E };
   static const Rgb LIT[6] = { 0xA6DC90, 0x8A8FA6, 0xF8ECC4, 0x3E3470, 0x58B868, 0x79BD4F };
@@ -1336,6 +1339,7 @@ static void v2PaintIsle(int) {
       }
     }
   }
+  twPierPaint();
 }
 
 // ----- the island's life (Fedor: "subtle motion. Water flowing, grass and trees swaying. Maybe lights in the
@@ -1395,6 +1399,7 @@ static void v2IsleLife(uint32_t now) {
     const V2Foam &c = v2Foam[k];
     float f = sinf(c.ang * (5 * 6.2831853f / 65536) - ph);
     bool lit = (c.i + c.j) % 2 ? f > -0.6f : f > 0.55f;
+    if (twOnPier(c.i * 4, c.j * 4)) continue;  // (under the pier's planks)
     scCell(c.i * 4, c.j * 4, lit ? V2_SEA_L : V2_SEA);
   }
   static const uint8_t WR[10] = { 221, 225, 219, 226, 222, 220, 225, 219, 224, 221 };
@@ -1408,6 +1413,7 @@ static void v2IsleLife(uint32_t now) {
       int i = (x + c[0]) / 4, j = (y + c[1]) / 4;
       open = open && !v2IsleCell(i, j) && !v2IsleCell(i - 1, j) && !v2IsleCell(i + 1, j) && !v2IsleCell(i, j - 1) && !v2IsleCell(i, j + 1);
     }
+    for (auto &c : C) open = open && !twOnPier(x + c[0], y + c[1]);
     if (open)
       for (auto &c : C) scCell(x + c[0], y + c[1], V2_SEA_L);
   }
@@ -1471,16 +1477,18 @@ static void v2IsleTagText(int k, char *l1, char *l2, int n, int &x, int &y) {
     y = (int)(233 + 120 * sinf(a)) + 4;
     return;
   }
-  const char *p = T(S_RANDOM_BATTLE);
-  int skip, m = gCjkFont ? (int)strlen(p) : wrapNext(p, 12, skip);
-  if (gCjkFont) skip = m;
-  snprintf(l1, n, "%.*s", m, p);
-  snprintf(l2, n, "%s", p[skip] ? p + skip : "");
+  snprintf(l1, n, "%s", T(S_WILD));  // Knomi Tower's plan (Fedor): "Wild" "All", the way the zones show a count
+  snprintf(l2, n, "%s", T(S_ALL));
   x = 233;
   y = 240;
 }
+static void v2Travel2();  // the second page: Knomi Tower's islet (tower_v2.h)
 static void v2Travel() {
   static const Rgb TAG[6] = { 0xF0C04A, 0x9A86D8, 0x4F93C4, 0xB070F0, 0x58B868, 0xE8503A };
+  if (v2IslePage) {
+    v2Travel2();
+    return;
+  }
   v2Cached(0x3D000000, v2PaintIsle, 0);
   v2IsleLife(millis());
   char l1[32], l2[32];
@@ -1491,6 +1499,7 @@ static void v2Travel() {
   }
   char b[32];
   v2SignIn(v2Caps(T(S_ISLAND), b, sizeof(b)), 18, C565(0xc0, 0x84, 0x10), C565(0xf0, 0xc0, 0x4a));  // Knomi Island (Fedor)
+  v2PageArrow(430, V2_PAGE_ARROW_Y, 1);  // on to Knomi Tower, along the pier
   v2CloseX();
 }
 // the box round a pick's tag (a zone, or ZONE_COUNT for the Wild patch), for the press ring
@@ -1509,7 +1518,7 @@ static void v2IsleTagBox(int pick, int16_t &bx, int16_t &by, int16_t &bw) {
 }
 // which pick a tap on the island is: a zone, the Wild patch (ZONE_COUNT), or the sea (-1)
 static int v2IsleAt(int16_t x, int16_t y) {
-  if (!v2IsleLand(x, y)) return -1;
+  if (v2IslePage || !v2IsleLand(x, y)) return -1;
   int r = v2IsleRegion(x, y);
   return r == 5 ? ZONE_COUNT : V2_WEDGE_ZONE[r];
 }
@@ -3037,4 +3046,3 @@ bool v2PressTrophies(int16_t x, int16_t y, PressTarget &t) {
   v2ShelfTitle(g, v2PressBuf, sizeof(v2PressBuf));
   return v2PressSet(t, bx, by, bw, bh, v2PressBuf);
 }
-

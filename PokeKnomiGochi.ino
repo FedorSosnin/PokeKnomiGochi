@@ -239,11 +239,15 @@ bool playKeysUi = true;   // the cards add the arrow keys (a computer, the web).
 #else
 bool playKeysUi = false;  // ...or keep to tilting and touch (the Knomi)
 #endif
-enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE };
+enum ZoneScreen : uint8_t { ZS_NONE, ZS_PICK, ZS_ZONE, ZS_TOWER };  // ZS_TOWER: V2's Knomi Tower (tower_v2.h)
 ZoneScreen zoneScreen = ZS_NONE;
 uint8_t zoneCur = 0, zonePage = 0;
 int8_t bZone = -1;                  // this battle is in a zone; -1 = random
 #if UI_V2
+bool bTower = false;       // V2: this battle is a Knomi Tower fight (tower_v2.h): no catch, RUN always works, its end
+                           // goes back to the climb
+void towerOpen();  // (tower_v2.h, included with the V2 screens further down)
+void towerJump(uint8_t step);
 bool bFromIsland = false;  // V2: a Wild Encounter from Knomi Island: its end goes back there, as a zone's does (Fedor:
                            // "When hitting run, you should go back to the zone you were in right before you battled.
                            // Not back to home screen. Makes hunting shinys more tedious")
@@ -1117,6 +1121,48 @@ void handleSerial() {
   } else if (line == "ZONES") {
     openZones();
     Serial.println("DONE");
+#if UI_V2
+  } else if (line == "TOWER") {  // V2: Knomi Tower's screen (testing)
+    openZones();
+    towerOpen();
+    Serial.println("DONE");
+  } else if (line.startsWith("TOWERPET ") && pet.noSave) {  // V2: "TOWERPET dex lvl atk def spe": ready to climb (testing)
+    int d = 6, l = 50, a = 50, df = 5, sp = 50;
+    sscanf(line.c_str() + 9, "%d %d %d %d %d", &d, &l, &a, &df, &sp);
+    if (pet.awaitingStarter()) pet.chooseStarter(4);
+    if (d >= 1 && d <= DEX_COUNT) pet.speciesId = d;
+    pet.ageMinutes = (uint32_t)l * MINUTES_PER_LEVEL;
+    pet.trAtk = a, pet.trDef = df, pet.trSpe = sp;
+    pet.energy = 100;
+    pet.sleeping = false;
+    pmd.load(pet.speciesId, pet.shiny);
+    Serial.println("DONE");
+  } else if (line.startsWith("TOWERBEST ") && pet.noSave) {  // V2: "TOWERBEST n": floors already won (testing)
+    pet.towerBest = (uint8_t)line.substring(10).toInt();
+    Serial.println("DONE");
+  } else if (line.startsWith("TOWERCHEER ") && pet.noSave) {  // V2: "TOWERCHEER n": climbs lost in a row (testing)
+    pet.towerCheer = (uint8_t)line.substring(11).toInt();
+    Serial.println("DONE");
+  } else if (line.startsWith("TOWERCHAL ") && pet.noSave) {  // V2: "TOWERCHAL bits": challenges done (testing)
+    pet.towerChal = (uint8_t)line.substring(10).toInt() & 7;  // (TOWER_CH_ALL)
+    Serial.println("DONE");
+  } else if (line == "TROPHIES") {  // V2: the trophy room (testing)
+    zoneScreen = ZS_NONE;
+    cardOpen = cardAch = true;
+    cardPage = 0;
+    achDetail = -1;
+    achGroup = -1;
+    Serial.println("DONE");
+  } else if (line == "TOWERWIN" && pet.noSave) {  // V2: the tower fight under way is won (testing)
+    if (battleOpen && bTower && bPhase < BP_END) { bFoe.hp = 0; battleFinish(true); }
+    Serial.println("DONE");
+  } else if (line == "TOWERLOSE" && pet.noSave) {  // V2: ...or lost, its guardian a third down (testing)
+    if (battleOpen && bTower && bPhase < BP_END) { bFoe.hp -= bFoe.hp / 3; bMe.hp = 0; battleFinish(false); }
+    Serial.println("DONE");
+  } else if (line.startsWith("TOWERSTEP ") && pet.noSave) {  // V2: "TOWERSTEP n": a climb under way jumps to step n (testing)
+    towerJump((uint8_t)line.substring(10).toInt());
+    Serial.println("DONE");
+#endif
   } else if (line.startsWith("WILD ")) {  // specific foe (testing); "WILD 25 S": a shiny one
     bNextShiny = line.indexOf(" S") > 0 && pet.noSave;
     startBattleWith(line.substring(5).toInt());
@@ -3732,10 +3778,44 @@ void startBattleWith(int16_t dex) {
 
 void startBattle() { startBattleWith(0); }
 
+#if UI_V2
+// V2: a Knomi Tower fight (tower_v2.h): me is the member of your team who fights (its HP as the climb left it), foe the
+// floor's guardian. The battle is the usual one, in the floor's hall
+void startTowerFight(const BtlFighter &me, const BtlFighter &foe) {
+  if (battleOpen || !pmd.loaded) return;
+  wildPmd.load(foe.dex, false);
+  if (!wildPmd.loaded) return;
+  bTower = true;
+  bZone = -1;
+  bFromIsland = false;
+  bFoeShiny = false;
+  bMe = me;
+  partyBoostFighter(bMe);
+  bFoe = foe;
+  bMeMoves = btlMovesFor(bMe.dex, bMe.level, foe.dex);
+  bFoeMoves = btlMovesFor(foe.dex, foe.level, bMe.dex);
+  bShownMe = bMe.hp;
+  bShownFoe = bFoe.hp;
+  bWon = false;
+  bGain = 0;
+  battleOpen = true;
+  battleSetPhase(BP_INTRO);
+  sfxPlay(SFX_PLAY);
+  Serial.printf("tower: #%d Lv.%u vs #%d Lv.%u\n", bMe.dex, bMe.level, foe.dex, foe.level);
+}
+#endif
+
 void closeBattle() {
   if (bPvp) buddyBattleClosed();
   battleOpen = false;
   wildPmd.unload();
+#if UI_V2
+  if (bTower) {  // V2: back to the climb
+    bTower = false;
+    towerFightEnded(bWon, bPhase == BP_RAN);
+    return;
+  }
+#endif
   if (bZone >= 0) zoneBattleEnded();
 #if UI_V2
   if (bFromIsland) {
@@ -3786,7 +3866,7 @@ void battleTap(int16_t x, int16_t y) {
   if (bPhase != BP_CHOOSE) return;
   if (y >= 392 && x >= 160 && x <= 306) {
     if (bRunFailed) { sfxPlay(SFX_DENY); return; }
-    if (!bPvp && random(100) < RUN_FAIL_PCT) {  // a buddy battle can always be left
+    if (!bPvp V2_AND(!bTower) && random(100) < RUN_FAIL_PCT) {  // a buddy battle can always be left (V2: and a tower fight)
       bRunFailed = true;
       sfxPlay(SFX_DENY);
       return;
@@ -3821,6 +3901,13 @@ void battleTap(int16_t x, int16_t y) {
 void battleFinish(bool won) {
   bWon = won;
 #if UI_V2
+  if (bTower) {  // V2: a Knomi Tower fight fills the balls' bars like any (Fedor); the rest of its end is the climb's
+    v2MasterNew = pet.fightPays();
+    bGain = 0;
+    sfxPlay(won ? SFX_LEVEL : SFX_DENY);
+    battleSetPhase(BP_END);
+    return;
+  }
   v2MasterNew = bPvp ? 0 : pet.fightPays();  // V2: a fight fought to the end fills the balls' bars (master_v2.h)
 #endif
   if (bPvp) {
@@ -3836,7 +3923,7 @@ void battleFinish(bool won) {
 
 // after the result: every wild win can be caught, a form you have too (it may have more stars)
 void battleAfterEnd() {
-  if (!bPvp && bWon) {
+  if (!bPvp && bWon V2_AND(!bTower)) {  // (V2: a tower's guardians can't be caught)
     bBalls = CATCH_BALLS;
 #if UI_V2
     v2Pick = V2_BALL_POKE;  // V2: each catch starts on the Poke Ball (master_v2.h)
@@ -3973,7 +4060,7 @@ void battleStep() {
     case BP_INTRO:
       if (t > 1800) {
         // the new move is announced only once; DITTO copies, doesn't learn
-        bool announces = bMe.dex != DEX_DITTO && !bPvp;
+        bool announces = bMe.dex != DEX_DITTO && !bPvp V2_AND(!bTower);  // (V2: a tower friend's moves aren't yours)
         int16_t learned = announces ? btlMoveToAnnounce(pet.movesSeen, bMeMoves) : -1;
         if (announces) pet.movesSeen = btlMovesSeenValue(bMeMoves);
         if (learned >= 0) {
@@ -4626,7 +4713,7 @@ void renderBattle() {
     return;
   }
 #if UI_V2
-  v2BattleScene(bZone, bPhase != BP_TIRED, BTL_FOE_X, BTL_FOE_GROUND, BTL_ME_X, BTL_ME_GROUND);  // V2: with the two bases
+  v2BattleScene(bTower ? V2_ZONE_TOWER + towerHall() : bZone, bPhase != BP_TIRED, BTL_FOE_X, BTL_FOE_GROUND, BTL_ME_X, BTL_ME_GROUND);  // V2: with the two bases (Knomi Tower: its hall)
 #else
   drawGameScene();
 #endif
@@ -4640,8 +4727,9 @@ void renderBattle() {
     bShownMe += (bMe.hp - bShownMe) * 0.28f;
     bShownFoe += (bFoe.hp - bShownFoe) * 0.28f;
     drawBattleFighter(wildPmd, false, BTL_FOE_X, BTL_FOE_GROUND V2_PLUS(v2BtlBobFoe), 3);  // (V2: riding its base's bob)
-    drawBattleFighter(pmd, true, BTL_ME_X, BTL_ME_GROUND V2_PLUS(v2BtlBobMe), 4);
-    drawMoveFx(BTL_ME_X, (BTL_ME_GROUND + pmdTopY(pmd, BTL_ME_GROUND, 4)) / 2 V2_PLUS(v2BtlBobMe),
+    PmdMon &meMon = V2_TOWER_ME(pmd);  // (V2: in Knomi Tower, whoever of your team fights)
+    drawBattleFighter(meMon, true, BTL_ME_X, BTL_ME_GROUND V2_PLUS(v2BtlBobMe), 4);
+    drawMoveFx(BTL_ME_X, (BTL_ME_GROUND + pmdTopY(meMon, BTL_ME_GROUND, 4)) / 2 V2_PLUS(v2BtlBobMe),
                BTL_FOE_X, (BTL_FOE_GROUND + pmdTopY(wildPmd, BTL_FOE_GROUND, 3)) / 2 V2_PLUS(v2BtlBobFoe));
     drawBattlePanel(72, 64, bFoe, bShownFoe, false);
     drawBattlePanel(226, 256, bMe, bShownMe, true);
@@ -4662,6 +4750,9 @@ void renderBattle() {
     case BP_TIRED: battleCenterLine(T(S_BTL_TIRED), 380); break;
     case BP_INTRO:
       if (bPvp) snprintf(b, sizeof(b), "VS %s!", buddyName());
+#if UI_V2
+      else if (bTower) snprintf(b, sizeof(b), "%s!", dexName(bFoe.dex));  // V2: the floor's guardian
+#endif
       else snprintf(b, sizeof(b), T(bFoeShiny ? S_SHINY_WILD_FMT : S_BTL_WILD), dexName(bFoe.dex));
       battleCenterLine(b, 380);
       break;
@@ -9423,6 +9514,9 @@ void openZones() {
   }
   if (zoneArt) zoneHomeDraw(zoneArt + ZONE_RANDOM * ZONE_ART * ZONE_ART);  // each time: day or night, its Pokemon
   zoneScreen = ZS_PICK;
+#if UI_V2
+  v2IslePage = 0;  // V2: the island's page first (Knomi Tower is the second)
+#endif
 }
 
 // the entry opened from a zone's grid, like the Pokedex's (0 = the grid)
@@ -9433,6 +9527,9 @@ void zoneDetailClose() {
 }
 
 void zoneBack() {
+#if UI_V2
+  if (zoneScreen == ZS_TOWER) { towerBack(); return; }  // V2: Knomi Tower goes back a step
+#endif
   sfxPlay(SFX_TAP);
   if (zoneDetail) {
     zoneDetailClose();
@@ -9445,6 +9542,11 @@ void zoneBack() {
 
 void zoneTurnPage(int dir) {
 #if UI_V2
+  if (zoneScreen == ZS_PICK) {  // V2: Travel's two pages, the island and Knomi Tower's islet
+    if ((dir > 0) != (v2IslePage != 0)) sfxPlay(SFX_TAP);
+    v2IslePage = dir > 0 ? 1 : 0;
+    return;
+  }
   if (zoneScreen == ZS_ZONE && zoneDetail) {  // V2: an entry's swipe steps through the zone, as its side buttons do
     v2DexEntryStep(dir);
     return;
@@ -9486,6 +9588,9 @@ void zoneBattleEnded() {
 }
 
 void zoneTap(int16_t x, int16_t y) {
+#if UI_V2
+  if (zoneScreen == ZS_TOWER) { towerTap(x, y); return; }  // V2: Knomi Tower
+#endif
   if (zoneDetail) {
 #if UI_V2
     if (v2DexEntryArrowTap(x, y)) return;  // V2: the next entry or the last
@@ -9499,6 +9604,9 @@ void zoneTap(int16_t x, int16_t y) {
     return;
   }
   if (zoneScreen == ZS_PICK) {
+#if UI_V2
+    if (v2TravelTap(x, y)) return;  // V2: the page arrows, and Knomi Tower on the second page
+#endif
     int z = zonePickAt(x, y);
     if (z < 0) return;
     sfxPlay(SFX_TAP);
@@ -9582,6 +9690,11 @@ void renderZones() {
   }
   char b[32];
 #if UI_V2
+  if (zoneScreen == ZS_TOWER) {  // V2: Knomi Tower (tower_v2.h)
+    towerRender();
+    gfx->flush();
+    return;
+  }
   if (zoneScreen == ZS_PICK) {  // V2: the round island
     v2Travel();
     gfx->flush();
@@ -10693,6 +10806,9 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
 #endif
     return pressSet(t, GAME_XY[g][0] - GAME_ICON_R, GAME_XY[g][1] - GAME_ICON_R, 2 * GAME_ICON_R, 2 * GAME_ICON_R, gameLabel(g));
   }
+#if UI_V2
+  if (zoneScreen == ZS_TOWER) return towerPressAt(x, y, t);  // V2: Knomi Tower: its buttons, the Pokemon to pick, the X (tower_v2.h)
+#endif
   if (zoneScreen == ZS_PICK) {
     int z = zonePickAt(x, y);
 #if UI_V2

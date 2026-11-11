@@ -1,8 +1,8 @@
 // V2: a page turning slides (Fedor: "Can we make the left and right arrows through the menus 'slide' the menu screens
 // over in that direction instead of instantly appear?"). Every menu with pages: the card, Settings, the Pokedex's grid
 // and its entries, a zone's grid and its entries, the trophy shelves and a medal's cards, a buddy's two pages, the
-// trade grid, the Wi-Fi list, the time zones and the egg grid. A side button or a swipe turns the page as before; then
-// what was on screen slides out and the new page slides in after it, from the side the side button points to,
+// trade grid, the Wi-Fi list, the time zones and the egg grid; Travel's two islands and Knomi Tower's friends. A side
+// button or a swipe turns the page as before; then what was on screen slides out and the new page slides in after it, from the side the side button points to,
 // V2_SLIDE_MS, easing in and out. Where the menu sits on a room that is the screen's cached backdrop (v2SceneBuf),
 // the room stays put and only what's on it moves (the board, the panel, the grid, a shelf's things); on a backdrop
 // drawn some other way the whole screen slides. The side buttons, the page line and the X stay where they are, the
@@ -22,6 +22,7 @@
                                // there)
 #define V2_SLIDE_ENTRY_Y 392   // an entry: its panel's rim ends 389, the X's starts 396
 #define V2_SLIDE_TRADE_Y 397   // the trade grid: its page line sits on its panel's rim, so it moves with the grid
+#define V2_SLIDE_TRAVEL_Y 398  // Travel's two islands: the whole map moves, all but the X (its rim starts 398)
 #define V2_SLIDE_ARROW_R 30    // round a side button (its rim and shadow too): the new page's, still
 #define V2_SLIDE_SENT 0x0821   // in a page kept for a slide, a pixel of the room (a dark grey nothing is drawn in)
 #define V2_SLIDE_WIFI_ROWS 5   // the Wi-Fi list's rows a page (WIFI_ROWS, further down the sketch, checked there)
@@ -54,6 +55,11 @@ static V2PageKey v2PageKeyNow() {
     return { 5, (int16_t)galleryPage, DEX_PAGES, PAGE_ARROW_Y, V2_SLIDE_DEX_Y };
   }
   if (gameOpen || dungeonOpen || runOpen || surfOpen || battleOpen || quizOpen || gamesMenuOpen) return k;
+  if (zoneScreen == ZS_PICK) return { 50, (int16_t)v2IslePage, 2, V2_PAGE_ARROW_Y, V2_SLIDE_TRAVEL_Y };  // Knomi Island, then Knomi Tower's islet
+  if (zoneScreen == ZS_TOWER) {  // Knomi Tower (tower_v2.h): picking two friends, the Pokedex's grid
+    if (twView == TW_PICK) k = { 51, (int16_t)twPickPage, (int16_t)twPickPages(), V2_PAGE_ARROW_Y, V2_SLIDE_DEX_Y };
+    return k;
+  }
   if (zoneScreen) {
     if (zoneScreen != ZS_ZONE) return k;
     if (zoneDetail) {
@@ -127,6 +133,21 @@ static void v2SlidePrepare(const V2PageKey &from, const V2PageKey &to) {
   }
   for (int b = 0; b < 2; b++) {
     uint16_t *p = b ? v2SlideNew : v2SlideOld;
+    if (!v2SlideRoom) {  // the whole screen moves: each page's own side buttons out of it (the new page's are drawn still
+                         // on top; Travel's two islands had one gliding in under the one standing), filled from above them
+      const V2PageKey &k = b ? to : from;
+      int dx = pageArrowDx(k.arrowY), r = V2_SLIDE_ARROW_R;
+      for (int side = -1; side <= 1; side += 2) {
+        if (side < 0 ? k.page <= 0 : k.page >= k.pages - 1) continue;
+        int cx = CX + side * dx, above = k.arrowY - r - 1 > 0 ? k.arrowY - r - 1 : 0;  // (from the row above it: a coast
+                                                                                     // that runs down stays whole)
+        for (int y = k.arrowY - r; y <= k.arrowY + r; y++) {
+          if (y < 0 || y >= to.still) continue;
+          for (int x = cx - r; x <= cx + r; x++)
+            if (x >= 0 && x < V2_W && (x - cx) * (x - cx) + (y - k.arrowY) * (y - k.arrowY) <= r * r) p[y * V2_W + x] = p[above * V2_W + x];
+        }
+      }
+    }
     for (int y = 0; y < to.still; y++) {
       int16_t x0 = V2_W, x1 = 0;
       if (!v2SlideRoom) x0 = 0, x1 = V2_W;

@@ -1,5 +1,6 @@
 #include "pet.h"
 #include "battle.h"
+#include "tower.h"
 #include "zones.h"
 #include "minigames.h"
 #include "dex.h"
@@ -856,6 +857,60 @@ void Pet::dungeonResult(uint8_t floor) {
 
 // battle: winning trains more than losing, and losing never does permanent damage
 // a win trains, cheers and bonds; a loss earns nothing, it only tires
+#if UI_V2
+void Pet::towerFightWon(bool petFought) {
+  energy = energy > TOWER_FIGHT_ENERGY ? energy - TOWER_FIGHT_ENERGY : 0;
+  if (petFought && !isEgg() && ceremony == CER_NONE) {
+    uint16_t v = (uint16_t)trAtk + BTL_WIN_TRAIN;
+    trAtk = v > 100 ? 100 : (uint8_t)v;
+    if (battleWins < 65535) battleWins++;
+    joy = clamp100(joy + 10);
+    heartUntil = millis() + HEART_MS;
+    addBond(2);
+    registerCare();
+  }
+  pendingSave = true;
+}
+
+uint8_t Pet::towerFloorWon(uint8_t floor) {
+  if (floor < 1 || floor > TOWER_LEGEND) return 0;
+  uint8_t got = 0;
+  if (floor > towerBest) {  // the first time: a new best
+    towerBest = floor;
+    towerCheer = 0;  // a new best: the cheering starts over
+    got |= 1;
+  }
+  if (floor == TOWER_LEGEND) {  // the Legend beaten: a Master Ball, every time (tower.h)
+    if (masterBalls < MASTER_MAX) masterBalls++, got |= 2;
+    {
+      if (!(trainerMedals & MED_TOWER)) {  // the tower beaten: its badge, celebrated as any medal
+        trainerMedals |= MED_TOWER;
+        totalMedals++;
+        newMedal = MED_TOWER;
+        medalUntil = millis() + CELEBRATE_MS;
+      }
+    }
+  }
+  save();
+  return got;
+}
+
+void Pet::towerLost() {
+  if (towerBest < TOWER_LEGEND && towerCheer < TOWER_CHEER_MAX) towerCheer++;
+  battleResult(false);
+  pendingSave = true;
+}
+
+uint8_t Pet::towerChalDone(uint8_t got) {
+  uint8_t fresh = got & ~towerChal & TOWER_CH_ALL;
+  if (fresh) {
+    towerChal |= fresh;
+    save();
+  }
+  return fresh;
+}
+#endif
+
 uint8_t Pet::battleResult(bool won) {
   if (ceremony != CER_NONE || isEgg()) return 0;
   uint8_t antes = trAtk;
@@ -1150,6 +1205,17 @@ void Pet::save() {
   prefs.putUChar("rpl", repelHeld);
   prefs.putUShort("rpls", repelPlaySec);
   prefs.putUInt("rplu", repelUntil);
+  prefs.putUChar("twrb", towerBest);
+  prefs.putBool("twrh", towerHowSeen);
+  prefs.putUChar("twrc", towerCheer);
+  prefs.putUChar("twrx", towerChal);
+  prefs.putShort("twrp0", towerPick[0]);
+  prefs.putShort("twrp1", towerPick[1]);
+  prefs.putUChar("twrps", (towerPickShiny[0] ? 1 : 0) | (towerPickShiny[1] ? 2 : 0));
+  prefs.putBytes("hofd", hofDex, sizeof(hofDex));
+  prefs.putUChar("hofs", hofShiny);
+  prefs.putUChar("hofl", hofLevel);
+  prefs.putUInt("hofe", hofEpoch);
 #endif
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putUInt("life", lifeMin);
@@ -1242,6 +1308,21 @@ void Pet::load() {
   repelPlaySec = prefs.getUShort("rpls", 0);
   repelUntil = prefs.getUInt("rplu", 0);
   if (repelPlaySec >= REPEL_PLAY_S) repelPlaySec = 0;
+  towerBest = prefs.getUChar("twrb", 0);
+  if (towerBest > TOWER_LEGEND) towerBest = TOWER_LEGEND;
+  towerHowSeen = prefs.getBool("twrh", false);
+  towerCheer = prefs.getUChar("twrc", 0);
+  if (towerCheer > TOWER_CHEER_MAX) towerCheer = TOWER_CHEER_MAX;
+  towerChal = prefs.getUChar("twrx", 0) & TOWER_CH_ALL;
+  towerPick[0] = prefs.getShort("twrp0", 0);
+  towerPick[1] = prefs.getShort("twrp1", 0);
+  uint8_t tps = prefs.getUChar("twrps", 0);
+  towerPickShiny[0] = tps & 1;
+  towerPickShiny[1] = tps & 2;
+  if (prefs.isKey("hofd")) prefs.getBytes("hofd", hofDex, sizeof(hofDex));
+  hofShiny = prefs.getUChar("hofs", 0);
+  hofLevel = prefs.getUChar("hofl", 0);
+  hofEpoch = prefs.getUInt("hofe", 0);
 #endif
   prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
   bool hadStars = prefs.isKey("dexstr");

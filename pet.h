@@ -87,11 +87,13 @@ enum : uint32_t {
   MED_ZONE_MANSION = 1UL << 20, MED_ZONE_FIELD = 1UL << 21,
   // the end game: 3, 5 and 10 Pokemon raised to level 100 (lv100Count)
   MED_LV100_3 = 1UL << 22, MED_LV100_5 = 1UL << 23, MED_LV100_10 = 1UL << 24,
+  // V2: Knomi Tower beaten, its Legend won (tower_v2.h); its badge goes in the case with the zones' badges
+  MED_TOWER = 1UL << 25,
 };
 #define MED_PET_COUNT 8  // medals 0..7 belong to the individual, the rest to the trainer
 #define MED_FIRST_ZONE 17  // MED_ZONE_FOREST's bit: the zone medals have their own card page
 #define MED_FIRST_LV100 22  // MED_LV100_3's bit: the level 100 medals too
-#define MED_COUNT 25
+#define MED_COUNT 26
 #define LEVEL_MAX 100  // past it a Pokemon would be too strong to battle: it stays at 100
 // Every form in the Pokedex has 1-3 stars: its genes, kept simple. A raised one's are the band of its
 // genes' average (90-96, 97-103, 104-110); a catch rolls them: 1 star 50%, 2 stars 35%, 3 stars 15%
@@ -290,6 +292,26 @@ public:
   uint8_t repelMinutesLeft() const { return repelOn() ? (uint8_t)(repelUntil - lifeMin) : 0; }
   bool repelKeepsAway(int16_t dex) const;  // a running Repel keeps this species away from a wild encounter
   bool zoneComplete(uint8_t zone) const;
+  // V2: Knomi Tower (tower.h). The trainer's, like the balls: kept through a goodbye. towerBest is the highest
+  // floor ever won (9: the Legend, Tower Master); a badge per floor comes from it. The Hall of Fame keeps the
+  // three that first won the Legend
+  uint8_t towerBest = 0;
+  bool towerHowSeen = false;          // the first visit's "how it works" card
+  int16_t towerPick[2] = { 0, 0 };    // the two friends last picked, offered first next time
+  bool towerPickShiny[2] = { false, false };
+  int16_t hofDex[3] = { 0, 0, 0 };
+  uint8_t hofShiny = 0, hofLevel = 0;  // hofShiny: a bit for each of the three
+  uint32_t hofEpoch = 0;               // when (lastSeenEpoch, local time)
+  uint8_t towerCheer = 0;  // climbs lost in a row since the last new best floor: the next climb's friends cheer (tower.h)
+  uint8_t towerChal = 0;   // the challenges done once the Legend is beaten (TOWER_CH_*)
+  // a tower fight won: uses its energy; petFought: your own Pokemon won it, and gets a win's usual effects
+  void towerFightWon(bool petFought);
+  // floor (1..8, or the Legend's 9) climbed: the badge, and a gate's balls the first time. Returns what it gave:
+  // bit 0 a new badge, 1 a Master Ball, then the Ultra Balls in bits 4..7
+  uint8_t towerFloorWon(uint8_t floor);
+  void towerLost();  // all three fainted: a loss, as a battle's (and the friends cheer the next climb, until the Legend)
+  uint8_t towerChalDone(uint8_t got);  // a climb's challenges: the new ones (and they're kept)
+  void towerSave() { save(); }  // a pick, the Hall of Fame: kept at once
 #endif
   // first game: the player picks a starter (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }

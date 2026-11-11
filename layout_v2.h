@@ -132,7 +132,7 @@ static const int16_t V2_MANSION_RISE[4] = { 20, 226, 446, 330 };   // added to t
 
 // the trophy room (menus_v2.h): its medals in the room's order, badges, the top shelf, the cups, the frames,
 // the rosettes (medal bits, pet.h), which the medal card's page buttons and swipes step through ("Page 7 of 25")
-static const uint8_t V2_TROPHY_ORDER[MED_COUNT] = { 17, 18, 19, 20, 21, 9, 10, 11, 12, 8, 13, 22, 23, 24, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7 };
+static const uint8_t V2_TROPHY_ORDER[MED_COUNT] = { 17, 18, 19, 20, 21, 25, 9, 10, 11, 12, 8, 13, 22, 23, 24, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7 };  // (25: Knomi Tower's badge, in the case)
 static inline int v2TrophyPos(int medal) {
   for (int p = 0; p < MED_COUNT; p++)
     if (V2_TROPHY_ORDER[p] == medal) return p;
@@ -144,7 +144,7 @@ static inline int v2TrophyPos(int medal) {
 // each one takes on each row. A row is V2_TR_ROW_H tall: V2_TR_ART_H for the thing (standing on the bottom of it, or
 // in its middle when it hangs), then a shelf, then its name on up to two lines
 #define V2_TR_GROUPS 5
-static const uint8_t V2_TR_GROUP_FIRST[V2_TR_GROUPS + 1] = { 0, 5, 10, 14, 17, MED_COUNT };
+static const uint8_t V2_TR_GROUP_FIRST[V2_TR_GROUPS + 1] = { 0, 6, 11, 15, 18, MED_COUNT };
 static const uint8_t V2_TR_ROW1[V2_TR_GROUPS] = { 3, 3, 2, 2, 4 };
 static const uint8_t V2_TR_CELL_W[V2_TR_GROUPS][2] = { { 108, 108 }, { 108, 150 }, { 150, 150 }, { 150, 150 }, { 92, 92 } };
 #define V2_TR_ROW_Y0 70  // the first row's top
