@@ -60,10 +60,12 @@ bool PmdMon::load(uint8_t dexNum, bool shiny) {
   const uint8_t *end = blob + size;
 #if UI_V2
   // V2's walk rows come after the counted actions, in a tail that 1.51's loader never reads ("TPKX", u8 n,
-  // then n more actions laid out the same): the loop below runs a second time, over them
-  for (int part = 0; part < 2; part++) {
-    if (part == 1) {
-      if (p + 5 > end || memcmp(p, "TPKX", 4) != 0) break;
+  // then n more actions laid out the same), and after it the back views ("TPKY", the same again), which 2.0.5's
+  // loader never reads (it stops at an action it doesn't know: a Knomi gone back to it still loads these packs).
+  // The loop below runs over each in turn
+  for (int part = 0; part < 3; part++) {
+    if (part > 0) {
+      if (p + 5 > end || memcmp(p, part == 1 ? "TPKX" : "TPKY", 4) != 0) break;
       nActs = p[4];
       p += 5;
     }

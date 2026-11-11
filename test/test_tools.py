@@ -222,6 +222,56 @@ class TestGeneratedFiles(unittest.TestCase):
             self.assertIn('GENERATED', head, f'{name} should say it is generated')
 
 
+class TestSpritePacks(unittest.TestCase):
+    """The sprite packs (tools/sdcard/mons, tools/pack_pmd.py): the counted actions (0-11), then V2's walks in the
+    tail ("TPKX", 12-17), then the back views ("TPKY", 18-20: yours in a battle, from behind). Each loader stops at
+    an action number it doesn't know, so each section holds only its own: 1.51 reads the counted ones, 2.0.5 the
+    tail too (its last action is 17), and a Knomi that goes back to either after a failed update must still load
+    every pack. Nearly every Pokemon has its back views (SpriteCollab's sheets have eight directions)."""
+
+    MONS = os.path.join(TOOLS, 'sdcard', 'mons')
+
+    @staticmethod
+    def sections(buf):
+        import struct
+        nacts = buf[4]
+        (palcount,) = struct.unpack_from('<H', buf, 5)
+        p = 7 + palcount * 2
+        out = []
+        for magic in (None, b'TPKX', b'TPKY'):
+            if magic is not None:
+                if buf[p:p + 4] != magic:
+                    out.append(None)
+                    continue
+                nacts = buf[p + 4]
+                p += 5
+            ids = []
+            for _ in range(nacts):
+                aid, w, h, nf = buf[p:p + 4]
+                ids.append(aid)
+                p += 4 + nf * 2 + w * h * nf
+            out.append(ids)
+        return out, p, len(buf)
+
+    def test_each_section_holds_its_own_actions(self):
+        names = sorted(n for n in os.listdir(self.MONS) if re.fullmatch(r'ps?\d{3}\.bin', n))  # (not thumbs.bin)
+        self.assertEqual(len(names), 302)
+        backs = 0
+        for n in names:
+            with open(os.path.join(self.MONS, n), 'rb') as fh:
+                buf = fh.read()
+            with self.subTest(pack=n):
+                self.assertEqual(buf[:4], b'TPK2')
+                (counted, tail, back), end, size = self.sections(buf)
+                self.assertEqual(end, size, 'something after the back views')
+                self.assertTrue(counted and all(a <= 11 for a in counted), counted)
+                self.assertTrue(tail and all(12 <= a <= 17 for a in tail), tail)  # 2.0.5 stops at 18 and up
+                if back is not None:
+                    self.assertTrue(all(18 <= a <= 20 for a in back), back)
+                    backs += len(back) == 3
+        self.assertGreaterEqual(backs, 280, f'only {backs} packs have all three back views')
+
+
 class TestSketchSanity(unittest.TestCase):
     """Cheap checks on the .ino that do not need compiling it."""
 

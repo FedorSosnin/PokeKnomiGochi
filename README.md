@@ -159,7 +159,7 @@ Levels stop at **100**, since a Pokémon past that would be too strong to battle
 
 ### Battles and catching
 
-Press the button, or tap **Wild Encounter** in Travel, to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up, and each move shows a little of its type: flames, splashing water, leaves, sparks, ice and more.
+Press the button, or tap **Wild Encounter** in Travel, to meet a wild Pokémon in a simple turn-based fight, inspired by the Game Boy games: your Pokémon stands with its back to you, facing the wild one. Every Pokémon fights with its own moves from Pokémon Red and Blue and learns stronger ones as it levels up, and each move shows a little of its type: flames, splashing water, leaves, sparks, ice and more.
 
 Winning trains your Pokémon. Losing earns nothing and leaves it nearly out of energy, so it has to sleep before it can fight again. **RUN** leaves a wild battle, but 1 time in 20 it fails: the button turns red and says **Couldn't get away!**, and you have to fight it out. A battle with a buddy can always be left.
 

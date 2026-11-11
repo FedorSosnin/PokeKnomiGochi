@@ -4080,6 +4080,15 @@ void drawBattleFighter(PmdMon &m, bool mine, int cx, int ground, uint8_t maxS) {
     if ((t / 90) % 2) return;  // hit blink
   }
   if (bPhase == BP_END && (mine ? bMe.hp : bFoe.hp) == 0) return;  // the defeated one is gone
+#if UI_V2
+  // V2: yours from behind, facing the foe up to its right, as in the Game Boy games (Fedor: "shouldnt our own
+  // pokemon be facing the other pokemon during battle like in pokemon blue?"): standing, attacking and hurt, each
+  // where its pack has it (sdmon.h; one without stays facing you)
+  if (mine) {
+    uint8_t b = act == PMD_ATTACK ? PMD_ATTACKUR : act == PMD_HURT ? PMD_HURTUR : PMD_IDLEUR;
+    if (m.has(b)) act = b;
+  }
+#endif
   drawPmdActM(m, act, x, y, now - bPhaseT, true, false, maxS);
 }
 

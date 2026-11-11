@@ -24,6 +24,7 @@ enum : uint8_t {
 #if UI_V2
   PMD_WALKD, PMD_WALKU,  // V2: walking toward you and away (Walk rows 0 and 4), from the pack's tail
   PMD_WALKDR, PMD_WALKUR, PMD_WALKUL, PMD_WALKDL,  // ...and the diagonals (rows 1, 3, 5, 7), for the Pokedex's turn
+  PMD_IDLEUR, PMD_ATTACKUR, PMD_HURTUR,  // V2: from behind, facing up-right (row 3): yours in a battle, facing the foe
 #endif
   PMD_NACTS
 };

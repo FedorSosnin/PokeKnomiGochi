@@ -23,6 +23,7 @@
 #include "i18n.h"
 #include "pet.h"
 #include "press.h"
+#include "sdmon.h"
 #include "power.h"
 #include <Preferences.h>
 
@@ -943,6 +944,11 @@ static void testGame() {
         tapAt(233, 422);  // the X
         CHECK(!clockOpen);
         runTicks(200);
+      }
+      {  // yours from behind in a battle, facing the foe (Fedor: "like in pokemon blue"): Charizard's pack has its
+         // back views, standing, attacking and hurt (sdmon.h; tools/pack_pmd.py)
+        PmdMon m;
+        CHECK(m.load(6) && m.has(PMD_IDLEUR) && m.has(PMD_ATTACKUR) && m.has(PMD_HURTUR) && m.has(PMD_WALKDL));
       }
       // no swipe out of a battle (Fedor: "you can swipe out of a battle. Which means you can cancel out a run")
       hostSerialPush("WILD 129");
