@@ -143,20 +143,20 @@ static bool twOnPier(int x, int y) { return y >= TW_PIER_Y && y < TW_PIER_Y + 28
 static void twPierPaint() { twPlanks(twPierX0(), V2_W, TW_PIER_Y); }
 
 // ===================================================================== Travel, page 2: the tower's islet
-#define TW_SHIFT 300                // page 2 is the map panned this far east
-#define TW_IX 300                   // the islet's middle
+// The islet alone, in the middle, its walkway coming in from the left edge at the pier's height: with the pages
+// sliding, page 1's pier leaves by the right edge as this walkway comes in by the left, one long walk out to the tower
+// (Fedor: "one island with a long walkway to the tower")
+#define TW_IX 233                   // the islet's middle
 #define TW_IY 256                   // (low enough that Mewtwo's shadow clears the title plate)
 #define TW_IR 112
 static bool twOnIslet(int x, int y) {
   float a = atan2f(y - TW_IY, x - TW_IX);
   return hypotf((x - TW_IX) * 1.05f, y - TW_IY) < TW_IR + 7 * sinf(5 * a + 2) + 4 * sinf(9 * a);
 }
-static uint8_t twIsleCell(int i, int j) {  // page 2's cells: the island shifted (its regions), or the islet (6)
+static uint8_t twIsleCell(int i, int j) {  // page 2's cells: the islet (6), or sea
   int x = i * 4 + 2, y = j * 4 + 2;
   if (i < 0 || j < 0 || x >= V2_W || y >= V2_W) return 0;
-  if (twOnIslet(x, y)) return 0x80 | 6;
-  if (v2IsleLand(x + TW_SHIFT, y)) return 0x80 | v2IsleRegion(x + TW_SHIFT, y);
-  return 0;
+  return twOnIslet(x, y) ? 0x80 | 6 : 0;
 }
 // the tower in the map's style: five storeys (lit windows for the floors won), gold gate ledges with pennants,
 // torches at the door, battlements on top (grand_tower()); returns the roof's y
@@ -256,14 +256,14 @@ static void twPaintIsle2(int best) {
   for (int cy = base; cy < TW_PIER_Y + 20; cy += 4)
     for (int cx = TW_IX - 16; cx < TW_IX + 16; cx += 4) scCell(cx, cy, ((cx / 8 + cy / 8) % 2) ? TW_ST_L : TW_ST);
   // rocks out in the water, each in foam; gulls
-  static const int16_t ROCK[4][3] = { { 420, 330, 10 }, { 190, 360, 8 }, { 440, 170, 7 }, { 176, 150, 6 } };
+  static const int16_t ROCK[4][3] = { { 396, 330, 10 }, { 92, 372, 8 }, { 392, 150, 7 }, { 84, 160, 6 } };
   for (auto &r : ROCK) {
     scOval(scE(r[0] - r[2] - 6, r[1] - r[2] + 2, r[0] + r[2] + 6, r[1] + r[2] + 6), 0xBFE0F0);
     scOval(scE(r[0] - r[2], r[1] - r[2], r[0] + r[2], r[1] + r[2]), 0x6A6478, 0xA49AB4, 0x4A4458);
   }
   static const char *const GULL[3] = { "x...x", ".x.x.", "..x.." };
   const ScKey gk[1] = { { 'x', 0xFFFFFF } };
-  static const int16_t GULLS[4][2] = { { 116, 112 }, { 140, 96 }, { 412, 400 }, { 88, 372 } };
+  static const int16_t GULLS[4][2] = { { 100, 104 }, { 124, 88 }, { 356, 392 }, { 380, 230 } };
   for (auto &g : GULLS) scSprite(GULL, 3, g[0], g[1], 2, gk, 1);
   twMapRoof = twMapTower(TW_IX, base, (uint8_t)best);
 }
