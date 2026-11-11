@@ -757,6 +757,15 @@ static void twDais(int cx, int y, int w, Rgb col) {
   scOval(scE(cx - w / 2 + 4, y, cx + w / 2 - 4, y + 22), scMix(col, 0x5A5068, .5), scMix(col, 0xFFFFFF, .3), scMix(col, TW_INK, .5));
 }
 // a small rounded chip with white text (chip())
+static void twChip(const char *s, int cx, int y, uint16_t col);
+// the friends' cheer, while there is one (after lost climbs): a gold chip, so waiting for the energy is worth it
+static void twRimText(const char *t, int cx, int y, uint16_t col);
+static void twCheerChip(int cy, int cx = CX) {
+  if (!pet.towerCheer || pet.towerBest >= TOWER_LEGEND) return;
+  char b[64];
+  snprintf(b, sizeof(b), T(S_CHEER_FMT), TOWER_CHEER_PCT * pet.towerCheer);
+  twChip(b, cx, cy, C565(0xc0, 0x84, 0x10));
+}
 static void twChip(const char *s, int cx, int y, uint16_t col = V2_RIM) {
   setSize(2);
   int w = textW(s, 2) + 16;
@@ -807,6 +816,20 @@ static void twViewTower() {
     twThumb(mt, CX + sway + (k == 0 ? -2 : k == 1 ? 2 : 0), feet + (k == 2 ? -2 : k == 3 ? 2 : 0), 2, 0x9A6AD8);
   twThumb(mt, CX + sway, feet, 2, 0x2A1A4C);
   v2LabelButton(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1, T(S_CLIMB), C565(0x58, 0xb8, 0x68));
+  if (pet.towerCheer && pet.towerBest < TOWER_LEGEND) {  // the friends' cheer: a gold disc by the tower's foot, a heart, "+10%", "HP"
+    const int dx = 384, dy = 246, r = 38;
+    char b[12];
+    gfx->fillCircle(dx, dy, r + 3, sc565(TW_INK));
+    gfx->fillCircle(dx, dy, r, sc565(0xF0C04A));
+    gfx->fillCircle(dx, dy, r - 5, sc565(0xC08410));
+    static const char *const HEART[6] = { ".xx.xx.", "xxxxxxx", "xxxxxxx", ".xxxxx.", "..xxx..", "...x..." };
+    for (int y = 0; y < 6; y++)
+      for (int x = 0; x < 7; x++)
+        if (HEART[y][x] == 'x') gfx->fillRect(dx - 7 + x * 2, dy - 30 + y * 2, 2, 2, sc565(0xFF6A7A));
+    snprintf(b, sizeof(b), "+%d%%", TOWER_CHEER_PCT * pet.towerCheer);
+    twRimText(b, dx, dy - 14, UI_WHITE);
+    twRimText("HP", dx, dy + 6, sc565(0xFFE27A));
+  }
   v2CloseX();
 }
 // 03: the first visit's card
@@ -830,6 +853,7 @@ static void twViewTired() {
   gfx->fillRoundRect(132, 276, 202, 16, 5, V2_RIM);
   gfx->fillRect(135, 279, (int)(196L * pet.energy / 100), 10, C565(0xf0, 0xc0, 0x4a));
   gfx->fillRect(135 + 196 * TOWER_ENERGY_MIN / 100, 277, 2, 14, UI_WHITE);  // where a climb can start
+  twCheerChip(306);  // what's waiting: the friends' cheer
   v2CloseX();
 }
 // 05: pick 2 friends: the Pokedex's own grid (Fedor: "no need to boxes behind the pokemon. Keep the pokedex looking
