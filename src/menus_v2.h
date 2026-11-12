@@ -2804,14 +2804,15 @@ static void v2ChoiceDialog(const char *q, const char *o1, uint16_t c1, uint16_t 
 // "Release GENGAR?" (release_dialog()): under it, what it means ("It goes back to the wild. This cannot be
 // undone."), then RELEASE in red and KEEP in green (Fedor)
 static void v2ReleaseDialog(const char *q) {
+  const int dy = V2_REL_DY;  // (lower while EVOLVE's box is over it)
   dimFrame();
-  v2Panel(84, 140, 382, 330, 12);
+  v2Panel(84, 140 + dy, 382, 330 + dy, 12);
   gfx->setTextColor(UI_INK);
   setSize(2);
-  setCur(centerX(q, 2), 160);
+  setCur(centerX(q, 2), 160 + dy);
   printT(q);
   gfx->setTextColor(V2_INK_MUTED);
-  drawWrappedAt(T(S_RELEASE_WARN), 2, 252, CX, 192, 20, true);
+  drawWrappedAt(T(S_RELEASE_WARN), 2, 252, CX, 192 + dy, 20, true);
   char a[24];
   char b[24];
   v2LabelButton(V2_REL_X0, V2_REL_Y0, V2_REL_X1, V2_REL_Y1, v2Caps(T(S_RELEASE_BTN), a, sizeof(a)), C565(0xe8, 0x50, 0x3a));
@@ -2847,6 +2848,10 @@ static void v2CtaButton(int x, int y, int w, int h, const char *s, uint16_t col,
 // of its own over the release question's
 static void v2HoldEvolve() {
   v2Panel(V2_HEVO_PX0, V2_HEVO_PY0, V2_HEVO_PX1, V2_HEVO_PY1, 12);
+  char h[80];
+  snprintf(h, sizeof(h), T(S_EVO_TRYING_FMT), pet.nick[0] ? pet.nick : dexName(pet.speciesId));
+  gfx->setTextColor(UI_INK);
+  drawWrappedAt(h, 2, 270, CX, V2_HEVO_HEAD_Y, 20, true);
   v2CtaButton(V2_HEVO_X0, V2_HEVO_Y0, V2_HEVO_X1 - V2_HEVO_X0, V2_HEVO_Y1 - V2_HEVO_Y0, T(S_EVO_TAP), C565(0xe8, 0x50, 0x3a), UI_WHITE, 1000);
 }
 

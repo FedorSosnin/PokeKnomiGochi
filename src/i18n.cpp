@@ -90,6 +90,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "RETOS", "Vence la torre otra vez con:", "Nadie debilitado", "Dos amigos de 1 estrella", "Ning\243n Pokemon evolucionado", "NUEVO!",  // Knomi Tower: challenges
     "Para evolucionarlo luego,",  // after "keep form": how to evolve it later
     "Ahora no",  // the grey button under EVOLVE!
+    "Tu %s quiere evolucionar!",  // the hold's EVOLVE box heading
 #endif
   },
   // ---------------- EN ----------------
@@ -175,6 +176,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "CHALLENGES", "Beat the tower again with:", "No one fainting", "Two 1-star friends", "No evolved Pokemon", "NEW!",  // Knomi Tower: challenges
     "To evolve it later,",  // after "keep form": how to evolve it later
     "Not now",  // the grey button under EVOLVE!
+    "Your %s is trying to evolve!",  // the hold's EVOLVE box heading
 #endif
   },
   // ---------------- FR ----------------
@@ -260,6 +262,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "DEFIS", "Bats la tour encore avec:", "Personne K.O.", "Deux amis 1 \202toile", "Aucun Pokemon \202volu\202", "NOUVEAU!",  // Knomi Tower: challenges
     "Pour l'\202voluer plus tard,",  // after "keep form": how to evolve it later
     "Pas maintenant",  // the grey button under EVOLVE!
+    "Ton %s essaie d'\202voluer!",  // the hold's EVOLVE box heading
 #endif
   },
   // ---------------- DE ----------------
@@ -350,6 +353,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "HERAUSFORDERUNGEN", "Besiege den Turm noch mal mit:", "Keiner besiegt", "Zwei 1-Stern-Freunde", "Kein entwickeltes Pokemon", "NEU!",  // Knomi Tower: challenges
     "Zum Entwickeln sp\204ter",  // after "keep form": how to evolve it later
     "Nicht jetzt",  // the grey button under EVOLVE!
+    "Dein %s will sich entwickeln!",  // the hold's EVOLVE box heading
 #endif
   },
   // ---------------- IT ----------------
@@ -435,6 +439,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "SFIDE", "Batti di nuovo la torre con:", "Nessuno esausto", "Due amici da 1 stella", "Nessun Pokemon evoluto", "NUOVO!",  // Knomi Tower: challenges
     "Per farlo evolvere dopo,",  // after "keep form": how to evolve it later
     "Non ora",  // the grey button under EVOLVE!
+    "Il tuo %s sta per evolversi!",  // the hold's EVOLVE box heading
 #endif
   },
   // ---------------- PT ----------------
@@ -520,6 +525,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "DESAFIOS", "Ven\207a a torre de novo com:", "Ninguem desmaiado", "Dois amigos de 1 estrela", "Nenhum Pokemon evoluido", "NOVO!",  // Knomi Tower: challenges
     "Para evoluir depois,",  // after "keep form": how to evolve it later
     "Agora nao",  // the grey button under EVOLVE!
+    "Seu %s quer evoluir!",  // the hold's EVOLVE box heading
 #endif
   },
   // ---------------- JA ----------------
@@ -628,6 +634,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "チャレンジ", "もういちど タワーを クリア:", "だれも たおれない", "ほし 1つの ともだち 2ひき", "しんかしていない ポケモンだけ", "NEW!",  // Knomi Tower: challenges
     "あとで しんかさせるには",  // after "keep form": how to evolve it later
     "いまは しない",  // the grey button under EVOLVE!
+    "%sが しんかしようと している!",  // the hold's EVOLVE box heading
 #endif
   },
   // ---------------- KO ----------------
@@ -718,6 +725,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "챌린지", "타워를 다시 클리어:", "아무도 기절하지 않기", "별 1개 친구 2마리", "진화하지 않은 포켓몬만", "NEW!",  // Knomi Tower: challenges
     "나중에 진화시키려면",  // after "keep form": how to evolve it later
     "지금은 안 해",  // the grey button under EVOLVE!
+    "%s 진화하려고 해요!",  // the hold's EVOLVE box heading
 #endif
   },
 };

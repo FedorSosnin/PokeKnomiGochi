@@ -72,23 +72,28 @@ static const int16_t V2_BTN[5][2] = { {90, 336}, {158, 392}, {232, 408}, {306, 3
 
 // the release question (rooms2_px.py release_dialog()): its RELEASE, red, and KEEP, green (the taps read them
 // early in the sketch); a tap anywhere but RELEASE keeps it, as in V1
-#define V2_REL_Y0 266
-#define V2_REL_Y1 312
+#define V2_REL_Y0 (266 + V2_REL_DY)
+#define V2_REL_Y1 (312 + V2_REL_DY)
 #define V2_REL_X0 104   // RELEASE: 104..226
 #define V2_REL_X1 226
 #define V2_KEEP_X0 240  // KEEP: 240..362
 #define V2_KEEP_X1 362
 // ...and over it, while it can evolve, the home's EVOLVE in a white box of its own (Fedor: "it will give you an option
 // to Evolve, then in a seperate box to release or keep"; "put the red evolve button into a white box like the
-// release and keep buttons have"): two boxes, two choices, the box inside the need bars' ring
-#define V2_HEVO_PX0 128  // the box
-#define V2_HEVO_PY0 58
-#define V2_HEVO_PX1 338
-#define V2_HEVO_PY1 128
-#define V2_HEVO_X0 146   // its button
-#define V2_HEVO_X1 320
-#define V2_HEVO_Y0 70
-#define V2_HEVO_Y1 116
+// release and keep buttons have"; "the same width as the Release Caterpie box. It can have a heading like "your
+// (pokemon name here) is trying to evolve" with the Evolve button under it"). The two boxes together are centred,
+// so the release question's moves down V2_HEVO_DY while it's there
+#define V2_HEVO_DY 57
+#define V2_REL_DY (pet.canEvolveNow() ? V2_HEVO_DY : 0)
+#define V2_HEVO_PX0 84   // the box, as wide as the release question's (84..382)
+#define V2_HEVO_PY0 79
+#define V2_HEVO_PX1 382
+#define V2_HEVO_PY1 189
+#define V2_HEVO_HEAD_Y 93  // its heading: two lines at most, 270 wide
+#define V2_HEVO_X0 133   // its button, under the heading
+#define V2_HEVO_X1 333
+#define V2_HEVO_Y0 139
+#define V2_HEVO_Y1 179
 
 // pet
 #define V2_PET_FEET 296           // ground line of the pet's feet

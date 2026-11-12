@@ -140,6 +140,7 @@ enum StrId : STRID_BASE {
   S_CHALLENGES, S_CH_HOW, S_CH_NOFAINT, S_CH_ONESTAR, S_CH_BASE, S_TWR_NEW,  // ...challenges once the Legend is beaten
   S_EVO_HINT1,  // V2: after "keep form", over S_FAREWELL_HINT2 ("press and hold your Pokemon."): "To evolve it later,"
   S_NOT_NOW,    // V2: the grey button under EVOLVE! on the home
+  S_EVO_TRYING_FMT,  // V2: the hold's EVOLVE box heading: "Your CATERPIE is trying to evolve!"
 #endif
   STR_COUNT
 };
