@@ -6,6 +6,11 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [Unreleased]
+
+- **Your Pokémon's nickname in battles:** the HP panel and lines like "SPLASHY: DRAGON RAGE!" use the name you gave it, in wild and buddy battles, PokeDungeon and Knomi Tower.
+- **Bigger, sharper windows (Mac and Windows):** the sizes move up one: Small is about the old Medium, Medium the old Large, and a new Large is nearly as big as the web version's. Every size is drawn sharp: the screen is blown up by whole pixels first, and Small and Large land exactly on a Retina screen's pixels (Large on Windows at 100% and 200% scaling too), so the pixel art stays crisp instead of blurring.
+
 ## [2.1.1] - 2026-11-12
 
 - **Evolve when you want:** the red **Evolve** button now has a grey **Not now** under it. **Not now** (or **Keep form**) keeps your Pokémon as it is for good: the button no longer comes back an hour later, or after a restart. Whenever you're ready, hold your Pokémon for 3 seconds: while it can evolve, a box saying "Your CATERPIE is trying to evolve!" with an **Evolve** button sits above the release question. Tapping anywhere else while the buttons are up does nothing, so a slip can't decide. Its next form is asked about once again.

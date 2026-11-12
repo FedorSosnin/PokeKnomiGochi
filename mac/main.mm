@@ -26,8 +26,12 @@
 #define RING_ANIM_S 0.15  // the grow and shrink
 #define RING_OUTLINE 1.0
 #define RING_LINE 20.0  // the black band in the middle
-static const CGFloat kSizes[] = {190, 240, 300};  // side of the window at rest, frame included
-#define DEFAULT_SIZE 240.0
+// side of the window at rest, frame included: Small, Medium, Large (Fedor: each moved up one, Small about 2.1.1's
+// Medium and Large near the web version's 520). The game's screen is the side less 12: Small's 233 and Large's 466 are
+// the canvas at exactly 1x and 2x a Retina screen's pixels (and 1x / 2x on others), so they show pixel for pixel
+// ("Pixled art, but sharp. Blurriness is going to kill it"). A window kept at an older size opens at Small
+static const CGFloat kSizes[] = {245, 300, 478};
+#define DEFAULT_SIZE 245.0
 
 // New versions: the newest "mac-v*" release on GitHub. Checked at launch and every UPDATE_EVERY_S by the
 // real clock (time the Mac sleeps counts, as it doesn't for a timer), looked at every UPDATE_POLL_S, so a
@@ -354,6 +358,7 @@ static NSCursor *fingerCursor(bool pressed) {
 
 @implementation GameView {
   uint8_t *_rgba;
+  uint32_t *_big;  // the canvas blown up a whole number of times (showFrame)
   bool _left, _right, _up, _down, _touching;
 }
 
@@ -363,8 +368,12 @@ static NSCursor *fingerCursor(bool pressed) {
     self.wantsLayer = YES;
     self.layer.masksToBounds = YES;
     self.layer.contentsGravity = kCAGravityResize;
-    self.layer.minificationFilter = kCAFilterTrilinear;
-    self.layer.magnificationFilter = kCAFilterLinear;  // the canvas is 466 px: a stretch that is not a whole number, so nearest doubled every ~5th row and column (blocky, uneven text at Large)
+    // Sharp at every size (showFrame): the layer gets the canvas already blown up, pixel by pixel, to the view's
+    // pixels or a little past them, and only ever shrinks it a touch. Linear, not trilinear: a mipmap would soften it.
+    // (Stretching the 466 px canvas itself by a number that isn't whole blurred it with linear, and with nearest
+    // doubled every ~5th row and column)
+    self.layer.minificationFilter = kCAFilterLinear;
+    self.layer.magnificationFilter = kCAFilterNearest;
     self.layer.backgroundColor = NSColor.blackColor.CGColor;
     [self addTrackingArea:[[NSTrackingArea alloc]
                               initWithRect:NSZeroRect
@@ -386,9 +395,30 @@ static NSCursor *fingerCursor(bool pressed) {
 
 - (void)showFrame {
   hostFrameRGBA(_rgba);
+  // the view's side in the screen's pixels, and the whole number of times the canvas goes into it, rounded up:
+  // at Large on a Retina screen 932 px, exactly 2 (pixel for pixel); at Medium 576 px, 2, then shrunk to fit
+  CGFloat px = self.bounds.size.width * (self.window ? self.window.backingScaleFactor : 2.0);
+  int n = (int)ceil(px / HOST_CANVAS_SIZE - 0.01);
+  if (n < 1) n = 1;
+  if (n > 4) n = 4;
+  const uint8_t *src = _rgba;
+  if (n > 1) {
+    const int side = HOST_CANVAS_SIZE * n;
+    // once, for the biggest it can be: never freed, as the layer may still be showing the last frame made from it
+    if (!_big) _big = (uint32_t *)malloc((size_t)HOST_CANVAS_SIZE * 4 * HOST_CANVAS_SIZE * 4 * 4);
+    const uint32_t *in = (const uint32_t *)_rgba;
+    for (int y = 0; y < HOST_CANVAS_SIZE; y++) {
+      uint32_t *row = _big + (size_t)y * n * side;
+      for (int x = 0; x < HOST_CANVAS_SIZE; x++)
+        for (int k = 0; k < n; k++) row[x * n + k] = in[y * HOST_CANVAS_SIZE + x];
+      for (int k = 1; k < n; k++) memcpy(row + (size_t)k * side, row, (size_t)side * 4);
+    }
+    src = (const uint8_t *)_big;
+  }
+  const int side = HOST_CANVAS_SIZE * n;
   CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
-  CGDataProviderRef prov = CGDataProviderCreateWithData(NULL, _rgba, HOST_CANVAS_SIZE * HOST_CANVAS_SIZE * 4, NULL);
-  CGImageRef img = CGImageCreate(HOST_CANVAS_SIZE, HOST_CANVAS_SIZE, 8, 32, HOST_CANVAS_SIZE * 4, cs,
+  CGDataProviderRef prov = CGDataProviderCreateWithData(NULL, src, (size_t)side * side * 4, NULL);
+  CGImageRef img = CGImageCreate(side, side, 8, 32, side * 4, cs,
                                  kCGBitmapByteOrderDefault | kCGImageAlphaNoneSkipLast, prov, NULL, false,
                                  kCGRenderingIntentDefault);
   // a copy so the layer does not depend on the buffer that the next frame overwrites
@@ -551,7 +581,13 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
   NSRect f = self.window.frame;
   CGFloat s = item.tag;
   NSPoint c = NSMakePoint(NSMidX(f), NSMidY(f));
-  [self.window setFrame:windowFrameFor(NSMakeRect(c.x - s / 2, c.y - s / 2, s, s)) display:YES];
+  NSRect nf = windowFrameFor(NSMakeRect(c.x - s / 2, c.y - s / 2, s, s));
+  // grown round its middle, a window in a corner (where it starts) would hang off the screen at Large: back inside
+  // the screen's visible part (the clear margin round the frame may pass its edge)
+  NSRect vis = NSInsetRect((self.window.screen ?: NSScreen.mainScreen).visibleFrame, -RING_PAD, -RING_PAD);
+  nf.origin.x = fmax(NSMinX(vis), fmin(nf.origin.x, NSMaxX(vis) - nf.size.width));
+  nf.origin.y = fmax(NSMinY(vis), fmin(nf.origin.y, NSMaxY(vis) - nf.size.height));
+  [self.window setFrame:nf display:YES];
   [self.window invalidateShadow];
   [self saveWindowPlace];
 }

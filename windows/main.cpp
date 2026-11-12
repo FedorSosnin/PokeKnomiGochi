@@ -48,8 +48,13 @@
 #define RING_ANIM_MS 150.0  // the grow and shrink
 #define RING_OUTLINE 1.0
 #define RING_LINE 20.0  // the black band in the middle
-static const int kSizes[] = {190, 240, 300};  // side of the window at rest, frame included, in points
-#define DEFAULT_SIZE 240
+// side of the window at rest, frame included, in points: Small, Medium, Large (Fedor: each moved up one, Small about
+// 2.1.1's Medium and Large near the web version's 520). The game's screen is the side less 12: Small's 233 and Large's
+// 466 are the canvas at exactly 0.5x and 1x at 100% scaling, 1x and 2x at 200%, so Large shows pixel for pixel
+// ("Pixled art, but sharp"); bigger than the canvas, every size copies whole pixels (buildTaps), never blurs.
+// A window kept at an older size opens at Small
+static const int kSizes[] = {245, 300, 478};
+#define DEFAULT_SIZE 245
 
 // New versions: the newest "win-v*" release on GitHub. Checked at launch and every UPDATE_EVERY_S by the
 // real clock (time the PC sleeps counts), looked at every UPDATE_POLL_MS, so a release made overnight is in
@@ -706,7 +711,18 @@ static void applySize(int size, double scale) {
   gSize = size;
   gScale = scale;
   resizeSurface();
-  present(cx - gSide / 2, cy - gSide / 2);
+  // grown round its middle, a window in a corner (where it starts) would hang off the screen at Large: back inside
+  // the work area (above the taskbar), the clear margin round the frame allowed past its edge
+  int x = cx - gSide / 2, y = cy - gSide / 2, pad = (int)lround(RING_PAD * gScale);
+  MONITORINFO mi = {sizeof(mi)};
+  if (GetMonitorInfoW(MonitorFromWindow(gWnd, MONITOR_DEFAULTTONEAREST), &mi)) {
+    const RECT &w = mi.rcWork;
+    if (x + gSide - pad > w.right) x = w.right - gSide + pad;
+    if (y + gSide - pad > w.bottom) y = w.bottom - gSide + pad;
+    if (x + pad < w.left) x = w.left - pad;
+    if (y + pad < w.top) y = w.top - pad;
+  }
+  present(x, y);
   redraw();
 }
 
