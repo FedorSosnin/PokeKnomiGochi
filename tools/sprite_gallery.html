@@ -78,7 +78,7 @@
   }
 </style>
 </head>
-<body class="shiny">
+<body class="regular">
 <header>
   <div class="top">
     <div>
@@ -88,7 +88,7 @@
     <div class="ctl">
       <input type="search" id="q" placeholder="Name, number or type" aria-label="Find a Pokémon">
       <div class="seg" id="forms" role="group" aria-label="Which form">
-        <button data-form="shiny" aria-pressed="true">Shiny</button><button data-form="regular" aria-pressed="false">Regular</button><button data-form="both" aria-pressed="false">Side by side</button>
+        <button data-form="regular" aria-pressed="true">Regular</button><button data-form="shiny" aria-pressed="false">Shiny</button><button data-form="both" aria-pressed="false">Side by side</button>
       </div>
       <div class="seg" id="sorts" role="group" aria-label="Sort by">
         <button data-sort="num" aria-pressed="true">No.</button><button data-sort="type" aria-pressed="false">Type</button>
@@ -126,7 +126,7 @@
   <div class="dhead">
     <h2 id="dname"></h2><span class="type" id="dtype"></span>
     <div class="seg" id="dforms" role="group" aria-label="Which form">
-      <button data-form="shiny" aria-pressed="true">Shiny</button><button data-form="regular" aria-pressed="false">Regular</button>
+      <button data-form="regular" aria-pressed="true">Regular</button><button data-form="shiny" aria-pressed="false">Shiny</button>
     </div>
     <button class="close" id="dclose" aria-label="Close">×</button>
   </div>
@@ -151,7 +151,7 @@ const TURN = [12, 17, 1, 16, 13, 15, 2, 14];
 const ONCE = new Set(['attack', 'hurt', 'battle', 'backhurt']);  // these rest a moment before they go again
 const W = 144, H = 124, GROUND = 108;
 
-const state = { form: 'shiny', view: 'idle', sort: 'num' };
+const state = { form: 'regular', view: 'idle', sort: 'num' };  // regular first (Fedor)
 const sheets = new Map();
 function sheet(m, shiny) {
   const key = m.id + (shiny ? '-shiny' : '');
@@ -333,7 +333,7 @@ function sync() {
 
 // a Pokémon's own page: every view it has
 const dlg = document.getElementById('dlg'), tiles = document.getElementById('tiles');
-let dlgMon = 0, dlgShiny = true, dlgCanvases = [];
+let dlgMon = 0, dlgShiny = false, dlgCanvases = [];
 function fillDialog() {
   const m = MONS[dlgMon];
   dlgCanvases.forEach((c) => live.delete(c));
@@ -355,7 +355,7 @@ function fillDialog() {
 }
 function openMon(i) {
   const m = MONS[i];
-  dlgMon = i; dlgShiny = state.form !== 'regular';
+  dlgMon = i; dlgShiny = state.form === 'shiny';
   document.getElementById('dname').textContent = `#${String(m.n).padStart(3, '0')} ${m.name}`;
   const ty = document.getElementById('dtype');
   ty.textContent = m.type; ty.style.background = m.c;
