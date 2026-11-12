@@ -44,10 +44,6 @@
   body:not(.both) .card canvas + canvas { display:none; }
   .name { display:block; margin-top:2px; font-size:.82rem; font-weight:600; }
   .num { color:var(--muted); font-weight:400; }
-  .by { display:block; font-size:.72rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  body.shiny .by.reg, body.regular .by.shi { display:none; }
-  body.both .by.reg::before { content:"Regular: "; }
-  body.both .by.shi::before { content:"Shiny: "; }
   .group { grid-column:1 / -1; display:flex; align-items:center; gap:8px; margin:10px 0 -2px; font-size:1rem; text-transform:capitalize; }
   .group:first-child { margin-top:0; }
   .group::before { content:""; width:12px; height:12px; border-radius:50%; background:var(--t); }
@@ -105,8 +101,8 @@
 <footer>
   <h2>Where they come from</h2>
   <p>The sprites are the work of the <a href="https://github.com/PMDCollab/SpriteCollab">PMD Sprite Collaboration</a>'s
-  artists, who share them under <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. The names on
-  each card are the artists who made that sprite. Thank you, all of you.</p>
+  artists, who share them under <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Each
+  Pokémon's own page (tap it) names the artists who made its regular and shiny sprites. Thank you, all of you.</p>
   <h3>What PokeKnomiGochi changed</h3>
   <ul>
     <li>Colours are rounded to the Knomi screen's 16-bit colour, and a pixel that was partly see-through is now either solid or clear.</li>
@@ -266,11 +262,6 @@ const cards = MONS.map((m, i) => {
   stage.append(reg, shi);
   b.append(stage);
   b.insertAdjacentHTML('beforeend', `<span class="name"><span class="num">#${String(m.n).padStart(3, '0')}</span> ${m.name}</span>`);
-  for (const [cls, who, what] of [['reg', m.cr[0], 'Regular'], ['shi', m.cr[1], 'Shiny']]) {
-    const s = document.createElement('span');
-    s.className = `by ${cls}`; s.textContent = who; s.title = `${what} sprite by ${who}`;
-    b.append(s);
-  }
   b.addEventListener("click", () => openMon(i));
   grid.append(b);
   b.canvases = [reg, shi];
