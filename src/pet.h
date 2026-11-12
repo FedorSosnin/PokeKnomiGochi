@@ -41,7 +41,7 @@
 #define ULTRA_FIGHTS 25    // ...and for an Ultra Ball (Fedor)
 #define ULTRA_MAX 99
 #define MASTER_MAX 99     // the most you can hold
-#define REPEL_PLAY_S 1200  // V2: seconds of minigames played for a Repel (Fedor: 20 minutes; 10 at first)
+#define REPEL_PLAY_S 600  // V2: seconds of minigames played for a Repel (Fedor: 10 minutes; it was 20, and 10 at first)
 #define REPEL_MIN 3       // how long one lasts, in the game's minutes (Fedor: 3; 10 was long)
 #define REPEL_MAX 99
 #endif

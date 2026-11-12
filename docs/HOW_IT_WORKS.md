@@ -121,7 +121,7 @@ Kept with you from one Pokémon to the next, up to 99 of each. Each has its own 
 |---|---|---|
 | 🟡 **Ultra Ball** | Every 25 wild or Travel battles fought to the end, won or lost | Triples the catch chance when it hits (it can still break out) |
 | 🟣 **Master Ball** | Every 100 of those battles | Always catches the Pokémon it hits |
-| 🧴 **Repel** | Every 20 minutes of mini games actually played | Spray it from the backpack: for 3 of the game's minutes, weaker wild Pokémon stay away |
+| 🧴 **Repel** | Every 10 minutes of mini games actually played | Spray it from the backpack: for 3 of the game's minutes, weaker wild Pokémon stay away |
 
 At the end of each of those battles, both balls' bars come up in the middle of the screen and this battle's step fills in on each. Running away, battles with buddies and PokeDungeon don't count toward the balls. On the catch screen, the balls you hold sit in a row, each the button for its throw: with both a Master and an Ultra Ball, the Master Ball, the Poké Ball in the middle, then the Ultra Ball.
 

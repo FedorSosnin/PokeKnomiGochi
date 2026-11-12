@@ -1320,7 +1320,13 @@ void Pet::load() {
   repelHeld = prefs.getUChar("rpl", 0);
   repelPlaySec = prefs.getUShort("rpls", 0);
   repelUntil = prefs.getUInt("rplu", 0);
-  if (repelPlaySec >= REPEL_PLAY_S) repelPlaySec = 0;
+  // (a save from when a Repel took 20 minutes can hold up to 19:59: what's past the 10 a Repel takes now earns one, the
+  // rest carries on, as repelPlay() would. More than any firmware saved is nonsense, and starts again)
+  if (repelPlaySec >= 1200) repelPlaySec = 0;
+  for (; repelPlaySec >= REPEL_PLAY_S; repelPlaySec -= REPEL_PLAY_S) {
+    if (repelHeld < REPEL_MAX) repelHeld++;
+    pendingSave = true;
+  }
   towerBest = prefs.getUChar("twrb", 0);
   if (towerBest > TOWER_LEGEND) towerBest = TOWER_LEGEND;
   towerHowSeen = prefs.getBool("twrh", false);

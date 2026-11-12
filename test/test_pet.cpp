@@ -1171,6 +1171,28 @@ TEST(v2repel, minigame_seconds_earn_one) {
   CHECK_EQ(p.repelPlaySec, (uint16_t)0);
 }
 
+TEST(v2repel, ten_minutes_now_and_a_twenty_minute_save_keeps_its_play) {
+  CHECK_EQ(REPEL_PLAY_S, 600);  // (Fedor: 10 minutes of minigames, from 20)
+  Pet a;
+  makePet(a, 25);
+  a.repelPlay(100 * 1000UL);
+  a.flushSave();
+  Preferences pr;  // a save from when a Repel took 20 minutes: 15:00 played toward one
+  pr.begin(SAVE_NS, false);
+  pr.putUShort("rpls", 900);
+  pr.end();
+  Pet b;
+  b.begin();
+  CHECK_MSG(b.repelHeld == 1 && b.repelPlaySec == 300, "10 of its 15 minutes are a Repel, 5 carry on");
+  pr.begin(SAVE_NS, false);
+  pr.putUShort("rpls", 5000);  // more than any firmware saved
+  pr.putUChar("rpl", 0);
+  pr.end();
+  Pet c;
+  c.begin();
+  CHECK_MSG(c.repelHeld == 0 && c.repelPlaySec == 0, "nonsense starts again");
+}
+
 TEST(v2repel, one_runs_ten_minutes_and_cant_be_doubled) {
   Pet p;
   makePet(p, 25);
