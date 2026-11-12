@@ -6,6 +6,16 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [2.1.1] - 2026-11-12
+
+- **Evolve when you want:** the red **Evolve** button now has a grey **Not now** under it. **Not now** (or **Keep form**) keeps your Pokémon as it is for good: the button no longer comes back an hour later, or after a restart. Whenever you're ready, hold your Pokémon for 3 seconds: while it can evolve, a box saying "Your CATERPIE is trying to evolve!" with an **Evolve** button sits above the release question. Tapping anywhere else while the buttons are up does nothing, so a slip can't decide. Its next form is asked about once again.
+- **Party Boost:** a round button with two balloons and **+2**, in the sky to the right of your Pokémon, instead of the green pill that sat on big Pokémon's heads. It's drawn behind every Pokémon, so it never covers one.
+- **Clearer need bars:** FOOD, JOY, ENE and HYG are white with a dark outline, so they read on the sky, the sand, every fill colour and the dark places.
+- **The Repel:** 10 minutes of mini games earn one, from 20. Time already played carries over.
+- **Hall of Fame:** beating the Legend shows a proper painting: a sunset sky with rays over the tower's battlements, a gold frame with the eight floors' crests, your team on a red carpet, confetti and a gleam.
+- **Medals earned once:** saves from before 2.1.0 lost their care medals to each new Pokémon. The ones the save can prove (the 7-day streak, and Lv.10/25/50 once a Pokémon reached 100) come back quietly, so they aren't won a second time.
+- **Knomi auto-update:** a new version now installs itself from any page left dimmed (not in a game, a battle or a question), from 7 am to 8 pm, or 10 am to 6 pm while your Pokémon sleeps. Before, it waited for the home screen with the Pokémon awake, which could take days. Knomis on 2.1.0 need this one update by hand: **Settings**, then **Check for update**.
+
 ## [2.1.0] - 2026-11-11
 
 - **Knomi Tower:** a new islet at the end of Travel's pier, with a tower of eight type floors and the Legend at the top, then Mewtwo. Climb with your Pokémon and two Pokédex friends, HP carrying over from fight to fight. Every fight fills the balls' bars, and beating the Legend earns a Master Ball every time, plus the Tower Master badge and a Hall of Fame the first time. Also: a floor guide, Strong/Weak picks worked out from the fight itself, a tip after a lost climb, friends who cheer (+5% HP per lost climb, up to +15%), and three challenges once it's beaten. Travel gets a second page: the map slides out along the pier to the tower.
