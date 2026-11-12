@@ -9,7 +9,8 @@ namespace {
 
 const int C = HOST_CANVAS_SIZE;    // 466
 const int Q = (C + 3) / 4;         // the halo's quarter-size grid (117)
-const float K = 0.11f;             // the glass's bulge: the middle magnified, the rim squeezed
+const float K = 0.09f;             // the glass's bulge: the middle magnified, the rim squeezed (0.11 at first: Fedor,
+                                   // "lessen the distortion but just a tiny bit. On medium size it can be a bit overwhelming")
 const float SHRINK = 0.965f;       // the picture stops short of the rim (the tube's black edge)
 const float SAT = 1.18f, CON = 1.08f;  // CRT colour: richer, deeper blacks
 const float BLOOM = 0.22f;         // the glow on bright pixels (2.5 game pixels wide)
