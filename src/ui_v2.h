@@ -24,3 +24,14 @@
 #else
 #define V2_TOWER_ME(own) own  // (no brackets: V1 keeps its tokens)
 #endif
+// a fighter's name in a battle and in the dungeon: in V2 yours goes by the name you gave it (tower_v2.h v2BtlName);
+// V1 keeps the species' name and its tokens
+#if UI_V2
+#define BTL_NAME(f) v2BtlName(f)
+#define DN_NAME(mine, me, other) ((mine) ? v2MyName(me) : dexName(other))
+#define MY_NAME(dex) v2MyName(dex)
+#else
+#define BTL_NAME(f) dexName(f.dex)
+#define DN_NAME(mine, me, other) dexName(mine ? me : other)
+#define MY_NAME(dex) dexName(dex)
+#endif

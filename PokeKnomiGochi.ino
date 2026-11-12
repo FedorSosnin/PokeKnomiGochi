@@ -4170,7 +4170,7 @@ void drawBattlePanel(int x, int y, const BtlFighter &f, float shown, bool number
   gfx->setTextColor(UI_INK);
   setSize(2);
   setCur(x + 10, y + 6);
-  printT(dexName(f.dex));
+  printT(BTL_NAME(f));  // (V2: yours by its nickname)
   float pct = f.maxHp ? shown / f.maxHp : 0;
   gfx->fillRoundRect(x + 10, y + 28, 158, 10, 4, UI_TRACK);
   int w = (int)(158 * pct);
@@ -4817,7 +4817,7 @@ void renderBattle() {
     case BP_ATTACK:
     case BP_HIT: {
       const BtlFighter &a = bTurn[bStep].mine ? bMe : bFoe;
-      snprintf(b, sizeof(b), "%s: %s!", dexName(a.dex), MOVE_TBL[(bTurn[bStep].mine ? bMeMoves : bFoeMoves).ids[bTurn[bStep].move]].name);
+      snprintf(b, sizeof(b), "%s: %s!", BTL_NAME(a), MOVE_TBL[(bTurn[bStep].mine ? bMeMoves : bFoeMoves).ids[bTurn[bStep].move]].name);
       battleCenterLine(b, 380);
       break;
     }
@@ -4839,7 +4839,7 @@ void renderBattle() {
         snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(bFoe.dex));
         battleCenterLine(b, 352);
       } else {
-        snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(bMe.dex));
+        snprintf(b, sizeof(b), T(S_BTL_LOST), BTL_NAME(bMe));
         battleCenterLine(b, 352);
       }
       if (!bPvp && bGain) {  // no training between friends, nor from a loss; nothing when it's maxed
@@ -5284,7 +5284,7 @@ void renderDungeon() {
     if (dn.ate) strlcpy(b, T(S_DN_BERRY), sizeof(b));
     else if (dn.hitCount) {
       const DnHit &h = dn.hits[dn.hitCount - 1];
-      snprintf(b, sizeof(b), "%s: %s!", dexName(h.mine || h.mon < 0 ? dn.me.dex : dn.mon[h.mon].f.dex), MOVE_TBL[h.move].name);
+      snprintf(b, sizeof(b), "%s: %s!", DN_NAME(h.mine || h.mon < 0, dn.me.dex, dn.mon[h.mon].f.dex), MOVE_TBL[h.move].name);
     }
   }
   setSize(2);
@@ -5301,7 +5301,7 @@ void renderDungeon() {
     char top[44];  // V2: the result in a panel over the dimmed dungeon
     char big[12];
     char rec[24];
-    snprintf(top, sizeof(top), T(S_BTL_LOST), dexName(dn.me.dex));
+    snprintf(top, sizeof(top), T(S_BTL_LOST), MY_NAME(dn.me.dex));
     snprintf(big, sizeof(big), "B%uF", dn.floor);
     snprintf(rec, sizeof(rec), T(S_RECORD_FMT), pet.dungeonHi);
     v2GameResult(gameLabel(3), top, big, dnNewHi, rec, dn.floor >= 5 ? T(S_GREAT_JOY) : T(S_PLUS_JOY));
@@ -5311,7 +5311,7 @@ void renderDungeon() {
     gfx->fillRoundRect(83, 130, 300, 190, 16, UI_WHITE);
     gfx->drawRoundRect(83, 130, 300, 190, 16, UI_INK);
     gfx->setTextColor(UI_INK);
-    snprintf(b, sizeof(b), T(S_BTL_LOST), dexName(dn.me.dex));
+    snprintf(b, sizeof(b), T(S_BTL_LOST), MY_NAME(dn.me.dex));
     setCur(centerX(b, 2), 148);
     printT(b);
     snprintf(b, sizeof(b), "B%uF", dn.floor);

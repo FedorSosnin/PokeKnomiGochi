@@ -335,6 +335,12 @@ static int8_t twDrained = -1;        // the one it just drained (TW_DRAIN), and 
 static uint16_t twDrainFrom = 0, twDrainTo = 0;
 static uint32_t twDrainT0 = 0;
 static int8_t twFighting = -1;   // the member in the fight now
+// Your Pokemon by the name you gave it, in a fight and in the dungeon (Fedor: "During a battle I still see the
+// pokemon's name but not my name I chose for them"); a friend fighting for you in the tower and every foe by species
+static const char *v2MyName(int16_t dex) { return pet.nick[0] && dex == pet.speciesId ? pet.nick : dexName(dex); }
+static const char *v2BtlName(const BtlFighter &f) {
+  return &f == &bMe && !(bTower && twFighting > 0) ? v2MyName(f.dex) : dexName(f.dex);
+}
 static bool twRan = false;
 static int16_t twBeatBy = 0;     // who ended the climb, and where
 static uint8_t twBeatStep = 0;
@@ -1221,7 +1227,7 @@ static void twViewDrain() {
   twFoeStand(fl, (uint16_t)(twDrainFrom + (twDrainTo - twDrainFrom) * k));
   char b[64], a1[12], a2[12];
   snprintf(a1, sizeof(a1), "%s", dexName(twFoeDex));
-  snprintf(a2, sizeof(a2), "%s", dexName(twTeam[twDrained].dex));
+  snprintf(a2, sizeof(a2), "%s", twDrained ? dexName(twTeam[twDrained].dex) : v2MyName(twTeam[0].dex));
   snprintf(b, sizeof(b), T(S_DRAIN_FMT), a1, a2);
   gfx->setTextColor(sc565(0xF0E0FF));
   v2Wrapped(b, 214, 330, 18, 1);
@@ -1602,7 +1608,7 @@ bool towerPressAt(int16_t x, int16_t y, PressTarget &t) {
       int i = twLeadAt(x, y);
       if (i >= 0 && twTeam[i].f.hp) {
         int n = twTeamN, w = 116, gap = 8, x0 = CX - (n * w + (n - 1) * gap) / 2;
-        return v2PressSet(t, x0 + i * (w + gap), TW_LEAD_Y0, w, TW_LEAD_Y1 - TW_LEAD_Y0, dexName(twTeam[i].dex));
+        return v2PressSet(t, x0 + i * (w + gap), TW_LEAD_Y0, w, TW_LEAD_Y1 - TW_LEAD_Y0, i ? dexName(twTeam[i].dex) : v2MyName(twTeam[0].dex));
       }
       break;
     }
