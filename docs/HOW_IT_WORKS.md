@@ -154,7 +154,7 @@ Every zone's Pokémon are **common**, **rare** or **legendary**:
 
 A climb of ten fights in a row: eight floors, each with one guardian, then the Legend's two at the top. Your Pokémon and two friends go up together, and their HP carries from fight to fight, so who you send in matters as much as how strong they are.
 
-<p align="center"><img src="images/v2/tower.png" width="240" alt="Knomi Tower: eight floors, each lit in its type's colour with its name beside it, the Master Ball at the top and CLIMB! at its foot"> <img src="images/v2/tower-lead.png" width="240" alt="Who goes first? 1F's Rock guardian, Aerodactyl, with Blastoise and Gengar marked Strong"> <img src="images/v2/tower-master.png" width="240" alt="TOWER MASTER! The Hall of Fame photo of Charizard, Blastoise and Gengar, and +1 Master Ball"></p>
+<p align="center"><img src="images/v2/tower.png" width="240" alt="Knomi Tower: eight floors, each lit in its type's colour with its name beside it, the Master Ball at the top and CLIMB! at its foot"> <img src="images/v2/tower-lead.png" width="240" alt="Who goes first? 1F's Rock guardian, Aerodactyl, with Blastoise and Gengar marked Strong"> <img src="images/v2/tower-master.png" width="240" alt="TOWER MASTER! The Hall of Fame painting: Charizard, Blastoise and Gengar on the tower's top at sunset under the Master Ball, in a gold frame set with the floors' crests, and +1 Master Ball"></p>
 
 ### Getting there
 

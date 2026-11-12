@@ -100,7 +100,7 @@ Walk out along Travel's new pier to **Knomi Tower**: eight floors, each guarded 
 | **Out along the pier** | **Eight floors and the Legend** | **Your Pokémon and two friends** |
 | ![Who goes first? 1F's Rock guardian Aerodactyl, with Blastoise and Gengar marked Strong](docs/images/v2/tower-lead.png) | ![A floor fight in the tower's hall: Blastoise against Aerodactyl](docs/images/v2/tower-fight.png) | ![The Legend's second fight: Blastoise against Mewtwo](docs/images/v2/tower-mewtwo.png) |
 | **Who goes first?** | **A guardian on every floor** | **Mewtwo waits at the top** |
-| ![Climb over: CHARIZARD was Weak against KINGLER. Try a GRASS/ELECTRIC friend! Next climb +5% HP](docs/images/v2/tower-tip.png) | ![The tower with the friends' cheer: +5% HP for the next climb](docs/images/v2/tower-cheer.png) | ![TOWER MASTER! The Hall of Fame photo and +1 Master Ball](docs/images/v2/tower-master.png) |
+| ![Climb over: CHARIZARD was Weak against KINGLER. Try a GRASS/ELECTRIC friend! Next climb +5% HP](docs/images/v2/tower-tip.png) | ![The tower with the friends' cheer: +5% HP for the next climb](docs/images/v2/tower-cheer.png) | ![TOWER MASTER! The Hall of Fame painting: the team on the tower's top at sunset under the Master Ball, confetti falling, and +1 Master Ball](docs/images/v2/tower-master.png) |
 | **A tip after every lost climb** | **Friends cheer you on** | **Tower Master and the Hall of Fame** |
 
 How it all works, floor by floor: [Knomi Tower](docs/HOW_IT_WORKS.md#knomi-tower).
