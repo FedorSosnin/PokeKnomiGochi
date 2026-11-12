@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ui_v2.h"
 
 // Wi-Fi updates: the pure parts (tested on the PC). The Knomi reads update.json from the web
 // installer's site, written by tools/build_knomi_web.sh:
@@ -47,3 +48,16 @@ inline bool otaJsonField(const char *json, const char *key, char *out, size_t n)
   }
   return false;
 }
+
+#if UI_V2
+// V2's auto-update: may the version found go in by itself now? The sketch says what's going on:
+//   idle: the screen dimmed or off (nobody's using it)     busy: something a restart would lose is under way
+//   asleep: the pet's light is off                         hour: the local hour, 0..23
+// Any screen will do, not only the home screen: menus stay open when left alone, so a Knomi left on Settings (where
+// it shows the update) never got it. By day only, as the restart lights the screen; with the light left off (only
+// the light wakes the pet, so it can sleep all day) only in the middle of the day, when no bedroom is dark.
+inline bool otaAutoNow(bool idle, bool busy, bool asleep, int hour) {
+  if (!idle || busy) return false;
+  return asleep ? hour >= 10 && hour < 18 : hour >= 7 && hour < 20;
+}
+#endif

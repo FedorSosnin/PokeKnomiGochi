@@ -30,3 +30,17 @@ TEST(ota, missing_or_too_long_is_refused) {
   CHECK(!otaJsonField(j, "version", v, sizeof(v)));       // "1.19" + 0 doesn't fit in 4
   CHECK(!otaJsonField("<html>404</html>", "version", v, sizeof(v)));
 }
+
+#if UI_V2
+TEST(ota, auto_update_waits_for_an_idle_knomi_by_day) {
+  CHECK_MSG(otaAutoNow(true, false, false, 9), "idle, awake, by day: now");
+  CHECK_MSG(!otaAutoNow(false, false, false, 9), "not while someone's using it");
+  CHECK_MSG(!otaAutoNow(true, true, false, 9), "not with something a restart would lose");
+  CHECK_MSG(!otaAutoNow(true, false, false, 6) && otaAutoNow(true, false, false, 7) && otaAutoNow(true, false, false, 19) &&
+            !otaAutoNow(true, false, false, 20), "awake: 7:00 to 19:59");
+  CHECK_MSG(otaAutoNow(true, false, true, 12), "the light left off all day no longer holds it off for good");
+  CHECK_MSG(!otaAutoNow(true, false, true, 9) && otaAutoNow(true, false, true, 10) && otaAutoNow(true, false, true, 17) &&
+            !otaAutoNow(true, false, true, 18), "asleep: 10:00 to 17:59 only");
+  CHECK_MSG(!otaAutoNow(true, false, true, 2) && !otaAutoNow(true, false, false, 23), "never at night");
+}
+#endif

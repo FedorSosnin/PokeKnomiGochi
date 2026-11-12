@@ -414,6 +414,12 @@ static void twEndClimb() {
   twFighting = -1;
 }
 
+// a climb under way (a floor next, a fight just won or lost, the Legend's): what a restart would lose, so the
+// auto-update waits. The tower's other views are only looked at
+bool towerClimbing() {
+  return zoneScreen == ZS_TOWER && (twView == TW_LEAD || twView == TW_DRAIN || twView == TW_WON || twView == TW_LEGEND);
+}
+
 void towerOpen() {  // from Travel's second page
   zoneScreen = ZS_TOWER;
   twView = TW_TOWER;

@@ -252,6 +252,7 @@ bool bTower = false;       // V2: this battle is a Knomi Tower fight (tower_v2.h
                            // goes back to the climb
 void towerOpen();  // (tower_v2.h, included with the V2 screens further down)
 void towerJump(uint8_t step);
+bool towerClimbing();
 bool bFromIsland = false;  // V2: a Wild Encounter from Knomi Island: its end goes back there, as a zone's does (Fedor:
                            // "When hitting run, you should go back to the zone you were in right before you battled.
                            // Not back to home screen. Makes hunting shinys more tedious")
@@ -784,8 +785,18 @@ void loop() {
   // day, with the pet awake: the restart lights the screen, and not in a dark bedroom. One try an hour:
   // a failed one (no Wi-Fi) doesn't hold it in a loop. The pet's save is never touched by it.
   static uint32_t autoTriedT = 0;
-  if (autoUpdate && otaState() == OTA_AVAILABLE && (screenOff || dimStage >= 1) && onMainScreen() && !pet.ceremony &&
-      !choiceKind && bsState == BS_IDLE && !pet.sleeping && sceneHour() >= 7 && sceneHour() < 20 &&
+#if UI_V2
+  // V2: from any screen a restart loses nothing on (Fedor: "the knomi finds the update but never auto install it":
+  // menus stay open when left alone, and only the light wakes the pet), and asleep in the middle of the day (otaAutoNow())
+  bool otaBusy = pet.ceremony || choiceKind || confirmUntil || bsState != BS_IDLE || gameOpen || runOpen || surfOpen ||
+                 dungeonOpen || battleOpen || quizOpen || vbOpen || sdOpen || tradeOpen || kbOpen ||
+                 wifiSetupState() != WS_OFF || towerClimbing();
+#define OTA_AUTO_WHEN otaAutoNow(screenOff || dimStage >= 1, otaBusy, pet.sleeping, sceneHour())
+#else  // (one `if` line for both: the prototype generator counts braces without reading #if)
+#define OTA_AUTO_WHEN (screenOff || dimStage >= 1) && onMainScreen() && !pet.ceremony && \
+      !choiceKind && bsState == BS_IDLE && !pet.sleeping && sceneHour() >= 7 && sceneHour() < 20
+#endif
+  if (autoUpdate && otaState() == OTA_AVAILABLE && OTA_AUTO_WHEN &&
       (!autoTriedT || now - autoTriedT > 3600000UL)) {
     autoTriedT = now ? now : 1;
     Serial.printf("ota: auto-update to %s\n", otaNewVersion());
