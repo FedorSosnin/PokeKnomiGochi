@@ -10,23 +10,6 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 **[Shiny Pokédex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/)**: all 151, regular and shiny, in every view the game has (standing, turning, walking, from behind, asleep, attacking and more), sorted by number or type, each credited to its artists.
 
-## New: the Knomi Tower Battle System
-
-<p align="center"><img src="docs/images/v2/tower-climb.gif" alt="A climb of Knomi Tower: the tower's islet, the tower, the team, who goes first, a floor fight, both balls' bars, the Rock Badge, the Legend, Mewtwo, Tower Master and the challenges" width="360"></p>
-
-Walk out along Travel's new pier to **Knomi Tower**: eight floors, each guarded by one boss of its type, and at the top the Legend, and after it **Mewtwo**. You climb with your Pokémon and two friends from your Pokédex, at your Pokémon's level and training, and their HP carries over from fight to fight, so who you send in matters as much as how strong they are. Before every fight, **Who goes first?** marks who should win it, worked out from the fight itself. Every fight fills your Ultra and Master Ball bars, a lost climb ends with a tip for the next one and your friends cheer you on, and beating the Legend earns a **Master Ball, every time**. The first team to do it goes into the **Hall of Fame**, and then there are three challenges to beat it again.
-
-| | | |
-|:--:|:--:|:--:|
-| ![Travel's second page: the tower's islet at the end of the pier, Mewtwo's shadow over its roof, your best floor on its tag](docs/images/v2/tower-islet.png) | ![The tower: eight floors lit in their types' colours, the floor guide beside them, the Master Ball at the top and CLIMB!](docs/images/v2/tower.png) | ![Your team: Charizard with Blastoise and Gengar from the Pokédex, and GO!](docs/images/v2/tower-team.png) |
-| **Out along the pier** | **Eight floors and the Legend** | **Your Pokémon and two friends** |
-| ![Who goes first? 1F's Rock guardian Aerodactyl, with Blastoise and Gengar marked Strong](docs/images/v2/tower-lead.png) | ![A floor fight in the tower's hall: Blastoise against Aerodactyl](docs/images/v2/tower-fight.png) | ![The Legend's second fight: Blastoise against Mewtwo](docs/images/v2/tower-mewtwo.png) |
-| **Who goes first?** | **A guardian on every floor** | **Mewtwo waits at the top** |
-| ![Climb over: CHARIZARD was Weak against KINGLER. Try a GRASS/ELECTRIC friend! Next climb +5% HP](docs/images/v2/tower-tip.png) | ![The tower with the friends' cheer: +5% HP for the next climb](docs/images/v2/tower-cheer.png) | ![TOWER MASTER! The Hall of Fame photo and +1 Master Ball](docs/images/v2/tower-master.png) |
-| **A tip after every lost climb** | **Friends cheer you on** | **Tower Master and the Hall of Fame** |
-
-How it all works, floor by floor: [Knomi Tower](docs/HOW_IT_WORKS.md#knomi-tower).
-
 ## What's in it
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **A world that walks with you.** Your Pokémon walks toward you while its home slides by: grass and flowers stream past, the hills sway, clouds drift and birds fly over. Five hand-drawn zones, the Field, Forest, Beach, Cave and Mansion, and outdoors the light goes from day to dusk to night.
@@ -104,6 +87,23 @@ How it all works, floor by floor: [Knomi Tower](docs/HOW_IT_WORKS.md#knomi-tower
 | **Buddies visit** | **Battle, trade or play** | **Games for two** |
 | ![Say goodbye? Goodbye or Stay together](docs/images/v2/goodbye.png) | ![Release GENGAR? It goes back to the wild](docs/images/v2/release.png) | ![Settings: Wi-Fi, Check for update and Auto-update](docs/images/v2/settings.png) |
 | **One day, a goodbye** | **Let it go** | **Updates over Wi-Fi** |
+
+## New: the Knomi Tower Battle System
+
+<p align="center"><img src="docs/images/v2/tower-climb.gif" alt="A climb of Knomi Tower: the tower's islet, the tower, the team, who goes first, a floor fight, both balls' bars, the Rock Badge, the Legend, Mewtwo, Tower Master and the challenges" width="360"></p>
+
+Walk out along Travel's new pier to **Knomi Tower**: eight floors, each guarded by one boss of its type, and at the top the Legend, and after it **Mewtwo**. You climb with your Pokémon and two friends from your Pokédex, at your Pokémon's level and training, and their HP carries over from fight to fight, so who you send in matters as much as how strong they are. Before every fight, **Who goes first?** marks who should win it, worked out from the fight itself. Every fight fills your Ultra and Master Ball bars, a lost climb ends with a tip for the next one and your friends cheer you on, and beating the Legend earns a **Master Ball, every time**. The first team to do it goes into the **Hall of Fame**, and then there are three challenges to beat it again.
+
+| | | |
+|:--:|:--:|:--:|
+| ![Travel's second page: the tower's islet at the end of the pier, Mewtwo's shadow over its roof, your best floor on its tag](docs/images/v2/tower-islet.png) | ![The tower: eight floors lit in their types' colours, the floor guide beside them, the Master Ball at the top and CLIMB!](docs/images/v2/tower.png) | ![Your team: Charizard with Blastoise and Gengar from the Pokédex, and GO!](docs/images/v2/tower-team.png) |
+| **Out along the pier** | **Eight floors and the Legend** | **Your Pokémon and two friends** |
+| ![Who goes first? 1F's Rock guardian Aerodactyl, with Blastoise and Gengar marked Strong](docs/images/v2/tower-lead.png) | ![A floor fight in the tower's hall: Blastoise against Aerodactyl](docs/images/v2/tower-fight.png) | ![The Legend's second fight: Blastoise against Mewtwo](docs/images/v2/tower-mewtwo.png) |
+| **Who goes first?** | **A guardian on every floor** | **Mewtwo waits at the top** |
+| ![Climb over: CHARIZARD was Weak against KINGLER. Try a GRASS/ELECTRIC friend! Next climb +5% HP](docs/images/v2/tower-tip.png) | ![The tower with the friends' cheer: +5% HP for the next climb](docs/images/v2/tower-cheer.png) | ![TOWER MASTER! The Hall of Fame photo and +1 Master Ball](docs/images/v2/tower-master.png) |
+| **A tip after every lost climb** | **Friends cheer you on** | **Tower Master and the Hall of Fame** |
+
+How it all works, floor by floor: [Knomi Tower](docs/HOW_IT_WORKS.md#knomi-tower).
 
 ## Install
 
