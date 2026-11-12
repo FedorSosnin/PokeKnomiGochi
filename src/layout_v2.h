@@ -78,6 +78,17 @@ static const int16_t V2_BTN[5][2] = { {90, 336}, {158, 392}, {232, 408}, {306, 3
 #define V2_REL_X1 226
 #define V2_KEEP_X0 240  // KEEP: 240..362
 #define V2_KEEP_X1 362
+// ...and over it, while it can evolve, the home's EVOLVE in a white box of its own (Fedor: "it will give you an option
+// to Evolve, then in a seperate box to release or keep"; "put the red evolve button into a white box like the
+// release and keep buttons have"): two boxes, two choices, the box inside the need bars' ring
+#define V2_HEVO_PX0 128  // the box
+#define V2_HEVO_PY0 58
+#define V2_HEVO_PX1 338
+#define V2_HEVO_PY1 128
+#define V2_HEVO_X0 146   // its button
+#define V2_HEVO_X1 320
+#define V2_HEVO_Y0 70
+#define V2_HEVO_Y1 116
 
 // pet
 #define V2_PET_FEET 296           // ground line of the pet's feet

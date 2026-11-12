@@ -2843,6 +2843,12 @@ static void v2CtaButton(int x, int y, int w, int h, const char *s, uint16_t col,
     printT(c + cut + 1);
   }
 }
+// the release question's EVOLVE, while it can (V2_HEVO_*): the home's button, breathing as it does, in a white box
+// of its own over the release question's
+static void v2HoldEvolve() {
+  v2Panel(V2_HEVO_PX0, V2_HEVO_PY0, V2_HEVO_PX1, V2_HEVO_PY1, 12);
+  v2CtaButton(V2_HEVO_X0, V2_HEVO_Y0, V2_HEVO_X1 - V2_HEVO_X0, V2_HEVO_Y1 - V2_HEVO_Y0, T(S_EVO_TAP), C565(0xe8, 0x50, 0x3a), UI_WHITE, 1000);
+}
 
 // a new medal (medal_banner()): a pixel medal on a red and blue ribbon, the news in a panel under it: "MEDAL!"
 // in gold and its name big; white pixel sparkles twinkle once it has settled. A streak's has a flame. dy: as

@@ -268,9 +268,24 @@ public:
   bool canFarewellNow() const;  // final form + 7 days: ready to say goodbye (button)
   bool canRunawayNow() const;   // total abandonment 1h: ready to run away (sad button)
   // the user decides in a dialog; "keep/stay together" postpones and re-offers later
+#if UI_V2
+  // V2: "keep form" keeps it (Fedor: "For those that dont want to evolve ... it will be very annoying to getting
+  // asked again"): this form's button doesn't come back by itself. Held (the release question), it has EVOLVE while
+  // it can, and the hint says so for a few seconds. The next form is asked about once again, when it's ready
+  bool wantEvolveButton() const { return canEvolveNow() && speciesId != evoKept; }
+  bool wantFarewellButton() const { return canFarewellNow() && !farewellQuiet; }
+  void declineEvolve() {
+    evoKept = speciesId;
+    evoHintUntil = millis() + 6000;
+    pendingSave = true;  // (a restart soon after mustn't ask again)
+  }
+  int16_t evoKept = 0;          // the form "keep form" was chosen for (0: none); saved
+  uint32_t evoHintUntil = 0;    // just kept: the home says how to evolve it later
+#else
   bool wantEvolveButton() const { return canEvolveNow() && ageMinutes >= evoAskAgain; }
   bool wantFarewellButton() const { return canFarewellNow() && !farewellQuiet; }
   void declineEvolve() { evoAskAgain = ageMinutes + MINUTES_PER_LEVEL; }  // offered again an hour later
+#endif
   void declineFarewell() {  // "stay together": not offered again (holding the pet brings it back)
     farewellQuiet = true;
     save();

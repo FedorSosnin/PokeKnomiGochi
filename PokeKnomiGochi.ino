@@ -328,6 +328,13 @@ uint32_t bsId = 0, bsT = 0, bsResendT = 0, buddyHelloT = 0;
 bool buddyMenuOpen = false;
 bool partyOpen = false;  // the Party Boost screen: who is around and what it gives
 uint32_t farHintUntil = 0;  // after "stay together": how to get the goodbye back
+#if UI_V2  // V2: after "keep form" too, how to evolve it later (pet.evoHintUntil): its first line
+#define FAR_HINT_ON timeLeft(farHintUntil) || timeLeft(pet.evoHintUntil)
+#define FAR_HINT1 (timeLeft(pet.evoHintUntil) ? S_EVO_HINT1 : S_FAREWELL_HINT1)
+#else
+#define FAR_HINT_ON timeLeft(farHintUntil)
+#define FAR_HINT1 S_FAREWELL_HINT1
+#endif
 bool partyVisitor = false;  // ...showing the visitor's stats
 bool partyVisitorOnly = false;  // ...opened by tapping the visitor at home: closing goes home, not to the list
 uint8_t buddyPage = 1;      // the buddy view: 0 its stats, 1 Battle/Trade/Play
@@ -493,6 +500,13 @@ static const int16_t STARTER_DEX[3] = { 1, 4, 7 };
 #define EVO_BTN_H 52
 #define EVO_BTN_X (CX - EVO_BTN_W / 2)
 #define EVO_BTN_Y 262  // (under the feet, which are 32 higher: 292 and 290 before)
+// ...and under it NOT NOW, in grey (Fedor: "the initial evolve button ... should be accompanied with a "not now"
+// button in gray"): it keeps the form, as KEEP FORM does. Off both, a tap does nothing: a slip doesn't decide
+#define EVO_NO_W 200
+#define EVO_NO_H 44
+#define EVO_NO_X (CX - EVO_NO_W / 2)
+#define EVO_NO_Y 328
+#define EVO_DECLINE_IF if (x >= EVO_NO_X - 6 && x <= EVO_NO_X + EVO_NO_W + 6 && y >= EVO_NO_Y - 6 && y <= EVO_NO_Y + EVO_NO_H + 6)
 #define FAR_BTN_W 380
 #define FAR_BTN_H 56
 #define FAR_BTN_X (CX - FAR_BTN_W / 2)
@@ -508,6 +522,7 @@ static const int16_t STARTER_DEX[3] = { 1, 4, 7 };
 #define FAR_BTN_H 58
 #define FAR_BTN_X (CX - FAR_BTN_W / 2)
 #define FAR_BTN_Y 176
+#define EVO_DECLINE_IF  // (V1: a tap off it declines)
 #endif
 // the CST9217 signals on the INT pin when there is touch data; we use it to avoid
 // reading the I2C bus while the chip is asleep (that read hung for ~1s)
@@ -1855,6 +1870,12 @@ void onTap(int16_t x, int16_t y) {
 #if UI_V2
     if (timeLeft(confirmUntil) && x >= V2_REL_X0 - 4 && x <= V2_REL_X1 + 4 && y >= V2_REL_Y0 - 4 && y <= V2_REL_Y1 + 4)
       pet.release();  // V2: RELEASE (KEEP, or anywhere else, keeps it)
+    else if (timeLeft(confirmUntil) && pet.canEvolveNow() && x >= V2_HEVO_X0 - 4 && x <= V2_HEVO_X1 + 4 &&
+             y >= V2_HEVO_Y0 - 4 && y <= V2_HEVO_Y1 + 4) {  // EVOLVE, while it can: as the evolve dialog's
+      int16_t old = pet.speciesId;
+      pet.evolve();
+      evoPmd.load(old, pet.shiny);
+    }
     confirmUntil = 0;
     return;
 #endif
@@ -1986,7 +2007,7 @@ bool homeModalTap(int16_t x, int16_t y) {
       choiceKind = 1;  // the evolve/keep dialog
       choiceUntil = millis() + 12000;
     } else {
-      pet.declineEvolve();  // off it: as Keep, asked again an hour later
+      EVO_DECLINE_IF pet.declineEvolve();  // off it: as Keep, asked again an hour later (V2: NOT NOW only)
     }
     return true;
   }
@@ -2619,6 +2640,7 @@ bool render() {
       char rq[48];  // V2: "Release GENGAR?" in a panel over the dimmed home
       snprintf(rq, sizeof(rq), T(S_RELEASE_FMT), dexName(pet.speciesId));
       v2ReleaseDialog(rq);
+      if (pet.canEvolveNow()) v2HoldEvolve();  // V2: and, while it can, EVOLVE in a box of its own above (Fedor)
 #else
       gfx->fillRoundRect(94, 168, 278, 152, 16, UI_WHITE);
       gfx->drawRoundRect(94, 168, 278, 152, 16, UI_INK);
@@ -2658,16 +2680,16 @@ bool render() {
 #endif
     if (!timeLeft(choiceUntil)) choiceKind = 0;
     else drawChoiceDialog();
-  } else if (timeLeft(farHintUntil)) {  // after "stay together": the way back to the goodbye
+  } else if (FAR_HINT_ON) {  // after "stay together": the way back to the goodbye (V2: after "keep form", to evolving)
     setSize(2);
-    int w1 = textW(T(S_FAREWELL_HINT1), 2), w2 = textW(T(S_FAREWELL_HINT2), 2);
+    int w1 = textW(T(FAR_HINT1), 2), w2 = textW(T(S_FAREWELL_HINT2), 2);
     int w = (w1 > w2 ? w1 : w2) + 40;  // as wide as the longer line
     if (w > 404) w = 404;
     gfx->fillRoundRect(CX - w / 2, 196, w, 84, 16, UI_WHITE);
     gfx->drawRoundRect(CX - w / 2, 196, w, 84, 16, UI_INK);
     gfx->setTextColor(UI_INK);
-    setCur(centerX(T(S_FAREWELL_HINT1), 2), 218);
-    printT(T(S_FAREWELL_HINT1));
+    setCur(centerX(T(FAR_HINT1), 2), 218);
+    printT(T(FAR_HINT1));
     setCur(centerX(T(S_FAREWELL_HINT2), 2), 246);
     printT(T(S_FAREWELL_HINT2));
   }
@@ -9946,6 +9968,9 @@ void drawChoiceDialog() {
 void drawEvolveButton() {
 #if UI_V2
   v2CtaButton(EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H, T(S_EVO_TAP), C565(0xe8, 0x50, 0x3a), UI_WHITE, 1000);  // V2
+  char nn[32];
+  v2LabelButton(EVO_NO_X, EVO_NO_Y, EVO_NO_X + EVO_NO_W, EVO_NO_Y + EVO_NO_H, v2Caps(T(S_NOT_NOW), nn, sizeof(nn)),
+                C565(0x8e, 0x8c, 0x96));  // NOT NOW, in the grey of V1's grey buttons
   return;
 #endif
   uint32_t now = millis();
@@ -11047,6 +11072,8 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
       return pressSet(t, V2_REL_X0, V2_REL_Y0, V2_REL_X1 - V2_REL_X0, V2_REL_Y1 - V2_REL_Y0, T(S_RELEASE_BTN));
     if (pressIn(x, y, V2_KEEP_X0, V2_REL_Y0, V2_KEEP_X1 - V2_KEEP_X0, V2_REL_Y1 - V2_REL_Y0))
       return pressSet(t, V2_KEEP_X0, V2_REL_Y0, V2_KEEP_X1 - V2_KEEP_X0, V2_REL_Y1 - V2_REL_Y0, T(S_KEEP_BTN));
+    if (pet.canEvolveNow() && pressIn(x, y, V2_HEVO_X0, V2_HEVO_Y0, V2_HEVO_X1 - V2_HEVO_X0, V2_HEVO_Y1 - V2_HEVO_Y0))
+      return pressSet(t, V2_HEVO_X0, V2_HEVO_Y0, V2_HEVO_X1 - V2_HEVO_X0, V2_HEVO_Y1 - V2_HEVO_Y0, T(S_EVO_TAP));
     return false;
 #endif
     if (pressIn(x, y, 118, 252, 100, 52)) return pressSet(t, 118, 252, 100, 52, T(S_YES));
@@ -11077,6 +11104,10 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     const char *nm = pet.nick[0] ? pet.nick : dexName(pet.speciesId);
     if (!pet.showMedal() && !pet.showMilestone() && pet.wantEvolveButton() && pressIn(x, y, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H))
       return pressSet(t, EVO_BTN_X, EVO_BTN_Y, EVO_BTN_W, EVO_BTN_H, T(S_EVO_TAP));
+#if UI_V2
+    if (!pet.showMedal() && !pet.showMilestone() && pet.wantEvolveButton() && pressIn(x, y, EVO_NO_X, EVO_NO_Y, EVO_NO_W, EVO_NO_H))
+      return pressSet(t, EVO_NO_X, EVO_NO_Y, EVO_NO_W, EVO_NO_H, T(S_NOT_NOW));  // V2: NOT NOW
+#endif
     if (!pet.showMedal() && !pet.showMilestone() && !pet.wantEvolveButton() && pressIn(x, y, FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H)) {
       snprintf(buf, sizeof(buf), T(S_FAREWELL_BTN), nm);
       return pressSet(t, FAR_BTN_X, FAR_BTN_Y, FAR_BTN_W, FAR_BTN_H, buf);

@@ -726,6 +726,9 @@ void Pet::hatch() {
   movesSeen = 1;
   counted100 = false;
   evoAskAgain = 0;
+#if UI_V2
+  evoKept = 0;  // V2: a new one is asked about its own evolution
+#endif
   berryKnown = false;
   bond = 0;          // bond, medals and name belong to the individual
   bondToday = 0;
@@ -1229,6 +1232,7 @@ void Pet::save() {
   prefs.putUChar("hofl", hofLevel);
   prefs.putUInt("hofe", hofEpoch);
   prefs.putUInt("met", metDay);
+  prefs.putShort("evok", evoKept);
 #endif
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putUInt("life", lifeMin);
@@ -1343,6 +1347,7 @@ void Pet::load() {
   hofLevel = prefs.getUChar("hofl", 0);
   hofEpoch = prefs.getUInt("hofe", 0);
   metDay = prefs.getUInt("met", 0);
+  evoKept = prefs.getShort("evok", 0);
 #endif
   prefs.getBytes("dexreg", dexReg, sizeof(dexReg));
   bool hadStars = prefs.isKey("dexstr");
@@ -1369,6 +1374,13 @@ void Pet::load() {
   counted100 = prefs.getBool("l100c", false);
   // from before the count: the Level 100 medal means one got there. If it isn't this one, count it
   if (!prefs.isKey("l100n") && (trainerMedals & MED_LV100) && level() < LEVEL_MAX) lv100Count = 1;
+#if UI_V2
+  // V2: care medals earned once and kept (2.1.0). A save from before lost them to each new Pokemon (Fedor: "I already
+  // got that badge before, I dont need to get it again"); the ones the trainer's records still prove come back
+  // quietly, so they aren't won a second time
+  if (bestStreak >= 7) medals |= MED_STREAK7;
+  if ((trainerMedals & MED_LV100) || lv100Count) medals |= MED_LV10 | MED_LV25 | MED_LV50;
+#endif
   lifeMin = prefs.getUInt("life", 0);
   gameDay = prefs.getUInt("gday", 0);  // older saves: 0, and the first clock sets today without a wait
 #if UI_V2

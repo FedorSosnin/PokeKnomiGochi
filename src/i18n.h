@@ -138,6 +138,8 @@ enum StrId : STRID_BASE {
   S_TIP_WEAK_FMT, S_TIP_NOSTRONG_FMT, S_TIP_ATK, S_TIP_DEF, S_TIP_SPD,  // Knomi Tower: the climb's end says what to try next
   S_CHEER_FMT, S_CHEER_NEXT_FMT,  // ...friends cheer after a lost climb: more HP for the next
   S_CHALLENGES, S_CH_HOW, S_CH_NOFAINT, S_CH_ONESTAR, S_CH_BASE, S_TWR_NEW,  // ...challenges once the Legend is beaten
+  S_EVO_HINT1,  // V2: after "keep form", over S_FAREWELL_HINT2 ("press and hold your Pokemon."): "To evolve it later,"
+  S_NOT_NOW,    // V2: the grey button under EVOLVE! on the home
 #endif
   STR_COUNT
 };

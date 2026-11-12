@@ -476,8 +476,13 @@ TEST(evolve, evolve_button_is_postponed_when_declined) {
   p.declineEvolve();
   CHECK_MSG(!p.wantEvolveButton(), "'keep form' removes the button");
   CHECK_MSG(p.canEvolveNow(), "but the evolution is still available");
-  p.ageMinutes = 16 * 60;  // an hour later: it is offered again
-  CHECK(p.wantEvolveButton());
+  p.ageMinutes = 16 * 60;  // an hour later
+#if UI_V2
+  CHECK_MSG(!p.wantEvolveButton(), "V2: kept is kept (Fedor): an hour doesn't bring the button back");
+  CHECK_MSG(p.canEvolveNow(), "holding it still offers EVOLVE");
+#else
+  CHECK(p.wantEvolveButton());  // it is offered again
+#endif
 }
 
 TEST(evolve, declined_at_level_100_is_offered_again_an_hour_later) {
@@ -488,8 +493,51 @@ TEST(evolve, declined_at_level_100_is_offered_again_an_hour_later) {
   p.declineEvolve();
   CHECK(!p.wantEvolveButton());
   p.ageMinutes += 60;
+#if UI_V2
+  CHECK_MSG(!p.wantEvolveButton(), "V2: not even at the top level");
+#else
   CHECK_MSG(p.wantEvolveButton(), "the level can't rise any more, but an hour still brings it back");
+#endif
 }
+
+#if UI_V2
+TEST(evolve, v2_kept_form_stays_kept_through_a_restart_and_holding_it_still_evolves) {
+  Pet p;
+  makePet(p, 25);  // PIKACHU, which some would rather keep than have a RAICHU (Fedor)
+  p.ageMinutes = 40 * 60;
+  CHECK(p.wantEvolveButton());
+  mockSetMillis(1000);
+  p.declineEvolve();
+  CHECK_EQ(p.evoKept, (int16_t)25);
+  CHECK_MSG(p.evoHintUntil == 7000, "the home says how to evolve it later, for 6 s");
+  p.flushSave();
+  Pet q;
+  q.begin();
+  CHECK_MSG(q.evoKept == 25 && !q.wantEvolveButton(), "a restart doesn't ask again (it used to: not saved)");
+  CHECK_MSG(q.canEvolveNow(), "the hold's EVOLVE is there");
+  q.evolve();
+  CHECK_EQ(q.speciesId, (int16_t)26);
+}
+
+TEST(evolve, v2_the_next_form_and_a_new_pokemon_are_asked_again) {
+  Pet p;
+  makePet(p, 4);
+  p.ageMinutes = 15 * 60;  // level 16
+  p.declineEvolve();
+  p.evolve();  // held, then EVOLVE
+  CHECK_EQ(p.speciesId, (int16_t)5);
+  p.ageMinutes = 35 * 60;  // CHARMELEON's level 36
+  CHECK_MSG(p.wantEvolveButton(), "CHARMELEON is asked once, as any form");
+  p.declineEvolve();
+  CHECK(!p.wantEvolveButton());
+  p.newEgg();
+  p.chooseStarter(5);
+  p.eggTap(); p.eggTap(); p.eggTap();
+  CHECK_MSG(p.evoKept == 0, "a new Pokemon, even of a kept form, is asked about its own");
+  p.ageMinutes = 35 * 60;
+  CHECK(p.wantEvolveButton());
+}
+#endif
 
 // ---------------------------------------------------------------- stats
 TEST(stats, formula_base_by_genes_plus_level_and_training) {
@@ -1414,6 +1462,30 @@ TEST(medals, total_accumulates_across_pets) {
   CHECK_MSG(p.totalMedals == 2, "the player's total is kept");
 #endif
 }
+
+#if UI_V2
+TEST(medals, v2_a_save_from_before_gets_back_the_care_medals_its_records_prove) {
+  Pet a;
+  makePet(a, 4);
+  a.flushSave();
+  Preferences pr;  // 2.0: a new Pokemon wiped them, but a 7-day streak and a level 100 were had before
+  pr.begin(SAVE_NS, false);
+  pr.putUShort("medal", 0);
+  pr.putUShort("bstrk", 9);
+  pr.putUInt("trmed32", MED_LV100);
+  pr.putUChar("l100n", 1);
+  pr.end();
+  Pet b;
+  b.begin();
+  uint32_t back = MED_STREAK7 | MED_LV10 | MED_LV25 | MED_LV50;
+  CHECK_MSG((b.medals & back) == back, "the streak and the levels' medals are back");
+  CHECK_MSG(!(b.medals & (MED_BOND | MED_FIT | MED_BERRY)), "nothing the records can't prove");
+  CHECK_MSG(!b.showMedal() && !b.newMedal, "quietly: they were won already");
+  b.ageMinutes = 30 * 60;
+  advance(b, 1);
+  CHECK_MSG(!(b.newMedal & back), "and not won again on the way back up");
+}
+#endif
 
 TEST(medals, trainer_medals_come_from_the_dex_and_outlive_the_pet) {
   Pet p;
