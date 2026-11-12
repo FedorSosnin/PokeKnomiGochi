@@ -5,7 +5,7 @@
 Every Pokémon's base **HP**, **ATK**, **DEF** and **SPD**, line by line, and what each evolution adds. Your Pokémon's stats come from its species' base numbers, and evolving keeps its level and all its training, so it gets the bigger numbers the moment it evolves.
 
 - The number in brackets is what evolving adds to that stat. A few evolutions lower one: a cocoon is slower than its caterpillar, and Poliwrath is slower than Poliwhirl.
-- **Evolves at** is the level it is ready to evolve at, from Pokémon Red and Blue (evolution stones and trades are levels here). Each care mistake puts it off by a level, and the **Evolve** button only shows while all four needs are at 40 or more. **Keep** waits, and the button comes back an hour later.
+- **Evolves at** is the level it is ready to evolve at, from Pokémon Red and Blue (evolution stones and trades are levels here). Each care mistake puts it off by a level, and the **Evolve** button only shows while all four needs are at 40 or more. **Not now** keeps its form, and the button doesn't come back by itself: hold your Pokémon for 3 seconds whenever you want it to evolve.
 - The card shows your own Pokémon's ATK, DEF and SPD: they grow from these with its level and training. HP is how many hits it can take in a battle.
 - After evolving, it learns moves on the new form's schedule, which is sometimes a few levels later: [Moves](MOVES.md) has every Pokémon's moves by level.
 

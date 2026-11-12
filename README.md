@@ -145,7 +145,7 @@ See [How it works](docs/HOW_IT_WORKS.md) for charts of what every action, game, 
 | Do this | What happens |
 |---|---|
 | **Tap the Pokémon** | Pet it |
-| **Hold your finger on it** | The menu: a ring opens round it. Slide onto one and lift, or let go and tap one. Keep holding still for 3 seconds to let your Pokémon go (or bring back its goodbye, if you chose to stay together) |
+| **Hold your finger on it** | The menu: a ring opens round it. Slide onto one and lift, or let go and tap one. Keep holding still for 3 seconds to let your Pokémon go (or bring back its goodbye, if you chose to stay together). When it's ready to evolve, the same hold offers **Evolve** too |
 | **Tap the icons along the bottom** | From left to right: play mini games, Travel to hunt, open the backpack in the middle (berries, candy and your Repels), turn the light off for bed, or give it a bath |
 | **Stats** in the ring | Its card: profile, battle stats, training, progress, and a page for each item |
 | **Tap its name on the card** (✏️) | Rename it |
@@ -177,7 +177,7 @@ Evolving makes your Pokémon stronger. Its stats come from its species' base HP,
 
 The first time, Bulbasaur, Charmander, Squirtle and Pikachu walk toward you through the Field. Tap one to stop them and choose it.
 
-When your Pokémon is ready to evolve, a red **Evolve** button appears under it: tap it to evolve, or **Keep** to stay as it is, and the button comes back an hour later. [Moves](docs/MOVES.md) shows the level each species evolves at.
+When your Pokémon is ready to evolve, a red **Evolve** button appears under it, with a grey **Not now**: tap **Evolve** to evolve, or **Not now** to keep its form. It won't ask again; whenever you change your mind, hold your finger on it for 3 seconds and tap **Evolve**. [Moves](docs/MOVES.md) shows the level each species evolves at.
 
 A fully evolved Pokémon that is at least 3 days old offers a goodbye. If you choose to stay together, it won't ask again: whenever you're ready, hold your finger on it for 3 seconds to bring the goodbye back. You can also let any Pokémon go the same way. Either way, it turns, walks off up the hill and over it, and you choose your next one, who walks in from the distance.
 
@@ -265,7 +265,7 @@ Tap the **handheld** icon, on the left, for the mini games: cartridges on a Game
 
 ### Buddies
 
-If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over and walks beside yours, and a green **PARTY BOOST** button appears at the top. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
+If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over and walks beside yours, and a round Party Boost button (two balloons and **+2**) appears in the sky to the right of yours. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
 
 - **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, you swap: the one you gave leaves your Pokédex. A shiny is its own square, so you can trade it and keep the regular one. Your own partner can't be traded, so with only one Pokémon, Trade is greyed out. Changed your mind? The **✕** backs out at any point before the swap, and nothing changes hands.
@@ -281,7 +281,7 @@ Your Pokémon does better with company. While at least one buddy or the daily vi
 - **Energy drains a quarter slower.**
 - **+2 ATK, DEF and SPD** in wild battles and PokeDungeon.
 
-It's the same boost however many friends are around. Tap **PARTY BOOST** to see who's here and what you get. Tap a friend there to see its stats: level, HP, ATK, DEF and SPD, and a buddy's Pokédex count. Swipe from there to a buddy's Battle, Trade and Play menu, and the ✕ goes back to Party Boost. Tapping a buddy's Pokémon on the main screen still opens its menu first, with its stats a swipe away. While the boost is on, the Battle Stats page shows each stat with its **+2**. Battles between buddies don't use it, since both sides would have it.
+It's the same boost however many friends are around. Tap the Party Boost button to see who's here and what you get. Tap a friend there to see its stats: level, HP, ATK, DEF and SPD, and a buddy's Pokédex count. Swipe from there to a buddy's Battle, Trade and Play menu, and the ✕ goes back to Party Boost. Tapping a buddy's Pokémon on the main screen still opens its menu first, with its stats a swipe away. While the boost is on, the Battle Stats page shows each stat with its **+2**. Battles between buddies don't use it, since both sides would have it.
 
 | ![The Party Boost screen: Eevee and Squirtle visiting, energy drain -25% and ATK DEF SPD +2](docs/images/v2/party-boost.png) | ![A buddy's Pikachu: its level, HP, ATK, DEF and SPD and its Pokédex, with Battle, Trade and Play a page on](docs/images/v2/friend-stats.png) | ![The visitor's stats: a Magikarp, the candy it brought and its 60 minutes](docs/images/v2/visitor-stats.png) |
 |:---:|:---:|:---:|
@@ -307,7 +307,7 @@ Changing the clock doesn't speed anything up. Time away only counts by network t
 
 ### Updates over Wi-Fi
 
-Once it's on Wi-Fi, the Knomi looks for a new version two minutes after it starts and then every hour, while the screen is dimmed. With **Auto-update** on (the switch on the second page of **Settings** in the ring; it's on unless you turn it off), it installs the new version by itself the next time nobody is using it during the day: the home screen showing and dimmed, your Pokémon awake, nothing being played with a buddy. To update by hand, open **Settings** in the ring, turn to the next page and tap **Check for update**. If a new version is out, the button changes to **Update to v…**: tap it and wait about a minute while it downloads and restarts. Your Pokémon, Pokédex and Wi-Fi are kept. If the new version ever fails to start, the Knomi goes back to the one it had.
+Once it's on Wi-Fi, the Knomi looks for a new version two minutes after it starts and then every hour, while the screen is dimmed. With **Auto-update** on (the switch on the second page of **Settings** in the ring; it's on unless you turn it off), it installs the new version by itself the next time nobody is using it: the screen dimmed on any page but a game, a battle or a question, between 7 am and 8 pm (10 am to 6 pm while your Pokémon sleeps). Knomis on 2.1.0 or older only install by themselves from the home screen with the Pokémon awake, so 2.1.1 may need one update by hand. To update by hand, open **Settings** in the ring, turn to the next page and tap **Check for update**. If a new version is out, the button changes to **Update to v…**: tap it and wait about a minute while it downloads and restarts. Your Pokémon, Pokédex and Wi-Fi are kept. If the new version ever fails to start, the Knomi goes back to the one it had.
 
 <p align="center"><img src="docs/images/v2/settings.png" alt="The settings page: Change Wi-Fi, Check for update, and the Auto-update switch, on" width="240"></p>
 

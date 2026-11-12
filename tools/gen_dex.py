@@ -58,7 +58,7 @@ def write_evolution_chart():
         'slower than its caterpillar, and Poliwrath is slower than Poliwhirl.\n',
         '- **Evolves at** is the level it is ready to evolve at, from Pokémon Red and Blue (evolution stones '
         'and trades are levels here). Each care mistake puts it off by a level, and the **Evolve** button only '
-        'shows while all four needs are at 40 or more. **Keep** waits, and the button comes back an hour later.\n',
+        'shows while all four needs are at 40 or more. **Not now** keeps its form, and the button doesn\'t come back by itself: hold your Pokémon for 3 seconds whenever you want it to evolve.\n',
         '- The card shows your own Pokémon\'s ATK, DEF and SPD: they grow from these with its level and '
         'training. HP is how many hits it can take in a battle.\n',
         '- After evolving, it learns moves on the new form\'s schedule, which is sometimes a few levels later: '

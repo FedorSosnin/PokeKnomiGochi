@@ -109,7 +109,7 @@ While at least one buddy or the daily visitor is on your screen:
 | ⚡ **Energy drain** | A quarter less: it drops three minutes in four instead of every minute (overweight too) |
 | 💪 **ATK, DEF, SPD** | +2 each in wild battles and PokeDungeon (not in battles between buddies) |
 
-It's the same with one friend or five, so extra devices don't stack it. Tap the green **PARTY BOOST** button for the list of who's here. Tap a friend for its stats (level, HP, ATK, DEF, SPD, and a buddy's Pokédex count), then swipe to a buddy's Battle, Trade and Play menu. The ✕ goes back to the list.
+It's the same with one friend or five, so extra devices don't stack it. Tap the round Party Boost button (two balloons and **+2**, to the right of your Pokémon) for the list of who's here. Tap a friend for its stats (level, HP, ATK, DEF, SPD, and a buddy's Pokédex count), then swipe to a buddy's Battle, Trade and Play menu. The ✕ goes back to the list.
 
 The **daily visitor** brings a candy (a third one that day) and stays 60 minutes. It only arrives while yours is awake, but once it's there it stays even if yours goes to sleep, its minutes still running. It steps out while four buddies fill the row and comes back the same day, and its time survives a restart. Leftover minutes end at midnight. Tap it to see its stats.
 
@@ -273,7 +273,7 @@ The game counts its own minutes, and only a clock nobody can set adds time away.
 | 🛡️ **Defense** | +1 for every 6 hours with all four needs at 40 or above (asleep counts, short dips are forgiven) |
 | ⚠️ **Care mistake** | A need at 10 or below counts as a mistake, at most once an hour, and costs 1 💞 |
 | 🏃 **Running away** | With all four needs at 0 for an hour, it's ready to leave. One bit of care resets the clock. |
-| 🔄 **Evolving** | At its evolution level (one level later for each care mistake), with all four needs at 40 or more, a red **Evolve** button appears. Tap it to evolve, or **Keep** to stay as it is: the button comes back an hour later. Tapping away from the question leaves the button there. Every species' level is in [Moves](MOVES.md), and [Evolution stats](EVOLUTION.md) shows what each evolution adds. |
+| 🔄 **Evolving** | At its evolution level (one level later for each care mistake), with all four needs at 40 or more, a red **Evolve** button appears with a grey **Not now** under it. Tap **Evolve** to evolve, or **Not now** to keep its form: the button doesn't come back by itself. Whenever you're ready, hold your finger on your Pokémon for 3 seconds and tap **Evolve** in the box above the release question. Tapping anywhere else while the buttons are up does nothing, so a slip can't decide for you. Every species' level is in [Moves](MOVES.md), and [Evolution stats](EVOLUTION.md) shows what each evolution adds. |
 | 👋 **Goodbye** | A fully evolved Pokémon offers a goodbye from 3 days old. Choose to stay together and it won't ask again; hold your finger on it for 3 seconds whenever you're ready (a shorter hold opens the ring menu). It walks off over the hill. |
 | 🐾 **Next Pokémon** | The four starters (Bulbasaur, Charmander, Squirtle and Pikachu) until a Pokémon has been offered its goodbye. After that, after a goodbye, letting one go or a runaway, choose any first form from your Pokédex (Pikachu, not Raichu), with its stars. A shiny you have is its own square, and picking it gives you that shiny ✨; there's no random shiny. It walks in from the distance. |
 
