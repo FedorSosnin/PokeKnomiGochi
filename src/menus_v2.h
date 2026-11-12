@@ -2844,6 +2844,60 @@ static void v2CtaButton(int x, int y, int w, int h, const char *s, uint16_t col,
     printT(c + cut + 1);
   }
 }
+// the Party Boost's round button (V2_PB_*): two party balloons (Fedor: "I like the two baloons") on the home icons'
+// see-through band made round ("lets make go back to the gray transparent background over white. Its a bit too
+// distracting in white"), and "+2" on a green tag at its foot; its words are in the copy by the finger and on the
+// screen it opens. The home draws it behind its Pokemon (Fedor: "What if there is a large pokemon ... will it get
+// blocked by the party simbol"): yours is never covered by it
+static const char *const SPR_V2_PB_BALLOONS[18] = {
+  "...kkkkk..........",
+  "..kbbbbbk.........",
+  ".kbwwbbbBkkkkkk...",
+  ".kbwbbbbBkrrrrrk..",
+  ".kbbbbbbkrwwrrrRk.",
+  ".kbbbbbbkrwrrrrRk.",
+  ".kbbbbbbkrrrrrrRk.",
+  "..kbbbbBkrrrrrrRk.",
+  "...kbBBkkrrrrrrRk.",
+  "....kkk..krrrrRk..",
+  "....kBk...krRRk...",
+  ".....S.....kkk....",
+  ".....S.....kRk....",
+  "......S.....S.....",
+  "......S.....S.....",
+  ".......S...S......",
+  ".......S.SS.......",
+  "........S.........",
+};
+static void v2PartyBadge() {
+  const int x = V2_PB_X, y = V2_PB_Y, r = V2_PB_R;
+  V2_HOVER(x - r, y - r, 2 * r, 2 * r);  // under the mouse: lifted, with what's on it (hover_v2.h)
+  uint16_t ink;
+  int ra, ta;
+  v2BandInk(ink, ra, ta);  // as the band under the icons: its rim, then more inside (white on a dark scene)
+  uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
+  for (int py = y - r - 4; py <= y + r + 4; py++)
+    for (int px = x - r - 4; px <= x + r + 4; px++) {
+      if (px < 0 || px > 465 || py < 0 || py > 465) continue;
+      float d = sqrtf((px + 0.5f - x) * (px + 0.5f - x) + (py + 0.5f - y) * (py + 0.5f - y));
+      float cr = r + 3.5f - d, ct = r + 0.5f - d;  // how much of the pixel each covers, for soft edges
+      if (cr <= 0) continue;
+      uint16_t &q = fb[py * 466 + px];
+      q = v2Blend(q, ink, cr >= 1 ? ra : (int)(ra * cr));
+      if (ct > 0) q = v2Blend(q, ink, ct >= 1 ? ta : (int)(ta * ct));
+    }
+  drawMap(SPR_V2_PB_BALLOONS, 18, x - 27, y - 28, 3, false);
+  char b[8];
+  snprintf(b, sizeof(b), "+%d", PARTY_STAT_BONUS);
+  setSize(2);
+  int tw = textW(b, 2) + 14, tx = x + 8, ty = y + 15;
+  gfx->fillRoundRect(tx - 2, ty - 2, tw + 4, 26, 8, V2_RIM);
+  gfx->fillRoundRect(tx, ty, tw, 22, 6, C565(0x1e, 0x7d, 0x3c));
+  gfx->setTextColor(UI_WHITE);
+  setCur(tx + 7, ty + 4);
+  printT(b);
+}
+
 // the release question's EVOLVE, while it can (V2_HEVO_*): the home's button, breathing as it does, in a white box
 // of its own over the release question's
 static void v2HoldEvolve() {

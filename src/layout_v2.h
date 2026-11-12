@@ -95,6 +95,15 @@ static const int16_t V2_BTN[5][2] = { {90, 336}, {158, 392}, {232, 408}, {306, 3
 #define V2_HEVO_Y0 139
 #define V2_HEVO_Y1 179
 
+// the Party Boost: a round button to the right of yours, in the sky off its head (Fedor: "Large pokemon like my
+// Gyarados, is mostly blocked by the current party boost lablel"). The boost only shows with others around, when
+// yours stands still in the middle (x 233; it walks only toward you) and they stand at the sides, smaller. Measured
+// over all 151 and every action the home plays then, nothing reaches it but Moltres's wingtips, which pass in
+// front of it (the home draws it behind them all). Inside the need bars' ring, a little off it
+#define V2_PB_X 354
+#define V2_PB_Y 126
+#define V2_PB_R 33
+
 // pet
 #define V2_PET_FEET 296           // ground line of the pet's feet
 #define V2_PET_SHADOW_Y 292       // soft shadow ellipse 40x7, 28% black (35% at night)

@@ -2561,6 +2561,7 @@ bool render() {
     // V2: the scene runs to the rim; the bars ride on it and the icons sit on their band. The radial menu's ring
     // is see-through (Fedor), so while it's open what it would show through stays out: the header, the band, the
     // icons and the pill (radial_v2.h)
+    if (!v2RadialOpen && partyPillShown()) v2PartyBadge();  // the Party Boost, behind yours and the others (menus_v2.h)
     drawPet();
     // (the header over the Pokemon, which stands higher now: a tall one never covers its words)
     if (!v2RadialOpen) drawHeader(name, gNight || gV2Dark ? v2LightAccent(d.accent) : d.accent, statusMsg(), lv);
@@ -8294,15 +8295,16 @@ void drawBuddyTop() {
     setCur(centerX(buddyNote, 2), BUDDY_PILL_Y + 8);
     printT(buddyNote);
   } else if (partyPillShown()) {  // a buddy or a visitor around: the Party Boost button
+#if UI_V2
+    (void)b;  // V2: the round button, drawn behind the Pokemon by the home (v2PartyBadge)
+#else
     snprintf(b, sizeof(b), "%s +%d", T(S_PARTY_BOOST), PARTY_STAT_BONUS);
     int w = textW(b, 2) + 24;
-#if UI_V2
-    V2_HOVER(CX - w / 2, BUDDY_PILL_Y, w, BUDDY_PILL_H);  // under the mouse: lifted, its words with it (hover_v2.h)
-#endif
     gfx->fillRoundRect(CX - w / 2, BUDDY_PILL_Y, w, BUDDY_PILL_H, 12, C565(0x1e, 0x7d, 0x3c));
     gfx->setTextColor(UI_WHITE);
     setCur(centerX(b, 2), BUDDY_PILL_Y + 8);
     printT(b);
+#endif
   }
 }
 
@@ -8497,7 +8499,12 @@ bool partyPillShown() {  // not over a note, nor the visitor's hello and goodbye
   return partyBoostOn() && !timeLeft(buddyNoteUntil) && visitPhase != VP_ANNOUNCE && visitPhase != VP_LEAVE;
 }
 bool partyPillAt(int16_t x, int16_t y) {
+#if UI_V2  // V2: the round button, and a little round it (V2_PB_*)
+  int dx = x - V2_PB_X, dy = y - V2_PB_Y;
+  return partyPillShown() && dx * dx + dy * dy <= (V2_PB_R + 8) * (V2_PB_R + 8);
+#else
   return partyPillShown() && y >= BUDDY_PILL_Y - 6 && y <= BUDDY_PILL_Y + BUDDY_PILL_H + 6 && x >= 60 && x <= 406;
+#endif
 }
 
 void renderParty() {
@@ -11115,7 +11122,11 @@ bool pressTargetAt(int16_t x, int16_t y, PressTarget &t) {
     return false;
   }
   if (partyPillAt(x, y)) {
+#if UI_V2  // V2: the round button's square, outlined round (pressOverlay); the copy by the finger has its words
+    pressSet(t, V2_PB_X - V2_PB_R, V2_PB_Y - V2_PB_R, 2 * V2_PB_R, 2 * V2_PB_R, T(S_PARTY_BOOST));
+#else
     pressSet(t, 60, BUDDY_PILL_Y, 346, BUDDY_PILL_H, T(S_PARTY_BOOST));
+#endif
     t.soft = true;  // it lies where swipes down start
     return true;
   }
@@ -11157,7 +11168,12 @@ void pressOverlay() {
   if (!pressOn) return;
   const PressTarget &t = pressT;
   const uint16_t ring = TYPE_ACCENT[TY_WATER];
-  for (int i = 0; i < 4; i++) gfx->drawRoundRect(t.x - 3 - i, t.y - 3 - i, t.w + 6 + 2 * i, t.h + 6 + 2 * i, 12 + i, ring);
+#if UI_V2  // V2: a round control's outline is a circle (its corners half its side)
+#define PRESS_RING_R(t) (t.label == T(S_PARTY_BOOST) && t.w == t.h ? t.w / 2 + 3 : 12)
+#else
+#define PRESS_RING_R(t) 12
+#endif
+  for (int i = 0; i < 4; i++) gfx->drawRoundRect(t.x - 3 - i, t.y - 3 - i, t.w + 6 + 2 * i, t.h + 6 + 2 * i, PRESS_RING_R(t) + i, ring);
   if (t.icon) {
 #if UI_V2
     const int s = 6, side = HOME_ICON_N * s + 24;  // V2: 6x, so its cells land whole on the Knomi (5x didn't)
