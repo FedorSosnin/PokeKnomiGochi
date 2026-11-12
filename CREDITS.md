@@ -20,6 +20,11 @@ credit is in the original repository's
 [tracker.json](https://github.com/PMDCollab/SpriteCollab/blob/master/tracker.json).
 Huge thanks to that whole community for an enormous amount of work.
 
+The [Shiny Pokédex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/) shows every sprite the game uses, regular and shiny, with the artists who made each
+one, and says what PokeKnomiGochi changed (16-bit colours, a slower pace, only some views kept, each frame on its
+own feet, a few placed by hand) and what it added (the Pokédex's turn, the shiny sparkles and the shadows). It's
+built from the packs by `tools/make_sprite_gallery.py`.
+
 > **Important if you reuse this repo:** the packaged sprite files
 > (`tools/sdcard/mons/*.bin`) are derived from the sources above. Don't
 > redistribute them commercially. If you publish the project, the clean approach

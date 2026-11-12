@@ -8,6 +8,8 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows).
 
+**[Shiny Pokédex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/)**: all 151, regular and shiny, in every view the game has (standing, turning, walking, from behind, asleep, attacking and more), sorted by number or type, each credited to its artists.
+
 ## New: the Knomi Tower Battle System
 
 <p align="center"><img src="docs/images/v2/tower-climb.gif" alt="A climb of Knomi Tower: the tower's islet, the tower, the team, who goes first, a floor fight, both balls' bars, the Rock Badge, the Legend, Mewtwo, Tower Master and the challenges" width="360"></p>
@@ -443,6 +445,7 @@ To build it yourself, run `windows/build.sh` on a Mac or Linux with [llvm-mingw]
 ## Credits and license
 
 - **Sprites:** the community artists of [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), under CC BY-NC 4.0.
+- **Each sprite's artists**, and what the game changed and added: the [Shiny Pokédex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/).
 - **Full list:** [`CREDITS.md`](CREDITS.md).
 
 The source code is [MIT licensed](LICENSE). The sprites and Pokémon names are not covered by that license and are for **personal, non-commercial use only**. The 3D-printed case is a remix shared under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/); see [`CREDITS.md`](CREDITS.md).

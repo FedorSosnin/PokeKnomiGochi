@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shiny Pokédex</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffcd28' d='M7 1h2v5h5v2H9v5H7V8H2V6h5z'/%3E%3Cpath fill='%23fff' d='M7 6h2v2H7z'/%3E%3C/svg%3E">
+<meta name="description" content="All 151 Gen 1 Pokémon, regular and shiny, in every view PokeKnomiGochi has: standing, turning, walking, from behind, asleep, attacking and more.">
+<!-- The template tools/make_sprite_gallery.py fills in (it puts the data where the empty list is). -->
+<style>
+  /* dark, always (Fedor): the sprites and the sparkles look best on it, the way the game shows them */
+  :root { color-scheme:dark; --bg:#1b1b25; --ink:#eeeadb; --muted:#a9a7a0; --accent:#ff7a63; --line:#3a3a48; --card:#262633;
+    --head:rgba(27,27,37,.94); --shade:rgba(0,0,0,.32); }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
+  a { color:var(--accent); }
+  button { font:inherit; color:inherit; }
+  header { position:sticky; top:0; z-index:2; background:var(--head); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line); padding:12px 16px 10px; }
+  .top { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
+  h1 { font-size:1.3rem; margin:0; }
+  h1 span { color:#e0a800; }
+  .sub { color:var(--muted); font-size:.85rem; margin:0; }
+  .ctl { margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  input[type=search] { font:inherit; font-size:.9rem; background:var(--card); color:var(--ink); border:1px solid var(--line);
+    border-radius:8px; padding:6px 10px; width:200px; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .seg button { font-size:.9rem; background:var(--card); color:var(--muted); border:0; padding:6px 11px; cursor:pointer; }
+  .seg button + button { border-left:1px solid var(--line); }
+  .seg button[aria-pressed=true] { background:var(--accent); color:#fff; }
+  .views { display:flex; gap:6px; margin-top:10px; overflow-x:auto; scrollbar-width:none; }
+  .views::-webkit-scrollbar { display:none; }
+  .chip { font-size:.85rem; white-space:nowrap; border:1px solid var(--line); background:var(--card); color:var(--muted);
+    border-radius:999px; padding:4px 12px; cursor:pointer; }
+  .chip[aria-pressed=true] { background:var(--ink); border-color:var(--ink); color:var(--bg); }
+  main { display:grid; grid-template-columns:repeat(auto-fill, minmax(164px, 1fr)); gap:12px; padding:16px; }
+  body.both main { grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); }
+  .card { display:block; width:100%; margin:0; text-align:center; background:var(--card); border:1px solid var(--line);
+    border-top:3px solid var(--t); border-radius:10px; padding:6px 6px 8px; cursor:pointer; min-width:0; }
+  .card:hover { border-color:var(--t); }
+  .card:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .stage { display:flex; justify-content:center; gap:4px; }
+  canvas { display:block; width:144px; height:124px; }
+  body:not(.both) .card canvas + canvas { display:none; }
+  .name { display:block; margin-top:2px; font-size:.82rem; font-weight:600; }
+  .num { color:var(--muted); font-weight:400; }
+  .by { display:block; font-size:.72rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  body.shiny .by.reg, body.regular .by.shi { display:none; }
+  body.both .by.reg::before { content:"Regular: "; }
+  body.both .by.shi::before { content:"Shiny: "; }
+  .group { grid-column:1 / -1; display:flex; align-items:center; gap:8px; margin:10px 0 -2px; font-size:1rem; text-transform:capitalize; }
+  .group:first-child { margin-top:0; }
+  .group::before { content:""; width:12px; height:12px; border-radius:50%; background:var(--t); }
+  .group small { color:var(--muted); font-weight:400; font-size:.82rem; }
+  .hide { display:none !important; }
+  footer { color:var(--muted); font-size:.85rem; padding:8px 16px 40px; max-width:780px; }
+  footer h2 { color:var(--ink); font-size:1.05rem; margin:1.2rem 0 .3rem; }
+  footer h3 { color:var(--ink); font-size:.92rem; margin:.9rem 0 .2rem; }
+  footer p { margin:.3rem 0; }
+  footer ul { margin:.2rem 0; padding-left:1.2rem; }
+  footer b { color:var(--ink); }
+  dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--ink); padding:0;
+    width:min(760px, calc(100vw - 32px)); max-height:calc(100vh - 32px); }
+  dialog::backdrop { background:rgba(10,10,20,.55); }
+  .dhead { position:sticky; top:0; z-index:1; background:var(--bg); display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center;
+    padding:14px 16px; border-bottom:1px solid var(--line); }
+  .dhead h2 { margin:0; font-size:1.15rem; }
+  .type { font-size:.75rem; font-weight:600; color:#fff; border-radius:999px; padding:2px 10px; text-transform:uppercase; }
+  .close { margin-left:auto; border:0; background:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); padding:2px 6px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(156px, 1fr)); gap:10px; padding:14px 16px 4px; }
+  .tile { margin:0; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:4px 4px 6px; text-align:center; font-size:.8rem; }
+  .tile canvas { margin:0 auto; }
+  .dfoot { padding:6px 16px 16px; font-size:.8rem; color:var(--muted); }
+  .dfoot p { margin:.3rem 0; }
+  @media (max-width: 560px) {
+    header { position:static; }  /* (on a phone it would take half the screen) */
+    main { grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; padding:12px 16px; }
+    body.both main { grid-template-columns:1fr; }
+    .ctl { margin-left:0; }
+    canvas { width:136px; }
+    .tiles { grid-template-columns:repeat(2, 1fr); padding:12px; }
+  }
+</style>
+</head>
+<body class="shiny">
+<header>
+  <div class="top">
+    <div>
+      <h1><span>★</span> Shiny Pokédex</h1>
+      <p class="sub">All 151, regular and shiny, moving the way they do in <a href="https://github.com/FedorSosnin/PokeKnomiGochi">PokeKnomiGochi</a>. Tap one to see all its views.</p>
+    </div>
+    <div class="ctl">
+      <input type="search" id="q" placeholder="Name, number or type" aria-label="Find a Pokémon">
+      <div class="seg" id="forms" role="group" aria-label="Which form">
+        <button data-form="shiny" aria-pressed="true">Shiny</button><button data-form="regular" aria-pressed="false">Regular</button><button data-form="both" aria-pressed="false">Side by side</button>
+      </div>
+      <div class="seg" id="sorts" role="group" aria-label="Sort by">
+        <button data-sort="num" aria-pressed="true">No.</button><button data-sort="type" aria-pressed="false">Type</button>
+      </div>
+    </div>
+  </div>
+  <div class="views" id="views" role="group" aria-label="Which view"></div>
+</header>
+<main id="grid"></main>
+<footer>
+  <h2>Where they come from</h2>
+  <p>The sprites are the work of the <a href="https://github.com/PMDCollab/SpriteCollab">PMD Sprite Collaboration</a>'s
+  artists, who share them under <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. The names on
+  each card are the artists who made that sprite. Thank you, all of you.</p>
+  <h3>What PokeKnomiGochi changed</h3>
+  <ul>
+    <li>Colours are rounded to the Knomi screen's 16-bit colour, and a pixel that was partly see-through is now either solid or clear.</li>
+    <li>They play 1.4 times slower than the originals, which felt rushed on a pet, with no frame shorter than 70 ms and at most 24 frames a view.</li>
+    <li>Only some of each sheet is kept: the animations facing you, the walk in its eight directions, and standing, attacking and hurt from behind, taken from the sheet's view from the back and right.</li>
+    <li>Each frame stands on its own feet instead of where it sits in its frame. A few are placed by hand: Ivysaur and Venusaur stand on their legs when they face you, Diglett and Dugtrio sit lower in their mounds, and Blastoise and Magikarp lie lower when asleep.</li>
+    <li>They're the versions packed for the game. SpriteCollab keeps improving its sprites, so some there may be newer.</li>
+  </ul>
+  <h3>What it added</h3>
+  <ul>
+    <li><b>Turn:</b> the Pokédex entry's turn, made from the first frame of the walk in each of its eight directions, 250 ms each.</li>
+    <li><b>Battle:</b> the attack seen from behind, the way your own Pokémon fights.</li>
+    <li>A shiny's four twinkling gold sparkles, and the shadow under each Pokémon. Neither is part of the sprites.</li>
+  </ul>
+  <h2>Using them</h2>
+  <p>Get the original sheets from SpriteCollab (each Pokémon's page here links to its own), credit their artists, and
+  don't use them commercially. Pokémon and its names, designs and characters are © Nintendo, Game Freak and The Pokémon
+  Company. This is an unofficial, non-commercial fan project, not affiliated with any of them.</p>
+</footer>
+<dialog id="dlg" aria-labelledby="dname">
+  <div class="dhead">
+    <h2 id="dname"></h2><span class="type" id="dtype"></span>
+    <div class="seg" id="dforms" role="group" aria-label="Which form">
+      <button data-form="shiny" aria-pressed="true">Shiny</button><button data-form="regular" aria-pressed="false">Regular</button>
+    </div>
+    <button class="close" id="dclose" aria-label="Close">×</button>
+  </div>
+  <div class="tiles" id="tiles"></div>
+  <div class="dfoot">
+    <p id="dreg"></p><p id="dshi"></p>
+    <p><a id="dlink" target="_blank" rel="noopener">Its original sprites on SpriteCollab</a></p>
+  </div>
+</dialog>
+<script>
+const MONS = /*DATA*/[];
+// the views: [key, label, the pack's action]. Every Pokémon has these; -1 is the Pokédex entry's turn
+const VIEWS = [['idle', 'Idle', 0], ['turn', 'Turn', -1], ['walk', 'Walk', 2], ['back', 'Back', 18], ['sleep', 'Sleep', 3],
+  ['hop', 'Hop', 8], ['attack', 'Attack', 6], ['hurt', 'Hurt', 5], ['battle', 'Battle', 19]];
+// and these only some have (shown on a Pokémon's own page when it does)
+const EXTRAS = [['eat', 'Eat', 4], ['pose', 'Pose', 7], ['nod', 'Nod', 9], ['sit', 'Sit', 11], ['breathe', 'Deep breath', 10],
+  ['backhurt', 'Hurt from behind', 20]];
+const ACT = Object.fromEntries([...VIEWS, ...EXTRAS].map(([k, , a]) => [k, a]));
+// the entry's turn (menus_v2.h v2SpinAct): facing you, its left side, its back, its right side, 250 ms a view, each
+// walk's first frame
+const TURN = [12, 17, 1, 16, 13, 15, 2, 14];
+const ONCE = new Set(['attack', 'hurt', 'battle', 'backhurt']);  // these rest a moment before they go again
+const W = 144, H = 124, GROUND = 108;
+
+const state = { form: 'shiny', view: 'idle', sort: 'num' };
+const sheets = new Map();
+function sheet(m, shiny) {
+  const key = m.id + (shiny ? '-shiny' : '');
+  let im = sheets.get(key);
+  if (!im) { im = new Image(); im.src = `img/${key}.png`; sheets.set(key, im); }
+  return im;
+}
+
+function actOf(meta, view, t) {  // [action, frame or null]
+  if (view === 'turn') return TURN.every((a) => meta[a]) ? [TURN[Math.floor(t / 250) % 8], 0] : [0, null];
+  const a = ACT[view];
+  return [meta[a] ? a : 0, null];
+}
+function frameAt(ms, t, rest) {
+  const total = ms.reduce((a, b) => a + b, 0) + (rest ? 700 : 0);
+  let x = t % total;
+  for (let i = 0; i < ms.length; i++) { if (x < ms[i]) return i; x -= ms[i]; }
+  return 0;  // (resting: back on its first frame)
+}
+// how big a Pokémon is drawn in a view: its own size (the same in every view), smaller only when a view's frames
+// would not fit (an attack's lunge), and the same through the whole turn
+const fits = new Map();
+function scaleFor(m, meta, view, h) {
+  const key = m.id + (meta === m.f[1] ? 's' : '') + view + h;
+  if (fits.has(key)) return fits.get(key);
+  const acts = view === 'turn' ? TURN.filter((a) => meta[a]) : [meta[ACT[view]] ? ACT[view] : 0];
+  let s = m.s;
+  for (const a of acts) { const [, , , base, top] = meta[a]; s = Math.min(s, (h - 14) / Math.max(1, base - top)); }
+  fits.set(key, s);
+  return s;
+}
+
+function star(ctx, x, y, r) {  // drawSparkle(): a gold plus, a white middle
+  if (r < 2) return;
+  x = Math.round(x); y = Math.round(y);
+  ctx.fillStyle = '#ffcd28';
+  ctx.fillRect(x - 1, y - r, 3, 2 * r + 1); ctx.fillRect(x - r, y - 1, 2 * r + 1, 3);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x - 1, y - 1, 3, 3);
+}
+function sparkles(ctx, l, t, r, b, now) {  // drawSparkles(): four round it, each on its own beat
+  const w = r - l, h = b - t;
+  if (w <= 0 || h <= 0) return;
+  const big = h < 60 ? 6 : 8;
+  const SPOT = [[-10, 10], [104, -4], [108, 70], [0, 90]];
+  for (let i = 0; i < 4; i++) {
+    const beat = (now + i * 370) % 1400;  // grows, holds, fades, rests
+    const k = beat < 300 ? beat / 300 : beat < 600 ? 1 : beat < 900 ? (900 - beat) / 300 : 0;
+    star(ctx, l + w * SPOT[i][0] / 100, t + h * SPOT[i][1] / 100, Math.floor(big * k));
+  }
+}
+
+function paint(c, now) {
+  const m = MONS[c.dataset.i], shiny = c.dataset.form === '1', view = c.dataset.view || state.view;
+  const ctx = c.getContext('2d'), w0 = c.width / DPR, h0 = c.height / DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, w0, h0);
+  const im = sheet(m, shiny);
+  if (!im.complete || !im.naturalWidth) return;
+  const meta = m.f[shiny ? 1 : 0];
+  const [a, fixed] = actOf(meta, view, now);
+  const [y, w, h, base, top, left, right, ms, low] = meta[a];
+  const f = fixed ?? frameAt(ms, now, ONCE.has(view));
+  const s = scaleFor(m, meta, view, h0), ground = h0 - (H - GROUND);
+  // each frame on its own feet (pmdFrameRise()), with what's left of a hop
+  const rise = low[f] * s + Math.min(12, (base - low[f]) / 2) * s / 4;
+  const x0 = Math.round(w0 / 2 - w * s / 2), y0 = Math.round(ground - rise);
+  const cx = x0 + (left + right) / 2 * s, rx = Math.max(6, (right - left) * s * 0.34);
+  ctx.fillStyle = SHADE;
+  ctx.beginPath(); ctx.ellipse(cx, ground - 1, rx, Math.max(3, rx * 0.22), 0, 0, 2 * Math.PI); ctx.fill();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(im, f * w, y, w, h, x0, y0, w * s, h * s);
+  if (shiny) sparkles(ctx, x0 + left * s, y0 + top * s, x0 + right * s, ground, now + m.n * 337);
+}
+
+const DPR = Math.min(3, Math.max(1, Math.round(window.devicePixelRatio || 1)));
+const css = getComputedStyle(document.documentElement);
+const SHADE = css.getPropertyValue('--shade').trim();
+
+function canvas(i, shiny, label, view) {
+  const c = document.createElement('canvas');
+  c.dataset.i = i; c.dataset.form = shiny ? '1' : '0';
+  if (view) c.dataset.view = view;
+  c.setAttribute('role', 'img'); c.setAttribute('aria-label', label);
+  return c;
+}
+function size(c) {  // its pixels, from the size the page gives it
+  const r = c.getBoundingClientRect();
+  if (!r.width) return;
+  const w = Math.round(r.width * DPR), h = Math.round(r.height * DPR);
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+}
+
+const live = new Set();
+const watch = new IntersectionObserver((es) => es.forEach((e) => {
+  if (e.isIntersecting) { size(e.target); live.add(e.target); } else live.delete(e.target);
+}), { rootMargin: '150px' });
+
+const grid = document.getElementById('grid');
+const cards = MONS.map((m, i) => {
+  const b = document.createElement('button');
+  b.className = 'card'; b.style.setProperty('--t', m.c);
+  b.dataset.q = `${m.n} ${m.name.toLowerCase()}`;
+  b.setAttribute('aria-label', `${m.name}, all its views`);
+  const stage = document.createElement('div');
+  stage.className = 'stage';
+  const reg = canvas(i, false, m.name), shi = canvas(i, true, `Shiny ${m.name}`);
+  stage.append(reg, shi);
+  b.append(stage);
+  b.insertAdjacentHTML('beforeend', `<span class="name"><span class="num">#${String(m.n).padStart(3, '0')}</span> ${m.name}</span>`);
+  for (const [cls, who, what] of [['reg', m.cr[0], 'Regular'], ['shi', m.cr[1], 'Shiny']]) {
+    const s = document.createElement('span');
+    s.className = `by ${cls}`; s.textContent = who; s.title = `${what} sprite by ${who}`;
+    b.append(s);
+  }
+  b.addEventListener("click", () => openMon(i));
+  grid.append(b);
+  b.canvases = [reg, shi];
+  b.i = i;
+  return b;
+});
+function regard() {  // which canvases the grid shows
+  for (const b of cards) {
+    const [reg, shi] = b.canvases;
+    const want = state.form === 'both' ? [reg, shi] : state.form === 'shiny' ? [shi, reg] : [reg, shi];
+    // the one shown first in the card; the other only side by side
+    if (b.querySelector('.stage').firstChild !== want[0]) b.querySelector('.stage').prepend(want[0]);
+    for (const c of b.canvases) { watch.unobserve(c); live.delete(c); }
+    const shown = state.form === 'both' ? [reg, shi] : [want[0]];
+    if (!b.classList.contains('hide')) shown.forEach((c) => watch.observe(c));
+  }
+}
+
+const views = document.getElementById('views');
+for (const [k, label] of VIEWS) {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.dataset.view = k; b.textContent = label;
+  b.addEventListener('click', () => { state.view = k; sync(); });
+  views.append(b);
+}
+document.querySelectorAll('#forms button').forEach((b) => b.addEventListener('click', () => { state.form = b.dataset.form; sync(); regard(); }));
+// by type: each type under its own heading, in the order the Pokédex first meets them, by number within each
+const TYPES = [...new Set(MONS.map((m) => m.type))];
+const heads = new Map(TYPES.map((t) => {
+  const h = document.createElement('h2');
+  h.className = 'group';
+  h.style.setProperty('--t', MONS.find((m) => m.type === t).c);
+  return [t, h];
+}));
+function arrange() {
+  if (state.sort === 'type') {
+    for (const t of TYPES) grid.append(heads.get(t), ...cards.filter((b) => MONS[b.i].type === t));
+  } else {
+    heads.forEach((h) => h.remove());
+    grid.append(...cards);
+  }
+  count();
+}
+function count() {  // each heading's count, of the ones the search leaves
+  for (const [t, h] of heads) {
+    const n = cards.filter((b) => MONS[b.i].type === t && !b.classList.contains('hide')).length;
+    h.innerHTML = `${t} <small>${n}</small>`;
+    h.classList.toggle('hide', n === 0);
+  }
+}
+document.querySelectorAll('#sorts button').forEach((b) => b.addEventListener('click', () => { state.sort = b.dataset.sort; sync(); arrange(); }));
+const q = document.getElementById('q');
+q.addEventListener('input', () => {
+  const v = q.value.trim().toLowerCase().replace(/^#0*/, '');
+  for (const b of cards) {
+    const [num, name] = b.dataset.q.split(' ');
+    b.classList.toggle('hide', v !== '' && !(name.includes(v) || num === v || MONS[b.i].type === v));
+  }
+  count();
+  regard();
+});
+function sync() {
+  document.body.className = state.form;
+  document.querySelectorAll('#forms button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.form === state.form)));
+  document.querySelectorAll('#sorts button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sort === state.sort)));
+  views.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+  history.replaceState(null, '', `#${state.form}/${state.view}${state.sort === 'type' ? '/type' : ''}`);
+}
+
+// a Pokémon's own page: every view it has
+const dlg = document.getElementById('dlg'), tiles = document.getElementById('tiles');
+let dlgMon = 0, dlgShiny = true, dlgCanvases = [];
+function fillDialog() {
+  const m = MONS[dlgMon];
+  dlgCanvases.forEach((c) => live.delete(c));
+  tiles.textContent = '';
+  dlgCanvases = [];
+  const meta = m.f[dlgShiny ? 1 : 0];
+  for (const [k, label, a] of [...VIEWS, ...EXTRAS]) {
+    if (a >= 0 && !meta[a]) continue;
+    const fig = document.createElement('figure');
+    fig.className = 'tile';
+    const c = canvas(dlgMon, dlgShiny, `${dlgShiny ? 'Shiny ' : ''}${m.name}: ${label}`, k);
+    fig.append(c);
+    fig.insertAdjacentHTML('beforeend', `<figcaption>${label}</figcaption>`);
+    tiles.append(fig);
+    dlgCanvases.push(c);
+  }
+  document.querySelectorAll('#dforms button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.form === 'shiny') === dlgShiny)));
+  requestAnimationFrame(() => dlgCanvases.forEach((c) => { size(c); live.add(c); }));
+}
+function openMon(i) {
+  const m = MONS[i];
+  dlgMon = i; dlgShiny = state.form !== 'regular';
+  document.getElementById('dname').textContent = `#${String(m.n).padStart(3, '0')} ${m.name}`;
+  const ty = document.getElementById('dtype');
+  ty.textContent = m.type; ty.style.background = m.c;
+  document.getElementById('dreg').textContent = `Regular sprite by ${m.cr[0]}.`;
+  document.getElementById('dshi').textContent = `Shiny sprite by ${m.cr[1]}.`;
+  document.getElementById('dlink').href = `https://sprites.pmdcollab.org/#/${String(m.n).padStart(4, '0')}`;
+  dlg.showModal();
+  fillDialog();
+}
+document.querySelectorAll('#dforms button').forEach((b) => b.addEventListener('click', () => { dlgShiny = b.dataset.form === 'shiny'; fillDialog(); }));
+document.getElementById('dclose').addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+dlg.addEventListener('close', () => { dlgCanvases.forEach((c) => live.delete(c)); dlgCanvases = []; });
+
+const [hf, hv, hs] = location.hash.slice(1).split('/');
+if (['shiny', 'regular', 'both'].includes(hf)) state.form = hf;
+if (VIEWS.some(([k]) => k === hv)) state.view = hv;
+if (hs === 'type') state.sort = 'type';
+sync();
+arrange();
+regard();
+addEventListener('resize', () => live.forEach(size));
+
+let last = 0;
+function tick(now) {
+  requestAnimationFrame(tick);
+  if (now - last < 30) return;
+  last = now;
+  for (const c of live) paint(c, now);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

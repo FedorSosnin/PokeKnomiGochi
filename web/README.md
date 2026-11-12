@@ -11,6 +11,11 @@ Wi-Fi updates from the same place.
 - `knomi/firmware/`: the firmware, and the sprites packed for the Knomi's flash.
 - `knomi/update.json`: what a Knomi checks for a Wi-Fi update.
 
+The site also has the **Shiny Pokédex** at `/sprites/`, every sprite the game uses in every view, with its artists. It isn't
+kept here: the deploy builds it from the packs with `tools/make_sprite_gallery.py` (the page is
+`tools/sprite_gallery.html`). To see it locally, `python3 tools/make_sprite_gallery.py` (it needs Pillow) and serve
+`build/sprites/`.
+
 `web/play/` holds the last PokeWebGochi build (`webgame/build.sh`), which `tools/publish_web.sh` publishes to its
 own site.
 
@@ -29,8 +34,8 @@ cd web/knomi && python3 -m http.server 8000
 
 ## Deploy (GitHub Pages)
 
-`.github/workflows/pages.yml` publishes `web/knomi/` at https://fedorsosnin.github.io/PokeKnomiGochi/ on every
-push to `main` that touches `web/`.
+`.github/workflows/pages.yml` publishes `web/knomi/` at https://fedorsosnin.github.io/PokeKnomiGochi/, and the Shiny
+Pokédex at `/sprites/`, on every push to `main` that touches `web/`, the packs or the gallery's two files.
 
 ## Limitations
 
