@@ -27,6 +27,7 @@
 #include <sensors.h>
 #include <sensorsapi.h>
 #include "host.h"
+#include "host_crt.h"  // the CRT screen
 #include "resources.h"
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
 #include "version.h"
@@ -54,7 +55,11 @@
 // ("Pixled art, but sharp"); bigger than the canvas, every size copies whole pixels (buildTaps), never blurs.
 // A window kept at an older size opens at Small
 static const int kSizes[] = {245, 300, 478};
-#define DEFAULT_SIZE 245
+#define DEFAULT_SIZE 478  // it opens at Large, with the CRT screen on (Fedor: "I would prefer if this effect on large
+                          // was how all of the apps opened by default"): Size and CRT Screen in the menu
+static bool gCrt = true;  // the CRT screen (host_crt.h), saved as "crt"
+static bool gCrtStale = true;     // the game's picture or the size changed since the CRT image was made
+static std::vector<uint8_t> gCrtBuf;  // that image, the screen's own size (RGBA)
 
 // New versions: the newest "win-v*" release on GitHub. Checked at launch and every UPDATE_EVERY_S by the
 // real clock (time the PC sleeps counts), looked at every UPDATE_POLL_MS, so a release made overnight is in
@@ -94,6 +99,7 @@ enum {
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
 enum {
   ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT, ID_VIBE, ID_TILT, ID_AUTO_UPDATE,
+  ID_CRT,
 };
 
 static HWND gWnd;
@@ -618,10 +624,25 @@ static inline uint32_t premul(double r, double g, double b, double a) {
          (uint32_t)lround(b * a * 255);
 }
 
+// the CRT image at the screen's own pixels, its rows on four threads; made again only when the picture changed
+static void crtImage(int n) {
+  if (!gCrtStale && gCrtBuf.size() == (size_t)n * n * 4) return;
+  gCrtStale = false;
+  hostCrtPrepare(gCanvas, n);
+  gCrtBuf.resize((size_t)n * n * 4);
+  static uint32_t frame = 0;
+  const uint32_t fr = ++frame;
+  const int T = 4;
+  std::thread th[T];
+  for (int k = 0; k < T; k++) th[k] = std::thread([n, fr, k] { hostCrtRows(gCrtBuf.data(), n * 4, false, n * k / T, n * (k + 1) / T, fr); });
+  for (auto &t : th) t.join();
+}
+
 static void compose() {
   int n = screenSide(), off = screenOffset();
+  if (gCrt) crtImage(n);
   // across: every canvas row to n columns
-  for (int y = 0; y < HOST_CANVAS_SIZE; y++) {
+  for (int y = 0; y < HOST_CANVAS_SIZE && !gCrt; y++) {
     const uint8_t *row = gCanvas + (size_t)y * HOST_CANVAS_SIZE * 4;
     float *out = &gRows[(size_t)y * n * 3];
     for (int x = 0; x < n; x++) {
@@ -655,7 +676,10 @@ static void compose() {
       if (inside > 0) {
         int sx = x - off, sy = y - off;
         float r = 0, g = 0, b = 0;
-        if (sx >= 0 && sy >= 0 && sx < n && sy < n) {
+        if (gCrt && sx >= 0 && sy >= 0 && sx < n && sy < n) {
+          const uint8_t *p = &gCrtBuf[((size_t)sy * n + sx) * 4];
+          r = p[0], g = p[1], b = p[2];
+        } else if (sx >= 0 && sy >= 0 && sx < n && sy < n) {
           const Tap &t = gTaps[sy];
           for (int i = 0; i < t.count; i++) {
             const float *p = &gRows[((size_t)(t.from + i) * n + sx) * 3];
@@ -736,6 +760,13 @@ static Zone zoneAt(int x, int y) {  // client pixels
 }
 
 static void canvasPoint(int x, int y, int &cx, int &cy) {
+  if (gCrt) {  // through the CRT's curved glass, so it lands on what's shown
+    float fx, fy;
+    hostCrtPoint(x - screenOffset() + 0.5f, y - screenOffset() + 0.5f, screenSide(), fx, fy);
+    cx = (int)fmin(fmax(fx, 0), HOST_CANVAS_SIZE - 1);
+    cy = (int)fmin(fmax(fy, 0), HOST_CANVAS_SIZE - 1);
+    return;
+  }
   double k = (double)HOST_CANVAS_SIZE / screenSide();
   cx = (int)((x - screenOffset()) * k);
   cy = (int)((y - screenOffset()) * k);
@@ -773,6 +804,7 @@ static void showMenu(POINT at) {
   const wchar_t *names[] = {L"Small", L"Medium", L"Large"};
   for (int i = 0; i < 3; i++) AppendMenuW(sizes, MF_STRING | (gSize == kSizes[i] ? MF_CHECKED : 0), ID_SIZE0 + i, names[i]);
   AppendMenuW(m, MF_POPUP, (UINT_PTR)sizes, L"Size");
+  AppendMenuW(m, MF_STRING | (gCrt ? MF_CHECKED : 0), ID_CRT, L"CRT Screen");
   // the same setting as the game's SND button on the clock screen, saved with the game
   AppendMenuW(m, MF_STRING | (hostSoundEnabled() ? 0 : MF_CHECKED), ID_MUTE, L"Mute Sound");
   if (gXSet && controllerIndex() >= 0)  // only with a controller that can buzz
@@ -1206,7 +1238,7 @@ static void tick() {
   hostTick();
   if (hostNetTimeWanted()) fetchNetTime();
   bool dirty = hostFrameDirty();
-  if (dirty) hostFrameRGBA(gCanvas);
+  if (dirty) hostFrameRGBA(gCanvas), gCrtStale = true;
   // the frame grows while the mouse is over the ball (a look at the cursor each tick is all it takes)
   POINT cur;
   bool over = gHover;
@@ -1365,6 +1397,16 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
           break;
         }
         case ID_UPDATE: checkForUpdates(true); break;
+        case ID_CRT: {
+          gCrt = !gCrt;
+          Preferences p;
+          p.begin(PREFS_NS);
+          p.putBool("crt", gCrt);
+          p.end();
+          gCrtStale = true;
+          redraw();
+          break;
+        }
         case ID_AUTO_UPDATE:
           hostSetAutoUpdate(!hostAutoUpdate());
           gAutoPending = hostAutoUpdate() && !gNewVersion.empty() && canUpdateInPlace();  // one already found goes in too
@@ -1432,6 +1474,7 @@ static RECT initialRest(int &size) {
   p.begin(PREFS_NS, true);
   bool known = p.isKey("x");
   size = p.getInt("size", 0);
+  gCrt = p.getBool("crt", true);
   int x = p.getInt("x", 0), y = p.getInt("y", 0);
   p.end();
   if (size < kSizes[0] || size > kSizes[2]) size = DEFAULT_SIZE;

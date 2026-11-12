@@ -8,6 +8,7 @@
 #include <sys/file.h>
 #include <unistd.h>
 #include "host.h"
+#include "host_crt.h"  // the CRT screen
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
 #include "../src/update_key.h"        // checks the updates' signature
 
@@ -31,7 +32,9 @@
 // the canvas at exactly 1x and 2x a Retina screen's pixels (and 1x / 2x on others), so they show pixel for pixel
 // ("Pixled art, but sharp. Blurriness is going to kill it"). A window kept at an older size opens at Small
 static const CGFloat kSizes[] = {245, 300, 478};
-#define DEFAULT_SIZE 245.0
+#define DEFAULT_SIZE 478.0  // it opens at Large, with the CRT screen on (Fedor: "I would prefer if this effect on
+                            // large was how all of the apps opened by default"): Size and CRT Screen in the menu
+static bool gCrt = true;    // the CRT screen (host_crt.h), saved as "crt"
 
 // New versions: the newest "mac-v*" release on GitHub. Checked at launch and every UPDATE_EVERY_S by the
 // real clock (time the Mac sleeps counts, as it doesn't for a timer), looked at every UPDATE_POLL_S, so a
@@ -395,6 +398,43 @@ static NSCursor *fingerCursor(bool pressed) {
 
 - (void)showFrame {
   hostFrameRGBA(_rgba);
+  if (gCrt) {  // the CRT screen, made at the view's own pixels (no stretch after), its rows on all the cores
+    int side = (int)lround(self.bounds.size.width * (self.window ? self.window.backingScaleFactor : 2.0));
+    if (side < 64) side = 64;
+    hostCrtPrepare(_rgba, side);
+    static uint32_t frame = 0;
+    const uint32_t fr = ++frame;
+    size_t bytes = (size_t)side * side * 4;
+    CFMutableDataRef data = CFDataCreateMutable(NULL, (CFIndex)bytes);  // the image owns its bytes
+    CFDataSetLength(data, (CFIndex)bytes);
+    uint8_t *buf = CFDataGetMutableBytePtr(data);
+    const size_t chunks = 8;
+    dispatch_apply(chunks, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0), ^(size_t k) {
+      hostCrtRows(buf, side * 4, false, (int)(side * k / chunks), (int)(side * (k + 1) / chunks), fr);
+    });
+    // testing, and pictures of it: POKEMACGOCHI_CRT_DUMP=file.ppm saves the 60th frame as it's shown
+    static const char *dump = getenv("POKEMACGOCHI_CRT_DUMP");
+    if (dump && fr == 60) {
+      if (FILE *f = fopen(dump, "wb")) {
+        fprintf(f, "P6\n%d %d\n255\n", side, side);
+        for (size_t i = 0; i < (size_t)side * side; i++) fwrite(buf + i * 4, 1, 3, f);
+        fclose(f);
+      }
+    }
+    CGDataProviderRef prov = CGDataProviderCreateWithCFData(data);
+    CFRelease(data);
+    CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+    CGImageRef img = CGImageCreate(side, side, 8, 32, side * 4, cs, kCGBitmapByteOrderDefault | kCGImageAlphaNoneSkipLast,
+                                   prov, NULL, false, kCGRenderingIntentDefault);
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    self.layer.contents = (__bridge id)img;
+    [CATransaction commit];
+    CGImageRelease(img);
+    CGDataProviderRelease(prov);
+    CGColorSpaceRelease(cs);
+    return;
+  }
   // the view's side in the screen's pixels, and the whole number of times the canvas goes into it, rounded up:
   // at Large on a Retina screen 932 px, exactly 2 (pixel for pixel); at Medium 576 px, 2, then shrunk to fit
   CGFloat px = self.bounds.size.width * (self.window ? self.window.backingScaleFactor : 2.0);
@@ -436,6 +476,12 @@ static NSCursor *fingerCursor(bool pressed) {
 // event point in canvas coordinates
 - (NSPoint)canvasPoint:(NSEvent *)event {
   NSPoint p = [self convertPoint:event.locationInWindow fromView:nil];
+  if (gCrt) {  // through the CRT's curved glass, so it lands on what's shown
+    CGFloat w = self.bounds.size.width;
+    float cx, cy;
+    hostCrtPoint((float)(p.x / w * 1000), (float)((self.bounds.size.height - p.y) / w * 1000), 1000, cx, cy);
+    return NSMakePoint(fmin(fmax(cx, 0), HOST_CANVAS_SIZE - 1), fmin(fmax(cy, 0), HOST_CANVAS_SIZE - 1));
+  }
   CGFloat k = HOST_CANVAS_SIZE / self.bounds.size.width;
   return NSMakePoint(p.x * k, (self.bounds.size.height - p.y) * k);
 }
@@ -505,6 +551,9 @@ static NSCursor *fingerCursor(bool pressed) {
     it.state = restFrame(self.window.frame).size.width == kSizes[i] ? NSControlStateValueOn : NSControlStateValueOff;
   }
   sizes.submenu = sub;
+  NSMenuItem *crt = [menu addItemWithTitle:@"CRT Screen" action:@selector(toggleCrt:) keyEquivalent:@""];
+  crt.target = self;
+  crt.state = gCrt ? NSControlStateValueOn : NSControlStateValueOff;
   // the same setting as the game's SND button on the clock screen, saved with the game
   NSMenuItem *mute = [menu addItemWithTitle:@"Mute Sound" action:@selector(toggleMute:) keyEquivalent:@""];
   mute.target = self;
@@ -532,6 +581,14 @@ static NSCursor *fingerCursor(bool pressed) {
 }
 
 - (void)toggleMute:(id)sender { hostSetSoundEnabled(!hostSoundEnabled()); }
+- (void)toggleCrt:(id)sender {
+  gCrt = !gCrt;
+  Preferences p;
+  p.begin(PREFS_NS);
+  p.putBool("crt", gCrt);
+  p.end();
+  [self showFrame];
+}
 - (void)toggleAutoUpdate:(id)sender {
   hostSetAutoUpdate(!hostAutoUpdate());
   gAutoPending = hostAutoUpdate() && gNewVersion && canUpdateInPlace();  // one already found goes in too
@@ -676,6 +733,7 @@ static NSRect initialFrame(bool ownSave) {
   p.begin(PREFS_NS, true);
   bool known = p.isKey("x");
   CGFloat size = p.getInt("size", 0), x = p.getInt("x", 0), y = p.getInt("y", 0);
+  gCrt = p.getBool("crt", true);
   p.end();
   // first launch after 1.0: take the place it kept in the user defaults (only for the real save)
   NSUserDefaults *d = NSUserDefaults.standardUserDefaults;

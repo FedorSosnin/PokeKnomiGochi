@@ -19,7 +19,7 @@ ALLFLAGS := $(CXXFLAGS) $(DEFS) $(INCLUDES)
 # The oldest macOS the Mac app runs on (mac/Info.plist says the same); without it, clang targets the Mac it builds on
 export MACOSX_DEPLOYMENT_TARGET ?= 12.0
 
-LAYER_SRC := host_canvas.cpp host_prefs.cpp host_runtime.cpp host_board.cpp host_buddy.cpp host_audio.cpp
+LAYER_SRC := host_canvas.cpp host_prefs.cpp host_runtime.cpp host_board.cpp host_buddy.cpp host_audio.cpp host_crt.cpp
 GAME_SRC  := $(ROOT)/src/pet.cpp $(ROOT)/src/i18n.cpp $(ROOT)/src/sdmon.cpp $(ROOT)/src/ota_update.cpp
 UNIT      := $(BUILD)/sketch_unit.cpp
 OBJS      := $(patsubst %.cpp,$(BUILD)/%.o,$(LAYER_SRC) $(notdir $(GAME_SRC))) $(BUILD)/sketch_unit.o

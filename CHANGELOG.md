@@ -8,6 +8,8 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 
 ## [Unreleased]
 
+- **A CRT screen on the Mac, Windows and the web, on by default:** the game as on an old tube TV. Each scanline is a soft beam that swells where the picture is bright, the colours are richer with a warm glow and halo, and the picture bulges as through curved glass into the tube's dark edge, with a reflection and a little grain. Taps and clicks land on what you see through the curve. They now open at Large; **CRT Screen** in the Mac and Windows menu (a **CRT** button under the web game) turns it off.
+
 - **Your Pokémon's nickname in battles:** the HP panel and lines like "SPLASHY: DRAGON RAGE!" use the name you gave it, in wild and buddy battles, PokeDungeon and Knomi Tower.
 - **Bigger, sharper windows (Mac and Windows):** the sizes move up one: Small is about the old Medium, Medium the old Large, and a new Large is nearly as big as the web version's. Every size is drawn sharp: the screen is blown up by whole pixels first, and Small and Large land exactly on a Retina screen's pixels (Large on Windows at 100% and 200% scaling too), so the pixel art stays crisp instead of blurring.
 
