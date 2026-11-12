@@ -771,6 +771,149 @@ static void twPaintLegend(int arg) {
   if (arg >> 8) twDim(arg >> 8);
 }
 
+// The Hall of Fame painting (Fedor: "It should probably be a bit more...epic then just a plain color background. It
+// should feel like a whole battle earned you that painting"): the tower's top at sunset, the Master Ball it won
+// blazing in the sky with rays all round it, battlements against the light and a red runner up to the team; a gold
+// frame set with the eight floors' crests and the Legend's crown, and a HALL OF FAME plate. Painted once (the Legend's
+// terrace dimmed behind it); the team, confetti in the floors' colours, twinkles and the frame's glint go on each frame.
+#define TW_PX0 68   // the frame, outside
+#define TW_PY0 76
+#define TW_PX1 399
+#define TW_PY1 319
+#define TW_PIX0 (TW_PX0 + 24)  // the picture inside it
+#define TW_PIY0 (TW_PY0 + 24)
+#define TW_PIX1 (TW_PX1 - 24)
+#define TW_PIY1 (TW_PY1 - 24)
+#define TW_PSUN_Y 134  // the Master Ball, where the light comes from
+#define TW_PWALL_Y 236 // the battlements' top (their merlons rise 12 above it)
+#define TW_PFLOOR_Y 256
+#define TW_PFEET 284   // your Pokemon's feet (its friends' a little further back)
+
+// rays from (cx, cy) over the picture: every other one of n wedges pulled toward col, fading out with distance
+static void twRays(int cx, int cy, int n, Rgb col, int a256, int y1) {
+  uint16_t c = sc565(col);
+  const float wedge = 6.2831853f / n;
+  for (int y = TW_PIY0; y < y1; y += 4)
+    for (int x = TW_PIX0; x <= TW_PIX1 - 3; x += 4) {
+      float dx = x + 2 - cx, dy = y + 2 - cy;
+      if ((int)floorf((atan2f(dy, dx) + 3.1415927f) / wedge) % 2) continue;
+      int a = (int)(a256 * (1 - hypotf(dx, dy) / 250));
+      if (a <= 0) continue;
+      for (int j = 0; j < 4; j++) {
+        uint16_t *p = scFb + (y + j) * V2_W + x;
+        for (int i = 0; i < 4; i++) p[i] = v2Blend(p[i], c, a);
+      }
+    }
+}
+// a soft light round (cx, cy): every 4 px cell within r pulled toward col (no checker: under the rays it read as noise)
+static void twHalo(int cx, int cy, int r, Rgb col, int a256) {
+  uint16_t c = sc565(col);
+  for (int y = scFl4(cy - r) * 4; y < cy + r; y += 4)
+    for (int x = scFl4(cx - r) * 4; x < cx + r; x += 4) {
+      if (x < TW_PIX0 || y < TW_PIY0 || x > TW_PIX1 - 3) continue;
+      if ((x + 2 - cx) * (x + 2 - cx) + (y + 2 - cy) * (y + 2 - cy) > r * r) continue;
+      for (int j = 0; j < 4; j++) {
+        uint16_t *p = scFb + (y + j) * V2_W + x;
+        for (int i = 0; i < 4; i++) p[i] = v2Blend(p[i], c, a256);
+      }
+    }
+}
+// one 4 px ring of the frame, d px in: its top and left in tl, its bottom and right in br (a bevel)
+static void twRing(int d, Rgb tl, Rgb br) {
+  int x0 = TW_PX0 + d, y0 = TW_PY0 + d, x1 = TW_PX1 - d, y1 = TW_PY1 - d;
+  scRect(x0, y0, x1, y0 + 3, tl);
+  scRect(x0, y0, x0 + 3, y1, tl);
+  scRect(x0 + 4, y1 - 3, x1, y1, br);
+  scRect(x1 - 3, y0 + 4, x1, y1, br);
+}
+static void twPaintMaster(int) {
+  twPaintLegend(150 << 8);  // (dimmed: TW_DIM(150))
+  scScreen();
+  // the sky: night at the top down to the sunset behind the battlements, a few stars still out
+  // (each band meets the next in one row of checker a side: scBands' two a side made the whole sky a checker)
+  const Rgb SKY[6] = { 0x1E1848, 0x36287A, 0x5E3A9C, 0xA2488E, 0xDE6E6C, 0xF8A862 };
+  const int16_t SE[7] = { TW_PIY0, 124, 148, 172, 196, 220, TW_PFLOOR_Y };
+  for (int i = 0; i < 6; i++) scRect(TW_PIX0, SE[i], TW_PIX1, SE[i + 1], SKY[i]);
+  for (int i = 1; i < 6; i++)
+    for (int y = SE[i] - 4; y < SE[i] + 4; y += 4)
+      for (int x = TW_PIX0; x <= TW_PIX1 - 3; x += 4)
+        if ((x / 4 + y / 4) % 2 == 0) scCell(x, y, y < SE[i] ? SKY[i] : SKY[i - 1]);
+  for (int k = 0; k < 16; k++) {
+    int x = TW_PIX0 + (k * 113 + 17) % (TW_PIX1 - TW_PIX0 - 4) / 4 * 4, y = TW_PIY0 + 4 + (k * 37) % 48 / 4 * 4;
+    if (abs(x + 2 - CX) > 44) scCell(x, y, k % 3 ? 0xFFF3DC : 0xB8C0F0);
+  }
+  // the light: rays all round the Master Ball, a glow on it, lit clouds either side
+  twRays(CX, TW_PSUN_Y, 16, 0xFFE6A8, 110, TW_PFLOOR_Y);
+  twHalo(CX, TW_PSUN_Y, 46, 0xFFD27A, 70);
+  twHalo(CX, TW_PSUN_Y, 32, 0xFFE8A8, 120);
+  static const char *const CL[5] = { "....xxxxx.......", "..xxxxxxxxx.xx..", ".xxxxxxxxxxxxxxx", "xxxxxxxxxxxxxxxx", ".llllllllllllll." };
+  const ScKey c1[2] = { { 'x', 0x6A3A7A }, { 'l', 0xFFB070 } }, c2[2] = { { 'x', 0x7A4282 }, { 'l', 0xFFC884 } };
+  scSprite(CL, 5, TW_PIX0 + 4, 184, 4, c1, 2);
+  scSprite(CL, 5, TW_PIX1 - 67, 168, 4, c2, 2);
+  scSprite(CL, 5, TW_PIX1 - 111, 208, 2, c1, 2);
+  twBall(true, CX - 18, TW_PSUN_Y - 18, 2);
+  // the battlements, dark against the sunset with its light along their tops
+  const Rgb WALL = 0x281C46, RIM = 0xFFB86A;
+  scRect(TW_PIX0, TW_PWALL_Y, TW_PIX1, TW_PFLOOR_Y - 1, WALL);
+  scRect(TW_PIX0, TW_PWALL_Y, TW_PIX1, TW_PWALL_Y + 3, RIM);
+  for (int x = TW_PIX0 + 8; x < TW_PIX1 - 8; x += 32) {
+    scRect(x, TW_PWALL_Y - 12, x + 15, TW_PWALL_Y - 1, WALL);
+    scRect(x, TW_PWALL_Y - 12, x + 15, TW_PWALL_Y - 9, RIM);
+    scRect(x, TW_PWALL_Y - 8, x + 3, TW_PWALL_Y - 1, scMix(WALL, RIM, .35));
+  }
+  for (int x = TW_PIX0; x <= TW_PIX1 - 3; x += 4) scCell(x, TW_PWALL_Y + 12, scMod(x / 4, 4) ? 0x2E2250 : 0x4A3A70);
+  // the terrace: flagstones in the evening light, a red runner with gold edges up to the team
+  scRect(TW_PIX0, TW_PFLOOR_Y, TW_PIX1, TW_PFLOOR_Y + 3, TW_INK);
+  for (int ty = TW_PFLOOR_Y + 4; ty <= TW_PIY1; ty += 20)
+    for (int tx = TW_PIX0; tx <= TW_PIX1; tx += 20) {
+      Rgb c = ((tx - TW_PIX0) / 20 + (ty - TW_PFLOOR_Y) / 20) % 2 ? 0x4A3478 : 0x3E2C6A;
+      scRect(tx, ty, tx + 19, ty + 19, c);
+      scRect(tx, ty, tx + 19, ty + 3, scMix(c, 0xF0A070, .3));
+    }
+  for (int cy = TW_PFLOOR_Y + 4; cy <= TW_PIY1; cy += 4) {
+    float half = 28 + (cy - TW_PFLOOR_Y) * .6f;
+    for (int cx = scFl4((int)(CX - half)) * 4; cx < CX + half; cx += 4) {
+      bool edge = cx < CX - half + 8 || cx > CX + half - 8;
+      scCell(cx, cy, edge ? 0xF0C04A : scMod(cy / 4, 2) ? 0xB8403A : 0xA83A3A);
+    }
+  }
+  // the team's shadows (they stand on the runner and either side of it)
+  scOval(scE(CX - 44, TW_PFEET - 6, CX + 44, TW_PFEET + 6), 0x5A1E2A);
+  for (int s : { -1, 1 }) scOval(scE(CX + s * 96 - 32, TW_PFEET - 10, CX + s * 96 + 32, TW_PFEET - 0), 0x2A1E4A);
+  // the frame: gold, bevelled, a row of beads; jewels at its corners
+  twRing(0, TW_INK, TW_INK);
+  twRing(4, 0x8A5A10, 0x6A420A);
+  twRing(8, 0xFFE27A, 0xB07A10);
+  twRing(12, 0xC08410, 0xC08410);
+  for (int x = TW_PX0 + 16; x <= TW_PX1 - 19; x += 8) {
+    scCell(x, TW_PY0 + 12, 0xFFE27A);
+    scCell(x, TW_PY1 - 15, 0xF0C04A);
+  }
+  for (int y = TW_PY0 + 16; y <= TW_PY1 - 19; y += 8) {
+    scCell(TW_PX0 + 12, y, 0xFFE27A);
+    scCell(TW_PX1 - 15, y, 0xF0C04A);
+  }
+  twRing(16, 0x8A5A10, 0xF0C04A);
+  twRing(20, TW_INK, TW_INK);
+  static const char *const JEWEL[5] = { "..x..", ".xyx.", "xyPyx", ".xyx.", "..x.." };
+  const ScKey jk[3] = { { 'x', TW_INK }, { 'y', 0xFFE27A }, { 'P', 0x9A6AD8 } };
+  for (int jx : { TW_PX0 + 4, TW_PX1 - 23 })
+    for (int jy : { TW_PY0 + 4, TW_PY1 - 23 }) scSprite(JEWEL, 5, jx, jy, 4, jk, 3);
+  // the climb on its top bar: 1F to 4F, the Legend's crown, 5F to 8F, every one won
+  for (int k = 1; k <= TOWER_FLOORS; k++) twShield(CX + (k <= 4 ? -1 : 1) * (38 + 30 * (k <= 4 ? 4 - k : k - 5)), TW_PY0 - 2, 2, k, true);
+  twShield(CX, TW_PY0 - 10, 3, TOWER_LEGEND, true);
+  // HALL OF FAME on a plate across its bottom bar (the LEGEND plate's colours)
+  setSize(2);
+  const char *hf = T(S_HALL_OF_FAME);
+  int w = textW(hf, 2) + 24, lx = CX - w / 2, ly = TW_PY1 - 14;
+  gfx->fillRect(lx - 3, ly - 3, w + 6, 30, sc565(TW_INK));
+  gfx->fillRect(lx, ly, w, 24, sc565(0x5A3A98));
+  gfx->fillRect(lx, ly, w, 3, sc565(0x9A6AD8));
+  gfx->setTextColor(sc565(0xFFE27A));
+  setCur(CX - textW(hf, 2) / 2, ly + 5);
+  printT(hf);
+}
+
 // a stone dais under a Pokemon (dais2())
 static void twDais(int cx, int y, int w, Rgb col) {
   scOval(scE(cx - w / 2, y + 6, cx + w / 2, y + 30), TW_INK);
@@ -810,6 +953,7 @@ static void twBackTower(int dim) {
 }
 static void twBackHall(uint8_t fl, int dim) { v2Cached(0x3E100000 + (fl | TW_DIM(dim)), twPaintHall, fl | TW_DIM(dim)); }
 static void twBackLegend(int dim) { v2Cached(0x3E200000 + TW_DIM(dim), twPaintLegend, TW_DIM(dim)); }
+static void twBackMaster() { v2Cached(0x3E300000, twPaintMaster, 0); }
 
 static void twSignFloor(uint8_t step) {
   char b[32];
@@ -1199,28 +1343,63 @@ static void twViewLegend() {
   v2LabelButton(TW_CLIMB_X0, TW_CLIMB_Y0, TW_CLIMB_X1, TW_CLIMB_Y1, T(S_FIGHT), C565(0x9a, 0x6a, 0xd8));
   v2CloseX();
 }
-// 12: Tower Master: the Hall of Fame photo
+// 12: Tower Master: the Hall of Fame painting (twPaintMaster), the team in it
 static void twViewMaster() {
-  twBackLegend(64);
+  twBackMaster();
   scScreen();
-  v2SignIn(T(S_TOWER_MASTER), 16, C565(0x8a, 0x6a, 0x10), C565(0xf0, 0xc0, 0x4a));
-  scRect(80, 196, 385, 325, TW_INK);
-  scRect(84, 200, 381, 321, 0xC08410);
-  scRect(92, 208, 373, 313, 0xFFF0B0);
-  scRect(96, 212, 369, 277, 0x7CC4EA);
-  scRect(96, 278, 369, 309, 0x79BD4F);
+  uint32_t t = millis();
+  // (at 26, not 16: lower, where the screen is wider, so "MAITRE DE LA TOUR!" isn't cut off by its edge)
+  v2SignIn(T(S_TOWER_MASTER), 26, C565(0x8a, 0x6a, 0x10), C565(0xf0, 0xc0, 0x4a));
+  // your Pokemon in the middle, bigger, on the runner; its two friends either side
+  static const int16_t TX[3] = { CX, CX - 96, CX + 96 };
   for (int i = 0; i < 3; i++)
-    if (pet.hofDex[i]) twThumb(thumbs.getForm(pet.hofDex[i], pet.hofShiny >> i & 1), 140 + i * 92, 300, 2);
-  v2Panel(104, 334, 362, 384, 8);
-  twBall(true, 112, 340, 2);  // the Master Ball it pays
+    if (pet.hofDex[i]) twThumb(thumbs.getForm(pet.hofDex[i], pet.hofShiny >> i & 1), TX[i], i ? TW_PFEET - 4 : TW_PFEET, i ? 2 : 3);
+  // twinkles in the sky, one after another
+  static const int16_t TWK[6][2] = { { 112, 120 }, { 150, 164 }, { 190, 110 }, { 284, 114 }, { 326, 152 }, { 356, 124 } };
+  for (int k = 0; k < 6; k++) {
+    int p = (int)((t + k * 530) % 1800);
+    if (p >= 600) continue;
+    int arm = p < 150 || p >= 450 ? 2 : p < 300 ? 4 : 6, x = TWK[k][0], y = TWK[k][1];
+    gfx->fillRect(x - arm, y, arm * 2 + 2, 2, UI_WHITE);
+    gfx->fillRect(x, y - arm, 2, arm * 2 + 2, UI_WHITE);
+  }
+  // confetti in the eight floors' colours and gold, falling through the picture and turning as it goes
+  for (int i = 0; i < 18; i++) {
+    int span = TW_PIY1 - TW_PIY0 + 16;
+    int y = TW_PIY0 - 8 + (int)((t / 26 + i * 97) % span);
+    int x = TW_PIX0 + 6 + (i * 71) % (TW_PIX1 - TW_PIX0 - 18) + (int)(6 * sinf(t / 420.0f + i));
+    bool edge = (t / 180 + i) % 3 == 0;  // edge on, as it turns
+    int w = edge ? 2 : 4, h = 4;
+    x &= ~1, y &= ~1;
+    if (y < TW_PIY0 || y + h > TW_PIY1 + 1) continue;
+    Rgb c = i % 9 == 8 ? (Rgb)0xF0C04A : TW_COL[1 + i % 9][i % 2];
+    gfx->fillRect(x, y, w, h, sc565(c));
+  }
+  // a glint across the gold every few seconds
+  int g = (int)(t % 4200);
+  if (g < 900) {
+    uint16_t *fb = (uint16_t *)gfx->getFramebuffer(), wh = sc565(0xFFFFFF);
+    int at = TW_PX0 - 40 + (TW_PX1 - TW_PX0 + 280) * g / 900;  // a diagonal line, x + (y - top) / 2
+    for (int y = TW_PY0 + 4; y <= TW_PY1 - 4; y++)
+      for (int x = TW_PX0 + 4; x <= TW_PX1 - 4; x++) {
+        if (x >= TW_PIX0 - 4 && x <= TW_PIX1 + 4 && y >= TW_PIY0 - 4 && y <= TW_PIY1 + 4) {
+          x = TW_PIX1 + 4;  // (inside the picture: skip across it)
+          continue;
+        }
+        int d = x + (y - TW_PY0) / 2 - at;
+        if (d > -10 && d < 10) fb[y * V2_W + x] = v2Blend(fb[y * V2_W + x], wh, 150 - abs(d) * 12);
+      }
+  }
+  v2Panel(104, 340, 362, 388, 8);
+  twBall(true, 112, 346, 2);  // the Master Ball it pays
   char b[32];
   gfx->setTextColor(C565(0x78, 0x48, 0xb8));
   setSize(2);
-  setCur(160, 342);
+  setCur(160, 348);
   printT((twGot & 2) ? T(S_MASTER_PLUS) : "");  // (none if you hold the most already)
   snprintf(b, sizeof(b), "Lv %u", pet.hofLevel);
   gfx->setTextColor(V2_INK_MUTED);
-  setCur(160, 362);
+  setCur(160, 368);
   printT(b);
   v2CloseX();
 }
