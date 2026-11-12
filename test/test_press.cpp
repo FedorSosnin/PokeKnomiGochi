@@ -1,7 +1,7 @@
 // Press preview geometry (press.h).
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../press.h"
+#include "../src/press.h"
 
 static bool insideCircle(int x, int y) {
   int dx = x - 233, dy = y - 233;

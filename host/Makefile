@@ -13,17 +13,17 @@ DEFS     := -DBOARD_HOST -DBOARD_KNOMI_V2
 ifdef UI_V2
 DEFS     += -DUI_V2=$(UI_V2)
 endif
-INCLUDES := -I. -I shim -I $(ROOT)
+INCLUDES := -I. -I shim -I $(ROOT) -I $(ROOT)/src
 CXXFLAGS ?= -std=c++17 -O2 -g -Wall -Wextra -Wno-unused-parameter
 ALLFLAGS := $(CXXFLAGS) $(DEFS) $(INCLUDES)
 # The oldest macOS the Mac app runs on (mac/Info.plist says the same); without it, clang targets the Mac it builds on
 export MACOSX_DEPLOYMENT_TARGET ?= 12.0
 
 LAYER_SRC := host_canvas.cpp host_prefs.cpp host_runtime.cpp host_board.cpp host_buddy.cpp host_audio.cpp
-GAME_SRC  := $(ROOT)/pet.cpp $(ROOT)/i18n.cpp $(ROOT)/sdmon.cpp $(ROOT)/ota_update.cpp
+GAME_SRC  := $(ROOT)/src/pet.cpp $(ROOT)/src/i18n.cpp $(ROOT)/src/sdmon.cpp $(ROOT)/src/ota_update.cpp
 UNIT      := $(BUILD)/sketch_unit.cpp
 OBJS      := $(patsubst %.cpp,$(BUILD)/%.o,$(LAYER_SRC) $(notdir $(GAME_SRC))) $(BUILD)/sketch_unit.o
-HEADERS   := $(wildcard *.h shim/*.h shim/driver/*.h *.inc $(ROOT)/*.h)
+HEADERS   := $(wildcard *.h shim/*.h shim/driver/*.h *.inc $(ROOT)/src/*.h)
 
 .PHONY: all test clean
 all: $(LIB)
@@ -36,7 +36,7 @@ $(BUILD)/%.o: %.cpp $(HEADERS)
 	@mkdir -p $(BUILD)
 	$(CXX) $(ALLFLAGS) -c -o $@ $<
 
-$(BUILD)/%.o: $(ROOT)/%.cpp $(HEADERS)
+$(BUILD)/%.o: $(ROOT)/src/%.cpp $(HEADERS)
 	@mkdir -p $(BUILD)
 	$(CXX) $(ALLFLAGS) -c -o $@ $<
 

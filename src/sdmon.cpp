@@ -4,7 +4,7 @@
 #include <new>  // (placement new: PmdSide)
 #endif
 #ifdef BOARD_HOST
-#include "host/host_pak.h"
+#include "../host/host_pak.h"
 #elif defined(BOARD_KNOMI_V2)
 #include "flashpak.h"
 #else

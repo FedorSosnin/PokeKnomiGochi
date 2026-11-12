@@ -146,7 +146,7 @@ def main():
         start.append(n)
     out.append('};\n\nstatic const uint16_t LEARN_START[DEX_COUNT + 2] = {\n  ')
     out.append(', '.join(str(x) for x in start) + '\n};\n')
-    path = os.path.join(os.path.dirname(__file__), '..', 'moves.h')
+    path = os.path.join(os.path.dirname(__file__), '..', 'src', 'moves.h')
     with open(path, 'w') as f:
         f.write(''.join(out))
     print(f'moves.h: {len(used)} moves, {n} entries')

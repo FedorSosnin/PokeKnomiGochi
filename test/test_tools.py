@@ -45,7 +45,7 @@ class TestTimeZones(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(ROOT, 'timezones.h'), encoding='utf-8') as fh:
+        with open(os.path.join(ROOT, 'src', 'timezones.h'), encoding='utf-8') as fh:
             src = fh.read()
         cls.rows = re.findall(r'\{ "([^"]+)", "([^"]+)", "([^"]+)" \}', src)
         cls.default = int(re.search(r'#define TIME_ZONE_DEFAULT (\d+)', src).group(1))
@@ -199,12 +199,13 @@ class TestGeneratedFiles(unittest.TestCase):
         tmp = tempfile.mkdtemp(prefix='pokeknomigochi-gen-')
         try:
             shutil.copytree(TOOLS, os.path.join(tmp, 'tools'))
+            os.makedirs(os.path.join(tmp, 'src'))
             r = subprocess.run([sys.executable, os.path.join(tmp, 'tools', 'gen_dex.py')],
                                capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, f'gen_dex.py failed:\n{r.stderr}')
-            generated = os.path.join(tmp, 'dex.h')
+            generated = os.path.join(tmp, 'src', 'dex.h')
             self.assertTrue(os.path.exists(generated), 'gen_dex.py did not write dex.h')
-            with open(generated) as a, open(os.path.join(ROOT, 'dex.h')) as b:
+            with open(generated) as a, open(os.path.join(ROOT, 'src', 'dex.h')) as b:
                 self.assertEqual(a.read(), b.read(),
                                  'dex.h does not match what tools/gen_dex.py generates '
                                  '(regenerate it instead of editing it by hand)')
@@ -217,7 +218,7 @@ class TestGeneratedFiles(unittest.TestCase):
 
     def test_generated_files_say_they_are_generated(self):
         for name in ('dex.h', 'species.h'):
-            with open(os.path.join(ROOT, name)) as fh:
+            with open(os.path.join(ROOT, 'src', name)) as fh:
                 head = fh.read(400)
             self.assertIn('GENERATED', head, f'{name} should say it is generated')
 
@@ -310,7 +311,7 @@ class TestHowToPlayCards(unittest.TestCase):
         import test_i18n_formats as fmt
 
         def read(name):
-            with open(os.path.join(ROOT, name), encoding='utf-8') as fh:
+            with open(os.path.join(ROOT, name if name.endswith('.ino') else os.path.join('src', name)), encoding='utf-8') as fh:
                 return fh.read()
 
         cls.LANGS = fmt.LANGS
@@ -376,7 +377,7 @@ class TestHowToPlayCards(unittest.TestCase):
     def test_every_medal_card_fits(self):
         # a medal's card: how to earn it in up to six lines of 336 px under its name and status
         import test_i18n_formats as fmt
-        with open(os.path.join(ROOT, 'i18n.cpp'), encoding='utf-8') as fh:
+        with open(os.path.join(ROOT, 'src', 'i18n.cpp'), encoding='utf-8') as fh:
             rows = fmt.extract_table(fh.read(), 'MED_HOW', len(self.LANGS))
         saved = self.MAX_W
         try:
@@ -454,7 +455,7 @@ class TestTextBuffers(unittest.TestCase):
         from dex_names import LOCAL_NAMES
 
         def read(name):
-            with open(os.path.join(ROOT, name), encoding='utf-8') as fh:
+            with open(os.path.join(ROOT, name if name.endswith('.ino') else os.path.join('src', name)), encoding='utf-8') as fh:
                 return fh.read()
 
         cls.LANGS = fmt.LANGS

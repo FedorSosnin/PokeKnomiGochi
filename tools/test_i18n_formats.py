@@ -33,7 +33,7 @@ import re
 import sys
 
 HERE = os.path.dirname(__file__)
-I18N_CPP = os.path.join(HERE, '..', 'i18n.cpp')
+I18N_CPP = os.path.join(HERE, '..', 'src', 'i18n.cpp')
 
 LANGS = ['ES', 'EN', 'FR', 'DE', 'IT', 'PT', 'JA', 'KO']
 STRING_RE = re.compile(r'"(?:[^"\\]|\\.)*"')
@@ -138,10 +138,10 @@ def count_enumerators(header_path, enum_name, terminator):
 
 def main():
     source = open(I18N_CPP, encoding='utf-8').read()
-    i18n_hpp = os.path.join(HERE, '..', 'i18n.h')
+    i18n_hpp = os.path.join(HERE, '..', 'src', 'i18n.h')
 
     str_count = count_enumerators(i18n_hpp, 'StrId', 'STR_COUNT')
-    with open(os.path.join(HERE, '..', 'pet.h'), encoding='utf-8') as fh:
+    with open(os.path.join(HERE, '..', 'src', 'pet.h'), encoding='utf-8') as fh:
         med_count = int(re.search(r'#define\s+MED_COUNT\s+(\d+)', fh.read()).group(1))
 
     errors = []

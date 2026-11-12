@@ -4,7 +4,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
-#include "../ui_v2.h"  // (relative: the Mac app builds main.mm with only -I host)
+#include "../src/ui_v2.h"  // (relative: the Mac app builds main.mm with only -I host)
 
 #ifdef __cplusplus
 extern "C" {

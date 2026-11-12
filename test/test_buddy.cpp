@@ -1,8 +1,8 @@
 // Buddy protocol and rules (buddy.h).
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../buddy.h"
-#include "../battle.h"
+#include "../src/buddy.h"
+#include "../src/battle.h"
 
 static BuddyMsg hello(uint32_t from, int16_t dex) {
   BuddyMsg m;

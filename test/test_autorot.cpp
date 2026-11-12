@@ -1,7 +1,7 @@
 // Automatic screen rotation (autorot.h).
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../autorot.h"
+#include "../src/autorot.h"
 
 TEST(autorot, each_side_up) {
   CHECK_EQ(rotFromGravity(0, -1, 1), 0);

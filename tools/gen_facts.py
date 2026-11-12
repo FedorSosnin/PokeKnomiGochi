@@ -28,7 +28,7 @@ def main():
     out.append('static const char *const DEX_FACT[152] = {\n  "",\n')
     out.extend(f'  "{FACTS[n]}",  // {n}\n' for n in range(1, 152))
     out.append('};\n')
-    path = os.path.join(os.path.dirname(__file__), '..', 'dexfacts.h')
+    path = os.path.join(os.path.dirname(__file__), '..', 'src', 'dexfacts.h')
     with open(path, 'w', encoding='ascii') as f:
         f.write(''.join(out))
     print('saved dexfacts.h (151 facts)')

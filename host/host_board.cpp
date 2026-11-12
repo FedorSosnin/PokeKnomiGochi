@@ -18,7 +18,7 @@ extern "C" __declspec(dllimport) unsigned long long __stdcall GetTickCount64(voi
 #endif
 #include <math.h>
 #include "host.h"
-#include "../timezones.h"
+#include "../src/timezones.h"
 
 static double monoS() {  // seconds; keeps counting while asleep where the system allows
 #ifdef _WIN32

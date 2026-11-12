@@ -1,11 +1,11 @@
 // Catching, quiz and daily visit (minigames.h).
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../minigames.h"
-#include "../pokerun.h"
-#include "../surf.h"
-#include "../pet.h"
-#include "../dex.h"
+#include "../src/minigames.h"
+#include "../src/pokerun.h"
+#include "../src/surf.h"
+#include "../src/pet.h"
+#include "../src/dex.h"
 
 TEST(catching, only_a_direct_throw_hits) {
   CHECK(catchHit(233, 233));

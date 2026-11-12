@@ -1,5 +1,5 @@
 #include "framework.h"
-#include "../batcurve.h"
+#include "../src/batcurve.h"
 
 TEST(batcurve, extremes) {
   CHECK_EQ(batPercentFromMv(4300), 100);

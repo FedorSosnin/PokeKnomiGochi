@@ -382,6 +382,20 @@ Game rules run on your computer without a board:
 
 The code also builds for the Waveshare ESP32-S3-Touch-AMOLED-1.75, a bigger round board with a microSD slot. [`docs/WAVESHARE.md`](docs/WAVESHARE.md) explains how to build it, flash it and load the sprites.
 
+### What's where
+
+| Folder | What's in it |
+|---|---|
+| `PokeKnomiGochi.ino`, [`src/`](src) | The game itself, the same code on every device |
+| [`host/`](host) | What lets the game run on a computer: the screen, the save, sound and buddies |
+| [`mac/`](mac), [`windows/`](windows), [`webgame/`](webgame) | The Mac, Windows and browser apps around it |
+| [`web/`](web) | The GitHub Pages site, with the Knomi's browser installer and its firmware |
+| [`relay/`](relay) | The buddy relay for the browser version |
+| [`tools/`](tools) | The sprite packs and the scripts that make them, the Pokédex data and the release scripts |
+| [`test/`](test) | The game-rule tests that run without a board |
+| [`docs/`](docs) | How it all works, the charts and the screenshots |
+| [`print/`](print) | The 3D-printed case |
+
 ## PokeWebGochi (browser)
 
 **[Play in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet: the same game, the Knomi screen in a Poké Ball ring on a black page. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.

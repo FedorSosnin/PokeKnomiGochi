@@ -1,7 +1,7 @@
 // Wi-Fi updates: version order and reading update.json (ota.h).
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../ota.h"
+#include "../src/ota.h"
 
 TEST(ota, versions_compare_number_by_number) {
   CHECK_EQ(otaVersionCmp("1.19", "1.18"), 1);

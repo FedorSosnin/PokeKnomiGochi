@@ -195,7 +195,7 @@ def main():
     c = Counter(rarities)
     print(f"bases: {c['R_COMMON']} common, {c['R_RARE']} rare, {c['R_LEGENDARY']} legendary, {c['R_EVO']} evolution-only")
 
-    path = os.path.join(os.path.dirname(__file__), '..', 'dex.h')
+    path = os.path.join(os.path.dirname(__file__), '..', 'src', 'dex.h')
     open(path, 'w').write(''.join(out))
     print(f"saved {os.path.normpath(path)} ({len(DEX)} species)")
     write_evolution_chart()

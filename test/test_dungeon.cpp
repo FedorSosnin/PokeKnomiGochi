@@ -2,8 +2,8 @@
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "shim/Preferences.h"
-#include "../dungeon.h"
-#include "../pet.h"
+#include "../src/dungeon.h"
+#include "../src/pet.h"
 #include <algorithm>
 #include <stdio.h>
 #include <vector>

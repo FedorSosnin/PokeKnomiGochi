@@ -2,8 +2,8 @@
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "shim/Preferences.h"
-#include "../i18n.h"
-#include "../pet.h"  // MED_COUNT
+#include "../src/i18n.h"
+#include "../src/pet.h"  // MED_COUNT
 #include <ctype.h>
 #include <string.h>
 #include <vector>

@@ -1,7 +1,7 @@
 // Poke Ball Volley physics (volley.h).
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../volley.h"
+#include "../src/volley.h"
 
 TEST(volley, walls_bounce_the_ball_back) {
   VbBall b = { VB_LEFT + 2.0f, 200, -100, 50, 0 };

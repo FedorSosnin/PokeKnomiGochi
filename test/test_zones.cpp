@@ -2,10 +2,10 @@
 #include "framework.h"
 #include "shim/Arduino.h"
 #include "shim/Preferences.h"
-#include "../pet.h"
-#include "../zones.h"
-#include "../zones_art.h"
-#include "../battle.h"
+#include "../src/pet.h"
+#include "../src/zones.h"
+#include "../src/zones_art.h"
+#include "../src/battle.h"
 #include <set>
 
 static void zoneCatchAllBut(Pet &p, uint8_t z, int16_t keep) {

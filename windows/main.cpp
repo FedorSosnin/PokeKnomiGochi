@@ -30,7 +30,7 @@
 #include "resources.h"
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
 #include "version.h"
-#include "update_key.h"  // checks the updates' signature
+#include "src/update_key.h"  // checks the updates' signature
 
 #define APP_NAME "PokeWinGochi"
 #define APP_NAME_W L"PokeWinGochi"

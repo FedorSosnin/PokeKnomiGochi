@@ -14,7 +14,7 @@ PUB=$(mktemp)
 openssl ec -in "$KEY" -pubout -out "$PUB" 2>/dev/null
 # the key that signs must be the one the apps carry
 WANT=$(openssl ec -in "$KEY" -pubout -outform DER 2>/dev/null | tail -c 65 | xxd -p | tr -d '\n')
-HAVE=$(grep 'UPDATE_PUBLIC_KEY\[' update_key.h | grep -o '0x[0-9a-f][0-9a-f]' | sed 's/0x//' | tr -d '\n')
+HAVE=$(grep 'UPDATE_PUBLIC_KEY\[' src/update_key.h | grep -o '0x[0-9a-f][0-9a-f]' | sed 's/0x//' | tr -d '\n')
 [ "$WANT" = "$HAVE" ] || { echo "update_key.h does not match the signing key"; rm -f "$PUB"; exit 1; }
 for f in build/mac/PokeMacGochi.zip build/win/PokeWinGochi.exe; do
   openssl dgst -sha256 -sign "$KEY" -out "$f.sig" "$f"

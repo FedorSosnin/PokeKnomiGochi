@@ -1,6 +1,6 @@
 // Knomi Tower's balance, with the game's own battle rules (battle.h) and the tower's (tower.h): whole climbs for a few
 // teams, and how far they get. Built and run by hand while tuning tower.h's numbers:
-//   clang++ -std=c++17 -O2 -I test/shim -I . tools/tower_sim.cpp -o build/tower_sim && build/tower_sim
+//   clang++ -std=c++17 -O2 -I test/shim -I src tools/tower_sim.cpp -o build/tower_sim && build/tower_sim
 #include "Arduino.h"
 #include "tower.h"
 #include <stdio.h>

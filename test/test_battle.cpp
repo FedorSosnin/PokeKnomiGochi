@@ -1,7 +1,7 @@
 // Battle rules (battle.h).
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../battle.h"
+#include "../src/battle.h"
 #include <stdlib.h>
 
 TEST(battle, gen_1_type_chart) {

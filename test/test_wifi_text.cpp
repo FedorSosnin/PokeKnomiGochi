@@ -1,11 +1,11 @@
 // Fun facts, line wrapping and the wifi form.
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../textwrap.h"
-#include "../wifi_form.h"
-#include "../kblayout.h"
-#include "../dex.h"
-#include "../dexfacts.h"
+#include "../src/textwrap.h"
+#include "../src/wifi_form.h"
+#include "../src/kblayout.h"
+#include "../src/dex.h"
+#include "../src/dexfacts.h"
 #include <string.h>
 
 TEST(facts, all_151_have_a_fact_and_fit_in_four_lines) {

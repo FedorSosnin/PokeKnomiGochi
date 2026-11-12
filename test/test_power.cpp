@@ -1,6 +1,6 @@
 // Power policy (power.h).
 #include "framework.h"
-#include "../power.h"
+#include "../src/power.h"
 
 static PowerCtx ctx(uint32_t idle) {
   PowerCtx c = {};

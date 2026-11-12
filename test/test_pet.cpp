@@ -1,10 +1,10 @@
 // Tests of the pet logic (pet.cpp) on top of the host shims.
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../pet.h"
-#include "../dex.h"
-#include "../zones.h"
-#include "../battle.h"
+#include "../src/pet.h"
+#include "../src/dex.h"
+#include "../src/zones.h"
+#include "../src/battle.h"
 #include <string.h>
 
 // ---------------------------------------------------------------- helpers
@@ -2162,7 +2162,7 @@ TEST(trade, only_the_form_you_raise_stays) {
 }
 
 #if UI_V2
-#include "../tower.h"
+#include "../src/tower.h"
 // ---------------------------------------------------------------- Knomi Tower (pet.cpp's part)
 TEST(tower, friends_cheer_after_lost_climbs_until_a_new_best) {
   Pet p;

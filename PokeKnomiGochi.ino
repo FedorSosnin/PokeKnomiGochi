@@ -15,47 +15,47 @@
 #ifdef BOARD_HOST  // Mac and others: built as a Knomi with different hardware underneath (see host/README.md)
 #include "host/host_hal.h"
 #elif defined(BOARD_KNOMI_V2)
-#include "knomi_hal.h"
+#include "src/knomi_hal.h"
 #else
 #include "TouchDrvCSTXXX.hpp"
 #endif
 #include <U8g2lib.h>  // CJK fonts (Japanese); see applyLangFont()
 #include <esp_sleep.h>
 #include <driver/gpio.h>
-#include "pin_config.h"
-#include "species.h"
-#include "dex.h"
-#include "pet.h"
-#include "sdmon.h"
-#include "rtcbat.h"
-#include "timezones.h"
-#include "i18n.h"
-#include "audio.h"
-#include "blit.h"
-#include "power.h"
-#include "battle.h"
-#include "dexfacts.h"
-#include "textwrap.h"
-#include "wifi_setup.h"
-#include "kblayout.h"
-#include "minigames.h"
-#include "pokerun.h"
-#include "surf.h"
-#include "dungeon.h"
-#include "zones.h"
-#include "zones_art.h"
-#include "autorot.h"
-#include "press.h"
-#include "volley.h"
-#include "ota.h"
-#include "ota_update.h"
-#include "buddy_net.h"
+#include "src/pin_config.h"
+#include "src/species.h"
+#include "src/dex.h"
+#include "src/pet.h"
+#include "src/sdmon.h"
+#include "src/rtcbat.h"
+#include "src/timezones.h"
+#include "src/i18n.h"
+#include "src/audio.h"
+#include "src/blit.h"
+#include "src/power.h"
+#include "src/battle.h"
+#include "src/dexfacts.h"
+#include "src/textwrap.h"
+#include "src/wifi_setup.h"
+#include "src/kblayout.h"
+#include "src/minigames.h"
+#include "src/pokerun.h"
+#include "src/surf.h"
+#include "src/dungeon.h"
+#include "src/zones.h"
+#include "src/zones_art.h"
+#include "src/autorot.h"
+#include "src/press.h"
+#include "src/volley.h"
+#include "src/ota.h"
+#include "src/ota_update.h"
+#include "src/buddy_net.h"
 
-#include "ui_v2.h"  // UI_V2: 1 draws V2, the new look; 0 draws 1.51's screens
+#include "src/ui_v2.h"  // UI_V2: 1 draws V2, the new look; 0 draws 1.51's screens
 #if UI_V2
-#include "layout_v2.h"
-#include "palettes_v2.h"
-#include "sprites_v2.h"
+#include "src/layout_v2.h"
+#include "src/palettes_v2.h"
+#include "src/sprites_v2.h"
 #endif
 
 // Firmware version. Bump this number on every release (and manifest.json for
@@ -2349,7 +2349,7 @@ bool screenKeyValid = false;  // (the host renderer invalidates it between scene
 uint32_t lastScreenKey = 0;
 
 #if UI_V2
-#include "scene_v2.h"  // V2's home: header, bars, band, icons (uses the helpers above)
+#include "src/scene_v2.h"  // V2's home: header, bars, band, icons (uses the helpers above)
 #endif
 
 // Draws a frame and returns true if it flushed it to the panel.

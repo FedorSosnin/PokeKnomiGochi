@@ -1,7 +1,7 @@
 // forRuns (blit.h): painting by runs leaves exactly the same pixels as
 // painting pixel by pixel.
 #include "framework.h"
-#include "../blit.h"
+#include "../src/blit.h"
 #include <vector>
 
 // toy canvas: draws one s x s fillRect per pixel, or one per run

@@ -3,7 +3,7 @@
 // PokeKnomiGochi.ino includes this after its drawing helpers, and only with UI_V2 on: it draws with them
 // (gfx, setSize, printT, drawMap...) and reads the sketch's state (pet, gNight). Positions are in
 // layout_v2.h and colours in palettes_v2.h.
-#include "host/glcdfont.h"  // the classic 5x7 font's pixels, for the labels turned along the bars
+#include "../host/glcdfont.h"  // the classic 5x7 font's pixels, for the labels turned along the bars
 
 // s blended over d, a = 0..256
 static inline uint16_t v2Blend(uint16_t d, uint16_t s, int a) {

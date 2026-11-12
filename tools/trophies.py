@@ -1132,7 +1132,7 @@ def sheet(path):
 
 
 # ---------------------------------------------------------------- the header
-def emit(path='trophies_v2.h'):
+def emit(path='src/trophies_v2.h'):
     pal = [None]
     idx = {}
 

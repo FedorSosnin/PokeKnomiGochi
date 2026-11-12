@@ -2,7 +2,7 @@
 // change to the numbers can't make the Legend free or the first gate a walk for a new Pokemon.
 #include "framework.h"
 #include "shim/Arduino.h"
-#include "../tower.h"
+#include "../src/tower.h"
 #include <stdlib.h>
 
 TEST(tower, floors_types_and_gates) {
