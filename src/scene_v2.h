@@ -111,15 +111,60 @@ static void v2GlyphTurned(uint16_t *fb, uint8_t ch, int s, float px, float py, f
   }
 }
 
+// Its dark edge, drawn before the letters (Fedor, of the bars' words: "too hard to see", then "White with dark
+// outlines looks much better"): every pixel within e px of the letter takes col, so the white reads on the sky,
+// the sand, the fills and a dark scene alike. One pass, by each pixel's distance to the nearest lit font cell; on
+// a computer its outside edge is soft, as the letters' are
+static void v2GlyphEdge(uint16_t *fb, uint8_t ch, int s, float px, float py, float tx, float ty, uint16_t col, float e) {
+  const int R = s * 5 + 3 + (int)e;
+  const float lim = e / s + 0.75f;  // in font cells: how far past the 5 x 8 box a pixel can still be edge
+  for (int y = (int)py - R; y <= (int)py + R; y++) {
+    if (y < 0 || y > 465) continue;
+    for (int x = (int)px - R; x <= (int)px + R; x++) {
+      if (x < 0 || x > 465) continue;
+      float dx = x + 0.5f - px, dy = y + 0.5f - py;
+      float u = (dx * tx + dy * ty) / s + 2.5f, v = (dy * tx - dx * ty) / s + 3.5f;  // into the font, as above
+      if (u < -lim || v < -lim || u >= 5 + lim || v >= 8 + lim) continue;
+      int i0 = (int)floorf(u - lim), i1 = (int)(u + lim), j0 = (int)floorf(v - lim), j1 = (int)(v + lim);
+      if (i0 < 0) i0 = 0;
+      if (i1 > 4) i1 = 4;
+      if (j0 < 0) j0 = 0;
+      if (j1 > 7) j1 = 7;
+      float best = 1e9f;  // the nearest lit cell, squared, in cells
+      for (int i = i0; i <= i1; i++) {
+        uint8_t bits = GLCD_FONT[ch * 5 + i];
+        if (!bits) continue;
+        float du = u < i ? i - u : u > i + 1 ? u - (i + 1) : 0;
+        for (int j = j0; j <= j1; j++) {
+          if (!(bits >> j & 1)) continue;
+          float dv = v < j ? j - v : v > j + 1 ? v - (j + 1) : 0, d2 = du * du + dv * dv;
+          if (d2 < best) best = d2;
+        }
+      }
+      if (best > 1e8f) continue;
+      float d = sqrtf(best) * s;  // px from the letter
+#ifdef BOARD_HOST
+      float c = e + 0.5f - d;
+      if (c <= 0) continue;
+      uint16_t &q = fb[y * 466 + x];
+      q = c >= 1 ? col : v2Blend(q, col, (int)(c * 256));
+#else
+      if (d <= e) fb[y * 466 + x] = col;
+#endif
+    }
+  }
+}
+
 // the bytes of the UTF-8 character at s
 static int v2Utf8Len(const char *s) {
   uint8_t c = (uint8_t)*s;
   return c < 0x80 ? 1 : c < 0xE0 ? 2 : c < 0xF0 ? 3 : 4;
 }
 
-// A bar's label, centred on it along its middle radius. Latin letters turn with the bar, their tops to the
-// rim (bottom to top on the left, top to bottom on the right). Japanese and Korean stand upright, one
-// under the other, as they're written in columns anyway.
+// A bar's label, centred on it along its middle radius, in col with a dark edge (v2GlyphEdge). Latin letters turn
+// with the bar, their tops to the rim (bottom to top on the left, top to bottom on the right). Japanese and Korean
+// stand upright, one under the other, as they're written in columns anyway; their edge is the letter drawn dark
+// round it first.
 static void v2BarLabel(uint16_t *fb, const char *lab, float midDeg, uint16_t col) {
   const float D = 0.01745329f, rm = (V2_BAR_RIN + V2_BAR_ROUT) / 2.0f;
   if (gCjkFont) {
@@ -136,8 +181,16 @@ static void v2BarLabel(uint16_t *fb, const char *lab, float midDeg, uint16_t col
       p += len;
       float a = phi + adv / 2 / rm;
       phi += adv / rm;
-      int cx = (int)(CX + rm * cosf(a)), cy = (int)(CY + rm * sinf(a));
-      setCur(cx - textW(one, 2) / 2, cy - 8);
+      int cx = (int)(CX + rm * cosf(a)), cy = (int)(CY + rm * sinf(a)), x = cx - textW(one, 2) / 2, y = cy - 8;
+      gfx->setTextColor(UI_INK);
+      for (int oy = -2; oy <= 2; oy++)
+        for (int ox = -2; ox <= 2; ox++) {
+          if ((!ox && !oy) || abs(ox) + abs(oy) > 3) continue;
+          setCur(x + ox, y + oy);
+          printT(one);
+        }
+      gfx->setTextColor(col);
+      setCur(x, y);
       printT(one);
     }
     return;
@@ -145,6 +198,10 @@ static void v2BarLabel(uint16_t *fb, const char *lab, float midDeg, uint16_t col
   const int s = 2, adv = 6 * s;
   int n = strlen(lab);
   float phi = midDeg * D - (float)adv * n / rm / 2;
+  for (int i = 0; i < n; i++) {  // every letter's edge first, so none lies over a letter beside it
+    float a = phi + (i + 0.5f) * adv / rm;
+    v2GlyphEdge(fb, (uint8_t)lab[i], s, CX + rm * cosf(a), CY + rm * sinf(a), -sinf(a), cosf(a), UI_INK, 2.0f);
+  }
   for (int i = 0; i < n; i++) {
     float a = phi + (i + 0.5f) * adv / rm;
     v2GlyphTurned(fb, (uint8_t)lab[i], s, CX + rm * cosf(a), CY + rm * sinf(a), -sinf(a), cosf(a), col);

@@ -1079,6 +1079,13 @@ void handleSerial() {
       if (bPeers[i].on)
         Serial.printf("  %d: %08lx #%d Lv.%u\n", i, (unsigned long)bPeers[i].id, bPeers[i].dex, bPeers[i].level);
     Serial.println("DONE");
+#if UI_V2
+  } else if (line.startsWith("NEEDS ") && pet.noSave) {  // V2: "NEEDS food joy energy hygiene", 0-100 (screenshots)
+    int f = 0, j = 0, e = 0, h = 0;
+    sscanf(line.c_str() + 6, "%d %d %d %d", &f, &j, &e, &h);
+    pet.fullness = f, pet.joy = j, pet.energy = e, pet.hygiene = h;
+    Serial.println("DONE");
+#endif
   } else if (line.startsWith("FAKEBUDDY ") && pet.noSave) {  // "FAKEBUDDY dex level [nick]": screenshots without a second board
     char nick[12] = "";
     int dex = 0, lv = 0;
