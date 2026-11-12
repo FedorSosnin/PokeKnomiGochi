@@ -22,7 +22,10 @@
                                // there)
 #define V2_SLIDE_ENTRY_Y 392   // an entry: its panel's rim ends 389, the X's starts 396
 #define V2_SLIDE_TRADE_Y 397   // the trade grid: its page line sits on its panel's rim, so it moves with the grid
-#define V2_SLIDE_TRAVEL_Y 398  // Travel's two islands: the whole map moves, all but the X (its rim starts 398)
+#define V2_SLIDE_TRAVEL_Y V2_W  // Travel's two islands: the whole map moves, to the bottom; only the X stays (stillR).
+                               // (Rows from 398 down stood still: the new island's coast showed under the old one's
+                               // while it slid, Fedor: "the tower appears in the bottom section while the animation
+                               // moves")
 #define V2_SLIDE_ARROW_R 30    // round a side button (its rim and shadow too): the new page's, still
 #define V2_SLIDE_SENT 0x0821   // in a page kept for a slide, a pixel of the room (a dark grey nothing is drawn in)
 #define V2_SLIDE_WIFI_ROWS 5   // the Wi-Fi list's rows a page (WIFI_ROWS, further down the sketch, checked there)
@@ -31,6 +34,7 @@
 struct V2PageKey {
   uint8_t menu;
   int16_t page, pages, arrowY, still = V2_SLIDE_CHROME_Y;  // still: the rows from here down don't move
+  int16_t stillR = 0;  // and, if not 0, the X (at CX, V2_CLOSE_Y) in a circle this big doesn't, as a side button
 };
 static V2PageKey v2PageKeyNow() {
   V2PageKey k = { 0, 0, 0, V2_PAGE_ARROW_Y };
@@ -54,7 +58,7 @@ static V2PageKey v2PageKeyNow() {
     return { 5, (int16_t)galleryPage, DEX_PAGES, PAGE_ARROW_Y, V2_SLIDE_DEX_Y };
   }
   if (gameOpen || dungeonOpen || runOpen || surfOpen || battleOpen || quizOpen || gamesMenuOpen) return k;
-  if (zoneScreen == ZS_PICK) return { 50, (int16_t)v2IslePage, 2, V2_PAGE_ARROW_Y, V2_SLIDE_TRAVEL_Y };  // Knomi Island, then Knomi Tower's islet
+  if (zoneScreen == ZS_PICK) return { 50, (int16_t)v2IslePage, 2, V2_PAGE_ARROW_Y, V2_SLIDE_TRAVEL_Y, V2_SLIDE_ARROW_R };  // Knomi Island, then Knomi Tower's islet
   if (zoneScreen == ZS_TOWER) {  // Knomi Tower (tower_v2.h): picking two friends, the Pokedex's grid
     if (twView == TW_PICK) k = { 51, (int16_t)twPickPage, (int16_t)twPickPages(), V2_PAGE_ARROW_Y, V2_SLIDE_DEX_Y };
     return k;
@@ -117,7 +121,8 @@ static bool v2SlideOnArrow(const V2PageKey &k, int x, int y) {
 // the two pages ready to move: on a room, each pixel of it (and the side buttons of both pages) marked as room, and
 // each row's span of what moves
 static void v2SlidePrepare(const V2PageKey &from, const V2PageKey &to) {
-  const uint16_t *room = v2SceneKey >= 0 ? v2SceneBuf : nullptr;
+  // (Travel's islands slide whole, sea and all: with its rows to the bottom, the sea would pass for a room)
+  const uint16_t *room = v2SceneKey >= 0 && !to.stillR ? v2SceneBuf : nullptr;
   v2SlideRoom = false;
   if (room) {  // the room: only if both pages show it (at least a third of each, outside their side buttons)
     long same[2] = { 0, 0 };
@@ -145,6 +150,12 @@ static void v2SlidePrepare(const V2PageKey &from, const V2PageKey &to) {
           for (int x = cx - r; x <= cx + r; x++)
             if (x >= 0 && x < V2_W && (x - cx) * (x - cx) + (y - k.arrowY) * (y - k.arrowY) <= r * r) p[y * V2_W + x] = p[above * V2_W + x];
         }
+      }
+      if (k.stillR) {  // the X too, filled from the row above it
+        int r2 = k.stillR, above = V2_CLOSE_Y - r2 - 1;
+        for (int y = V2_CLOSE_Y - r2; y <= V2_CLOSE_Y + r2 && y < V2_W; y++)
+          for (int x = CX - r2; x <= CX + r2; x++)
+            if ((x - CX) * (x - CX) + (y - V2_CLOSE_Y) * (y - V2_CLOSE_Y) <= r2 * r2) p[y * V2_W + x] = p[above * V2_W + x];
       }
     }
     for (int y = 0; y < to.still; y++) {
@@ -194,6 +205,7 @@ static void v2SlideCompose(float p) {
     v2SlideRow(row, v2SlideNew + y * V2_W, nOff, v2SlideSpan[1][y]);
   }
   memcpy(fb + still * V2_W, v2SlideNew + still * V2_W, (size_t)(V2_W - still) * V2_W * sizeof(uint16_t));
+  if (v2SlideTo.stillR) v2CloseX();  // the X, still (both pages slide without theirs), as the side buttons
   drawPageArrows(v2SlideTo.page, v2SlideTo.pages, v2SlideTo.arrowY);  // the new page's side buttons, still
 }
 // each frame a screen flushes (pressOverlay(), before the press preview): a slide's next frame in place of what was
