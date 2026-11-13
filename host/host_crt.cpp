@@ -10,11 +10,13 @@ namespace {
 const int C = HOST_CANVAS_SIZE;    // 466
 const int Q = (C + 3) / 4;         // the halo's quarter-size grid (117)
 const float K = 0.09f;             // the glass's bulge: the middle magnified, the rim squeezed (0.11 at first: Fedor,
-                                   // "lessen the distortion but just a tiny bit. On medium size it can be a bit overwhelming")
+                                   // "lessen the distortion but just a tiny bit. On medium size it can be a bit overwhelming");
+                                   // Lite's is half
 const float SHRINK = 0.965f;       // the picture stops short of the rim (the tube's black edge)
 const float SAT = 1.18f, CON = 1.08f;  // CRT colour: richer, deeper blacks
 const float BLOOM = 0.22f;         // the glow on bright pixels (2.5 game pixels wide)
 const float HAL_R = 0.20f, HAL_G = 0.15f, HAL_B = 0.10f;  // the halo in the glass: wide and warm (13 game pixels)
+const float LITE = 0.5f;           // Lite: the glow, the halo and the bulge at half
 
 // per frame
 uint8_t gAdj[C * C * 3];           // the picture in CRT colour
@@ -23,6 +25,7 @@ uint8_t gBeamL[C * 2 * C];         // its brightness, which sets each line's wid
 uint8_t gGlowB[C * C * 3], gGlowH[C * C * 3];  // what the glow and the halo add to each canvas pixel (both smooth:
                                                // read at the nearest one)
 int gSide = 0;
+bool gLite = false;                // the look the glass's tables are made for
 float gStep = 1, gPhase = 0;       // canvas pixels per screen pixel; the lines' phase (see hostCrtPrepare)
 int gSub = 1;
 // per side: through the curved glass
@@ -32,6 +35,24 @@ float gLut[65][64];                // a line's light: exp(-(d/w)^2) * 1.2 by dis
 bool gLutMade = false;
 
 inline uint8_t clamp8(float v) { return v <= 0 ? 0 : v >= 255 ? 255 : (uint8_t)(v + 0.5f); }
+inline float bulge(bool lite) { return lite ? K * LITE : K; }
+
+// Whites and light greys stay apart (Fedor: "Some of the white and light gray get completely washed out on CRT
+// mode"). The glow and the halo fade out as a pixel nears white, by its brightness cubed, so they still light the
+// dark and middle tones as before. And a colour that runs past 255 is scaled down whole, keeping its tint, instead
+// of each channel clipping on its own toward white.
+inline float glowFade(const float *v) {
+  float l = (0.3f * v[0] + 0.59f * v[1] + 0.11f * v[2]) / 255;
+  if (l > 1) l = 1;
+  return 1 - l * l * l;
+}
+inline void fitWhole(float *v) {
+  float t = fmaxf(v[0], fmaxf(v[1], v[2]));
+  if (t > 255) {
+    float k = 255 / t;
+    v[0] *= k, v[1] *= k, v[2] *= k;
+  }
+}
 
 // a Gaussian blur as three box blurs (as Pillow's), edges extended, on a planar w x h float image
 void boxesForGauss(float sigma, int sizes[3]) {
@@ -70,8 +91,10 @@ void gauss(float *buf, int w, int h, float sigma) {
 }
 
 // the glass for a side: where each screen pixel looks into the canvas, the rim, the reflection
-void makeSide(int side) {
+void makeSide(int side, bool lite) {
   gSide = side;
+  gLite = lite;
+  const float kb = bulge(lite);
   size_t n = (size_t)side * side;
   gMapX.assign(n, -1);
   gMapY.assign(n, -1);
@@ -95,7 +118,7 @@ void makeSide(int side) {
       if (ang < 0) ang += 360;
       arc[i] = (r <= arcR && r >= arcR - arcW && ang >= 200 && ang <= 285) ? 70.0f : 0.0f;
       // the bulge: the screen pixel at radius r (0..1) shows the canvas at r * (1 - K + K r^2) / SHRINK
-      float nx = dx / R, ny = dy / R, f = (1 - K + K * (nx * nx + ny * ny)) / SHRINK;
+      float nx = dx / R, ny = dy / R, f = (1 - kb + kb * (nx * nx + ny * ny)) / SHRINK;
       float sx = (nx * f + 1) * C / 2, sy = (ny * f + 1) * C / 2;
       if (r <= R && sx >= 0 && sy >= 0 && sx < C && sy < C) {
         gMapX[i] = (int16_t)(sx * 16);
@@ -119,7 +142,7 @@ void makeSide(int side) {
 
 }  // namespace
 
-void hostCrtPrepare(const uint8_t *rgba, int side) {
+void hostCrtPrepare(const uint8_t *rgba, int side, bool lite) {
   if (!gLutMade) {
     for (int di = 0; di <= 64; di++)
       for (int li = 0; li < 64; li++) {
@@ -128,7 +151,7 @@ void hostCrtPrepare(const uint8_t *rgba, int side) {
       }
     gLutMade = true;
   }
-  if (side != gSide) makeSide(side);
+  if (side != gSide || lite != gLite) makeSide(side, lite);
   // CRT colour (as Pillow's Color then Contrast): saturation round each pixel's grey, contrast round the
   // picture's mean grey, whites a touch warm
   static uint8_t sat[C * C * 3];
@@ -190,7 +213,7 @@ void hostCrtPrepare(const uint8_t *rgba, int side) {
     gauss(half[c], H, H, 1.25f);
     gauss(quart[c], Q, Q, 13.0f / 4);
   }
-  const float hk[3] = {HAL_R, HAL_G, HAL_B};
+  const float gs = lite ? LITE : 1.0f, bk = BLOOM * gs, hk[3] = {HAL_R * gs, HAL_G * gs, HAL_B * gs};
   for (int y = 0; y < C; y++) {
     for (int c = 0; c < 3; c++) {
       const float *h0 = half[c] + upH0[y] * H, *h1 = half[c] + upH1[y] * H;
@@ -203,7 +226,7 @@ void hostCrtPrepare(const uint8_t *rgba, int side) {
       for (int c = 0; c < 3; c++) {
         float b = rowH[c][upH0[x]] + (rowH[c][upH1[x]] - rowH[c][upH0[x]]) * upHw[x];
         float h = rowQ[c][upQ0[x]] + (rowQ[c][upQ1[x]] - rowQ[c][upQ0[x]]) * upQw[x];
-        gb[x * 3 + c] = (uint8_t)(int)(b * BLOOM);
+        gb[x * 3 + c] = (uint8_t)(int)(b * bk);
         gh[x * 3 + c] = (uint8_t)(int)(h * hk[c]);
       }
   }
@@ -239,13 +262,12 @@ void hostCrtRows(uint8_t *out, int stride, bool bgra, int y0, int y1, uint32_t f
         int gi = ((int)sy * C + (int)sx) * 3;
         if (gi > (C * C - 1) * 3) gi = (C * C - 1) * 3;
         float line[3] = {cr * f, cg * f, cb * f};
-        for (int c = 0; c < 3; c++) {
-          float v = line[c] > 255 ? 255 : line[c];
-          v += gGlowB[gi + c];
-          if (v > 255) v = 255;
-          v += gGlowH[gi + c];
-          pic[c] = v > 255 ? 255 : v;
-        }
+        fitWhole(line);  // whites and light greys stay apart (glowFade)
+        float w = glowFade(line);
+        for (int c = 0; c < 3; c++) line[c] += gGlowB[gi + c] * w;
+        w = glowFade(line);
+        for (int c = 0; c < 3; c++) pic[c] = line[c] + gGlowH[gi + c] * w;
+        fitWhole(pic);
       }
       float sh = gShade[i] / 255.0f, a = gGlass[i] / 255.0f;
       // grain: about 3 levels either way, new every frame
@@ -270,9 +292,10 @@ void hostCrtRows(uint8_t *out, int stride, bool bgra, int y0, int y1, uint32_t f
   }
 }
 
-bool hostCrtPoint(float x, float y, int side, float &cx, float &cy) {
+bool hostCrtPoint(float x, float y, int side, float &cx, float &cy, bool lite) {
+  const float kb = bulge(lite);
   float R = side / 2.0f, nx = (x - R) / R, ny = (y - R) / R;
-  float f = (1 - K + K * (nx * nx + ny * ny)) / SHRINK;
+  float f = (1 - kb + kb * (nx * nx + ny * ny)) / SHRINK;
   cx = (nx * f + 1) * C / 2;
   cy = (ny * f + 1) * C / 2;
   return cx >= 0 && cy >= 0 && cx < C && cy < C;

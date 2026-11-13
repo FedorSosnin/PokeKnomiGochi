@@ -36,7 +36,10 @@
 static const CGFloat kSizes[] = {245, 300, 478};
 #define DEFAULT_SIZE 478.0  // it opens at Large, with the CRT screen on (Fedor: "I would prefer if this effect on
                             // large was how all of the apps opened by default"): Size and CRT Screen in the menu
-static bool gCrt = true;    // the CRT screen (host_crt.h), saved as "crt"
+// the CRT screen (host_crt.h), saved as "crt": Off, On, or Lite (Fedor: "CRT On, Half/Lite, OFF. With Lite being half
+// the effect in both glow and distortion"). 2.1.2 saved it as on or off, the same byte
+enum { CRT_OFF, CRT_ON, CRT_LITE };
+static int gCrt = CRT_ON;
 
 // New versions: the newest "mac-v*" release on GitHub. Checked at launch and every UPDATE_EVERY_S by the
 // real clock (time the Mac sleeps counts, as it doesn't for a timer), looked at every UPDATE_POLL_S, so a
@@ -445,7 +448,7 @@ static NSCursor *fingerCursor(bool pressed) {
   if (gCrt) {  // the CRT screen, made at the view's own pixels (no stretch after), its rows on all the cores
     int side = (int)lround(self.bounds.size.width * (self.window ? self.window.backingScaleFactor : 2.0));
     if (side < 64) side = 64;
-    hostCrtPrepare(_rgba, side);
+    hostCrtPrepare(_rgba, side, gCrt == CRT_LITE);
     static uint32_t frame = 0;
     const uint32_t fr = ++frame;
     size_t bytes = (size_t)side * side * 4;
@@ -523,7 +526,7 @@ static NSCursor *fingerCursor(bool pressed) {
   if (gCrt) {  // through the CRT's curved glass, so it lands on what's shown
     CGFloat w = self.bounds.size.width;
     float cx, cy;
-    hostCrtPoint((float)(p.x / w * 1000), (float)((self.bounds.size.height - p.y) / w * 1000), 1000, cx, cy);
+    hostCrtPoint((float)(p.x / w * 1000), (float)((self.bounds.size.height - p.y) / w * 1000), 1000, cx, cy, gCrt == CRT_LITE);
     return NSMakePoint(fmin(fmax(cx, 0), HOST_CANVAS_SIZE - 1), fmin(fmax(cy, 0), HOST_CANVAS_SIZE - 1));
   }
   CGFloat k = HOST_CANVAS_SIZE / self.bounds.size.width;
@@ -595,9 +598,17 @@ static NSCursor *fingerCursor(bool pressed) {
     it.state = restFrame(self.window.frame).size.width == kSizes[i] ? NSControlStateValueOn : NSControlStateValueOff;
   }
   sizes.submenu = sub;
-  NSMenuItem *crt = [menu addItemWithTitle:@"CRT Screen" action:@selector(toggleCrt:) keyEquivalent:@""];
-  crt.target = self;
-  crt.state = gCrt ? NSControlStateValueOn : NSControlStateValueOff;
+  NSMenuItem *crt = [menu addItemWithTitle:@"CRT Screen" action:nil keyEquivalent:@""];
+  NSMenu *looks = [[NSMenu alloc] init];
+  const int crtLooks[] = {CRT_ON, CRT_LITE, CRT_OFF};
+  NSArray *crtNames = @[ @"On", @"Lite", @"Off" ];
+  for (int i = 0; i < 3; i++) {
+    NSMenuItem *it = [looks addItemWithTitle:crtNames[i] action:@selector(pickCrt:) keyEquivalent:@""];
+    it.target = self;
+    it.tag = crtLooks[i];
+    it.state = gCrt == crtLooks[i] ? NSControlStateValueOn : NSControlStateValueOff;
+  }
+  crt.submenu = looks;
   // the same setting as the game's SND button on the clock screen, saved with the game
   NSMenuItem *mute = [menu addItemWithTitle:@"Mute Sound" action:@selector(toggleMute:) keyEquivalent:@""];
   mute.target = self;
@@ -625,11 +636,11 @@ static NSCursor *fingerCursor(bool pressed) {
 }
 
 - (void)toggleMute:(id)sender { hostSetSoundEnabled(!hostSoundEnabled()); }
-- (void)toggleCrt:(id)sender {
-  gCrt = !gCrt;
+- (void)pickCrt:(NSMenuItem *)item {
+  gCrt = (int)item.tag;
   Preferences p;
   p.begin(PREFS_NS);
-  p.putBool("crt", gCrt);
+  p.putUChar("crt", (uint8_t)gCrt);
   p.end();
   [self showFrame];
 }
@@ -778,7 +789,8 @@ static NSRect initialFrame(bool ownSave) {
   p.begin(PREFS_NS, true);
   bool known = p.isKey("x");
   CGFloat size = p.getInt("size", 0), x = p.getInt("x", 0), y = p.getInt("y", 0);
-  gCrt = p.getBool("crt", true);
+  gCrt = p.getUChar("crt", CRT_ON);
+  if (gCrt > CRT_LITE) gCrt = CRT_ON;
   p.end();
   // first launch after 1.0: take the place it kept in the user defaults (only for the real save)
   NSUserDefaults *d = NSUserDefaults.standardUserDefaults;

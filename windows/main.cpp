@@ -58,7 +58,10 @@
 static const int kSizes[] = {245, 300, 478};
 #define DEFAULT_SIZE 478  // it opens at Large, with the CRT screen on (Fedor: "I would prefer if this effect on large
                           // was how all of the apps opened by default"): Size and CRT Screen in the menu
-static bool gCrt = true;  // the CRT screen (host_crt.h), saved as "crt"
+// the CRT screen (host_crt.h), saved as "crt": Off, On, or Lite (Fedor: "CRT On, Half/Lite, OFF. With Lite being half
+// the effect in both glow and distortion"). 2.1.2 saved it as on or off, the same byte
+enum { CRT_OFF, CRT_ON, CRT_LITE };
+static int gCrt = CRT_ON;
 static bool gCrtStale = true;     // the game's picture or the size changed since the CRT image was made
 static std::vector<uint8_t> gCrtBuf;  // that image, the screen's own size (RGBA)
 
@@ -100,7 +103,7 @@ enum {
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
 enum {
   ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT, ID_VIBE, ID_TILT, ID_AUTO_UPDATE,
-  ID_CRT,
+  ID_CRT_OFF, ID_CRT_ON, ID_CRT_LITE,  // in the order of CRT_OFF, CRT_ON, CRT_LITE
 };
 
 static HWND gWnd;
@@ -629,7 +632,7 @@ static inline uint32_t premul(double r, double g, double b, double a) {
 static void crtImage(int n) {
   if (!gCrtStale && gCrtBuf.size() == (size_t)n * n * 4) return;
   gCrtStale = false;
-  hostCrtPrepare(gCanvas, n);
+  hostCrtPrepare(gCanvas, n, gCrt == CRT_LITE);
   gCrtBuf.resize((size_t)n * n * 4);
   static uint32_t frame = 0;
   const uint32_t fr = ++frame;
@@ -808,7 +811,7 @@ static Zone zoneAt(int x, int y) {  // client pixels
 static void canvasPoint(int x, int y, int &cx, int &cy) {
   if (gCrt) {  // through the CRT's curved glass, so it lands on what's shown
     float fx, fy;
-    hostCrtPoint(x - screenOffset() + 0.5f, y - screenOffset() + 0.5f, screenSide(), fx, fy);
+    hostCrtPoint(x - screenOffset() + 0.5f, y - screenOffset() + 0.5f, screenSide(), fx, fy, gCrt == CRT_LITE);
     cx = (int)fmin(fmax(fx, 0), HOST_CANVAS_SIZE - 1);
     cy = (int)fmin(fmax(fy, 0), HOST_CANVAS_SIZE - 1);
     return;
@@ -843,14 +846,18 @@ static bool handleKey(WPARAM vk, bool down) {
 
 // ---- the menu: the same on right-click and on the notification-area icon ----
 static void showMenu(POINT at) {
-  HMENU m = CreatePopupMenu(), sizes = CreatePopupMenu();
+  HMENU m = CreatePopupMenu(), sizes = CreatePopupMenu(), looks = CreatePopupMenu();
   AppendMenuW(m, MF_STRING, ID_ABOUT, L"About " APP_NAME_W);
   AppendMenuW(m, MF_SEPARATOR, 0, NULL);
   AppendMenuW(m, MF_STRING, ID_SHOW, IsWindowVisible(gWnd) ? L"Hide " APP_NAME_W : L"Show " APP_NAME_W);
   const wchar_t *names[] = {L"Small", L"Medium", L"Large"};
   for (int i = 0; i < 3; i++) AppendMenuW(sizes, MF_STRING | (gSize == kSizes[i] ? MF_CHECKED : 0), ID_SIZE0 + i, names[i]);
   AppendMenuW(m, MF_POPUP, (UINT_PTR)sizes, L"Size");
-  AppendMenuW(m, MF_STRING | (gCrt ? MF_CHECKED : 0), ID_CRT, L"CRT Screen");
+  const int crtLooks[] = {CRT_ON, CRT_LITE, CRT_OFF};
+  const wchar_t *crtNames[] = {L"On", L"Lite", L"Off"};
+  for (int i = 0; i < 3; i++)
+    AppendMenuW(looks, MF_STRING | (gCrt == crtLooks[i] ? MF_CHECKED : 0), ID_CRT_OFF + crtLooks[i], crtNames[i]);
+  AppendMenuW(m, MF_POPUP, (UINT_PTR)looks, L"CRT Screen");
   // the same setting as the game's SND button on the clock screen, saved with the game
   AppendMenuW(m, MF_STRING | (hostSoundEnabled() ? 0 : MF_CHECKED), ID_MUTE, L"Mute Sound");
   if (gXSet && controllerIndex() >= 0)  // only with a controller that can buzz
@@ -870,7 +877,7 @@ static void showMenu(POINT at) {
   SetForegroundWindow(gWnd);  // or the menu doesn't close when clicking elsewhere
   TrackPopupMenu(m, TPM_RIGHTBUTTON, at.x, at.y, 0, gWnd, NULL);
   PostMessageW(gWnd, WM_NULL, 0, 0);
-  DestroyMenu(m);  // and its submenu
+  DestroyMenu(m);  // and its submenus
 }
 
 static HRESULT CALLBACK aboutLink(HWND, UINT msg, WPARAM, LPARAM lp, LONG_PTR) {
@@ -1448,11 +1455,11 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
           break;
         }
         case ID_UPDATE: checkForUpdates(true); break;
-        case ID_CRT: {
-          gCrt = !gCrt;
+        case ID_CRT_OFF: case ID_CRT_ON: case ID_CRT_LITE: {
+          gCrt = LOWORD(wp) - ID_CRT_OFF;
           Preferences p;
           p.begin(PREFS_NS);
-          p.putBool("crt", gCrt);
+          p.putUChar("crt", (uint8_t)gCrt);
           p.end();
           gCrtStale = true;
           redraw();
@@ -1525,7 +1532,8 @@ static RECT initialRest(int &size) {
   p.begin(PREFS_NS, true);
   bool known = p.isKey("x");
   size = p.getInt("size", 0);
-  gCrt = p.getBool("crt", true);
+  gCrt = p.getUChar("crt", CRT_ON);
+  if (gCrt > CRT_LITE) gCrt = CRT_ON;
   int x = p.getInt("x", 0), y = p.getInt("y", 0);
   p.end();
   if (size < kSizes[0] || size > kSizes[2]) size = DEFAULT_SIZE;
