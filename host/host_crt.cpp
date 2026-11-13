@@ -12,8 +12,12 @@ const int Q = (C + 3) / 4;         // the halo's quarter-size grid (117)
 const float K = 0.045f;            // the glass's bulge: the middle magnified, the rim squeezed (0.11 at first: Fedor,
                                    // "lessen the distortion but just a tiny bit. On medium size it can be a bit overwhelming";
                                    // 0.09 in 2.1.2, then half: "I just want this lite effect as on")
-const float SHRINK = 1.0f;         // the picture reaches the rim (2.1.3 stopped it at 0.965 for a black tube edge; with
-                                   // half the glow that showed as black bars: Fedor, "Almost like the art has run out")
+const float SHRINK = 0.965f;       // the picture stops a little short of the rim, so what's at its edge (the need bars)
+                                   // keeps clear of the ring (Fedor: reaching the rim "puts the bars too close to the
+                                   // edges"). The strip left is the picture's own edge drawn on outward (EDGE_R), not
+                                   // black: with half the glow, a black edge showed as bars ("Almost like the art has
+                                   // run out")
+const float EDGE_R = C / 2.0f - 0.5f;  // the canvas's round edge, where that strip takes its colours from
 const float SAT = 1.18f, CON = 1.08f;  // CRT colour: richer, deeper blacks
 const float BLOOM = 0.11f;         // the glow on bright pixels (2.5 game pixels wide; 2.1.2's was twice it)
 const float HAL_R = 0.10f, HAL_G = 0.075f, HAL_B = 0.05f;  // the halo in the glass: wide and warm (13 game pixels; also half)
@@ -113,9 +117,12 @@ void makeSide(int side) {
       float ang = atan2f(dy, dx) * 57.29578f;
       if (ang < 0) ang += 360;
       arc[i] = (r <= arcR && r >= arcR - arcW && ang >= 200 && ang <= 285) ? 70.0f : 0.0f;
-      // the bulge: the screen pixel at radius r (0..1) shows the canvas at r * (1 - K + K r^2) / SHRINK
+      // the bulge: the screen pixel at radius r (0..1) shows the canvas at r * (1 - K + K r^2) / SHRINK; past the
+      // canvas's round edge, the edge itself (EDGE_R), as if the picture went on
       float nx = dx / R, ny = dy / R, f = (1 - K + K * (nx * nx + ny * ny)) / SHRINK;
-      float sx = (nx * f + 1) * C / 2, sy = (ny * f + 1) * C / 2;
+      float cxo = nx * f * C / 2, cyo = ny * f * C / 2, cr = sqrtf(cxo * cxo + cyo * cyo);
+      if (cr > EDGE_R) cxo *= EDGE_R / cr, cyo *= EDGE_R / cr;
+      float sx = C / 2.0f + cxo, sy = C / 2.0f + cyo;
       if (r <= R && sx >= 0 && sy >= 0 && sx < C && sy < C) {
         gMapX[i] = (int16_t)(sx * 16);
         gMapY[i] = (int16_t)(sy * 16);

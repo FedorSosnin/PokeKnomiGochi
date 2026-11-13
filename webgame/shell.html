@@ -413,7 +413,7 @@ applySize();
 // picture is bright (233 of them), soft along the line, red and blue a hair apart, a glow and a wide warm halo,
 // CRT colour, the picture bulging as through curved glass out to the rim, darkening into it, a reflection, grain.
 // Without WebGL2 the plain screen stays and its button hides ----
-const CRT_K = 0.045, CRT_SHRINK = 1.0;  // (as host_crt.cpp's K and SHRINK)
+const CRT_K = 0.045, CRT_SHRINK = 0.965;  // (as host_crt.cpp's K and SHRINK)
 const crtBtn = document.getElementById('crtBtn');
 const crt = makeCrt(document.getElementById('crt'));
 let crtOn = false;
@@ -489,8 +489,10 @@ function makeCrt(cv) {
         void main() {
           vec2 px = vec2(gl_FragCoord.x, side - gl_FragCoord.y);  // from the top
           float R = side * 0.5; vec2 n = (px - R) / R;
-          float f = (1.0 - 0.045 + 0.045 * dot(n, n)) / 1.0;  // the curved glass (CRT_K, CRT_SHRINK)
-          vec2 s = (n * f + 1.0) * 233.0;
+          float f = (1.0 - 0.045 + 0.045 * dot(n, n)) / 0.965;  // the curved glass (CRT_K, CRT_SHRINK)
+          vec2 d = n * f * 233.0;  // past the canvas's round edge, the edge itself (host_crt.cpp's EDGE_R)
+          if (length(d) > 232.5) d *= 232.5 / length(d);
+          vec2 s = d + 233.0;
           vec3 pic = vec3(0.0);
           if (length(px - R) <= R && s.x >= 0.0 && s.y >= 0.0 && s.x < 466.0 && s.y < 466.0) {
             int ix2 = min(int(s.x * 2.0), 931), iy = min(int(s.y), 465);

@@ -1227,16 +1227,15 @@ static void testGame() {
   rmdir(save.c_str());
 }
 
-// the CRT screen (host_crt.h): its curved glass maps the middle to the middle and the rim to the picture's edge (since
-// 2.1.4 it reaches the rim: no black bars), taps the same way the picture goes; drawn, a lit canvas lights the middle,
-// the rim darkens softly, and past the round screen it's black
+// the CRT screen (host_crt.h): its curved glass maps the middle to the middle, the rim a little past the canvas, taps
+// the same way the picture goes; drawn, a lit canvas lights the middle, the strip past its edge shows the edge drawn
+// on outward (since 2.1.4: no black bars), darkening softly into the rim, and past the round screen it's black
 static void testCrt() {
   float cx, cy;
   CHECK(hostCrtPoint(500, 500, 1000, cx, cy) && fabsf(cx - 233) < 0.01f && fabsf(cy - 233) < 0.01f);
   const float d0 = 200 * 466.0f / 1000;  // 200 of 1000 screen pixels from the middle, in the canvas's pixels unbent
-  CHECK(hostCrtPoint(300, 500, 1000, cx, cy) && cx > 233 - d0 && cx < 233 - d0 * 0.9f);  // magnified in the middle
-  CHECK(hostCrtPoint(990, 500, 1000, cx, cy) && cx > 458);  // by the rim: the picture's very edge
-  CHECK(!hostCrtPoint(1000, 500, 1000, cx, cy));             // the rim itself: just past it
+  CHECK(hostCrtPoint(300, 500, 1000, cx, cy) && cx > 233 - d0 && cx < 233 - d0 * 0.99f);  // magnified in the middle
+  CHECK(!hostCrtPoint(998, 500, 1000, cx, cy) && cx >= 466);  // the rim: past the canvas (the bars keep clear of it)
   float ax, ay, bx, by;
   hostCrtPoint(250, 250, 500, ax, ay);  // the same place on any size
   hostCrtPoint(700, 700, 1400, bx, by);
@@ -1252,8 +1251,8 @@ static void testCrt() {
   int mid = 0;
   for (int y = 140; y < 160; y++) mid = mid > at(150, y, 0) ? mid : at(150, y, 0);
   CHECK(mid > 150);                                   // lit in the middle
-  CHECK(at(1, 150, 0) > 60 && at(1, 150, 0) < mid * 3 / 4 && at(150, 1, 1) > 60 && at(150, 1, 1) < mid * 3 / 4);  // the picture
-                                                                                       // to the rim, darker there
+  CHECK(at(1, 150, 0) > 60 && at(1, 150, 0) < mid * 3 / 4 && at(150, 1, 1) > 60 && at(150, 1, 1) < mid * 3 / 4);  // its edge
+                                                                                       // drawn to the rim, darker there
   CHECK(at(0, 0, 0) < 30 && at(299, 299, 1) < 30);   // the corners past the round screen: black
   std::vector<uint8_t> bgr(side * side * 4);
   hostCrtRows(bgr.data(), side * 4, true, 140, 141, 1);
