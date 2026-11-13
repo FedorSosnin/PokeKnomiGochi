@@ -167,7 +167,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "BUDDIES %d/%d", "CARE %d/%d",
     "Pok\202 Ball", "Throw %s",
     "Tap a ball, then THROW.", "Tap THROW.", "Lean to aim",
-    "Sound", "Language", "About", "Made by 3DPrintSOS - Fedor", "Scan it with your phone",
+    "Sound", "Language", "About", "By 3DPrintSOS - Fedor", "Scan it with your phone",
     "Wild", "All", "Tower", "KNOMI TOWER", "CLIMB!", "LEGEND", "Climb from 1F with your Pokemon and 2 friends. HP carries over. Every fight fills your ball bars. Beat the Legend for a Master Ball!", "LET'S CLIMB!", "A climb needs a full energy bar", "PICK 2 FRIENDS", "GO!", "Who goes first?", "Strong", "Weak", "Fainted", "%dF won!", "Next: %dF %s", "GATE %d PASSED!", "+%d Ultra Ball", "CLIMB OVER", "%s won on %dF", "Yours", "Win battles, play games, and lead with Strong picks", "Beat both!", "FIGHT!", "TOWER MASTER!", "+1 Master Ball", "%s BADGE", "BADGES %d/%d", "HALL OF FAME",  // Knomi Tower
     "YOUR TEAM", "Tap a friend to change it",  // Knomi Tower: the team before a climb
     "Best: %dF",  // Knomi Tower: the island tag, your best climb

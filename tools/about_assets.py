@@ -3,7 +3,7 @@
 
   ~/.venvs/esp/bin/python3 tools/about_assets.py     (needs Pillow, and segno for the QR codes)
 
-- about_logo.h: tools/assets/3dprintsos-logo.png shrunk to 96 x 96, each pixel the average of its area, then the
+- about_logo.h: tools/assets/3dprintsos-logo.png shrunk to 72 x 72, each pixel the average of its area, then the
   nearest of the logo's own colours (no dithering). Around the red ring, drawn at this size so it stays crisp: a dark
   edge, a braided gold rope and a dark edge, and the four black ticks through it. A palette (RGB565, 0 see-through)
   and one index a pixel; the game draws it at 2x and spins it like a coin (about_v2.h).
@@ -14,7 +14,7 @@ import math
 import os
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-N = 96
+N = 72  # (96 until the game had a logo of its own: Fedor, "the 3DPrintSOS coin a bit smaller and our new logo larger")
 LINKS = (('GITHUB', 'https://github.com/FedorSosnin/PokeKnomiGochi'), ('YOUTUBE', 'https://youtube.com/3dprintsos'))
 PAL = [
     (0x1E, 0x2A, 0x6D),  # navy: the middle and the letters' outlines

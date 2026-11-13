@@ -54,9 +54,18 @@ breaking anything.
 ## The About page's logo and links
 
 `3dprintsos-logo.png` is Fedor's 3D Print SOS logo, the source of the About page's pixel-art coin. `tools/about_assets.py`
-turns it into `about_logo.h` (96 x 96, the logo's own colours, a braided rope drawn at that size) and the two links into
+turns it into `about_logo.h` (72 x 72, the logo's own colours, a braided rope drawn at that size) and the two links into
 QR codes in `about_qr.h` (it needs Pillow, and segno for the QR codes):
 
 ```bash
 ~/.venvs/esp/bin/python3 tools/about_assets.py
+```
+
+## The game's name and mark
+
+`brand/` holds Catch 151's logo, its Pokédex's (Catch 151 Dex) and their icons, pixel art drawn by
+`tools/brand_assets.py` (it needs Pillow). See [brand/README.md](brand/README.md).
+
+```bash
+~/.venvs/esp/bin/python3 tools/brand_assets.py
 ```

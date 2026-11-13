@@ -228,6 +228,17 @@ class TestGeneratedFiles(unittest.TestCase):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    def test_brand_assets_reproduce_the_games_logo(self):
+        """the About page's logo (src/brand_logo.h) and the web page's (webgame/assets/logo.svg) are what
+        tools/brand_assets.py draws (no Pillow needed for these two)"""
+        import brand_assets
+        with open(brand_assets.HEADER) as fh:
+            self.assertEqual(fh.read(), brand_assets.header(brand_assets.logo_large()),
+                             'src/brand_logo.h does not match tools/brand_assets.py (run it instead of editing it)')
+        with open(brand_assets.WEB_LOGO) as fh:
+            self.assertEqual(fh.read(), brand_assets.logo().svg(),
+                             'webgame/assets/logo.svg does not match tools/brand_assets.py (run it)')
+
     def test_generated_files_say_they_are_generated(self):
         for name in ('dex.h', 'species.h'):
             with open(os.path.join(ROOT, 'src', name)) as fh:

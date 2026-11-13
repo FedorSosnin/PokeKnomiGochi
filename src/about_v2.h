@@ -5,6 +5,7 @@
 // place right now."
 #include "about_logo.h"  // the 3D Print SOS logo as pixel art (tools/about_assets.py)
 #include "about_qr.h"    // the two links as QR codes, for the Knomi
+#include "brand_logo.h"  // the game's logo as pixel art (tools/brand_assets.py)
 
 #ifdef BOARD_HOST
 bool hostOpenUrl(const char *url);  // a computer, the web: in the browser (false: nothing to open it with)
@@ -205,7 +206,7 @@ static bool v2SettingsPress(int16_t x, int16_t y, PressTarget &t) {
 // faces you; as it lands a gold gleam sweeps across and a sparkle twinkles, and the gleam comes back every 6 s. It
 // spins each time the page opens, and on a tap (Fedor: "If it reacts to touch, then it has to spin for the first time
 // on load to hint that"). Drawn a logo pixel at a time, 2x2 on the screen, straight into the frame -----
-#define V2_COIN_Y 62            // its top (96 px at 2x)
+#define V2_COIN_Y 62            // its top (the logo at 2x: ABOUT_LOGO_N, 72)
 #define V2_COIN_PI 3.14159265f   // (M_PI isn't everywhere: Windows' compiler)
 #define V2_COIN_SPIN_MS 1500
 #define V2_COIN_GLEAM_MS 640
@@ -315,12 +316,34 @@ static bool v2CoinHit(int16_t x, int16_t y) {
   return dx * dx + dy * dy <= 92 * 92;
 }
 
-// ----- the About page: the coin, the version, who made it, and the links: on a computer or the web they open in the
-// browser; the Knomi can't, so it shows the link's QR code for a phone to scan -----
-#define V2_ABOUT_PANEL_Y0 262
-#define V2_ABOUT_PANEL_Y1 370
-#define V2_ABOUT_BTN_Y0 322
-#define V2_ABOUT_BTN_Y1 358
+// ----- the About page: the coin, then a panel with the game's logo and its version, who made it, and the links: on a
+// computer or the web they open in the browser; the Knomi can't, so it shows the link's QR code for a phone to scan.
+// Fedor picked the logo in the panel, the panel "a bit bigger", the who-made-it line "a bit less wide", then "the
+// 3DPrintSOS coin a bit smaller and our new logo larger": the coin 72 px (it was 96), the logo drawn larger -----
+#define V2_ABOUT_PANEL_X0 66   // (between the page arrows: they end at x 62 and start at 404, down to y 254)
+#define V2_ABOUT_PANEL_X1 400
+#define V2_ABOUT_PANEL_Y0 212  // (just under the coin)
+#define V2_ABOUT_PANEL_Y1 374  // (just over "Page 2 of 2")
+#define V2_ABOUT_LOGO_Y 222    // the logo's top: 2 px a logo pixel
+#define V2_ABOUT_VER_Y 286     // the version, under it
+#define V2_ABOUT_MADE_Y 306
+#define V2_ABOUT_BTN_Y0 330
+#define V2_ABOUT_BTN_Y1 366
+// the game's logo (tools/brand_assets.py), s screen pixels a logo pixel, its middle at cx and its top at y: each row's
+// runs of one colour, one rectangle each
+static void v2BrandLogo(int cx, int y, int s) {
+  int x0 = SNAP2(cx - BRAND_LOGO_W * s / 2);
+  y = SNAP2(y);
+  for (int j = 0; j < BRAND_LOGO_H; j++) {
+    const uint8_t *r = BRAND_LOGO + j * BRAND_LOGO_W;
+    for (int i = 0; i < BRAND_LOGO_W;) {
+      int k = i + 1;
+      while (k < BRAND_LOGO_W && r[k] == r[i]) k++;
+      if (r[i]) gfx->fillRect(x0 + i * s, y + j * s, (k - i) * s, s, BRAND_LOGO_PAL[r[i]]);
+      i = k;
+    }
+  }
+}
 #define V2_GH_X0 100  // GITHUB
 #define V2_GH_X1 228
 #define V2_YT_X0 238  // YOUTUBE
@@ -351,14 +374,14 @@ static void v2About() {
   char sign[32];
   v2Sign(v2Caps(T(S_ABOUT), sign, sizeof(sign)));
   v2Coin(now);
-  v2Panel(70, V2_ABOUT_PANEL_Y0, 396, V2_ABOUT_PANEL_Y1, 10);  // (wide: "Made by 3DPrintSOS - Fedor")
+  v2Panel(V2_ABOUT_PANEL_X0, V2_ABOUT_PANEL_Y0, V2_ABOUT_PANEL_X1, V2_ABOUT_PANEL_Y1, 10);
   setSize(2);
-  gfx->setTextColor(UI_INK);
-  const char *v = "PokeKnomiGochi v" FW_VERSION;
-  setCur(centerX(v, 2), V2_ABOUT_PANEL_Y0 + 14);
-  printT(v);
+  const char *v = "v" FW_VERSION;
+  v2BrandLogo(CX, V2_ABOUT_LOGO_Y, 2);
   gfx->setTextColor(V2_INK_MUTED);
-  setCur(centerX(T(S_MADE_BY), 2), V2_ABOUT_PANEL_Y0 + 36);
+  setCur(centerX(v, 2), V2_ABOUT_VER_Y);
+  printT(v);
+  setCur(centerX(T(S_MADE_BY), 2), V2_ABOUT_MADE_Y);
   printT(T(S_MADE_BY));
   {
     V2_HOVER(V2_GH_X0, V2_ABOUT_BTN_Y0, V2_GH_X1 - V2_GH_X0, V2_ABOUT_BTN_Y1 - V2_ABOUT_BTN_Y0);
