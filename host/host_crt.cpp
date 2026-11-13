@@ -12,7 +12,8 @@ const int Q = (C + 3) / 4;         // the halo's quarter-size grid (117)
 const float K = 0.045f;            // the glass's bulge: the middle magnified, the rim squeezed (0.11 at first: Fedor,
                                    // "lessen the distortion but just a tiny bit. On medium size it can be a bit overwhelming";
                                    // 0.09 in 2.1.2, then half: "I just want this lite effect as on")
-const float SHRINK = 0.965f;       // the picture stops short of the rim (the tube's black edge)
+const float SHRINK = 1.0f;         // the picture reaches the rim (2.1.3 stopped it at 0.965 for a black tube edge; with
+                                   // half the glow that showed as black bars: Fedor, "Almost like the art has run out")
 const float SAT = 1.18f, CON = 1.08f;  // CRT colour: richer, deeper blacks
 const float BLOOM = 0.11f;         // the glow on bright pixels (2.5 game pixels wide; 2.1.2's was twice it)
 const float HAL_R = 0.10f, HAL_G = 0.075f, HAL_B = 0.05f;  // the halo in the glass: wide and warm (13 game pixels; also half)
@@ -28,7 +29,7 @@ float gStep = 1, gPhase = 0;       // canvas pixels per screen pixel; the lines'
 int gSub = 1;
 // per side: through the curved glass
 std::vector<int16_t> gMapX, gMapY; // the canvas point under each screen pixel, x16 (-1: off the picture)
-std::vector<uint8_t> gShade, gGlass;  // the rim's darkening and the tube's black edge; the glass's reflection
+std::vector<uint8_t> gShade, gGlass;  // the rim's darkening and its hairline edge; the glass's reflection
 float gLut[65][64];                // a line's light: exp(-(d/w)^2) * 1.2 by distance from its middle and brightness
 bool gLutMade = false;
 
@@ -97,7 +98,7 @@ void makeSide(int side) {
   gGlass.assign(n, 0);
   const float R = side / 2.0f;
   std::vector<float> vig(n), edge(n), refl(n), arc(n);
-  const float er = R - 0.012f * side;  // the picture's edge, inside the rim
+  const float er = R - 0.004f * side;  // the picture's edge: a hairline inside the rim (0.012 until 2.1.3)
   const float rx0 = 0.08f * side, ry0 = 0.04f * side, rx1 = 0.70f * side, ry1 = 0.42f * side;  // the reflection
   const float rcx = (rx0 + rx1) / 2, rcy = (ry0 + ry1) / 2, ra = (rx1 - rx0) / 2, rb = (ry1 - ry0) / 2;
   const float arcR = 0.45f * side, arcW = 0.012f * side;  // a thin bright arc along the upper rim
@@ -121,7 +122,7 @@ void makeSide(int side) {
       }
     }
   gauss(vig.data(), side, side, side / 30.0f);   // the rim darkens softly...
-  gauss(edge.data(), side, side, side / 160.0f); // ...and the picture fades into the tube's black edge
+  gauss(edge.data(), side, side, side / 160.0f); // ...and the picture fades out at the rim's hairline edge
   gauss(refl.data(), side, side, side / 14.0f);
   gauss(arc.data(), side, side, side / 160.0f);
   for (size_t i = 0; i < n; i++) {
