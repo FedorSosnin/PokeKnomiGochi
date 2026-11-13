@@ -10,9 +10,10 @@
 //   mons    one line per Pokemon (dex.h, dexfacts.h, moves.h, battle.h):
 //             type, [hp, atk, def, spe] (its base stats), evo ([[into, level], ...]; Eevee's three branches),
 //             rarity (R_*: 0 an evolved form, 1 common, 2 rare, 3 legendary), zone (ZONE_OF: where a Search finds
-//             it), min (the level your Pokemon must be for it to turn up: btlMinLevel()), fact (DEX_FACT: what its Pokedex page says), learn ([[level, move], ...]:
-//             LEARN_TBL), battle ([[from level, move, move], ...]: btlMovesFor(), the two moves on its battle
-//             buttons from that level on, one when it has a single move; empty for Ditto, which copies its foe's)
+//             it), min (the level your Pokemon must be for it to turn up: btlMinLevel()), fact (DEX_FACT: what its
+//             Pokedex page says), learn ([[level, move], ...]: LEARN_TBL), battle ([[from level, move, move], ...]:
+//             btlMovesFor(), the two moves on its battle buttons from that level on, one when it has a single move;
+//             empty for Ditto, which copies its foe's)
 //   zones    where they're caught (zones.h): names, the five zones in Z_* order; legends, ZONE_LEGEND (each zone's
 //           legend, turning up on legendPermil Searches in 1000 there, from the first); starters, the four you can
 //           start with (starter_v2.h's V2_STARTERS). There are no eggs: everyone else is caught
@@ -79,8 +80,8 @@ static inline std::string dexPageJson() {
   out += b;
   for (size_t i = 0; i < sizeof(DEX_TRAIN_GAMES) / sizeof(DEX_TRAIN_GAMES[0]); i++) {
     const DexTrainGame &g = DEX_TRAIN_GAMES[i];
-    snprintf(b, sizeof(b), "%s[%s,%s,%d,%d]", i ? "," : "", dexJsonStr(g.name).c_str(), dexJsonStr(g.unit).c_str(), g.per,
-             g.gain);
+    snprintf(b, sizeof(b), "%s[%s,%s,%d,%d]", i ? "," : "", dexJsonStr(g.name).c_str(), dexJsonStr(g.unit).c_str(),
+             g.per, g.gain);
     out += b;
   }
   out += "]},\n\"zones\":{\"names\":[";
@@ -89,7 +90,8 @@ static inline std::string dexPageJson() {
   for (int z = 0; z < ZONE_COUNT; z++) out += (z ? "," : "") + std::to_string(ZONE_LEGEND[z]);
   snprintf(b, sizeof(b), "],\"legendPermil\":%d,\"starters\":[", ZONE_LEGEND_PERMIL);
   out += b;
-  for (size_t i = 0; i < sizeof(DEX_STARTERS) / sizeof(DEX_STARTERS[0]); i++) out += (i ? "," : "") + std::to_string(DEX_STARTERS[i]);
+  for (size_t i = 0; i < sizeof(DEX_STARTERS) / sizeof(DEX_STARTERS[0]); i++)
+    out += (i ? "," : "") + std::to_string(DEX_STARTERS[i]);
   out += "]},\n\"mons\":{";
   for (int16_t d = 1; d <= DEX_COUNT; d++) {
     const DexEntry &e = DEX_TBL[d];

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""The Catch 151 Dex (the sprite gallery), published with the installer at https://fedorsosnin.github.io/PokeKnomiGochi/sprites/
-(.github/workflows/pages.yml builds it there on every deploy; nothing it makes is kept in git).
+"""The Catch 151 Dex (the sprite gallery), published with the installer at
+https://fedorsosnin.github.io/PokeKnomiGochi/sprites/ (.github/workflows/pages.yml builds it there on every deploy;
+nothing it makes is kept in git).
 
 All 151 Pokemon, regular and shiny, in every view the game has: standing, turning round (the Pokedex entry's
 turn), walking, from behind, asleep, hopping, attacking, hurt, attacking from behind (a battle), and the extras
@@ -12,9 +13,10 @@ the game plays it (src/cry.h): the pieces are tools/voices.json, which `make -C 
 
 Each Pokemon's page also says what the game's Pokedex says about it (its fact), its base stats, how it evolves, every
 move it learns with the game's power for it and when it's on its battle buttons, what it's strong and weak
-against, and its stats with training and how the game trains them; several picked together are compared (match-ups). All of that is the game's own tables and battle rules
-(dex.h, moves.h, dexfacts.h, battle.h), as tools/dex.json, which `make -C host dex` writes (host/dex_json.h; the
-host tests check it's up to date). The owned marks are the viewer's own, kept in their browser.
+against, its stats with training and how the game trains them, and where it's caught; several picked together are
+compared (match-ups). All of that is the game's own tables and battle rules (dex.h, moves.h, dexfacts.h, battle.h,
+zones.h), as tools/dex.json, which `make -C host dex` writes (host/dex_json.h; the host tests check it's up to date).
+The owned marks are the viewer's own, kept in their browser.
 
   <out>/index.html            the page (tools/sprite_gallery.html, with the data put in)
   <out>/img/NNN-name.png      each form's frames, one row per view (indexed PNG; the page cuts them up)

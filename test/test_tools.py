@@ -236,10 +236,10 @@ class TestGeneratedFiles(unittest.TestCase):
 
 
 class TestDexPage(unittest.TestCase):
-    """The Catch 151 Dex page (tools/make_sprite_gallery.py) shows tools/dex.json: the game's own tables and battle rules
-    as `make -C host dex` writes them (the host tests check it against the compiled game). Here: it agrees with the
-    sources those tables are generated from (dex_data.py, dex_stats.py, dex_moves.py through gen_moves.py,
-    dex_facts.py), so a change there that wasn't carried to the page shows up without building the host."""
+    """The Catch 151 Dex page (tools/make_sprite_gallery.py) shows tools/dex.json: the game's own tables and battle
+    rules as `make -C host dex` writes them (the host tests check it against the compiled game). Here: it agrees with
+    the sources those tables are generated from (dex_data.py, dex_stats.py, dex_moves.py through gen_moves.py,
+    dex_facts.py, zones.h), so a change there that wasn't carried to the page shows up without building the host."""
 
     @classmethod
     def setUpClass(cls):
