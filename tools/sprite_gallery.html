@@ -175,6 +175,12 @@
   .lists h4 { margin:0 0 14px; font-size:.88rem; font-weight:500; color:var(--muted); }
   .lists p { margin:0 0 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .lists p > .x { flex:none; margin-right:4px; }
+  .tlvl { margin:0 0 20px; }
+  .tt { max-width:460px; }
+  .tt .why { color:var(--muted); font-size:.78rem; margin-left:6px; }
+  .how { margin:0; display:grid; grid-template-columns:6em 1fr; gap:16px 20px; font-size:.9rem; line-height:1.6; max-width:62ch; }
+  .how dt { font-weight:600; }
+  .how dd { margin:0; color:var(--muted); }
   .dfoot { margin:48px 32px 0; padding:20px 0 32px; border-top:1px solid var(--line); font-size:.8rem; line-height:1.7; color:var(--muted); }
   .dfoot p { margin:0; }
   /* the match-ups */
@@ -234,6 +240,9 @@
     .tile canvas { width:100%; }
     .lists { grid-template-columns:1fr; }
     .stats { grid-template-columns:5em 2.5em 1fr; }
+    .how { grid-template-columns:1fr; gap:4px; }
+    .how dd { margin-bottom:14px; }
+    .tt .why { display:block; margin-left:0; }
     .mt .tcol { display:none; }
     .mt .tin { display:inline; }
     .mt th, .mt td { padding-left:6px; padding-right:6px; }
@@ -272,7 +281,7 @@
 <footer>
   <h2>What it says about them</h2>
   <p>Each Pokémon's page says what its page in the game's Pokédex says, and the rest comes from the game too: its base
-  stats, when it evolves, the moves it learns, how hard they hit, and the type chart its battles use. So the match-ups here
+  stats, when it evolves, the moves it learns, how hard they hit, the type chart its battles use, and how it's trained. So the match-ups here
   are the game's. Its battles are simpler than Red and Blue's: each Pokémon has one type, and each move has one
   number for its power, with Red and Blue's accuracy, hits in a row and turns spent charging folded in.</p>
   <p><b>The balls</b> you tap are only in this browser, on this device: nothing is sent anywhere.</p>
@@ -326,6 +335,7 @@
     <button class="tab" role="tab" data-tab="views" id="tab-views" aria-controls="p-views">Views</button>
     <button class="tab" role="tab" data-tab="moves" id="tab-moves" aria-controls="p-moves">Moves</button>
     <button class="tab" role="tab" data-tab="types" id="tab-types" aria-controls="p-types">Battle</button>
+    <button class="tab" role="tab" data-tab="train" id="tab-train" aria-controls="p-train">Training</button>
   </div>
   <div class="panel" role="tabpanel" id="p-views" aria-labelledby="tab-views">
     <div class="seg" id="dforms" role="group" aria-label="Which form">
@@ -335,6 +345,7 @@
   </div>
   <div class="panel" role="tabpanel" id="p-moves" aria-labelledby="tab-moves"></div>
   <div class="panel" role="tabpanel" id="p-types" aria-labelledby="tab-types"></div>
+  <div class="panel" role="tabpanel" id="p-train" aria-labelledby="tab-train"></div>
   <div class="dfoot"><p id="dcred"></p></div>
 </dialog>
 <dialog id="mdlg" aria-labelledby="mtitle">
@@ -781,10 +792,42 @@ function fillTypes() {  // the Battle tab: its base stats, and what it's strong 
     <div class="lists"><div><h4>Its ${tname(g.type)} moves hit</h4>${out || '<p>Everything the same</p>'}</div>
     <div><h4>Moves that hit it</h4>${inn || '<p>The same from everything</p>'}</div></div></div>`;
 }
+// the Training tab: its stats at a level, untrained and fully trained, and how the game trains each (GAME.training:
+// pet.h and pet.cpp's rules, from tools/dex.json)
+function trainRows(g, L) {  // btlMaxHp() and btlStat() (battle.h) at a level, with average genes (100%)
+  const T = GAME.training, hp = Math.floor(g.stats[0] * 2 * L / 100) + L + 10;
+  const stat = (j, tr) => g.stats[j] + L + tr;
+  return [['HP', hp, hp, 'grows with its level alone']].concat(
+    [['Attack', 1], ['Defense', 2], ['Speed', 3]].map(([k, j]) => [k, stat(j, 0), stat(j, T.max), '']))
+    .map(([k, a, b, why]) => `<tr><td>${k}${why ? ` <span class="why">${why}</span>` : ''}</td><td class="r">${a}</td><td class="r"><b>${b}</b></td></tr>`).join('');
+}
+function fillTraining() {
+  const m = MONS[dlgMon], g = m.g, T = GAME.training, L = state.level, el = document.getElementById('p-train');
+  const [lo, b1, b2, hi] = T.genes;
+  const games = T.games.map(([name, unit, per, gain]) => `${name} +${gain} for every ${per} ${unit}`);
+  const sp = games.join(', ').replace(/, ([^,]*)$/, ' and $1');
+  el.innerHTML = `<div class="sec"><h3>Its stats with training</h3>
+    <p class="note">In the game its Attack, Defense and Speed are its base stat, times its genes, plus its level, plus its
+    training, and each kind of training goes up to ${T.max}.</p>
+    <label class="lvl tlvl">Level <input type="range" id="tlvl" min="1" max="${T.levelCap}" value="${L}"><output>${L}</output></label>
+    <table class="mt tt"><thead><tr><th></th><th class="r">Untrained</th><th class="r">Fully trained</th></tr></thead><tbody id="trows">${trainRows(g, L)}</tbody></table>
+    <p class="note" style="margin-top:16px">With average genes. Its stars move each stat a little: 1★ ${lo}–${b1}% of its base, 2★ ${b1 + 1}–${b2}%, 3★ ${b2 + 1}–${hi}%.</p></div>
+    <div class="sec"><h3>How to train it</h3><dl class="how">
+    <dt>Attack</dt><dd>+${T.win} for every battle it wins: wild battles, Travel, and its own fights in Knomi Tower. Battles with a
+      buddy don't count. Full after ${Math.ceil(T.max / T.win)} wins.</dd>
+    <dt>Defense</dt><dd>+1 for every ${T.careHours} hours of good care, with every need at 40 or more. Sleep counts, and while it's
+      awake a need can dip for ${T.graceMin} minutes. Full after ${T.max * T.careHours} hours, about ${Math.round(T.max * T.careHours / 24)} days.</dd>
+    <dt>Speed</dt><dd>The mini games: ${sp}.</dd>
+    <dt>Level</dt><dd>+1 for every ${T.levelHours === 1 ? 'hour' : `${T.levelHours} hours`} of its age. Battles count up to level ${T.levelCap}.</dd>
+    </dl><p class="note" style="margin-top:20px">Training belongs to your Pokémon: a new one starts from zero. To see yours, hold
+    your Pokémon, tap Stats, and turn two pages to Training.</p></div>`;
+  const t = document.getElementById('tlvl');
+  t.addEventListener('input', () => { state.level = +t.value; t.nextElementSibling.textContent = t.value; document.getElementById('trows').innerHTML = trainRows(g, state.level); });
+}
 function showTab(tab) {
   state.tab = tab;
   document.querySelectorAll('#dlg .tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
-  for (const p of ['views', 'moves', 'types']) document.getElementById(`p-${p}`).classList.toggle('hide', p !== tab);
+  for (const p of ['views', 'moves', 'types', 'train']) document.getElementById(`p-${p}`).classList.toggle('hide', p !== tab);
   dlgCanvases.forEach((c) => live.delete(c));
   if (tab === 'views') requestAnimationFrame(() => dlgCanvases.forEach((c) => { size(c); live.add(c); }));
 }
@@ -872,6 +915,7 @@ function openMon(i) {
   fillAbout();
   fillMoves();
   fillTypes();
+  fillTraining();
   fillDialog();
   showTab(state.tab);
 }

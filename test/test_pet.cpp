@@ -5,6 +5,7 @@
 #include "../src/dex.h"
 #include "../src/zones.h"
 #include "../src/battle.h"
+#include "../host/dex_json.h"  // what the KnomiDex page says about training
 #include <string.h>
 
 // ---------------------------------------------------------------- helpers
@@ -554,6 +555,32 @@ TEST(stats, formula_base_by_genes_plus_level_and_training) {
   CHECK_EQ(p.atkStat(), (uint16_t)(52 + 10 + 20));
   p.geneAtk = 110;
   CHECK_EQ(p.atkStat(), (uint16_t)(52 * 110 / 100 + 10 + 20));
+}
+
+// the KnomiDex page tells how training is earned (host/dex_json.h, into tools/dex.json): it's what your Pokemon gets
+TEST(stats, knomidex_says_how_training_is_earned) {
+  Pet p;
+  makePet(p, 4);
+  for (const DexTrainGame &g : DEX_TRAIN_GAMES) {
+    for (uint8_t times = 1; times <= 4; times++) {  // so many of its unit, so many times its training
+      p.trSpe = 0;
+      uint16_t n = (uint16_t)g.per * times;
+      switch (g.kind) {
+        case DEX_TRAIN_BERRY: p.playResult((uint8_t)n); break;
+        case DEX_TRAIN_RUN: p.runResult(n); break;
+        case DEX_TRAIN_SURF: p.surfResult(n); break;
+        case DEX_TRAIN_DUNGEON: p.dungeonResult((uint8_t)n); break;
+      }
+      CHECK_MSG(p.trSpe == g.gain * times, g.name);
+    }
+  }
+  p.trAtk = 0;
+  CHECK_EQ(p.battleResult(true), (uint8_t)BTL_WIN_TRAIN);
+  p.trSpe = DEX_TRAIN_MAX - 1;
+  p.playResult(200);
+  CHECK_EQ(p.trSpe, (uint8_t)DEX_TRAIN_MAX);  // (where it stops)
+  CHECK_EQ(Pet::starsFromGenes(DEX_GENE_MIN, DEX_GENE_MIN, DEX_GENE_MIN), (uint8_t)1);
+  CHECK_EQ(Pet::starsFromGenes(DEX_GENE_MAX, DEX_GENE_MAX, DEX_GENE_MAX), (uint8_t)3);
 }
 
 TEST(stats, egg_has_no_stats) {

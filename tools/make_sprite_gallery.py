@@ -11,8 +11,8 @@ and a shiny's four gold sparkles (drawSparkles()). The cry button on a Pokemon's
 the game plays it (src/cry.h): the pieces are tools/voices.json, which `make -C host voices` writes.
 
 Each Pokemon's page also says what the game's Pokedex says about it (its fact), its base stats, how it evolves, every
-move it learns with the game's power for it and when it's on its battle buttons, and what it's strong and weak
-against; several picked together are compared (match-ups). All of that is the game's own tables and battle rules
+move it learns with the game's power for it and when it's on its battle buttons, what it's strong and weak
+against, and its stats with training and how the game trains them; several picked together are compared (match-ups). All of that is the game's own tables and battle rules
 (dex.h, moves.h, dexfacts.h, battle.h), as tools/dex.json, which `make -C host dex` writes (host/dex_json.h; the
 host tests check it's up to date). The owned marks are the viewer's own, kept in their browser.
 
@@ -201,7 +201,7 @@ def main():
 
     data = json.dumps(mons, separators=(',', ':'))
     tables = json.dumps({'types': types, 'colors': [dex_data.TYPE_ACCENTS[t] for t in types], 'chart': dex['chart'],
-                         'moves': dex['moves']}, separators=(',', ':'))
+                         'moves': dex['moves'], 'training': dex['training']}, separators=(',', ':'))
     page = open(PAGE, encoding='utf-8').read()
     page = page.replace('/*DATA*/[]', data.replace('</', '<\\/')).replace('/*GAME*/{}', tables.replace('</', '<\\/'))
     open(os.path.join(out, 'index.html'), 'w', encoding='utf-8').write(page)

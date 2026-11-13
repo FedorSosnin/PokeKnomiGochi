@@ -13,13 +13,32 @@
 //             at: btlMinLevel()), fact (DEX_FACT: what its Pokedex page says), learn ([[level, move], ...]:
 //             LEARN_TBL), battle ([[from level, move, move], ...]: btlMovesFor(), the two moves on its battle
 //             buttons from that level on, one when it has a single move; empty for Ditto, which copies its foe's)
-// `make -C host dex` writes tools/dex.json; the host tests check that file is what this makes.
+//   training how your Pokemon is trained (pet.h, pet.cpp): each kind up to max; win, ATK a battle won; careHours,
+//           hours of good care for 1 DEF, and graceMin, the minutes awake a need may dip under 40; levelHours of
+//           age a level, battles counting up to levelCap; genes, [lowest, top of 1 star, top of 2, highest] (%);
+//           games, what each mini game gives SPD: [name, its unit, per that many, this much]
+// `make -C host dex` writes tools/dex.json; the host tests check that file is what this makes, and the pet's tests
+// (test/test_pet.cpp) that DEX_TRAIN_GAMES is what the games really give.
 #include <stdio.h>
 #include <string>
-#include "dex.h"
-#include "moves.h"
-#include "battle.h"
-#include "dexfacts.h"
+#include "../src/pet.h"
+#include "../src/dex.h"
+#include "../src/moves.h"
+#include "../src/battle.h"
+#include "../src/dexfacts.h"
+
+// what each mini game trains (SPD), as the page says it: Pet::playResult(), runResult(), surfResult(), dungeonResult()
+enum DexTrainKind : uint8_t { DEX_TRAIN_BERRY, DEX_TRAIN_RUN, DEX_TRAIN_SURF, DEX_TRAIN_DUNGEON };
+struct DexTrainGame { DexTrainKind kind; const char *name, *unit; uint8_t per, gain; };
+static const DexTrainGame DEX_TRAIN_GAMES[] = {
+  { DEX_TRAIN_BERRY, "Berry Drop", "points", 5, 1 },
+  { DEX_TRAIN_RUN, "PokeRun", "seconds", 20, 1 },
+  { DEX_TRAIN_SURF, "PikaSurf", "seconds", 20, 1 },
+  { DEX_TRAIN_DUNGEON, "PokeDungeon", "floors", 5, 2 },
+};
+#define DEX_TRAIN_MAX 100   // each kind of training stops here (Pet::clamp100)
+#define DEX_GENE_MIN 90     // a Pokemon's genes, % of its base stats (Pet::hatch())
+#define DEX_GENE_MAX 110
 
 static inline std::string dexJsonStr(const char *s) {
   std::string o = "\"";
@@ -46,7 +65,17 @@ static inline std::string dexPageJson() {
              MOVE_TBL[i].power);
     out += b;
   }
-  out += "\n],\n\"mons\":{";
+  snprintf(b, sizeof(b), "\n],\n\"training\":{\"max\":%d,\"win\":%d,\"careHours\":%d,\"graceMin\":%d,\"levelHours\":%d,"
+           "\"levelCap\":%d,\"genes\":[%d,%d,%d,%d],\"games\":[", DEX_TRAIN_MAX, BTL_WIN_TRAIN, GOOD_CARE_MIN / 60,
+           CARE_GRACE_MIN, MINUTES_PER_LEVEL / 60, BTL_LEVEL_CAP, DEX_GENE_MIN, GENE_BAND_1, GENE_BAND_2, DEX_GENE_MAX);
+  out += b;
+  for (size_t i = 0; i < sizeof(DEX_TRAIN_GAMES) / sizeof(DEX_TRAIN_GAMES[0]); i++) {
+    const DexTrainGame &g = DEX_TRAIN_GAMES[i];
+    snprintf(b, sizeof(b), "%s[%s,%s,%d,%d]", i ? "," : "", dexJsonStr(g.name).c_str(), dexJsonStr(g.unit).c_str(), g.per,
+             g.gain);
+    out += b;
+  }
+  out += "]},\n\"mons\":{";
   for (int16_t d = 1; d <= DEX_COUNT; d++) {
     const DexEntry &e = DEX_TBL[d];
     snprintf(b, sizeof(b), "%s\n\"%d\":{\"type\":%d,\"stats\":[%d,%d,%d,%d],\"evo\":[", d > 1 ? "," : "", d, e.type,

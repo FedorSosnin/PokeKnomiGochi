@@ -299,6 +299,17 @@ class TestKnomiDex(unittest.TestCase):
         self.assertEqual(x2('ghost', 'psychic'), 0)  # (Red and Blue's)
         self.assertEqual(x2('fire', 'water'), 1)
 
+    def test_training(self):
+        # (what each game gives is checked against the pet itself in test/test_pet.cpp)
+        t = self.dex['training']
+        self.assertEqual(t['max'], 100)
+        self.assertEqual(t['levelCap'], 100)
+        self.assertEqual(len(t['genes']), 4)
+        self.assertEqual(t['genes'], sorted(t['genes']))
+        self.assertEqual([g[0] for g in t['games']], ['Berry Drop', 'PokeRun', 'PikaSurf', 'PokeDungeon'])
+        for name, unit, per, gain in t['games']:
+            self.assertTrue(unit and per > 0 and gain > 0, name)
+
     def test_page_takes_it(self):
         with open(os.path.join(TOOLS, 'sprite_gallery.html'), encoding='utf-8') as f:
             page = f.read()

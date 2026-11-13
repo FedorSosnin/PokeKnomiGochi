@@ -93,6 +93,7 @@
 ["SUPER FANG",0,60],
 ["SLASH",0,70]
 ],
+"training":{"max":100,"win":6,"careHours":6,"graceMin":15,"levelHours":1,"levelCap":100,"genes":[90,96,103,110],"games":[["Berry Drop","points",5,1],["PokeRun","seconds",20,1],["PikaSurf","seconds",20,1],["PokeDungeon","floors",5,2]]},
 "mons":{
 "1":{"type":3,"stats":[45,49,49,45],"evo":[[2,16]],"rarity":1,"min":1,"fact":"Born with a seed on its back that sprouts and grows along with it.","learn":[[1,25],[13,16],[27,52],[48,53]],"battle":[[1,25],[13,25,16],[27,16,52],[48,52,53]]},
 "2":{"type":3,"stats":[60,62,63,60],"evo":[[3,32]],"rarity":0,"min":16,"fact":"The bud on its back gets so heavy that standing on two legs is out.","learn":[[1,25],[13,16],[30,52],[54,53]],"battle":[[1,25],[13,25,16],[30,16,52],[54,52,53]]},
