@@ -96,51 +96,63 @@
   dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--ink); padding:0;
     width:min(760px, calc(100vw - 32px)); max-height:calc(100vh - 32px); }
   dialog::backdrop { background:rgba(10,10,20,.55); }
-  #dlg { height:min(880px, calc(100vh - 32px)); }  /* (the same from tab to tab, so it doesn't jump) */
+  #dlg { height:min(900px, calc(100vh - 32px)); }  /* (the same from tab to tab, so it doesn't jump) */
   .dhead { position:sticky; top:0; z-index:1; background:var(--bg); display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center;
     padding:14px 16px; border-bottom:1px solid var(--line); }
   .dhead h2 { margin:0; font-size:1.15rem; }
-  .type { font-size:.75rem; font-weight:600; color:#fff; border-radius:999px; padding:2px 10px; text-transform:uppercase; }
-  .close { margin-left:auto; border:0; background:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); padding:2px 6px; }
-  .say { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:3px 12px; cursor:pointer; font-size:.85rem; }
-  .about { padding:14px 16px 4px; display:grid; grid-template-columns:1fr 230px; gap:6px 24px; }
-  .fact { margin:0; font-size:1.02rem; }
-  .fact::before { content:"“"; color:var(--muted); }
-  .fact::after { content:"”"; color:var(--muted); }
-  .facts { margin:.5rem 0 0; padding:0; list-style:none; font-size:.86rem; color:var(--muted); }
-  .facts li { margin:.15rem 0; }
+  .type { display:inline-block; font-size:.72rem; font-weight:600; color:#fff; border-radius:999px; padding:3px 12px; text-transform:uppercase; letter-spacing:.04em; }
+  .close { margin-left:auto; border:0; background:none; font-size:1.6rem; line-height:1; cursor:pointer; color:var(--muted); padding:4px 8px; border-radius:8px; }
+  .close:hover { color:var(--ink); }
+  /* a Pokémon's page: who it is and what the game says about it, then the rest in tabs, with room round each (Fedor:
+     "Dont fear white space") */
+  .phead { display:flex; align-items:flex-start; padding:28px 32px 0; }
+  .pnum { display:block; color:var(--muted); font-size:.85rem; font-variant-numeric:tabular-nums; }
+  .phead h2 { margin:2px 0 12px; font-size:1.65rem; line-height:1.2; }
+  .phead .close { margin:-8px -12px 0 auto; }
+  .hero { display:grid; grid-template-columns:auto 1fr; gap:40px; align-items:center; padding:28px 32px 0; }
+  .both2 { display:flex; gap:12px; }
+  .form1 { margin:0; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .form1 canvas { width:128px; height:112px; }
+  .fact { margin:0; font-size:1.15rem; line-height:1.6; max-width:34ch; }
+  .facts { margin:20px 0 0; padding:0; list-style:none; color:var(--muted); font-size:.92rem; line-height:1.8; }
   .facts b { color:var(--ink); font-weight:600; }
-  .link { background:none; border:0; padding:0; color:var(--accent); cursor:pointer; text-decoration:underline; text-underline-offset:2px; font-weight:600; }
-  .stats { margin:0; display:grid; grid-template-columns:auto 2.2em 1fr; gap:3px 8px; align-items:center; font-size:.8rem; }
-  .stats dt { color:var(--muted); }
-  .stats dd { margin:0; text-align:right; font-variant-numeric:tabular-nums; }
-  .bar { height:7px; border-radius:4px; background:var(--none); overflow:hidden; }
-  .bar i { display:block; height:100%; border-radius:4px; background:var(--t); }
-  .acts { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-  .tog { display:inline-flex; align-items:center; gap:6px; font-size:.85rem; border:1px solid var(--line); background:var(--card);
-    border-radius:999px; padding:4px 12px 4px 6px; cursor:pointer; }
+  .link { background:none; border:0; padding:0; font:inherit; color:var(--accent); cursor:pointer; text-decoration:underline; text-underline-offset:3px; font-weight:600; }
+  .acts { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+  .btn { font-size:.88rem; border:1px solid var(--line); background:none; color:var(--ink); border-radius:999px; padding:7px 16px; cursor:pointer; }
+  .btn:hover { border-color:var(--muted); }
+  .btn[aria-pressed=true] { border-color:var(--accent); color:var(--accent); }
+  .tog { display:inline-flex; align-items:center; gap:7px; font-size:.84rem; color:var(--muted); border:1px solid var(--line); background:none;
+    border-radius:999px; padding:5px 14px 5px 7px; cursor:pointer; }
   .tog svg { width:20px; height:20px; }
   .tog .bo, .tog .bl { fill:none; stroke:var(--muted); stroke-width:1.4; }
   .tog .bt, .tog .bb { fill:none; }
-  .tog .bc { fill:var(--card); stroke:var(--muted); stroke-width:1.4; }
-  .tog[aria-pressed=true] { border-color:var(--ink); }
+  .tog .bc { fill:var(--bg); stroke:var(--muted); stroke-width:1.4; }
+  .tog[aria-pressed=true] { color:var(--ink); border-color:var(--ink); }
   .tog[aria-pressed=true] .bo, .tog[aria-pressed=true] .bl { stroke:#1b1b25; stroke-width:1.6; }
   .tog[aria-pressed=true] .bt { fill:var(--red); }
   .tog.s[aria-pressed=true] .bt { fill:var(--gold); }
   .tog[aria-pressed=true] .bb, .tog[aria-pressed=true] .bc { fill:#f4f1e6; }
   .tog[aria-pressed=true] .bc { stroke:#1b1b25; }
-  .tabs { display:flex; gap:4px; padding:12px 16px 0; border-bottom:1px solid var(--line); }
-  .tab { border:0; background:none; color:var(--muted); padding:6px 12px 8px; cursor:pointer; font-size:.92rem; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tabs { display:flex; gap:28px; margin:44px 32px 0; border-bottom:1px solid var(--line); }
+  .tab { border:0; background:none; color:var(--muted); padding:0 0 12px; cursor:pointer; font-size:.95rem; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tab:hover { color:var(--ink); }
   .tab[aria-selected=true] { color:var(--ink); border-bottom-color:var(--accent); font-weight:600; }
-  .panel { padding:12px 16px 4px; }
-  .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(156px, 1fr)); gap:10px; }
-  .tile { margin:0; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:4px 4px 6px; text-align:center; font-size:.8rem; }
-  .tile canvas { margin:0 auto; }
-  .note { color:var(--muted); font-size:.82rem; margin:.2rem 0 .7rem; }
-  table { border-collapse:collapse; font-size:.85rem; }
+  .panel { padding:28px 32px 0; }
+  .panel > .seg { margin-bottom:24px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(156px, 1fr)); gap:14px; }
+  .tile { margin:0; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px 4px 10px; text-align:center; font-size:.8rem; color:var(--muted); }
+  .tile canvas { margin:0 auto 2px; }
+  .note { color:var(--muted); font-size:.88rem; line-height:1.65; margin:0 0 24px; max-width:62ch; }
+  .sec + .sec { margin-top:44px; }
+  .sec h3 { font-size:.95rem; margin:0 0 18px; }
+  table { border-collapse:collapse; font-size:.88rem; }
   .mt { width:100%; }
-  .mt th { text-align:left; color:var(--muted); font-weight:500; font-size:.76rem; padding:4px 6px; border-bottom:1px solid var(--line); }
-  .mt td { padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  .mt th { text-align:left; color:var(--muted); font-weight:500; font-size:.78rem; padding:0 10px 10px; border-bottom:1px solid var(--line); }
+  .mt td { padding:12px 10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  .mt tr:last-child td { border-bottom:0; }
+  .mt th, .mt td:last-child { white-space:nowrap; }
+  .mt th:first-child, .mt td:first-child { padding-left:0; }
+  .mt th:last-child, .mt td:last-child { padding-right:0; }
   .mt .r { text-align:right; font-variant-numeric:tabular-nums; }
   .mt tr.mine td:nth-child(2) { font-weight:700; }
   .mt tr.never td { color:var(--muted); }
@@ -152,12 +164,17 @@
   .x1 { color:var(--weak); background:var(--weakbg); }
   .x0 { color:var(--muted); background:var(--none); }
   .x2 { color:var(--muted); }
-  .lists { display:grid; grid-template-columns:1fr 1fr; gap:4px 24px; }
-  .lists h4 { margin:.5rem 0 .25rem; font-size:.86rem; }
-  .lists p { margin:.2rem 0; display:flex; gap:6px; align-items:baseline; flex-wrap:wrap; font-size:.84rem; }
-  .lists p > .x { flex:none; }
-  .dfoot { padding:10px 16px 16px; font-size:.8rem; color:var(--muted); }
-  .dfoot p { margin:.3rem 0; }
+  .stats { margin:0; display:grid; grid-template-columns:5.5em 2.5em minmax(0, 320px); gap:14px 16px; align-items:center; font-size:.92rem; }
+  .stats dt { color:var(--muted); }
+  .stats dd { margin:0; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .bar { height:8px; border-radius:4px; background:var(--none); overflow:hidden; }
+  .bar i { display:block; height:100%; border-radius:4px; background:var(--t); }
+  .lists { display:grid; grid-template-columns:1fr 1fr; gap:28px 48px; }
+  .lists h4 { margin:0 0 14px; font-size:.88rem; font-weight:500; color:var(--muted); }
+  .lists p { margin:0 0 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .lists p > .x { flex:none; margin-right:4px; }
+  .dfoot { margin:48px 32px 0; padding:20px 0 32px; border-top:1px solid var(--line); font-size:.8rem; line-height:1.7; color:var(--muted); }
+  .dfoot p { margin:0; }
   /* the match-ups */
   .lvl { display:flex; align-items:center; gap:8px; font-size:.9rem; color:var(--muted); }
   .lvl input { width:140px; accent-color:var(--accent); }
@@ -200,16 +217,24 @@
     .ctl { margin-left:0; }
     input[type=search] { width:100%; }
     canvas { width:136px; }
-    .tiles { grid-template-columns:repeat(2, 1fr); }
+    .phead { padding:22px 20px 0; }
+    .hero { grid-template-columns:1fr; justify-items:center; gap:28px; padding:24px 20px 0; }
+    .hero > div:last-child { justify-self:stretch; }
+    .form1 canvas { width:124px; height:108px; }
+    .fact { font-size:1.06rem; max-width:none; }
+    .tabs { margin:40px 20px 0; gap:22px; }
+    .panel { padding:24px 20px 0; }
+    .dfoot { margin:40px 20px 0; }
+    .tiles { grid-template-columns:repeat(2, 1fr); gap:10px; }
     .tile canvas { width:100%; }
-    .about { grid-template-columns:1fr; }
     .lists { grid-template-columns:1fr; }
+    .stats { grid-template-columns:5em 2.5em 1fr; }
     .mt .tcol { display:none; }
     .mt .tin { display:inline; }
-    .mt th, .mt td { padding:5px 4px; }
+    .mt th, .mt td { padding-left:6px; padding-right:6px; }
     .pairs { grid-template-columns:1fr; }
     .dhead { padding:12px; }
-    .panel, .about, section.m { padding-left:12px; padding-right:12px; }
+    section.m { padding-left:12px; padding-right:12px; }
     .team { padding-left:12px; padding-right:12px; }
   }
 </style>
@@ -275,38 +300,38 @@
   <button class="ghost" id="tdone">Done</button>
 </div>
 <dialog id="dlg" aria-labelledby="dname">
-  <div class="dhead">
-    <h2 id="dname"></h2><span class="type" id="dtype"></span>
-    <div class="seg" id="dforms" role="group" aria-label="Which form">
-      <button data-form="regular" aria-pressed="true">Regular</button><button data-form="shiny" aria-pressed="false">Shiny</button>
-    </div>
-    <button class="say" id="dsay">♪ Its cry</button>
+  <div class="phead">
+    <div><span class="pnum" id="dnum"></span><h2 id="dname"></h2><span class="type" id="dtype"></span></div>
     <button class="close" id="dclose" aria-label="Close">×</button>
   </div>
-  <div class="about" id="dabout">
+  <div class="hero">
+    <div class="both2">
+      <figure class="form1" id="dregf"><button class="tog r" id="downr" aria-pressed="false"></button></figure>
+      <figure class="form1" id="dshif"><button class="tog s" id="downs" aria-pressed="false"></button></figure>
+    </div>
     <div>
       <p class="fact" id="dfact"></p>
       <ul class="facts" id="dfacts"></ul>
-    </div>
-    <dl class="stats" id="dstats"></dl>
-    <div class="acts">
-      <button class="tog r" id="downr" aria-pressed="false"></button>
-      <button class="tog s" id="downs" aria-pressed="false"></button>
-      <button class="tog" id="dpick" aria-pressed="false"></button>
+      <div class="acts">
+        <button class="btn" id="dsay">♪ Its cry</button>
+        <button class="btn" id="dpick" aria-pressed="false"></button>
+      </div>
     </div>
   </div>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="views" id="tab-views" aria-controls="p-views">Views</button>
     <button class="tab" role="tab" data-tab="moves" id="tab-moves" aria-controls="p-moves">Moves</button>
-    <button class="tab" role="tab" data-tab="types" id="tab-types" aria-controls="p-types">Strong and weak</button>
+    <button class="tab" role="tab" data-tab="types" id="tab-types" aria-controls="p-types">Battle</button>
   </div>
-  <div class="panel" role="tabpanel" id="p-views" aria-labelledby="tab-views"><div class="tiles" id="tiles"></div></div>
+  <div class="panel" role="tabpanel" id="p-views" aria-labelledby="tab-views">
+    <div class="seg" id="dforms" role="group" aria-label="Which form">
+      <button data-form="regular" aria-pressed="true">Regular</button><button data-form="shiny" aria-pressed="false">Shiny</button>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </div>
   <div class="panel" role="tabpanel" id="p-moves" aria-labelledby="tab-moves"></div>
   <div class="panel" role="tabpanel" id="p-types" aria-labelledby="tab-types"></div>
-  <div class="dfoot">
-    <p id="dreg"></p><p id="dshi"></p>
-    <p><a id="dlink" target="_blank" rel="noopener">Its original sprites on SpriteCollab</a></p>
-  </div>
+  <div class="dfoot"><p id="dcred"></p></div>
 </dialog>
 <dialog id="mdlg" aria-labelledby="mtitle">
   <div class="dhead">
@@ -648,10 +673,10 @@ pickbtn.addEventListener('click', () => setPicking(!state.pick));
 document.getElementById('tdone').addEventListener('click', () => setPicking(false));
 document.getElementById('tgo').addEventListener('click', () => openMatch());
 
-// ---- a Pokémon's own page: what the game's Pokédex says, its stats, its moves, its views ----
+// ---- a Pokémon's page: who it is and what the game's Pokédex says, then its views, its moves and its battles ----
 const dlg = document.getElementById('dlg'), tiles = document.getElementById('tiles');
-let dlgMon = 0, dlgShiny = false, dlgCanvases = [];
-function fillDialog() {
+let dlgMon = 0, dlgShiny = false, dlgCanvases = [], dlgHero = [];
+function fillDialog() {  // the Views tab: every view it has, in the form picked there
   const m = MONS[dlgMon];
   dlgCanvases.forEach((c) => live.delete(c));
   tiles.textContent = '';
@@ -670,6 +695,16 @@ function fillDialog() {
   document.querySelectorAll('#dforms button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.form === 'shiny') === dlgShiny)));
   if (state.tab === 'views') requestAnimationFrame(() => dlgCanvases.forEach((c) => { size(c); live.add(c); }));
 }
+function fillHero() {  // both forms side by side, each with its ball
+  const m = MONS[dlgMon];
+  dlgHero.forEach((c) => { live.delete(c); c.remove(); });
+  dlgHero = [false, true].map((shiny) => {
+    const c = canvas(dlgMon, shiny, `${shiny ? 'Shiny ' : ''}${m.name}`, 'idle');
+    document.getElementById(shiny ? 'dshif' : 'dregf').prepend(c);
+    return c;
+  });
+  requestAnimationFrame(() => dlgHero.forEach((c) => { size(c); live.add(c); }));
+}
 const monLink = (n) => { const m = MONS[byNum.get(n)]; return `<button class="link" data-n="${n}">${esc(m.name)}</button>`; };
 const STATS = [['HP', 0], ['Attack', 1], ['Defense', 2], ['Speed', 3]];
 function fillAbout() {
@@ -678,31 +713,26 @@ function fillAbout() {
   const li = [];
   const from = MONS.find((o) => o.g.evo.some(([to]) => to === m.n));
   if (from) li.push(`Evolves from ${monLink(from.n)} at <b>level ${from.g.evo[0][1]}</b>`);
-  if (g.evo.length > 1) li.push(`Evolves into ${g.evo.map(([to]) => monLink(to)).join(', ').replace(/, ([^,]*)$/, ' or $1')} at <b>level ${g.evo[0][1]}</b>, whichever it likes`);
+  if (g.evo.length > 1) li.push(`Evolves into ${g.evo.map(([to]) => monLink(to)).join(', ').replace(/, ([^,]*)$/, ' or $1')} at <b>level ${g.evo[0][1]}</b>`);
   else if (g.evo.length) li.push(`Evolves into ${monLink(g.evo[0][0])} at <b>level ${g.evo[0][1]}</b>`);
-  else li.push('Its final form');
-  li.push(['Only by evolving', 'Hatches from an egg', 'Hatches from a <b>rare</b> egg', 'Hatches from a <b>legendary</b> egg'][g.rarity]
-    + (g.min > 1 ? `; met from level ${g.min}` : ''));
+  else li.push(from ? 'Its final form' : 'It doesn\'t evolve');
+  li.push(['Only by evolving', 'Hatches from an egg', 'Hatches from a rare egg', 'Hatches from a legendary egg'][g.rarity]);
   document.getElementById('dfacts').innerHTML = li.map((s) => `<li>${s}</li>`).join('');
-  document.getElementById('dstats').style.setProperty('--t', m.c);
-  document.getElementById('dstats').innerHTML = STATS.map(([k, j]) =>
-    `<dt>${k}</dt><dd>${g.stats[j]}</dd><dd class="bar"><i style="width:${Math.min(100, g.stats[j] / 1.6)}%"></i></dd>`).join('');
   fillOwn();
 }
+const downr = document.getElementById('downr'), downs = document.getElementById('downs'), dpick = document.getElementById('dpick');
+downr.innerHTML = downs.innerHTML = `${BALL} Have it`;
 function fillOwn() {
   const m = MONS[dlgMon];
-  const r = document.getElementById('downr'), s = document.getElementById('downs'), p = document.getElementById('dpick');
-  r.setAttribute('aria-pressed', String(owned(m.n, 'regular')));
-  s.setAttribute('aria-pressed', String(owned(m.n, 'shiny')));
-  r.innerHTML = `${BALL} ${owned(m.n, 'regular') ? 'I have it' : 'Have it?'}`;
-  s.innerHTML = `${BALL} ${owned(m.n, 'shiny') ? 'I have its shiny' : 'Have its shiny?'}`;
+  downr.setAttribute('aria-pressed', String(owned(m.n, 'regular')));
+  downs.setAttribute('aria-pressed', String(owned(m.n, 'shiny')));
   const on = picks.includes(dlgMon);
-  p.setAttribute('aria-pressed', String(on));
-  p.textContent = on ? '✓ In the match-ups' : '+ Add to match-ups';
+  dpick.setAttribute('aria-pressed', String(on));
+  dpick.textContent = on ? '✓ In the match-ups' : '+ Match-ups';
 }
-document.getElementById('downr').addEventListener('click', () => { const n = MONS[dlgMon].n; setOwned(n, 'regular', !owned(n, 'regular')); });
-document.getElementById('downs').addEventListener('click', () => { const n = MONS[dlgMon].n; setOwned(n, 'shiny', !owned(n, 'shiny')); });
-document.getElementById('dpick').addEventListener('click', () => {
+downr.addEventListener('click', () => { const n = MONS[dlgMon].n; setOwned(n, 'regular', !owned(n, 'regular')); });
+downs.addEventListener('click', () => { const n = MONS[dlgMon].n; setOwned(n, 'shiny', !owned(n, 'shiny')); });
+dpick.addEventListener('click', () => {
   if (!state.pick) setPicking(true);
   togglePick(dlgMon);
 });
@@ -729,25 +759,23 @@ function fillMoves() {
   for (const [lvl, id] of g.learn) {
     const [name, t, p] = GAME.moves[id], on = onButtons(g, id), mine = t === g.type;
     rows += `<tr class="${mine ? 'mine' : ''}${on ? '' : ' never'}"><td class="r">${lvl}</td><td>${name} <span class="tin">${tchip(t)}</span>${mine ? ' <span class="tag" title="Its own type: half as strong again">own type</span>' : ''}</td>`
-      + `<td class="tcol">${tchip(t)}</td><td class="r">${p}</td><td>${on || '<span title="A stronger move it already knows keeps its button">never</span>'}</td></tr>`;
+      + `<td class="tcol">${tchip(t)}</td><td class="r">${p}</td><td>${on || '<span title="Never: a stronger move keeps its button">–</span>'}</td></tr>`;
   }
-  el.innerHTML = `<p class="note">Every move it learns as it grows, at the level it learns it (level 1: from the start).
-    In a battle it has two buttons: its strongest move of its own type, and its strongest other one. A move only takes
-    a button from a weaker one, so some never get one.${struggle ? ' Until it knows a move it fights with Struggle.' : ''}</p>
-    <table class="mt"><thead><tr><th class="r">Level</th><th>Move</th><th class="tcol">Type</th><th class="r">Power</th><th>On its buttons</th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML = `<p class="note">The moves it learns as it grows. In a battle it uses two: its strongest of its own type and
+    its strongest other one.${struggle ? ' Until it learns one, it fights with Struggle.' : ''}</p>
+    <table class="mt"><thead><tr><th class="r">Level</th><th>Move</th><th class="tcol">Type</th><th class="r">Power</th><th>In battle</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
-function fillTypes() {
+function fillTypes() {  // the Battle tab: its base stats, and what it's strong and weak against
   const m = MONS[dlgMon], g = m.g, el = document.getElementById('p-types');
   const T = GAME.types.map((_, t) => t);
-  const list = (ts) => ts.map(tchip).join(' ');
-  const row = (e, ts, what) => (ts.length ? `<p>${xtag(e)} ${what} ${list(ts)}</p>` : '');
-  const out = [4, 1, 0].map((e) => row(e, T.filter((t) => effect(g.type, t) === e), 'on')).join('');
-  const inn = [4, 1, 0].map((e) => row(e, T.filter((t) => effect(t, g.type) === e), 'from')).join('');
-  el.innerHTML = `<p class="note">By the type chart the game's battles use. A move of the attacker's own type hits half as hard again.</p>
+  const row = (e, ts) => (ts.length ? `<p>${xtag(e)} ${ts.map(tchip).join(' ')}</p>` : '');
+  const out = [4, 1, 0].map((e) => row(e, T.filter((t) => effect(g.type, t) === e))).join('');
+  const inn = [4, 1, 0].map((e) => row(e, T.filter((t) => effect(t, g.type) === e))).join('');
+  el.innerHTML = `<div class="sec"><h3>Base stats</h3><dl class="stats" style="--t:${m.c}">${STATS.map(([k, j]) =>
+      `<dt>${k}</dt><dd>${g.stats[j]}</dd><dd class="bar"><i style="width:${Math.min(100, g.stats[j] / 1.6)}%"></i></dd>`).join('')}</dl></div>
+    <div class="sec"><h3>Strong and weak</h3>
     <div class="lists"><div><h4>Its ${tname(g.type)} moves hit</h4>${out || '<p>Everything the same</p>'}</div>
-    <div><h4>It takes</h4>${inn || '<p>The same from everything</p>'}</div></div>
-    <p style="margin-top:12px"><button class="ghost" id="dcompare">Compare it with others</button></p>`;
-  document.getElementById('dcompare').addEventListener('click', () => { dlg.close(); setPicking(true); togglePick(dlgMon, true); });
+    <div><h4>Moves that hit it</h4>${inn || '<p>The same from everything</p>'}</div></div></div>`;
 }
 function showTab(tab) {
   state.tab = tab;
@@ -825,14 +853,18 @@ function say(m) {
 function openMon(i) {
   const m = MONS[i];
   dlgMon = i; dlgShiny = state.form === 'shiny';
-  document.getElementById('dname').textContent = `${no(m.n)} ${m.name}`;
+  document.getElementById('dnum').textContent = no(m.n);
+  document.getElementById('dname').textContent = m.name;
   const ty = document.getElementById('dtype');
   ty.textContent = m.type; ty.style.background = m.c;
-  document.getElementById('dreg').textContent = `Regular sprite by ${m.cr[0]}.`;
-  document.getElementById('dshi').textContent = `Shiny sprite by ${m.cr[1]}.`;
-  document.getElementById('dlink').href = `https://sprites.pmdcollab.org/#/${String(m.n).padStart(4, '0')}`;
+  downr.setAttribute('aria-label', `I have ${m.name}`);
+  downs.setAttribute('aria-label', `I have shiny ${m.name}`);
+  const sc = `https://sprites.pmdcollab.org/#/${String(m.n).padStart(4, '0')}`;
+  document.getElementById('dcred').innerHTML = (m.cr[0] === m.cr[1] ? `Sprites by ${esc(m.cr[0])}` : `Sprites by ${esc(m.cr[0])} (regular) and ${esc(m.cr[1])} (shiny)`)
+    + `, from <a href="${sc}" target="_blank" rel="noopener">SpriteCollab</a>.`;
   if (!dlg.open) dlg.showModal();
   dlg.scrollTop = 0;
+  fillHero();
   fillAbout();
   fillMoves();
   fillTypes();
@@ -843,7 +875,7 @@ document.querySelectorAll('#dforms button').forEach((b) => b.addEventListener('c
 document.getElementById('dclose').addEventListener('click', () => dlg.close());
 document.getElementById('dsay').addEventListener('click', () => say(MONS[dlgMon]));
 dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
-dlg.addEventListener('close', () => { dlgCanvases.forEach((c) => live.delete(c)); dlgCanvases = []; });
+dlg.addEventListener('close', () => { [...dlgCanvases, ...dlgHero].forEach((c) => live.delete(c)); dlgCanvases = []; });
 
 // ---- the match-ups: the picked ones against each other, both ways, by the game's rules ----
 const mdlg = document.getElementById('mdlg'), mlvl = document.getElementById('mlvl'), mlvlo = document.getElementById('mlvlo');
