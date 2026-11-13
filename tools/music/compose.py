@@ -374,6 +374,17 @@ def thirds_below(items, scale_root, scale_pcs, steps=2):
     return out
 
 
+def trem(items, step):
+    """Held notes as quick repeats (a surf guitar's picking)."""
+    out = []
+    for it in items:
+        if it[0] == 'note' and it[2] >= TPB and it[2] % step == 0:
+            out += [('note', it[1], step, it[3] if k == 0 else False) for k in range(it[2] // step)]
+        else:
+            out.append(it)
+    return out
+
+
 def echo(items, delay, total):
     """The melody again, delay ticks late (what runs past the end is cut)."""
     out = [('rest', delay)]
@@ -501,7 +512,9 @@ class Builder:
         self.sections = {}
         self.intro, self.loop = [], []
 
-    def section(self, name, bars, chords, melody=None, harmony=None, bass=None, drums=None, insts=None, vols=None):
+    def section(self, name, bars, chords, melody=None, harmony=None, bass=None, drums=None, insts=None, vols=None,
+                tremolo=0):
+        """tremolo: the melody's notes of a quarter or more played as repeated notes this many ticks long."""
         where = f'{self.name}/{name}'
         total = bars * self.bar
         tl = chord_timeline(chords, bars, self.bar, TPB)
@@ -516,6 +529,8 @@ class Builder:
                 raise ValueError(f'{where}: the melody is {t} ticks, {total} expected')
             check_melody(mel, tl, self.bar, where, self.scale_abs)
             check_range(mel, self.lead[0], self.lead[1], where + ' melody')
+            if tremolo:
+                mel = trem(mel, tremolo)
         else:
             mel = [('rest', total)]
         chans[0] = [('inst', self.instruments[insts[0]]), ('vol', vols[0]), ('arp', 0, 0)] + mel

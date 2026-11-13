@@ -6,7 +6,6 @@
 #include "savename.h"
 #include "host.h"
 #include "sfx_notes.h"
-#include "host_internal.h"
 #include <Preferences.h>
 #include <atomic>
 #if UI_V2
@@ -44,7 +43,7 @@ void musicSetEnabled(bool on) {
 bool hostMusicEnabled(void) { return gMusicOn; }
 void hostSetMusicEnabled(bool on) { musicSetEnabled(on); }
 void hostMusicHidden(bool hidden) { gMusicHidden = hidden; }
-uint8_t hostMusicWanted() { return gMusicWant; }
+uint8_t hostMusicWanted() { return gMusicWant; }  // (for the tests)
 #else
 uint8_t hostMusicWanted() { return 0; }
 bool hostMusicEnabled(void) { return false; }

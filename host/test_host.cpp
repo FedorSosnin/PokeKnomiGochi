@@ -30,6 +30,8 @@
 #include "music.h"
 #include <Preferences.h>
 
+uint8_t hostMusicWanted();  // host_audio.cpp: the track the game wants now (V2's music; 0 with V1)
+
 static int gFails = 0, gChecks = 0;
 #define CHECK(cond)                                                     \
   do {                                                                  \

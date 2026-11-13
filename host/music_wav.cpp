@@ -1,5 +1,6 @@
 // Plays every song (music_data.h) into a WAV file, to listen to them without the game: its intro and its loop twice
-// (a jingle once), at the computers' 48 kHz, as music_synth.h plays them in the game. `make -C host music`.
+// (a jingle once), at the computers' 48 kHz, as music_synth.h plays them in the game, and a page (index.html) that
+// plays them in a browser. `make -C host music`.
 //   music_wav <folder> [name]    only the songs whose track name contains name
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,17 @@ static const char *const TRACK_IDS[MUS_COUNT] = {
   "legend", "tower_fight", "buddy", "victory", "berry", "run", "surf", "dungeon", "quiz", "volley", "evolve", "goodbye",
 };
 
+// where each plays (music.h)
+static const char *const TRACK_WHERE[MUS_COUNT] = {
+  "", "Choosing a starter, picking an egg", "Home, by day (fades out after 2 minutes untouched)",
+  "Home, dusk to dawn, the pet awake: the same tune, slower", "The card, the Pokedex, trophies, settings, buddies, the games menu",
+  "Knomi Island and the zones' grids", "Knomi Tower, outside and between floors", "A battle in the Forest",
+  "A battle at the Beach", "A battle in the Cave", "A battle in the Mansion", "A battle in the Field",
+  "A legendary Pokemon, and the tower's Legend", "A tower floor's guardian", "A battle with a buddy",
+  "A battle won, a catch: once", "Berry Drop", "PokeRun", "PikaSurf", "PokeDungeon", "Who's That? and Showdown",
+  "Poke Ball Volley", "While it evolves: once", "A goodbye",
+};
+
 static void put32(FILE *f, uint32_t v) { fwrite(&v, 4, 1, f); }
 static void put16(FILE *f, uint16_t v) { fwrite(&v, 2, 1, f); }
 
@@ -20,6 +32,14 @@ int main(int argc, char **argv) {
   const char *dir = argc > 1 ? argv[1] : ".";
   const char *only = argc > 2 ? argv[2] : nullptr;
   const int rate = 48000;
+  char page[512];
+  snprintf(page, sizeof(page), "%s/index.html", dir);
+  FILE *html = only ? nullptr : fopen(page, "w");
+  if (html)
+    fprintf(html, "<!doctype html><meta charset=utf-8><title>PokeKnomiGochi music</title>\n"
+                  "<style>body{font:15px system-ui;margin:24px;background:#16141f;color:#eee}td{padding:6px 10px}"
+                  "td:first-child{color:#9a96b4}audio{height:32px}</style>\n<h2>PokeKnomiGochi music</h2>\n"
+                  "<p>Each song's intro and its loop twice, as the game plays it.</p><table>\n");
   for (int t = 1; t < MUS_COUNT; t++) {
     if (only && !strstr(TRACK_IDS[t], only)) continue;
     const MusicSong &s = MUSIC_SONGS[t - 1];
@@ -32,7 +52,7 @@ int main(int argc, char **argv) {
     p.want(t);
     p.render(buf.data(), n, 1.0f);
     double peak = 0, sum = 0;
-    int loopFrom = (int)(s.introTicks * spt);
+    int loopFrom = s.loops ? (int)(s.introTicks * spt) : 0;  // (a jingle: all of it)
     for (int i = 0; i < n; i++) {
       peak = fmax(peak, fabs(buf[i]));
       if (i >= loopFrom) sum += buf[i] * buf[i];
@@ -66,6 +86,13 @@ int main(int argc, char **argv) {
     fclose(f);
     printf("%-12s %-16s %6.1f s  peak %.3f  rms %.4f (%.1f dBFS)%s\n", TRACK_IDS[t], s.name, secs, peak, rms,
            20 * log10(rms + 1e-9), peak > 1.0 ? "  CLIPS" : "");
+    if (html)
+      fprintf(html, "<tr><td>%d</td><td><b>%s</b><br>%s</td><td><audio controls preload=none src=\"%02d_%s.wav\">"
+                    "</audio></td></tr>\n", t, s.name, TRACK_WHERE[t], t, TRACK_IDS[t]);
+  }
+  if (html) {
+    fprintf(html, "</table>\n");
+    fclose(html);
   }
   return 0;
 }

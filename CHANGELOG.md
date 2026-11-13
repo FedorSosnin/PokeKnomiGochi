@@ -6,6 +6,10 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
+## [Unreleased]
+
+- **Music on the Mac, Windows and the web:** original chiptune for every screen, in the same square-wave style as the sound effects. There's a theme for the home (softer from dusk to dawn), the menus, Travel and Knomi Tower. Each zone has its own battle music, and legends, the tower's guardians and buddies each have theirs. Each mini game has its own tune, and evolving and goodbyes get one too. A short fanfare plays for a win or a catch. The home's music fades out after two minutes untouched and comes back on your next tap, and there's no music while your Pokémon sleeps. **Music** has its own switch on the settings page, under **Sound**, which still silences everything. There's also a **Music** item in the Mac and Windows menu and a **Music** button under the web game. The Knomi has no speaker, so nothing changes there.
+
 ## [2.1.2] - 2026-11-12
 
 - **A CRT screen on the Mac, Windows and the web, on by default:** the game as on an old tube TV. Each scanline is a soft beam that swells where the picture is bright, the colours are richer with a warm glow and halo, and the picture bulges as through curved glass into the tube's dark edge, with a reflection and a little grain. Taps and clicks land on what you see through the curve. They now open at Large; **CRT Screen** in the Mac and Windows menu (a **CRT** button under the web game) turns it off.

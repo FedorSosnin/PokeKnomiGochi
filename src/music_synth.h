@@ -54,7 +54,7 @@ struct MusicSong {
 #include "music_data.h"  // MUSIC_INST, MUSIC_DRUMS, MUSIC_SONGS (tools/music/songs.py)
 
 // each voice's share of the mix: the pulses are loud for their amplitude, the triangle soft
-static const float MUSIC_CH_GAIN[4] = { 0.22f, 0.40f, 0.26f, 0.62f };
+static const float MUSIC_CH_GAIN[4] = { 0.28f, 0.40f, 0.24f, 0.62f };
 #define MUSIC_LEVEL 0.29f      // the whole mix, a song's gain on top: about 9 dB under the effects
 #define MUSIC_ARP_HZ 50.0f     // an arpeggio's notes go by at this rate
 
@@ -209,8 +209,10 @@ class MusicPlayer {
     for (;;) {
       uint8_t b = s[v.pos];
       if (b == MS_END) {
-        if (!song.loops) {
-          st_.done = true;
+        if (!song.loops) {  // a jingle: its last notes ring out, then it's done (sample())
+          if (v.stage && v.stage < 4) release(v);
+          v.next = 1e300;
+          v.gateOff = 0;
           return;
         }
         uint16_t p = 0;  // back to the loop point (every other event is two bytes)
@@ -275,14 +277,16 @@ class MusicPlayer {
     if (st_.done) return 0.0f;
     const MusicSong &song = MUSIC_SONGS[st_.track - 1];
     float mix = 0;
+    bool over = true;  // a jingle's voices all ended and silent
     for (int c = 0; c < 4; c++) {
       MusicVoice &v = st_.v[c];
-      while (st_.clock >= v.next && !st_.done) event(c);
-      if (st_.done) return 0.0f;
+      while (st_.clock >= v.next) event(c);
       float x = voice(c, v);
       if (!(mute >> c & 1)) mix += x * MUSIC_CH_GAIN[c] * (v.vol / 15.0f);
+      over = over && v.next > 1e299 && !v.stage && !v.drum;
     }
     st_.clock += 1;
+    if (over) st_.done = true;
     return mix * song.gain * MUSIC_LEVEL;
   }
 

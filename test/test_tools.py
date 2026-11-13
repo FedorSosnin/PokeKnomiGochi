@@ -39,6 +39,17 @@ class TestToolsCompile(unittest.TestCase):
                                 f'{name} is executable but has no shebang')
 
 
+class TestMusic(unittest.TestCase):
+    """V2's music (tools/music/songs.py): src/music_data.h is made from the songs as they are now. The compiler checks
+    the rest as it goes: every bar adds up, the four voices of a song end together, a song for each of music.h's
+    tracks."""
+
+    def test_music_data_is_up_to_date(self):
+        r = subprocess.run([sys.executable, '-I', os.path.join(TOOLS, 'music', 'songs.py'), '--check'],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+
 class TestTimeZones(unittest.TestCase):
     """The Knomi's time zones (timezones.h): every POSIX rule gives the same UTC offset as the real zone
     (the system's tz database), hour by hour for three years, summer time included."""
