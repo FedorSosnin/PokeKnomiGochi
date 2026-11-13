@@ -33,6 +33,9 @@ float gStep = 1, gPhase = 0;       // canvas pixels per screen pixel; the lines'
 int gSub = 1;
 // per side: through the curved glass
 std::vector<int16_t> gMapX, gMapY; // the canvas point under each screen pixel, x16 (-1: off the picture)
+std::vector<int16_t> gLineY;       // ...and the row its scanline is on, x16: past the canvas's edge the colour stays
+                                   // the edge's but the lines go on straight and evenly spaced (Fedor: held at the
+                                   // edge they bent round it, "an actual staircasing visual effect")
 std::vector<uint8_t> gShade, gGlass;  // the rim's darkening and its hairline edge; the glass's reflection
 float gLut[65][64];                // a line's light: exp(-(d/w)^2) * 1.2 by distance from its middle and brightness
 bool gLutMade = false;
@@ -98,6 +101,7 @@ void makeSide(int side) {
   size_t n = (size_t)side * side;
   gMapX.assign(n, -1);
   gMapY.assign(n, -1);
+  gLineY.assign(n, 0);
   gShade.assign(n, 0);
   gGlass.assign(n, 0);
   const float R = side / 2.0f;
@@ -121,6 +125,7 @@ void makeSide(int side) {
       // canvas's round edge, the edge itself (EDGE_R), as if the picture went on
       float nx = dx / R, ny = dy / R, f = (1 - K + K * (nx * nx + ny * ny)) / SHRINK;
       float cxo = nx * f * C / 2, cyo = ny * f * C / 2, cr = sqrtf(cxo * cxo + cyo * cyo);
+      gLineY[i] = (int16_t)((C / 2.0f + cyo) * 16);
       if (cr > EDGE_R) cxo *= EDGE_R / cr, cyo *= EDGE_R / cr;
       float sx = C / 2.0f + cxo, sy = C / 2.0f + cyo;
       if (r <= R && sx >= 0 && sy >= 0 && sx < C && sy < C) {
@@ -255,7 +260,8 @@ void hostCrtRows(uint8_t *out, int stride, bool bgra, int y0, int y1, uint32_t f
         int li = gBeamL[(size_t)iy * B2 + ix2] >> 2;
         float f = 0;
         for (int k = 0; k < gSub; k++) {  // the line's light where this pixel sits in it
-          float yy = gSub > 1 ? sy + ((k + 0.5f) / gSub - 0.5f) * gStep : sy;
+          float ly = gLineY[i] / 16.0f;
+          float yy = gSub > 1 ? ly + ((k + 0.5f) / gSub - 0.5f) * gStep : ly;
           float t = yy / 2 + gPhase;
           t -= floorf(t);
           int di = (int)(fabsf(t - 0.5f) * 4 * 32 + 0.5f);

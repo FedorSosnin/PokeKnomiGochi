@@ -490,7 +490,8 @@ function makeCrt(cv) {
           vec2 px = vec2(gl_FragCoord.x, side - gl_FragCoord.y);  // from the top
           float R = side * 0.5; vec2 n = (px - R) / R;
           float f = (1.0 - 0.045 + 0.045 * dot(n, n)) / 0.965;  // the curved glass (CRT_K, CRT_SHRINK)
-          vec2 d = n * f * 233.0;  // past the canvas's round edge, the edge itself (host_crt.cpp's EDGE_R)
+          vec2 d = n * f * 233.0;  // past the canvas's round edge, the edge's colour (host_crt.cpp's EDGE_R)...
+          float ly = d.y + 233.0;  // ...but the scanlines go on straight (host_crt.cpp's gLineY)
           if (length(d) > 232.5) d *= 232.5 / length(d);
           vec2 s = d + 233.0;
           vec3 pic = vec3(0.0);
@@ -501,7 +502,7 @@ function makeCrt(cv) {
             float L = (floor(floor(dot(g, vec3(0.3, 0.59, 0.11)) + 0.5) / 4.0) + 0.5) / 64.0, w = 0.85 + 1.35 * L, fl = 0.0;
             for (int k = 0; k < 4; k++) {
               if (k >= sub) break;
-              float yy = sub > 1 ? s.y + ((float(k) + 0.5) / float(sub) - 0.5) * step : s.y;
+              float yy = sub > 1 ? ly + ((float(k) + 0.5) / float(sub) - 0.5) * step : ly;
               float d = abs(fract(yy * 0.5 + phase) - 0.5) * 4.0;
               fl += exp(-(d / w) * (d / w)) * 1.2;
             }
