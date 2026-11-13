@@ -10,6 +10,7 @@
 #include <atomic>
 #if UI_V2
 #include "music_synth.h"
+#include "chirp.h"
 #endif
 
 #define SAMPLE_RATE HOST_AUDIO_RATE
@@ -42,6 +43,16 @@ static void saveLevel(const char *key, uint8_t v) {
   p.begin(SAVE_NS, false);
   p.putUChar(key, v);
   p.end();
+}
+// a Pokemon saying its name (chirp.h): built here on the game's thread, handed over when the audio thread has taken
+// the last one (a new one while that's still waiting is dropped)
+static ChirpPlayer gVoice;
+static Chirp gVoiceNext;
+static std::atomic<bool> gVoiceReady{false};
+void voiceSay(int16_t dex, const char *name, uint8_t mood) {
+  if (gSleeping || !gOn || gVoiceReady.load(std::memory_order_acquire)) return;
+  chirpBuild(gVoiceNext, name, dex, mood);
+  gVoiceReady.store(true, std::memory_order_release);
 }
 void musicWant(uint8_t track) { gMusicWant.store(track, std::memory_order_relaxed); }
 bool musicEnabled() { return gMusicOn; }
@@ -91,6 +102,7 @@ void audioBegin() {
   gSndGain = LEVEL_GAIN[gSndLv];
   gMusGain = LEVEL_GAIN[gMusLv];
   gMusic.begin(SAMPLE_RATE);
+  gVoice.begin(SAMPLE_RATE);
 #endif
   p.end();
 }
@@ -155,13 +167,14 @@ static inline int16_t withMusic(int16_t s, bool playing) {
   static const float duckIn = 1.0f - expf(-1000.0f / (DUCK_IN_MS * SAMPLE_RATE));
   static const float duckOut = 1.0f - expf(-1000.0f / (DUCK_OUT_MS * SAMPLE_RATE));
   static const float ease = 1.0f - expf(-1000.0f / (LEVEL_EASE_MS * SAMPLE_RATE));
-  float target = playing ? DUCK_LEVEL : 1.0f;
+  float voice = gVoice.sample();
+  float target = playing || gVoice.active() ? DUCK_LEVEL : 1.0f;
   gDuck += (target - gDuck) * (target < gDuck ? duckIn : duckOut);
   gSndGain += (LEVEL_GAIN[gSndLv.load(std::memory_order_relaxed)] - gSndGain) * ease;
   gMusGain += (LEVEL_GAIN[gMusLv.load(std::memory_order_relaxed)] - gMusGain) * ease;
   float m = 0;
   gMusic.render(&m, 1, gDuck * gMusGain);
-  int32_t v = (int32_t)lrintf((s + m * 32767.0f) * gSndGain);
+  int32_t v = (int32_t)lrintf((s + (m + voice) * 32767.0f) * gSndGain);
   return (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
 }
 #endif
@@ -172,6 +185,10 @@ extern "C" void hostAudioRender(int16_t *out, int frames) {
     bool quiet = !gOn || !gMusicOn;
     uint8_t want = quiet || gSleeping || gMusicHidden ? (uint8_t)MUS_NONE : gMusicWant.load(std::memory_order_relaxed);
     gMusic.want(want, quiet);
+    if (gVoiceReady.load(std::memory_order_acquire)) {
+      gVoice.start(gVoiceNext);
+      gVoiceReady.store(false, std::memory_order_release);
+    }
   }
 #endif
   for (int i = 0; i < frames; i++) {

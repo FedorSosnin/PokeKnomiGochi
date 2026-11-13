@@ -28,6 +28,7 @@
 #include "sdmon.h"
 #include "power.h"
 #include "music.h"
+#include "chirp.h"
 #include <Preferences.h>
 
 uint8_t hostMusicWanted();  // host_audio.cpp: the track the game wants now (V2's music; 0 with V1)
@@ -1147,6 +1148,29 @@ static void testGame() {
     double quiet = rms(HOST_AUDIO_RATE);
     CHECK(high > 0 && quiet < high * 0.5 && quiet > high * 0.1);
     musicSetVolume(3);
+    {  // a Pokemon says its name in chirps (chirp.h): a chirp a syllable, in Latin letters, kana and Hangul; it sounds
+       // with the effects, and not with SOUND off
+      ChirpSyl syl[CHIRP_SYL_MAX];
+      CHECK(chirpSyllables("PIKACHU", syl) == 3 && syl[0].v == 'i' && syl[1].v == 'a' && syl[2].v == 'u');
+      CHECK(chirpSyllables("CHARMANDER", syl) == 3 && syl[0].on == CS_AFFRIC);
+      CHECK(chirpSyllables("ARCANINE", syl) == 3);  // its last e silent
+      CHECK(chirpSyllables("SQUIRTLE", syl) == 2);  // ...but not -le's
+      CHECK(chirpSyllables("\xe3\x83\x95\xe3\x82\xb7\xe3\x82\xae\xe3\x83\x80\xe3\x83\x8d", syl) == 5);  // fu shi gi da ne
+      CHECK(chirpSyllables("\xe3\x83\x94\xe3\x82\xab\xe3\x83\x81\xe3\x83\xa5\xe3\x82\xa6", syl) == 3 && syl[2].lng);  // pi ka chuu
+      CHECK(chirpSyllables("\xec\x9d\xb4\xec\x83\x81\xed\x95\xb4\xec\x94\xa8", syl) == 4);  // i sang hae ssi
+      CHECK(chirpPitch(25) > chirpPitch(26) && chirpPitch(143) < 0);  // Pikachu higher than Raichu; Snorlax low
+      musicSetEnabled(false);
+      hostAudioRender(pcm.data(), HOST_AUDIO_RATE * 2);
+      CHECK(!anySound(HOST_AUDIO_RATE / 10));
+      voiceSay(25, "PIKACHU", VOICE_PET);
+      CHECK(anySound(HOST_AUDIO_RATE));
+      hostAudioRender(pcm.data(), HOST_AUDIO_RATE);
+      audioSetEnabled(false);
+      voiceSay(25, "PIKACHU", VOICE_PET);
+      CHECK(!anySound(HOST_AUDIO_RATE));
+      audioSetEnabled(true);
+      musicSetEnabled(true);
+    }
     hostSerialPush("MUSIC");
     runTicks(100);
     CHECK(hostMusicWanted() != 17);

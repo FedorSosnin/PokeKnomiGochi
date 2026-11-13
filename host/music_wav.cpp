@@ -8,6 +8,7 @@
 #include <math.h>
 #include <vector>
 #include "music_synth.h"
+#include "chirp.h"
 
 static const char *const TRACK_IDS[MUS_COUNT] = {
   "none", "hello", "home", "night", "menu", "travel", "tower", "forest", "beach", "cave", "mansion", "field",
@@ -29,6 +30,92 @@ static const char *const TRACK_WHERE[MUS_COUNT] = {
 
 static void put32(FILE *f, uint32_t v) { fwrite(&v, 4, 1, f); }
 static void put16(FILE *f, uint16_t v) { fwrite(&v, 2, 1, f); }
+
+static bool writeWav(const char *path, const std::vector<float> &buf, int rate) {
+  FILE *f = fopen(path, "wb");
+  if (!f) {
+    perror(path);
+    return false;
+  }
+  int n = (int)buf.size();
+  fwrite("RIFF", 1, 4, f);
+  put32(f, 36 + n * 2);
+  fwrite("WAVEfmt ", 1, 8, f);
+  put32(f, 16);
+  put16(f, 1);
+  put16(f, 1);
+  put32(f, rate);
+  put32(f, rate * 2);
+  put16(f, 2);
+  put16(f, 16);
+  fwrite("data", 1, 4, f);
+  put32(f, n * 2);
+  for (int i = 0; i < n; i++) {
+    float v = buf[i] * 32767.0f;
+    if (v > 32767) v = 32767;
+    if (v < -32768) v = -32768;
+    put16(f, (uint16_t)(int16_t)lrintf(v));
+  }
+  fclose(f);
+  return true;
+}
+
+// a Pokemon saying its name (chirp.h), added to buf
+static void sayInto(std::vector<float> &buf, const char *name, int16_t dex, uint8_t mood, int rate) {
+  Chirp c;
+  chirpBuild(c, name, dex, mood);
+  c.delayMs = 0;
+  ChirpPlayer p;
+  p.begin((float)rate);
+  p.start(c);
+  for (int i = 0; i < rate * 4 && p.active(); i++) buf.push_back(p.sample());
+  buf.insert(buf.end(), rate / 10, 0.0f);
+}
+
+// the voices: a few Pokemon petted and after a win, and all 151 petted, in the Pokedex's order
+static void voices(const char *dir, FILE *html, int rate) {
+  static const int16_t SOME[] = { 25, 1, 4, 7, 6, 39, 143, 150, 129, 94 };
+  if (html) fprintf(html, "<h2>Voices</h2>\n<p>Each Pokemon says its name in chirps: petted at home, and after a win."
+                          "</p><table>\n");
+  for (int16_t d : SOME) {
+    char path[512], low[24];
+    snprintf(low, sizeof(low), "%s", DEX_TBL[d].name);
+    for (char *q = low; *q; q++) *q = (char)(*q >= 'A' && *q <= 'Z' ? *q + 32 : *q);
+    for (int m = 0; m < 2; m++) {
+      std::vector<float> buf;
+      sayInto(buf, DEX_TBL[d].name, d, m ? VOICE_WIN : VOICE_PET, rate);
+      snprintf(path, sizeof(path), "%s/voice_%03d_%s_%s.wav", dir, d, low, m ? "win" : "pet");
+      writeWav(path, buf, rate);
+    }
+    if (html)
+      fprintf(html, "<tr><td>#%d</td><td><b>%s</b></td><td>petted <audio controls preload=none src=\"voice_%03d_%s_pet.wav\">"
+                    "</audio></td><td>won <audio controls preload=none src=\"voice_%03d_%s_win.wav\"></audio></td></tr>\n",
+              d, DEX_TBL[d].name, d, low, d, low);
+  }
+  {  // in Japanese and Korean too
+    std::vector<float> buf;
+    sayInto(buf, DEX_NAME_JA[25], 25, VOICE_PET, rate);
+    sayInto(buf, DEX_NAME_KO[25], 25, VOICE_PET, rate);
+    char path[512];
+    snprintf(path, sizeof(path), "%s/voice_025_pikachu_ja_ko.wav", dir);
+    writeWav(path, buf, rate);
+    if (html)
+      fprintf(html, "<tr><td>#25</td><td><b>%s, %s</b></td><td colspan=2>in Japanese, then Korean <audio controls "
+                    "preload=none src=\"voice_025_pikachu_ja_ko.wav\"></audio></td></tr>\n", DEX_NAME_JA[25], DEX_NAME_KO[25]);
+  }
+  std::vector<float> all;
+  for (int16_t d = 1; d <= DEX_COUNT; d++) {
+    sayInto(all, DEX_TBL[d].name, d, VOICE_PET, rate);
+    all.insert(all.end(), rate / 4, 0.0f);
+  }
+  char path[512];
+  snprintf(path, sizeof(path), "%s/voices_all.wav", dir);
+  writeWav(path, all, rate);
+  if (html)
+    fprintf(html, "<tr><td></td><td><b>All 151</b></td><td colspan=2>petted, in the Pokedex's order (%.0f s) <audio controls "
+                  "preload=none src=\"voices_all.wav\"></audio></td></tr>\n</table>\n", all.size() / (double)rate);
+  printf("voices: %zu files, all 151 in %.0f s\n", sizeof(SOME) / sizeof(SOME[0]) * 2 + 2, all.size() / (double)rate);
+}
 
 int main(int argc, char **argv) {
   const char *dir = argc > 1 ? argv[1] : ".";
@@ -92,9 +179,8 @@ int main(int argc, char **argv) {
       fprintf(html, "<tr><td>%d</td><td><b>%s</b><br>%s</td><td><audio controls preload=none src=\"%02d_%s.wav\">"
                     "</audio></td></tr>\n", t, s.name, TRACK_WHERE[t], t, TRACK_IDS[t]);
   }
-  if (html) {
-    fprintf(html, "</table>\n");
-    fclose(html);
-  }
+  if (html) fprintf(html, "</table>\n");
+  if (!only || strstr("voices", only)) voices(dir, html, rate);
+  if (html) fclose(html);
   return 0;
 }

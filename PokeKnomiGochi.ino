@@ -697,6 +697,9 @@ static bool v2AboutQrOpen();            // V2: a link's QR code is over the Abou
 #if HAS_MUSIC
 static uint8_t v2MusicPick(uint32_t now);  // V2: the music this screen wants (music_v2.h, included with the scene)
 static void v2MusicForce(int track);       // ...or one track whatever the screen (the console's MUSIC)
+static void v2SayPet();                    // ...and a Pokemon saying its name: petted, after a win, in the Pokedex
+static void v2SayWin();
+static void v2SayDex();
 #endif
 void loop() {
   uint32_t now = millis();
@@ -2004,6 +2007,9 @@ void onTap(int16_t x, int16_t y) {
     Serial.println("PET");
     pet.caress();
     if (!pet.sleeping) sfxPlay(SFX_HEART);
+#if HAS_MUSIC
+    v2SayPet();  // V2: it says its name
+#endif
   }
 }
 
@@ -3936,6 +3942,9 @@ void battleTap(int16_t x, int16_t y) {
 
 void battleFinish(bool won) {
   bWon = won;
+#if HAS_MUSIC
+  if (won) v2SayWin();  // V2: yours says its name
+#endif
 #if UI_V2
   if (bTower) {  // V2: a Knomi Tower fight fills the balls' bars like any (Fedor); the rest of its end is the climb's
     v2MasterNew = pet.fightPays();
@@ -7326,6 +7335,9 @@ bool dexArtPet(int16_t x, int16_t y) {
       dexPatSlot = i;
       dexPatT = millis();
       sfxPlay(SFX_HEART);
+#if HAS_MUSIC
+      v2SayDex();  // V2: it says its name
+#endif
       return true;
     }
   }

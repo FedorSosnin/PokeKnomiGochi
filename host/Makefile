@@ -56,7 +56,7 @@ music: $(BUILD)/music_wav
 	@mkdir -p $(ROOT)/build/music
 	$(BUILD)/music_wav $(ROOT)/build/music $(ONLY)
 
-$(BUILD)/music_wav: music_wav.cpp $(ROOT)/src/music.h $(ROOT)/src/music_synth.h $(ROOT)/src/music_data.h
+$(BUILD)/music_wav: music_wav.cpp $(ROOT)/src/music.h $(ROOT)/src/music_synth.h $(ROOT)/src/music_data.h $(ROOT)/src/chirp.h
 	@mkdir -p $(BUILD)
 	$(CXX) $(ALLFLAGS) -o $@ music_wav.cpp
 

@@ -38,6 +38,8 @@ enum MusicTrack : uint8_t {
   MUS_COUNT
 };
 
+enum : uint8_t { VOICE_PET, VOICE_WIN };  // how a Pokemon says its name (chirp.h): petted, or after a win
+
 #ifdef BOARD_HOST
 #define HAS_MUSIC 1
 void musicWant(uint8_t track);  // the track this screen wants: what plays follows it (host_audio.cpp)
@@ -49,6 +51,8 @@ uint8_t soundVolume();
 void soundSetVolume(uint8_t level);
 uint8_t musicVolume();
 void musicSetVolume(uint8_t level);
+// a Pokemon says its name, in chirps (chirp.h): with the effects, at SOUND's level, never while the pet sleeps
+void voiceSay(int16_t dex, const char *name, uint8_t mood);
 #else
 #define HAS_MUSIC 0
 #endif
