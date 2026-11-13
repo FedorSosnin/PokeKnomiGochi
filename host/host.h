@@ -50,6 +50,12 @@ void hostSerialPush(const char *line);
 // The game's sound setting (the SND button on the clock screen), saved with the game
 bool hostSoundEnabled(void);
 void hostSetSoundEnabled(bool on);
+// V2's music (the Music switch on the settings page, saved with the game; SOUND off silences it too). false and
+// nothing with V1, which has none
+bool hostMusicEnabled(void);
+void hostSetMusicEnabled(bool on);
+// The window or the tab is hidden: the music fades out until it's shown again (the effects still play)
+void hostMusicHidden(bool hidden);
 
 // Haptics: the front end gets each sound effect's id (audio.h's Sfx), even with the sound off,
 // and may buzz for it (the browser does on Android phones). NULL: none.

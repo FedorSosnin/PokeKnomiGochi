@@ -602,6 +602,11 @@ static NSCursor *fingerCursor(bool pressed) {
   NSMenuItem *mute = [menu addItemWithTitle:@"Mute Sound" action:@selector(toggleMute:) keyEquivalent:@""];
   mute.target = self;
   mute.state = hostSoundEnabled() ? NSControlStateValueOff : NSControlStateValueOn;
+#if UI_V2  // V2's music: the same setting as the Music switch on the settings page
+  NSMenuItem *music = [menu addItemWithTitle:@"Music" action:@selector(toggleMusic:) keyEquivalent:@""];
+  music.target = self;
+  music.state = hostMusicEnabled() ? NSControlStateValueOn : NSControlStateValueOff;
+#endif
   NSString *upd = gUpdating     ? @"Updating…"
                   : !gNewVersion ? @"Check for Updates…"
                   : [NSString stringWithFormat:canUpdateInPlace() ? @"Update to Version %@…" : @"Download Version %@…", gNewVersion];
@@ -625,6 +630,7 @@ static NSCursor *fingerCursor(bool pressed) {
 }
 
 - (void)toggleMute:(id)sender { hostSetSoundEnabled(!hostSoundEnabled()); }
+- (void)toggleMusic:(id)sender { hostSetMusicEnabled(!hostMusicEnabled()); }
 - (void)toggleCrt:(id)sender {
   gCrt = !gCrt;
   Preferences p;
@@ -672,8 +678,10 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
 - (void)toggleWindow:(id)sender {
   if (self.window.isVisible) {
     [self.window orderOut:nil];
+    hostMusicHidden(true);  // the music fades out until it's back
   } else {
     [self.window makeKeyAndOrderFront:nil];
+    hostMusicHidden(false);
     if (!gConsole) [NSApp activateIgnoringOtherApps:YES];
   }
 }

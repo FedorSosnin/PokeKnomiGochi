@@ -91,6 +91,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Para evolucionarlo luego,",  // after keep form: how to evolve it later
     "Ahora no",  // the grey button under EVOLVE!
     "Tu %s quiere evolucionar!",  // the hold's EVOLVE box heading
+    "M\243sica",  // the settings page's Music row
 #endif
   },
   // ---------------- EN ----------------
@@ -177,6 +178,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "To evolve it later,",  // after keep form: how to evolve it later
     "Not now",  // the grey button under EVOLVE!
     "Your %s is trying to evolve!",  // the hold's EVOLVE box heading
+    "Music",  // the settings page's Music row
 #endif
   },
   // ---------------- FR ----------------
@@ -263,6 +265,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Pour l'\202voluer plus tard,",  // after keep form: how to evolve it later
     "Pas maintenant",  // the grey button under EVOLVE!
     "Ton %s essaie d'\202voluer!",  // the hold's EVOLVE box heading
+    "Musique",  // the settings page's Music row
 #endif
   },
   // ---------------- DE ----------------
@@ -354,6 +357,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Zum Entwickeln sp\204ter",  // after keep form: how to evolve it later
     "Nicht jetzt",  // the grey button under EVOLVE!
     "Dein %s will sich entwickeln!",  // the hold's EVOLVE box heading
+    "Musik",  // the settings page's Music row
 #endif
   },
   // ---------------- IT ----------------
@@ -440,6 +444,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Per farlo evolvere dopo,",  // after keep form: how to evolve it later
     "Non ora",  // the grey button under EVOLVE!
     "Il tuo %s sta per evolversi!",  // the hold's EVOLVE box heading
+    "Musica",  // the settings page's Music row
 #endif
   },
   // ---------------- PT ----------------
@@ -526,6 +531,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "Para evoluir depois,",  // after keep form: how to evolve it later
     "Agora nao",  // the grey button under EVOLVE!
     "Seu %s quer evoluir!",  // the hold's EVOLVE box heading
+    "M\243sica",  // the settings page's Music row
 #endif
   },
   // ---------------- JA ----------------
@@ -635,6 +641,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "あとで しんかさせるには",  // after keep form: how to evolve it later
     "いまは しない",  // the grey button under EVOLVE!
     "%sが しんかしようと している!",  // the hold's EVOLVE box heading
+    "おんがく",  // the settings page's Music row
 #endif
   },
   // ---------------- KO ----------------
@@ -726,6 +733,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "나중에 진화시키려면",  // after keep form: how to evolve it later
     "지금은 안 해",  // the grey button under EVOLVE!
     "%s 진화하려고 해요!",  // the hold's EVOLVE box heading
+    "음악",  // the settings page's Music row
 #endif
   },
 };

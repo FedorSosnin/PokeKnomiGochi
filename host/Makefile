@@ -25,7 +25,7 @@ UNIT      := $(BUILD)/sketch_unit.cpp
 OBJS      := $(patsubst %.cpp,$(BUILD)/%.o,$(LAYER_SRC) $(notdir $(GAME_SRC))) $(BUILD)/sketch_unit.o
 HEADERS   := $(wildcard *.h shim/*.h shim/driver/*.h *.inc $(ROOT)/src/*.h)
 
-.PHONY: all test clean
+.PHONY: all test clean music
 all: $(LIB)
 
 $(LIB): $(OBJS)
@@ -50,6 +50,15 @@ $(BUILD)/sketch_unit.o: $(UNIT) $(HEADERS)
 test: $(LIB)
 	$(CXX) $(ALLFLAGS) -I $(ROOT)/test -o $(BUILD)/host_tests test_host.cpp $(LIB)
 	$(BUILD)/host_tests
+
+# every song into build/music/*.wav, to listen to (V2's music, music_synth.h): make music [ONLY=name]
+music: $(BUILD)/music_wav
+	@mkdir -p $(ROOT)/build/music
+	$(BUILD)/music_wav $(ROOT)/build/music $(ONLY)
+
+$(BUILD)/music_wav: music_wav.cpp $(ROOT)/src/music.h $(ROOT)/src/music_synth.h $(ROOT)/src/music_data.h
+	@mkdir -p $(BUILD)
+	$(CXX) $(ALLFLAGS) -o $@ music_wav.cpp
 
 clean:
 	rm -rf $(BUILD)

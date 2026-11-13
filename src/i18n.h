@@ -141,6 +141,7 @@ enum StrId : STRID_BASE {
   S_EVO_HINT1,  // V2: after keep form, the line over the goodbye hint's second one (press and hold your Pokemon)
   S_NOT_NOW,    // V2: the grey button under EVOLVE! on the home
   S_EVO_TRYING_FMT,  // V2: the hold's EVOLVE box heading: "Your CATERPIE is trying to evolve!"
+  S_MUSIC,           // V2: the settings page's Music row (a computer and the web)
 #endif
   STR_COUNT
 };

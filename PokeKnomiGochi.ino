@@ -56,6 +56,7 @@
 #include "src/layout_v2.h"
 #include "src/palettes_v2.h"
 #include "src/sprites_v2.h"
+#include "src/music.h"  // background music, on a computer and the web (HAS_MUSIC)
 #endif
 
 // Firmware version. Bump this number on every release (and manifest.json for
@@ -693,6 +694,10 @@ void loopTiming(uint32_t start) {
 static void v2RepelTick(uint32_t now);  // V2: minigame time earns Repels (repel_v2.h, included with the scene)
 static bool v2AboutQrOpen();            // V2: a link's QR code is over the About page (about_v2.h)
 #endif
+#if HAS_MUSIC
+static uint8_t v2MusicPick(uint32_t now);  // V2: the music this screen wants (music_v2.h, included with the scene)
+static void v2MusicForce(int track);       // ...or one track whatever the screen (the console's MUSIC)
+#endif
 void loop() {
   uint32_t now = millis();
   uint32_t loopStart = now;
@@ -848,6 +853,9 @@ void loop() {
   // frame after waking goes out immediately.
   PowerCtx pc = powerCtx(millis());
   audioSetIdle(!amplifierWanted(pc));  // the amplifier draws power at idle
+#if HAS_MUSIC
+  musicWant(v2MusicPick(now));  // V2: the music follows the screen
+#endif
   batSetPollMs(powerCacheMs(pc));
   uint32_t interval = frameIntervalMs(pc);
 #ifdef BOARD_HOST
@@ -1141,6 +1149,11 @@ void handleSerial() {
     beh.mode = 1;
     beh.t0 = millis();
     beh.until = millis() + 20000;
+    Serial.println("DONE");
+#endif
+#if HAS_MUSIC
+  } else if (line.startsWith("MUSIC")) {  // V2: "MUSIC n" plays track n (music.h) whatever the screen; "MUSIC" alone, the screens'
+    v2MusicForce(line.length() > 6 ? line.substring(6).toInt() : -1);
     Serial.println("DONE");
 #endif
   } else if (line == "GAMES") {
@@ -2365,6 +2378,9 @@ static uint32_t screenKey() {
     h = mixKey(h, clockWifiSsid()[0]);
 #endif
     h = mixKey(h, audioEnabled());
+#if HAS_MUSIC
+    h = mixKey(h, musicEnabled());  // V2: the settings page's Music switch
+#endif
     h = mixKey(h, gLang);
   } else if (cardOpen) {
     for (uint32_t v : { (uint32_t)pet.speciesId, (uint32_t)pet.shiny, (uint32_t)pet.ageMinutes, (uint32_t)pet.streak,

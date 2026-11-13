@@ -1943,3 +1943,4 @@ static void v2DrawPoops(int n, bool party) {
 #include "about_v2.h"    // Settings' first page's rows, and the About page with the coin
 #include "tower_v2.h"    // Knomi Tower: Travel's second page and the climb
 #include "slide_v2.h"    // a menu's pages slide as they turn
+#include "music_v2.h"    // the music each screen wants (a computer and the web)

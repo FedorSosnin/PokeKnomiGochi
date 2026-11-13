@@ -20,9 +20,15 @@ static const char *const V2_LANG_NAMES[LANG_COUNT] = { "Espa\244ol", "English", 
 #define V2_SET_LINE_Y 204    // a line between the time and the rows
 #define V2_SET_ROW_X0 92     // the rows: a tap anywhere on one is its control's
 #define V2_SET_ROW_X1 374
+#if HAS_MUSIC  // a computer and the web: a row more, for the music, the rows closer and no line over them
+#define V2_SND_Y 190         // the Sound row: its switch's top (72 x 36)
+#define V2_MUS_Y 232         // the Music row: its switch's
+#define V2_LANG_Y 274        // the Language row: its button's top
+#else
 #define V2_SND_Y 214         // the Sound row: its switch's top (72 x 36)
-#define V2_SND_SW_X 292
 #define V2_LANG_Y 262        // the Language row: its button's top
+#endif
+#define V2_SND_SW_X 292
 #define V2_LANG_BTN_X0 210
 #define V2_LANG_BTN_X1 370
 #define V2_SET_ROW_H 36
@@ -58,15 +64,28 @@ static void v2SettingsRows() {
 #endif
   {
     gfx->setTextColor(C565(0x3c, 0x8a, 0x4c));
+#if HAS_MUSIC
+    setCur(centerX(T(S_SET_AUTO), 2), V2_SET_TZ_Y0 + 8);
+#else
     setCur(centerX(T(S_SET_AUTO), 2), V2_SET_TZ_Y0 + 9);
+#endif
     printT(T(S_SET_AUTO));
   }
+#if !HAS_MUSIC
   gfx->fillRect(V2_SET_ROW_X0 + 2, V2_SET_LINE_Y, V2_SET_ROW_X1 - V2_SET_ROW_X0 - 4, 2, C565(0xd8, 0xd2, 0xbd));
+#endif
   v2SetLabel(T(S_SOUND), V2_SND_Y);
   {
     V2_HOVER(V2_SND_SW_X, V2_SND_Y, 72, V2_SET_ROW_H);
     v2Switch(V2_SND_SW_X, V2_SND_Y, audioEnabled());
   }
+#if HAS_MUSIC
+  v2SetLabel(T(S_MUSIC), V2_MUS_Y);
+  {
+    V2_HOVER(V2_SND_SW_X, V2_MUS_Y, 72, V2_SET_ROW_H);
+    v2Switch(V2_SND_SW_X, V2_MUS_Y, musicEnabled());
+  }
+#endif
   v2SetLabel(T(S_LANGUAGE), V2_LANG_Y);
   snprintf(b, sizeof(b), "%s >", V2_LANG_NAMES[gLang]);
   V2_HOVER(V2_LANG_BTN_X0, V2_LANG_Y, V2_LANG_BTN_X1 - V2_LANG_BTN_X0, V2_SET_ROW_H);
@@ -94,6 +113,13 @@ static void v2SettingsTap(int16_t x, int16_t y) {
     if (audioEnabled()) sfxPlay(SFX_TAP);  // confirms when turned on
     return;
   }
+#if HAS_MUSIC
+  if (v2InRow(x, y, V2_MUS_Y)) {
+    musicSetEnabled(!musicEnabled());
+    sfxPlay(SFX_TAP);
+    return;
+  }
+#endif
   if (v2InRow(x, y, V2_LANG_Y)) {
     setLang((Lang)((gLang + 1) % LANG_COUNT));
     applyLangFont();  // the font changes with the language
@@ -111,6 +137,9 @@ static bool v2SettingsPress(int16_t x, int16_t y, PressTarget &t) {
   }
 #endif
   if (v2InRow(x, y, V2_SND_Y)) return v2PressSet(t, V2_SND_SW_X, V2_SND_Y, 72, V2_SET_ROW_H, T(S_SOUND));
+#if HAS_MUSIC
+  if (v2InRow(x, y, V2_MUS_Y)) return v2PressSet(t, V2_SND_SW_X, V2_MUS_Y, 72, V2_SET_ROW_H, T(S_MUSIC));
+#endif
   if (v2InRow(x, y, V2_LANG_Y)) {
     snprintf(b, sizeof(b), "%s >", V2_LANG_NAMES[gLang]);
     return v2PressSet(t, V2_LANG_BTN_X0, V2_LANG_Y, V2_LANG_BTN_X1 - V2_LANG_BTN_X0, V2_SET_ROW_H, b);

@@ -98,6 +98,7 @@ enum {
   WM_OPEN_URL,           // a link from the game, About's (lParam: std::string*): in the browser
 };
 enum { TIMER_TICK = 1, TIMER_PING, TIMER_UPDATE };
+enum { ID_MUSIC = 150 };  // V2's music (the menu's other items are below)
 enum {
   ID_ABOUT = 100, ID_SHOW, ID_SIZE0, ID_SIZE1, ID_SIZE2, ID_MUTE, ID_UPDATE, ID_QUIT, ID_VIBE, ID_TILT, ID_AUTO_UPDATE,
   ID_CRT,
@@ -853,6 +854,9 @@ static void showMenu(POINT at) {
   AppendMenuW(m, MF_STRING | (gCrt ? MF_CHECKED : 0), ID_CRT, L"CRT Screen");
   // the same setting as the game's SND button on the clock screen, saved with the game
   AppendMenuW(m, MF_STRING | (hostSoundEnabled() ? 0 : MF_CHECKED), ID_MUTE, L"Mute Sound");
+#if UI_V2  // V2's music: the same setting as the Music switch on the settings page
+  AppendMenuW(m, MF_STRING | (hostMusicEnabled() ? MF_CHECKED : 0), ID_MUSIC, L"Music");
+#endif
   if (gXSet && controllerIndex() >= 0)  // only with a controller that can buzz
     AppendMenuW(m, MF_STRING | (gVibeOn ? MF_CHECKED : 0), ID_VIBE, L"Vibration");
   if (gAccel)  // only with a motion sensor
@@ -1155,8 +1159,10 @@ static void toggleWindow() {
   if (IsWindowVisible(gWnd)) {
     ShowWindow(gWnd, SW_HIDE);
     placeShadow();  // (hides it)
+    hostMusicHidden(true);  // the music fades out until it's back
   } else {
     ShowWindow(gWnd, SW_SHOWNOACTIVATE);
+    hostMusicHidden(false);
     placeShadow();
     redraw();
     if (!gConsole) SetForegroundWindow(gWnd);
@@ -1430,6 +1436,7 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
           saveWindowPlace();
           break;
         case ID_MUTE: hostSetSoundEnabled(!hostSoundEnabled()); break;
+        case ID_MUSIC: hostSetMusicEnabled(!hostMusicEnabled()); break;
         case ID_VIBE: {
           gVibeOn = !gVibeOn;
           Preferences p;

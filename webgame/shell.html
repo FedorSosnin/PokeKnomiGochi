@@ -68,6 +68,7 @@
   <button id="size" type="button">Size: Large</button>
   <button id="crtBtn" type="button" hidden>CRT: On</button>
   <button id="sound" type="button">Sound on</button>
+  <button id="music" type="button" hidden>Music: On</button>
   <button id="auto" type="button">Auto-update: On</button>
   <button id="vibe" type="button" hidden>Vibration: On</button>
   <button id="export" type="button">Export save</button>
@@ -144,6 +145,8 @@ function startGame() {
     setInterval(() => { if (running) sync(); }, 5000);  // the game writes its files on its own; this keeps IndexedDB current
     updateSoundButton();
     updateAutoButton();
+    updateMusicButton();
+    setInterval(updateMusicButton, 1000);  // (the game's own switch may change it)
   });
 }
 
@@ -271,6 +274,21 @@ soundBtn.addEventListener('click', () => {
   updateSoundButton();
   startAudio();
 });
+
+// ---- V2's music: the same setting as the Music switch on the settings page (a V1 build has none: no button). A
+// hidden tab's music fades out until it's back ----
+const musicBtn = document.getElementById('music');
+function updateMusicButton() {
+  const on = Module._webMusicOn();
+  musicBtn.hidden = on < 0;
+  musicBtn.textContent = 'Music: ' + (on > 0 ? 'On' : 'Off');
+}
+musicBtn.addEventListener('click', () => {
+  Module._webSetMusic(Module._webMusicOn() > 0 ? 0 : 1);
+  updateMusicButton();
+  startAudio();
+});
+document.addEventListener('visibilitychange', () => { if (running) Module._webMusicHidden(document.hidden ? 1 : 0); });
 
 // ---- vibration: a short buzz with each sound effect, on phones whose browser can (Android;
 // iPhones can't). Its own switch, kept in this browser; muting the sound doesn't stop it. ----

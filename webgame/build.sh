@@ -19,7 +19,7 @@ em++ -std=c++17 -O2 -DBOARD_HOST -DBOARD_KNOMI_V2 ${UI_V2:+-DUI_V2=$UI_V2} -I ho
   host/host_canvas.cpp host/host_prefs.cpp host/host_runtime.cpp host/host_board.cpp host/host_buddy.cpp host/host_audio.cpp \
   src/pet.cpp src/i18n.cpp src/sdmon.cpp src/ota_update.cpp $B/sketch_unit.cpp \
   -sUSE_ZLIB=1 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -lidbfs.js \
-  -sEXPORTED_FUNCTIONS=_main,_malloc,_webStart,_webFrame,_webPointer,_webHover,_webHoverAt,_webTilt,_webArrows,_webButton,_webSave,_webSoundOn,_webSetSound,_webAudio,_webAudioRate,_webTiltSensor,_webRelayUp,_webRelayPeers,_webRelayIn,_webRelayUrl,_webRelayV4Url,_webNetTime,_webAutoUpdate,_webSetAutoUpdate,_webQuietForUpdate \
+  -sEXPORTED_FUNCTIONS=_main,_malloc,_webStart,_webFrame,_webPointer,_webHover,_webHoverAt,_webTilt,_webArrows,_webButton,_webSave,_webSoundOn,_webSetSound,_webMusicOn,_webSetMusic,_webMusicHidden,_webAudio,_webAudioRate,_webTiltSensor,_webRelayUp,_webRelayPeers,_webRelayIn,_webRelayUrl,_webRelayV4Url,_webNetTime,_webAutoUpdate,_webSetAutoUpdate,_webQuietForUpdate \
   -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,HEAPU8,HEAP16,UTF8ToString \
   --preload-file $B/res@/res \
   -o $OUT/pokewebgochi.js

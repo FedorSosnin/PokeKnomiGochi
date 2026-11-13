@@ -27,6 +27,7 @@
 #include "press.h"
 #include "sdmon.h"
 #include "power.h"
+#include "music.h"
 #include <Preferences.h>
 
 static int gFails = 0, gChecks = 0;
@@ -775,6 +776,9 @@ static void testGame() {
     runTicks(100);
     // the games' X clicks, as every X does (Fedor)
     audioSetEnabled(true);
+#if !defined(UI_V2) || UI_V2
+    musicSetEnabled(false);  // (V2: the menu's music would sound too)
+#endif
     std::vector<int16_t> drain(HOST_AUDIO_RATE * 10);
     hostAudioRender(drain.data(), (int)drain.size());  // what's queued so far, out of the way
     gamesMenuOpen = true;
@@ -786,6 +790,9 @@ static void testGame() {
     runTicks(200);
     CHECK(!gamesMenuOpen);
     CHECK(anySound(HOST_AUDIO_RATE / 10));
+#if !defined(UI_V2) || UI_V2
+    musicSetEnabled(true);
+#endif
     // no swipes on home (Fedor: "Making the hold menu the main navigation there"): a quick swipe each way
     // opens nothing; the ring opens the pages, where a swipe still turns them
     extern bool galleryOpen, clockOpen, v2RadialOpen;
@@ -1038,6 +1045,64 @@ static void testGame() {
     v2HostBackdrop(6, 0);
     CHECK(fb[182 * 466 + 330] == 0x8651);  // a wild battle: the foe's base under its feet, #86c98a
     runTicks(100);
+  }
+#endif
+
+#if !defined(UI_V2) || UI_V2
+  {  // V2's music follows the screen (music_v2.h): the home's, Knomi Island's, a wild battle's (the zone its Pokemon
+     // lives in: Magikarp's is the Beach), a legend's, the victory jingle, a track the console forces. It sounds, and
+     // the Music switch silences it
+    extern bool battleOpen;
+    extern ZoneScreen zoneScreen;
+    extern void closeBattle();
+    extern Pet pet;
+    hostSerialPush("AWAKE");
+    lastInteract = millis();
+    runTicks(200);
+    CHECK(hostMusicWanted() == MUS_HOME || hostMusicWanted() == MUS_NIGHT);
+    hostSerialPush("ZONES");
+    runTicks(200);
+    CHECK(hostMusicWanted() == MUS_TRAVEL);
+    zoneScreen = ZS_NONE;
+    hostSerialPush("WILD 129");
+    runTicks(300);
+    CHECK(battleOpen && hostMusicWanted() == MUS_BEACH);
+    hostSerialPush("BTLWIN");
+    runTicks(300);
+    CHECK(hostMusicWanted() == MUS_VICTORY);
+    closeBattle();
+    runTicks(200);
+    hostSerialPush("WILD 150");
+    runTicks(300);
+    CHECK(battleOpen && hostMusicWanted() == MUS_LEGEND);
+    closeBattle();
+    hostSerialPush("MUSIC 17");
+    runTicks(100);
+    CHECK(hostMusicWanted() == 17);
+    audioSetEnabled(true);
+    audioSetSleeping(false);
+    musicSetEnabled(false);
+    std::vector<int16_t> pcm(HOST_AUDIO_RATE * 10);
+    hostAudioRender(pcm.data(), (int)pcm.size());  // the effects queued so far, out of the way
+    CHECK(!anySound(HOST_AUDIO_RATE / 10));
+    hostSerialPush("MUSIC 2");  // the home's
+    runTicks(100);
+    musicSetEnabled(true);
+    CHECK(hostMusicEnabled());
+    CHECK(anySound(HOST_AUDIO_RATE / 2));
+    hostSetMusicEnabled(false);  // the Mac's Music item: the game's own switch
+    CHECK(!musicEnabled());
+    hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 4);  // (a quick fade)
+    CHECK(!anySound(HOST_AUDIO_RATE / 10));
+    musicSetEnabled(true);
+    CHECK(anySound(HOST_AUDIO_RATE / 2));  // back where it was
+    hostMusicHidden(true);  // a hidden window: it fades out
+    hostAudioRender(pcm.data(), HOST_AUDIO_RATE * 2);
+    CHECK(!anySound(HOST_AUDIO_RATE / 10));
+    hostMusicHidden(false);
+    hostSerialPush("MUSIC");
+    runTicks(100);
+    CHECK(hostMusicWanted() != 17);
   }
 #endif
 
