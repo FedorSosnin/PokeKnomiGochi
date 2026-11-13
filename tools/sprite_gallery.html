@@ -63,6 +63,7 @@
   .dhead h2 { margin:0; font-size:1.15rem; }
   .type { font-size:.75rem; font-weight:600; color:#fff; border-radius:999px; padding:2px 10px; text-transform:uppercase; }
   .close { margin-left:auto; border:0; background:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); padding:2px 6px; }
+  .say { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:3px 12px; cursor:pointer; font-size:.85rem; }
   .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(156px, 1fr)); gap:10px; padding:14px 16px 4px; }
   .tile { margin:0; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:4px 4px 6px; text-align:center; font-size:.8rem; }
   .tile canvas { margin:0 auto; }
@@ -83,7 +84,7 @@
   <div class="top">
     <div>
       <h1><span>★</span> Shiny Pokédex</h1>
-      <p class="sub">All 151, regular and shiny, moving the way they do in <a href="https://github.com/FedorSosnin/PokeKnomiGochi">PokeKnomiGochi</a>. Tap one to see all its views.</p>
+      <p class="sub">All 151, regular and shiny, moving the way they do in <a href="https://github.com/FedorSosnin/PokeKnomiGochi">PokeKnomiGochi</a>. Tap one to hear it say its name and see all its views.</p>
     </div>
     <div class="ctl">
       <input type="search" id="q" placeholder="Name, number or type" aria-label="Find a Pokémon">
@@ -128,6 +129,7 @@
     <div class="seg" id="dforms" role="group" aria-label="Which form">
       <button data-form="regular" aria-pressed="true">Regular</button><button data-form="shiny" aria-pressed="false">Shiny</button>
     </div>
+    <button class="say" id="dsay">♪ Its voice</button>
     <button class="close" id="dclose" aria-label="Close">×</button>
   </div>
   <div class="tiles" id="tiles"></div>
@@ -353,8 +355,59 @@ function fillDialog() {
   document.querySelectorAll('#dforms button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.form === 'shiny') === dlgShiny)));
   requestAnimationFrame(() => dlgCanvases.forEach((c) => { size(c); live.add(c); }));
 }
+// its voice: it says its name in chirps, as in the game (src/chirp.h, the same pieces: tools/voices.json). Played the
+// way ChirpPlayer plays them: a pulse wave sliding between pitches, a click or a hiss of noise, each level eased in
+let actx = null;
+function voice(segs, rate) {
+  const out = [], ease = 1 - Math.exp(-1 / (0.0015 * rate)), TONE = 0.33, NOISE = 0.2;  // (louder than in the game)
+  const blep = (t, dt) => (t < dt ? (t /= dt, t + t - t * t - 1) : t > 1 - dt ? (t = (t - 1) / dt, t * t + t + t + 1) : 0);
+  let tone = 0, noise = 0, freq = 0, ph = 0, np = 0, lfsr = 1, duty = 2, nk = 0;
+  const step = (tv, nv, f) => {
+    tone += (tv - tone) * ease;
+    noise += (nv - noise) * ease;
+    if (f > 0) freq = f;
+    let o = 0;
+    if (tone > 1e-5 && freq > 0) {
+      const dt = freq / rate, dc = [0.125, 0.25, 0.5][duty];
+      let t2 = ph - dc, v = (ph < dc ? 1 : -1) + blep(ph, dt);
+      if (t2 < 0) t2 += 1;
+      v -= blep(t2, dt);
+      o += (v - (2 * dc - 1)) * tone;
+      ph += dt;
+      if (ph >= 1) ph -= 1;
+    }
+    if (noise > 1e-5) {
+      np += (nk === 1 ? 9000 : 26000) / rate;
+      while (np >= 1) { np -= 1; const bit = (lfsr ^ (lfsr >> 1)) & 1; lfsr = (lfsr >> 1) | (bit << 14); }
+      o += (lfsr & 1 ? 1 : -1) * noise;
+    }
+    out.push(o);
+  };
+  for (const [ms, f0, f1, vol, d, n] of segs) {
+    const len = Math.round(ms * rate / 1000);
+    duty = d; nk = n;
+    for (let t = 0; t < len; t++) {
+      const k = t / len;
+      step(f0 > 0 ? vol / 100 * TONE : 0, n === 1 ? NOISE * 1.4 * (1 - k) * (1 - k) : n === 2 ? NOISE : 0, f0 > 0 ? f0 + (f1 - f0) * k : 0);
+    }
+  }
+  for (let i = 0; i < rate / 20; i++) step(0, 0, 0);  // (its last notes ring out)
+  return out;
+}
+function say(m) {
+  if (!m.v || !m.v.length) return;
+  try { actx = actx || new AudioContext(); } catch (e) { return; }
+  if (actx.state === 'suspended') actx.resume();
+  const pcm = voice(m.v, actx.sampleRate), buf = actx.createBuffer(1, pcm.length, actx.sampleRate);
+  buf.getChannelData(0).set(pcm);
+  const src = actx.createBufferSource();
+  src.buffer = buf;
+  src.connect(actx.destination);
+  src.start();
+}
 function openMon(i) {
   const m = MONS[i];
+  say(m);
   dlgMon = i; dlgShiny = state.form === 'shiny';
   document.getElementById('dname').textContent = `#${String(m.n).padStart(3, '0')} ${m.name}`;
   const ty = document.getElementById('dtype');
@@ -367,6 +420,8 @@ function openMon(i) {
 }
 document.querySelectorAll('#dforms button').forEach((b) => b.addEventListener('click', () => { dlgShiny = b.dataset.form === 'shiny'; fillDialog(); }));
 document.getElementById('dclose').addEventListener('click', () => dlg.close());
+document.getElementById('dsay').addEventListener('click', () => say(MONS[dlgMon]));
+tiles.addEventListener('click', (e) => { if (e.target.closest('.tile')) say(MONS[dlgMon]); });  // (a tap on it, too)
 dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
 dlg.addEventListener('close', () => { dlgCanvases.forEach((c) => live.delete(c)); dlgCanvases = []; });
 

@@ -8,8 +8,10 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 
 ## [Unreleased]
 
+- **Pokémon say their names (Mac, Windows and the web):** in chirps, like the sound effects. Each syllable is a little blip shaped by its vowel. Small Pokémon chirp higher and big ones lower. Your Pokémon says its name (or the nickname you gave it) when you pet it and after a battle it wins. Tapping one in the Pokédex makes it say its name, in the Shiny Pokédex online too.
+
 - **Music on the Mac, Windows and the web:** original chiptune for every screen, in the same square-wave style as the sound effects. There's a theme for the home (softer from dusk to dawn), the menus, Travel and Knomi Tower. Each zone has its own battle music, and legends, the tower's guardians and buddies each have theirs. Each mini game has its own tune, and evolving and goodbyes get one too. A short fanfare plays for a win or a catch. The home's music fades out after two minutes untouched and comes back on your next tap, and there's no music while your Pokémon sleeps. Each zone in Travel has its own tune too, calmer than its battle music. The home's tune is in the style of the old handhelds' towns.
-- **Sound and music levels (Mac, Windows and the web):** on the settings page, **Sound** and **Music** each have a speaker that turns them on and off, and three bars for Low, Medium and High. Sound sets everything, music included, and Music sets the music under it. There's also a **Music** menu in the Mac and Windows apps and a **Music** button under the web game. The Knomi has no speaker, so nothing changes there.
+- **Sound and music levels (Mac, Windows and the web):** on the settings page, **Sound** and **Music** each have a slider with four notches, from 0 (off) to 3. Sound sets everything, music included, and Music sets the music under it. There's also a **Music** menu in the Mac and Windows apps and a **Music** button under the web game. The Knomi has no speaker, so nothing changes there.
 
 ## [2.1.2] - 2026-11-12
 

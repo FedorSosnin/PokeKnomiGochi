@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths: ['web/**', '.github/workflows/pages.yml', 'tools/sdcard/mons/**', 'tools/dex_data.py',
-            'tools/make_sprite_gallery.py', 'tools/sprite_gallery.html']
+            'tools/make_sprite_gallery.py', 'tools/sprite_gallery.html', 'tools/voices.json']
   workflow_dispatch:
 
 permissions:

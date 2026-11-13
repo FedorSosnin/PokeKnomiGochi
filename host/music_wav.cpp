@@ -2,6 +2,7 @@
 // (a jingle once), at the computers' 48 kHz, as music_synth.h plays them in the game, and a page (index.html) that
 // plays them in a browser. `make -C host music`.
 //   music_wav <folder> [name]    only the songs whose track name contains name
+//   music_wav --json <file>      every Pokemon's voice as JSON, for the Shiny Pokedex (voice_json.h)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,7 @@
 #include <vector>
 #include "music_synth.h"
 #include "chirp.h"
+#include "voice_json.h"
 
 static const char *const TRACK_IDS[MUS_COUNT] = {
   "none", "hello", "home", "night", "menu", "travel", "tower", "forest", "beach", "cave", "mansion", "field",
@@ -118,6 +120,16 @@ static void voices(const char *dir, FILE *html, int rate) {
 }
 
 int main(int argc, char **argv) {
+  if (argc > 2 && !strcmp(argv[1], "--json")) {
+    FILE *f = fopen(argv[2], "w");
+    if (!f) {
+      perror(argv[2]);
+      return 1;
+    }
+    fputs(chirpVoicesJson().c_str(), f);
+    fclose(f);
+    return 0;
+  }
   const char *dir = argc > 1 ? argv[1] : ".";
   const char *only = argc > 2 ? argv[2] : nullptr;
   const int rate = 48000;

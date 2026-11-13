@@ -45,96 +45,41 @@ static void v2SetTzRect(int &x0, int &x1, char *b, int n) {  // as wide as the c
 }
 #endif
 #if HAS_MUSIC
-// ----- a level row (a computer and the web: SOUND's, all of it, and the music's): the speaker turns it on and off, the
-// three bars, rising, pick Low, Medium or High (Fedor: "both music and sound are going to need sliders or level
-// choices. Like Low, Med, High"). Off, the bars keep the level it comes back at, in grey -----
-static const char *const V2_ICON_SPK_ON[18] = {
-  "..................", "..................",
-  "........kk........", ".......kwk...B....",
-  "......kwwk....B...", ".....kwwwk.B...B..",
-  ".kkkkwwwwk..B..B..", ".kwwwwwwwk..B..B..",
-  ".kwwwwwwwk..B..B..", ".kwwwwwwwk..B..B..",
-  ".kwwwwwwwk..B..B..", ".kkkkwwwwk..B..B..",
-  ".....kwwwk.B...B..", "......kwwk....B...",
-  ".......kwk...B....", "........kk........",
-  "..................", "..................",
-};
-static const char *const V2_ICON_SPK_OFF[18] = {
-  "..................", "..................",
-  "........kk........", ".......kwk........",
-  "......kwwk........", ".....kwwwk........",
-  ".kkkkwwwwk.rr...rr", ".kwwwwwwwk..rr.rr.",
-  ".kwwwwwwwk...rrr..", ".kwwwwwwwk...rrr..",
-  ".kwwwwwwwk..rr.rr.", ".kkkkwwwwk.rr...rr",
-  ".....kwwwk........", "......kwwk........",
-  ".......kwk........", "........kk........",
-  "..................", "..................",
-};
-static const char *const V2_ICON_BARS1[18] = {  // (the press preview's copies of the bars)
-  "..................", "..................",
-  "..................", ".............kkkkk",
-  ".............kwwwk", ".............kwwwk",
-  ".............kwwwk", ".............kwwwk",
-  ".......kkkkk.kwwwk", ".......kwwwk.kwwwk",
-  ".......kwwwk.kwwwk", ".......kwwwk.kwwwk",
-  ".kkkkk.kwwwk.kwwwk", ".kgggk.kwwwk.kwwwk",
-  ".kgggk.kwwwk.kwwwk", ".kkkkk.kkkkk.kkkkk",
-  "..................", "..................",
-};
-static const char *const V2_ICON_BARS2[18] = {
-  "..................", "..................",
-  "..................", ".............kkkkk",
-  ".............kwwwk", ".............kwwwk",
-  ".............kwwwk", ".............kwwwk",
-  ".......kkkkk.kwwwk", ".......kgggk.kwwwk",
-  ".......kgggk.kwwwk", ".......kgggk.kwwwk",
-  ".kkkkk.kgggk.kwwwk", ".kgggk.kgggk.kwwwk",
-  ".kgggk.kgggk.kwwwk", ".kkkkk.kkkkk.kkkkk",
-  "..................", "..................",
-};
-static const char *const V2_ICON_BARS3[18] = {
-  "..................", "..................",
-  "..................", ".............kkkkk",
-  ".............kgggk", ".............kgggk",
-  ".............kgggk", ".............kgggk",
-  ".......kkkkk.kgggk", ".......kgggk.kgggk",
-  ".......kgggk.kgggk", ".......kgggk.kgggk",
-  ".kkkkk.kgggk.kgggk", ".kgggk.kgggk.kgggk",
-  ".kgggk.kgggk.kgggk", ".kkkkk.kkkkk.kkkkk",
-  "..................", "..................",
-};
-static const char *const *const V2_ICON_BARS[3] = { V2_ICON_BARS1, V2_ICON_BARS2, V2_ICON_BARS3 };
-#define V2_LV_SPK_X 200  // the speaker: its icon at 2x, 36 x 36
-#define V2_LV_BAR_X 250  // the first bar; each 32 wide and 40 apart, 14, 24 and 34 tall, on the row's bottom
-#define V2_LV_BAR_H(i) (14 + 10 * (i))
+// ----- a level slider (a computer and the web: SOUND's, all of it, and the music's): a track with four notches, 0 off,
+// then 1, 2 and 3, and a knob showing its number (Fedor: "Maybe a slider with 4 notches. From 0 to 3"). A tap on a
+// notch moves it there; a finger sliding along it moves the choice, the press preview showing the number, and it
+// lands where the finger lifts. Off, it comes back on at the level it had
+#define V2_SL_X0 212   // the first notch (0); each 48 further
+#define V2_SL_STEP 48
+#define V2_SL_R 14     // the knob
+static const char *const V2_SL_NUM[4] = { "0", "1", "2", "3" };
 
-static void v2LevelRow(int y, bool on, uint8_t lv) {
-  {
-    V2_HOVER(V2_LV_SPK_X, y, 36, V2_SET_ROW_H);
-    drawMap(on ? V2_ICON_SPK_ON : V2_ICON_SPK_OFF, 18, V2_LV_SPK_X, y, 2, false);
-  }
-  for (int i = 0; i < 3; i++) {
-    int x = V2_LV_BAR_X + 40 * i, h = V2_LV_BAR_H(i), top = y + V2_SET_ROW_H - h;
-    V2_HOVER(x, top, 32, h);
-    gfx->fillRoundRect(x, top, 32, h, 4, INK_K);
-    uint16_t fill = i >= lv ? UI_WHITE : on ? C565(0x58, 0xb8, 0x68) : C565(0xc8, 0xc2, 0xb0);
-    gfx->fillRoundRect(x + 2, top + 2, 28, h - 4, 3, fill);
-  }
+static void v2Slider(int y, uint8_t lv) {
+  int cy = y + V2_SET_ROW_H / 2, kx = V2_SL_X0 + V2_SL_STEP * lv;
+  const int x0 = V2_SL_X0 - 8, x1 = V2_SL_X0 + 3 * V2_SL_STEP + 8;
+  gfx->fillRoundRect(x0, cy - 7, x1 - x0, 14, 7, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillRoundRect(x0 + 2, cy - 5, x1 - x0 - 4, 10, 5, C565(0xd8, 0xd2, 0xbd));
+  if (lv) gfx->fillRoundRect(x0 + 2, cy - 5, kx - x0 - 2, 10, 5, C565(0x58, 0xb8, 0x68));
+  for (int i = 0; i < 4; i++)
+    gfx->fillCircle(V2_SL_X0 + V2_SL_STEP * i, cy, 3, i <= lv && lv ? C565(0x3c, 0x8a, 0x4c) : C565(0xb0, 0xa8, 0x94));
+  V2_HOVER(kx - 22, y, 44, V2_SET_ROW_H);
+  gfx->fillCircle(kx, cy + 2, V2_SL_R, lv ? C565(0x3c, 0x8a, 0x4c) : C565(0xb0, 0xa8, 0x94));  // (its shadow)
+  gfx->fillCircle(kx, cy, V2_SL_R, C565(0x3a, 0x4a, 0x5a));
+  gfx->fillCircle(kx, cy, V2_SL_R - 2, UI_WHITE);
+  gfx->setTextColor(UI_INK);
+  setSize(2);
+  setCur(kx - textW(V2_SL_NUM[lv], 2) / 2 + 2, cy - 6);  // (the digit's ink in the middle of the knob)
+  printT(V2_SL_NUM[lv]);
 }
-// what a level row does at x: 0 the speaker (or the row's name), 1..3 a bar's level
-static int v2LevelAt(int16_t x) {
-  for (int i = 0; i < 3; i++)
-    if (x >= V2_LV_BAR_X - 4 + 40 * i && x < V2_LV_BAR_X + 36 + 40 * i) return i + 1;
-  return x < V2_LV_BAR_X - 4 ? 0 : -1;
+// the notch at x (-1: none: the row's name)
+static int v2SliderAt(int16_t x) {
+  int i = (x - V2_SL_X0 + V2_SL_STEP / 2) / V2_SL_STEP;
+  return x < V2_SL_X0 - V2_SL_STEP / 2 || i < 0 ? -1 : i > 3 ? 3 : i;
 }
-// ...its press preview: a copy of the speaker, or of the bars at the level tapped
-static bool v2LevelPress(int16_t x, int y, bool on, PressTarget &t) {
-  int k = v2LevelAt(x);
-  if (k < 0) return false;
-  if (k == 0) t = { V2_LV_SPK_X, (int16_t)y, 36, V2_SET_ROW_H, nullptr, on ? V2_ICON_SPK_ON : V2_ICON_SPK_OFF };
-  else t = { (int16_t)(V2_LV_BAR_X + 40 * (k - 1)), (int16_t)(y + V2_SET_ROW_H - V2_LV_BAR_H(k - 1)), 32,
-             (int16_t)V2_LV_BAR_H(k - 1), nullptr, V2_ICON_BARS[k - 1] };
-  return true;
+// ...its press preview: the notch, and its number
+static bool v2SliderPress(int16_t x, int y, PressTarget &t) {
+  int i = v2SliderAt(x);
+  return i >= 0 && v2PressSet(t, V2_SL_X0 + V2_SL_STEP * i - 22, y, 44, V2_SET_ROW_H, V2_SL_NUM[i]);
 }
 #endif
 static void v2SetLabel(const char *s, int y) {
@@ -169,9 +114,9 @@ static void v2SettingsRows() {
 #endif
   v2SetLabel(T(S_SOUND), V2_SND_Y);
 #if HAS_MUSIC
-  v2LevelRow(V2_SND_Y, audioEnabled(), soundVolume());
+  v2Slider(V2_SND_Y, audioEnabled() ? soundVolume() : 0);
   v2SetLabel(T(S_MUSIC), V2_MUS_Y);
-  v2LevelRow(V2_MUS_Y, musicEnabled(), musicVolume());
+  v2Slider(V2_MUS_Y, musicEnabled() ? musicVolume() : 0);
 #else
   {
     V2_HOVER(V2_SND_SW_X, V2_SND_Y, 72, V2_SET_ROW_H);
@@ -202,15 +147,15 @@ static void v2SettingsTap(int16_t x, int16_t y) {
 #endif
 #if HAS_MUSIC
   if (v2InRow(x, y, V2_SND_Y)) {  // (the tap sounds at the level it sets)
-    int k = v2LevelAt(x);
-    if (k == 0) audioSetEnabled(!audioEnabled());
+    int k = v2SliderAt(x);
+    if (k == 0) audioSetEnabled(false);
     else if (k > 0) soundSetVolume((uint8_t)k);
     if (k >= 0 && audioEnabled()) sfxPlay(SFX_TAP);
     return;
   }
   if (v2InRow(x, y, V2_MUS_Y)) {
-    int k = v2LevelAt(x);
-    if (k == 0) musicSetEnabled(!musicEnabled());
+    int k = v2SliderAt(x);
+    if (k == 0) musicSetEnabled(false);
     else if (k > 0) musicSetVolume((uint8_t)k);
     if (k >= 0) sfxPlay(SFX_TAP);
     return;
@@ -239,8 +184,8 @@ static bool v2SettingsPress(int16_t x, int16_t y, PressTarget &t) {
   }
 #endif
 #if HAS_MUSIC
-  if (v2InRow(x, y, V2_SND_Y)) return v2LevelPress(x, V2_SND_Y, audioEnabled(), t);
-  if (v2InRow(x, y, V2_MUS_Y)) return v2LevelPress(x, V2_MUS_Y, musicEnabled(), t);
+  if (v2InRow(x, y, V2_SND_Y)) return v2SliderPress(x, V2_SND_Y, t);
+  if (v2InRow(x, y, V2_MUS_Y)) return v2SliderPress(x, V2_MUS_Y, t);
 #else
   if (v2InRow(x, y, V2_SND_Y)) return v2PressSet(t, V2_SND_SW_X, V2_SND_Y, 72, V2_SET_ROW_H, T(S_SOUND));
 #endif

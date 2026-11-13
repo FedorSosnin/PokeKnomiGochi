@@ -40,10 +40,11 @@ Otherwise a song starts on its first beat.
 
 ## The switches
 
-- **Sound** and **Music** each have a row on the settings page: a speaker that turns it on and off, and three
-  rising bars for Low, Medium and High (Fedor: sliders or level choices). Sound's is everything, music included;
-  Music's is the music's share under it. High is how they always played, and the default. Off, the bars stay in
-  grey at the level it comes back at. Saved as `snd` and `sndv`, `mus` and `musv`.
+- **Sound** and **Music** each have a slider on the settings page, four notches from 0 (off) to 3, its knob showing
+  the number (Fedor: "a slider with 4 notches. From 0 to 3"). A tap on a notch moves it there; a finger sliding along
+  it moves the choice and it lands where the finger lifts. Sound's is everything, music included; Music's is the
+  music's share under it. 3 is how they always played, and the default. Saved as `snd` and `sndv`, `mus` and `musv`:
+  turned off by Mute, it comes back on at its level.
 - **Mute Sound** in the Mac and Windows menus and the web's **Mute** turn Sound off and on. The menus' **Music**
   submenu (Off, Low, Medium, High) and the web's **Music** button (a step down each click) set the music's.
 - With the music off, the effects still play. With Sound off, nothing does.
@@ -61,6 +62,24 @@ fast arpeggio on one voice.
 
 `host/host_audio.cpp` mixes the music under the effects at about 8 dB below them. When an effect plays, the music
 ducks to 45% within a few milliseconds and comes back over about a quarter of a second, so the effects stay clear.
+
+## Voices
+
+Each Pokémon says its name in chirps (`src/chirp.h`; Fedor: "make each ones sound like its name is being said, but in
+a chiptune sound"). It's our own sound, made from the name, not any game's cries.
+
+- **How:** the name splits into syllables, from Latin letters, Japanese kana or Korean Hangul, in the game's language.
+  Each syllable is a quick blip on a pulse wave:
+  - its vowel sets the tone: i bright and high, a open, u round and low;
+  - its consonants make a click (p, t, k), a hiss (s, sh, f) or a slide in (m, n, l, r);
+  - the last syllable is held and rises.
+- **Pitch:** first forms chirp higher than final ones, quick Pokémon higher, sturdy ones lower and legends lower
+  still. A few are set by hand, such as Jigglypuff high and Snorlax low.
+- **When:** petting yours at home (by its nickname, at most every 2.5 seconds; the hearts each time), after a battle
+  it wins (in the tower, whoever fought), and patting a Pokédex entry's sprite.
+- **Where:** a computer and the web, with the effects and at Sound's level.
+- **The Shiny Pokédex:** tapping a Pokémon there plays its voice too. `make -C host voices` writes the voices into
+  `tools/voices.json` for the page builder, and the host tests check that file matches `chirp.h`.
 
 ## Writing a song
 

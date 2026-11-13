@@ -25,7 +25,7 @@ UNIT      := $(BUILD)/sketch_unit.cpp
 OBJS      := $(patsubst %.cpp,$(BUILD)/%.o,$(LAYER_SRC) $(notdir $(GAME_SRC))) $(BUILD)/sketch_unit.o
 HEADERS   := $(wildcard *.h shim/*.h shim/driver/*.h *.inc $(ROOT)/src/*.h)
 
-.PHONY: all test clean music
+.PHONY: all test clean music voices
 all: $(LIB)
 
 $(LIB): $(OBJS)
@@ -56,7 +56,11 @@ music: $(BUILD)/music_wav
 	@mkdir -p $(ROOT)/build/music
 	$(BUILD)/music_wav $(ROOT)/build/music $(ONLY)
 
-$(BUILD)/music_wav: music_wav.cpp $(ROOT)/src/music.h $(ROOT)/src/music_synth.h $(ROOT)/src/music_data.h $(ROOT)/src/chirp.h
+# every Pokemon's voice for the Shiny Pokedex page (tools/make_sprite_gallery.py): make voices
+voices: $(BUILD)/music_wav
+	$(BUILD)/music_wav --json $(ROOT)/tools/voices.json
+
+$(BUILD)/music_wav: music_wav.cpp voice_json.h $(ROOT)/src/music.h $(ROOT)/src/music_synth.h $(ROOT)/src/music_data.h $(ROOT)/src/chirp.h
 	@mkdir -p $(BUILD)
 	$(CXX) $(ALLFLAGS) -o $@ music_wav.cpp
 

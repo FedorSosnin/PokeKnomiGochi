@@ -29,6 +29,7 @@
 #include "power.h"
 #include "music.h"
 #include "chirp.h"
+#include "voice_json.h"
 #include <Preferences.h>
 
 uint8_t hostMusicWanted();  // host_audio.cpp: the track the game wants now (V2's music; 0 with V1)
@@ -932,8 +933,11 @@ static void testGame() {
         clockPage = 0;
         runTicks(300);
         bool snd = audioEnabled();
-        tapAt(218, 208);  // the Sound row's speaker (a computer's: on and off, then its level's bars)
-        CHECK(audioEnabled() != snd);
+        tapAt(212, 208);  // the Sound row's slider (a computer's): its 0, off
+        CHECK(!audioEnabled());
+        tapAt(308, 208);  // ...its 2
+        CHECK(audioEnabled() && soundVolume() == 2);
+        soundSetVolume(3);
         audioSetEnabled(snd);
         Lang was = gLang;
         tapAt(290, 280);  // the Language row's button: the next language
@@ -1159,6 +1163,10 @@ static void testGame() {
       CHECK(chirpSyllables("\xe3\x83\x94\xe3\x82\xab\xe3\x83\x81\xe3\x83\xa5\xe3\x82\xa6", syl) == 3 && syl[2].lng);  // pi ka chuu
       CHECK(chirpSyllables("\xec\x9d\xb4\xec\x83\x81\xed\x95\xb4\xec\x94\xa8", syl) == 4);  // i sang hae ssi
       CHECK(chirpPitch(25) > chirpPitch(26) && chirpPitch(143) < 0);  // Pikachu higher than Raichu; Snorlax low
+      {  // the Shiny Pokedex page says what the game says: tools/voices.json is up to date (make -C host voices)
+        std::vector<uint8_t> f = readFile(std::string(getcwd(nullptr, 0)) + "/../tools/voices.json");
+        CHECK(std::string(f.begin(), f.end()) == chirpVoicesJson());
+      }
       musicSetEnabled(false);
       hostAudioRender(pcm.data(), HOST_AUDIO_RATE * 2);
       CHECK(!anySound(HOST_AUDIO_RATE / 10));

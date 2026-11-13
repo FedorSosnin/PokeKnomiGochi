@@ -13,8 +13,8 @@ Wi-Fi updates from the same place.
 
 The site also has the **Shiny Pokédex** at `/sprites/`, every sprite the game uses in every view, with its artists. It isn't
 kept here: the deploy builds it from the packs with `tools/make_sprite_gallery.py` (the page is
-`tools/sprite_gallery.html`). To see it locally, `python3 tools/make_sprite_gallery.py` (it needs Pillow) and serve
-`build/sprites/`.
+`tools/sprite_gallery.html`; a tap on a Pokémon plays its voice, from `tools/voices.json`, which `make -C host voices`
+writes). To see it locally, `python3 tools/make_sprite_gallery.py` (it needs Pillow) and serve `build/sprites/`.
 
 `web/play/` holds the last PokeWebGochi build (`webgame/build.sh`), which `tools/publish_web.sh` publishes to its
 own site.
