@@ -722,6 +722,15 @@ function fillHero() {  // both forms side by side, each with its ball
 }
 const monLink = (n) => { const m = MONS[byNum.get(n)]; return `<button class="link" data-n="${n}">${esc(m.name)}</button>`; };
 const STATS = [['HP', 0], ['Attack', 1], ['Defense', 2], ['Speed', 3]];
+// where a Search finds it (Pet::pickZoneSpecies): its zone, once yours is strong enough (btlMinLevel); a rare line
+// (its first form is rare) turns up less often; each zone's legend on about 1 Search in 100, from the first. No eggs
+function found(m) {
+  const g = m.g, Z = GAME.zones, name = Z.names[g.zone], zone = `<b>${name}</b>`;
+  if (g.rarity === 3) return `The ${zone}'s legend, on about 1 Search in ${Math.round(1000 / Z.legendPermil)} there`;
+  let base = m;
+  for (let up; (up = MONS.find((o) => o.g.evo.some(([to]) => to === base.n)));) base = up;
+  return `${base.g.rarity === 2 ? 'Rare, found' : 'Found'} ${name === 'Beach' ? 'at' : 'in'} the ${zone}${g.min > 1 ? ` from <b>level ${g.min}</b>` : ''}`;
+}
 function fillAbout() {
   const m = MONS[dlgMon], g = m.g;
   document.getElementById('dfact').textContent = g.fact;
@@ -731,7 +740,8 @@ function fillAbout() {
   if (g.evo.length > 1) li.push(`Evolves into ${g.evo.map(([to]) => monLink(to)).join(', ').replace(/, ([^,]*)$/, ' or $1')} at <b>level ${g.evo[0][1]}</b>`);
   else if (g.evo.length) li.push(`Evolves into ${monLink(g.evo[0][0])} at <b>level ${g.evo[0][1]}</b>`);
   else li.push(from ? 'Its final form' : 'It doesn\'t evolve');
-  li.push(['Only by evolving', 'Hatches from an egg', 'Hatches from a rare egg', 'Hatches from a legendary egg'][g.rarity]);
+  li.push(found(m));
+  if (GAME.zones.starters.includes(m.n)) li.push('One of the four you can start with');
   document.getElementById('dfacts').innerHTML = li.map((s) => `<li>${s}</li>`).join('');
   fillOwn();
 }

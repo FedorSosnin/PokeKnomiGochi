@@ -310,6 +310,27 @@ class TestKnomiDex(unittest.TestCase):
         for name, unit, per, gain in t['games']:
             self.assertTrue(unit and per > 0 and gain > 0, name)
 
+    def test_where_they_are_caught(self):
+        # no eggs: a Search finds each in its zone (zones.h's ZONE_OF), each zone's legend apart (ZONE_LEGEND), and
+        # the four starters (starter_v2.h) are the game's own
+        def src(name):
+            with open(os.path.join(ROOT, 'src', name), encoding='utf-8') as f:
+                return f.read()
+        zones = src('zones.h')
+        table = re.search(r'ZONE_OF\[DEX_COUNT\] = \{(.*?)\};', zones, re.S).group(1)
+        zone_of = [int(v) for v in re.findall(r'\b(\d+),', re.sub(r'//.*', '', table))]
+        self.assertEqual(len(zone_of), 151)
+        z = self.dex['zones']
+        self.assertEqual([self.dex['mons'][str(n)]['zone'] for n in range(1, 152)], zone_of)
+        legends = re.search(r'ZONE_LEGEND\[ZONE_COUNT\] = \{([^}]*)\}', zones).group(1)
+        self.assertEqual(z['legends'], [int(v) for v in legends.split(',')])
+        self.assertEqual(sorted(z['legends']), sorted(int(n) for n, m in self.dex['mons'].items() if m['rarity'] == 3))
+        self.assertEqual(z['legendPermil'], int(re.search(r'#define ZONE_LEGEND_PERMIL (\d+)', zones).group(1)))
+        starters = re.search(r'V2_STARTERS\[4\] = \{([^}]*)\}', src('starter_v2.h')).group(1)
+        self.assertEqual(z['starters'], [int(v) for v in starters.split(',')])
+        names = ', '.join(f'"{n}"' for n in z['names'])  # the game's English for them, in Z_* order
+        self.assertIn(names, src('i18n.cpp'))
+
     def test_page_takes_it(self):
         with open(os.path.join(TOOLS, 'sprite_gallery.html'), encoding='utf-8') as f:
             page = f.read()

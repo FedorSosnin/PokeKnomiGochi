@@ -201,7 +201,8 @@ def main():
 
     data = json.dumps(mons, separators=(',', ':'))
     tables = json.dumps({'types': types, 'colors': [dex_data.TYPE_ACCENTS[t] for t in types], 'chart': dex['chart'],
-                         'moves': dex['moves'], 'training': dex['training']}, separators=(',', ':'))
+                         'moves': dex['moves'], 'training': dex['training'], 'zones': dex['zones']},
+                        separators=(',', ':'))
     page = open(PAGE, encoding='utf-8').read()
     page = page.replace('/*DATA*/[]', data.replace('</', '<\\/')).replace('/*GAME*/{}', tables.replace('</', '<\\/'))
     open(os.path.join(out, 'index.html'), 'w', encoding='utf-8').write(page)

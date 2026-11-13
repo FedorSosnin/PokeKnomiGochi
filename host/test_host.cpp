@@ -1238,6 +1238,8 @@ static void testDexPage() {
   CHECK(btlEffect(TY_ELECTRIC, TY_GROUND) == 0 && btlEffect(TY_WATER, TY_FIRE) == 4);  // (the chart's digits: x2)
   CHECK(json.find("\"132\":{\"type\":0,") != std::string::npos);
   CHECK(json.find("\"learn\":[],\"battle\":[]}") != std::string::npos);  // Ditto copies its foe's moves
+  CHECK(json.find("\"legends\":[151,144,146,150,145]") != std::string::npos);  // Mew in the Forest... Mewtwo, Mansion
+  CHECK(json.find("\"rarity\":1,\"zone\":0,\"min\":1,") != std::string::npos);  // (Bulbasaur: the Forest, from the start)
 }
 
 // the CRT screen (host_crt.h): its curved glass maps the middle to the middle, the rim past the picture (the tube's

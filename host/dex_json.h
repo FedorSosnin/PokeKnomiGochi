@@ -9,10 +9,13 @@
 //           a row and charging turns folded in)
 //   mons    one line per Pokemon (dex.h, dexfacts.h, moves.h, battle.h):
 //             type, [hp, atk, def, spe] (its base stats), evo ([[into, level], ...]; Eevee's three branches),
-//             rarity (0 only by evolving, 1 common, 2 rare, 3 legendary egg), min (the lowest level it can be met
-//             at: btlMinLevel()), fact (DEX_FACT: what its Pokedex page says), learn ([[level, move], ...]:
+//             rarity (R_*: 0 an evolved form, 1 common, 2 rare, 3 legendary), zone (ZONE_OF: where a Search finds
+//             it), min (the level your Pokemon must be for it to turn up: btlMinLevel()), fact (DEX_FACT: what its Pokedex page says), learn ([[level, move], ...]:
 //             LEARN_TBL), battle ([[from level, move, move], ...]: btlMovesFor(), the two moves on its battle
 //             buttons from that level on, one when it has a single move; empty for Ditto, which copies its foe's)
+//   zones    where they're caught (zones.h): names, the five zones in Z_* order; legends, ZONE_LEGEND (each zone's
+//           legend, turning up on legendPermil Searches in 1000 there, from the first); starters, the four you can
+//           start with (starter_v2.h's V2_STARTERS). There are no eggs: everyone else is caught
 //   training how your Pokemon is trained (pet.h, pet.cpp): each kind up to max; win, ATK a battle won; careHours,
 //           hours of good care for 1 DEF, and graceMin, the minutes awake a need may dip under 40; levelHours of
 //           age a level, battles counting up to levelCap; genes, [lowest, top of 1 star, top of 2, highest] (%);
@@ -26,6 +29,7 @@
 #include "../src/moves.h"
 #include "../src/battle.h"
 #include "../src/dexfacts.h"
+#include "../src/zones.h"
 
 // what each mini game trains (SPD), as the page says it: Pet::playResult(), runResult(), surfResult(), dungeonResult()
 enum DexTrainKind : uint8_t { DEX_TRAIN_BERRY, DEX_TRAIN_RUN, DEX_TRAIN_SURF, DEX_TRAIN_DUNGEON };
@@ -39,6 +43,10 @@ static const DexTrainGame DEX_TRAIN_GAMES[] = {
 #define DEX_TRAIN_MAX 100   // each kind of training stops here (Pet::clamp100)
 #define DEX_GENE_MIN 90     // a Pokemon's genes, % of its base stats (Pet::hatch())
 #define DEX_GENE_MAX 110
+// the four you can start with (starter_v2.h's V2_STARTERS: test_tools.py checks they agree) and the zones' names, as
+// the game's English shows them (S_ZONE_FOREST...)
+static const int16_t DEX_STARTERS[] = { 1, 4, 7, 25 };
+static const char *const DEX_ZONE_NAMES[ZONE_COUNT] = { "Forest", "Beach", "Cave", "Mansion", "Field" };
 
 static inline std::string dexJsonStr(const char *s) {
   std::string o = "\"";
@@ -75,6 +83,13 @@ static inline std::string dexPageJson() {
              g.gain);
     out += b;
   }
+  out += "]},\n\"zones\":{\"names\":[";
+  for (int z = 0; z < ZONE_COUNT; z++) out += (z ? "," : "") + dexJsonStr(DEX_ZONE_NAMES[z]);
+  out += "],\"legends\":[";
+  for (int z = 0; z < ZONE_COUNT; z++) out += (z ? "," : "") + std::to_string(ZONE_LEGEND[z]);
+  snprintf(b, sizeof(b), "],\"legendPermil\":%d,\"starters\":[", ZONE_LEGEND_PERMIL);
+  out += b;
+  for (size_t i = 0; i < sizeof(DEX_STARTERS) / sizeof(DEX_STARTERS[0]); i++) out += (i ? "," : "") + std::to_string(DEX_STARTERS[i]);
   out += "]},\n\"mons\":{";
   for (int16_t d = 1; d <= DEX_COUNT; d++) {
     const DexEntry &e = DEX_TBL[d];
@@ -88,7 +103,7 @@ static inline std::string dexPageJson() {
       snprintf(b, sizeof(b), "[%d,%d]", e.evolvesTo, e.evolveLevel);
       out += b;
     }
-    snprintf(b, sizeof(b), "],\"rarity\":%d,\"min\":%d,\"fact\":", e.rarity, btlMinLevel(d));
+    snprintf(b, sizeof(b), "],\"rarity\":%d,\"zone\":%d,\"min\":%d,\"fact\":", e.rarity, zoneOf(d), btlMinLevel(d));
     out += b;
     out += dexJsonStr(DEX_FACT[d]);
     out += ",\"learn\":[";
