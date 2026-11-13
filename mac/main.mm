@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include "host.h"
 #include "host_crt.h"  // the CRT screen
+#include "host_shadow.h"  // the drop shadow under the window
+#include <vector>
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
 #include "../src/update_key.h"        // checks the updates' signature
 
@@ -246,6 +248,48 @@ static void startAudio(void) {
 // the window at rest (what the size menu and the saved place mean) and the window with its margin
 static NSRect restFrame(NSRect windowFrame) { return NSInsetRect(windowFrame, RING_PAD, RING_PAD); }
 static NSRect windowFrameFor(NSRect rest) { return NSInsetRect(rest, -RING_PAD, -RING_PAD); }
+
+// The drop shadow (host_shadow.h): a window of its own under the app's, the ball's square at rest and the shadow's
+// margin round it, that clicks go through (the app's own window would take them where the shadow is). A child of
+// the app's window, so it moves, hides and shows with it. Drawn again for a new size or screen.
+static NSWindow *gShadowWin = nil;
+static void updateShadow(NSWindow *main) {
+  if (!main) return;
+  NSRect rest = restFrame(main.frame);
+  CGFloat side = rest.size.width, m = ceil(hostShadowMargin((float)side));
+  NSRect f = NSInsetRect(rest, -m, -m);
+  if (!gShadowWin) {
+    gShadowWin = [[NSWindow alloc] initWithContentRect:f styleMask:NSWindowStyleMaskBorderless backing:NSBackingStoreBuffered defer:NO];
+    gShadowWin.opaque = NO;
+    gShadowWin.backgroundColor = NSColor.clearColor;
+    gShadowWin.hasShadow = NO;
+    gShadowWin.ignoresMouseEvents = YES;
+    gShadowWin.level = main.level;
+    gShadowWin.collectionBehavior = main.collectionBehavior;
+    gShadowWin.releasedWhenClosed = NO;
+    NSView *v = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, f.size.width, f.size.height)];
+    v.wantsLayer = YES;
+    v.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    gShadowWin.contentView = v;
+    [main addChildWindow:gShadowWin ordered:NSWindowBelow];
+  }
+  [gShadowWin setFrame:f display:NO];
+  CGFloat scale = main.backingScaleFactor;
+  int n = (int)lround(f.size.width * scale);
+  std::vector<uint8_t> a((size_t)n * n), rgba((size_t)n * n * 4, 0);
+  hostShadowMask(a.data(), n, (float)(side * scale));
+  for (size_t i = 0; i < a.size(); i++) rgba[i * 4 + 3] = a[i];  // black: premultiplied, only its alpha
+  CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+  CFDataRef data = CFDataCreate(NULL, rgba.data(), (CFIndex)rgba.size());
+  CGDataProviderRef prov = CGDataProviderCreateWithCFData(data);
+  CGImageRef img = CGImageCreate(n, n, 8, 32, n * 4, cs, kCGBitmapByteOrderDefault | kCGImageAlphaPremultipliedLast, prov,
+                                 NULL, false, kCGRenderingIntentDefault);
+  gShadowWin.contentView.layer.contents = (__bridge id)img;
+  CGImageRelease(img);
+  CGDataProviderRelease(prov);
+  CFRelease(data);
+  CGColorSpaceRelease(cs);
+}
 
 // Over the screen the cursor is a finger, as on the Knomi; while the button is down the finger
 // presses: the same hand a little lower and to the right, on the same hotspot
@@ -646,6 +690,7 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
   nf.origin.y = fmax(NSMinY(vis), fmin(nf.origin.y, NSMaxY(vis) - nf.size.height));
   [self.window setFrame:nf display:YES];
   [self.window invalidateShadow];
+  updateShadow(self.window);
   [self saveWindowPlace];
 }
 
@@ -767,7 +812,7 @@ static NSRect initialFrame(bool ownSave) {
                                                defer:NO];
   _window.opaque = NO;
   _window.backgroundColor = NSColor.clearColor;
-  _window.hasShadow = YES;
+  _window.hasShadow = NO;  // (ours instead: updateShadow, a soft drop shadow under it)
   _window.level = NSFloatingWindowLevel;
   _window.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary;
   _window.delegate = self;
@@ -785,6 +830,7 @@ static NSRect initialFrame(bool ownSave) {
                                 userInfo:nil]];
   [_view showFrame];
   [_window makeKeyAndOrderFront:nil];
+  updateShadow(_window);
   [_window makeFirstResponder:_view];
   _statusItem = [NSStatusBar.systemStatusBar statusItemWithLength:NSSquareStatusItemLength];
   _statusItem.button.image = statusIcon();
@@ -1034,6 +1080,7 @@ static NSRect initialFrame(bool ownSave) {
 - (void)willSleep:(NSNotification *)note { hostFlushSave(); }
 - (void)windowDidResignKey:(NSNotification *)note { [_view releaseKeys]; }
 - (void)windowDidMove:(NSNotification *)note { [_view saveWindowPlace]; }
+- (void)windowDidChangeBackingProperties:(NSNotification *)note { updateShadow(_window); }  // a screen with other pixels
 - (void)applicationWillTerminate:(NSNotification *)note { hostFlushSave(); }
 @end
 

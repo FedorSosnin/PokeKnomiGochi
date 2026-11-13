@@ -8,6 +8,7 @@ Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 
 ## [Unreleased]
 
+- **A drop shadow under the Mac and Windows apps:** a soft shadow under the round window, as if it floats over the desktop. Clicks go through it to whatever is underneath.
 - **A CRT screen on the Mac, Windows and the web, on by default:** the game as on an old tube TV. Each scanline is a soft beam that swells where the picture is bright, the colours are richer with a warm glow and halo, and the picture bulges as through curved glass into the tube's dark edge, with a reflection and a little grain. Taps and clicks land on what you see through the curve. They now open at Large; **CRT Screen** in the Mac and Windows menu (a **CRT** button under the web game) turns it off.
 
 - **Your Pokémon's nickname in battles:** the HP panel and lines like "SPLASHY: DRAGON RAGE!" use the name you gave it, in wild and buddy battles, PokeDungeon and Knomi Tower.

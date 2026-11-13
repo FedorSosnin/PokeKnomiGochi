@@ -28,6 +28,7 @@
 #include <sensorsapi.h>
 #include "host.h"
 #include "host_crt.h"  // the CRT screen
+#include "host_shadow.h"  // the drop shadow under the window
 #include "resources.h"
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
 #include "version.h"
@@ -710,6 +711,50 @@ static void present(int x, int y) {
   UpdateLayeredWindow(gWnd, NULL, &dst, &sz, gDC, &src, 0, &blend, ULW_ALPHA);
 }
 
+// The drop shadow (host_shadow.h): a layered window of its own just under the app's, that clicks go through (the
+// app's window takes clicks wherever it isn't fully clear, so the shadow can't be in it). It follows the window when it
+// moves (WM_WINDOWPOSCHANGED), hides and shows with it, and is drawn again for a new size or scaling.
+static HWND gShadow = NULL;
+static int gShadowM = 0, gShadowN = 0;  // its margin round the window, its side (pixels)
+static void placeShadow() {
+  if (!gShadow) return;
+  RECT r;
+  GetWindowRect(gWnd, &r);
+  SetWindowPos(gShadow, gWnd, r.left - gShadowM, r.top - gShadowM, 0, 0,
+               SWP_NOSIZE | SWP_NOACTIVATE | (IsWindowVisible(gWnd) ? SWP_SHOWWINDOW : SWP_HIDEWINDOW));
+}
+static void makeShadow() {
+  if (!gShadow) return;
+  float side = (float)(gSize * gScale);  // the ball's square at rest, in pixels
+  gShadowM = (int)ceil(hostShadowMargin(side)) + (int)lround(RING_PAD * gScale);
+  gShadowN = gSide + 2 * (gShadowM - (int)lround(RING_PAD * gScale));
+  int n = gShadowN;
+  std::vector<uint8_t> a((size_t)n * n);
+  hostShadowMask(a.data(), n, side);
+  BITMAPINFO bi = {};
+  bi.bmiHeader.biSize = sizeof(bi.bmiHeader);
+  bi.bmiHeader.biWidth = n;
+  bi.bmiHeader.biHeight = -n;
+  bi.bmiHeader.biPlanes = 1;
+  bi.bmiHeader.biBitCount = 32;
+  uint32_t *px = nullptr;
+  HDC dc = CreateCompatibleDC(NULL);
+  HBITMAP bmp = CreateDIBSection(dc, &bi, DIB_RGB_COLORS, (void **)&px, NULL, 0);
+  HGDIOBJ old = SelectObject(dc, bmp);
+  for (size_t i = 0; i < a.size(); i++) px[i] = (uint32_t)a[i] << 24;  // black, premultiplied: only its alpha
+  RECT r;
+  GetWindowRect(gWnd, &r);
+  gShadowM = (n - (r.right - r.left)) / 2;
+  POINT src = {0, 0}, dst = {r.left - gShadowM, r.top - gShadowM};
+  SIZE sz = {n, n};
+  BLENDFUNCTION blend = {AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
+  UpdateLayeredWindow(gShadow, NULL, &dst, &sz, dc, &src, 0, &blend, ULW_ALPHA);
+  SelectObject(dc, old);
+  DeleteObject(bmp);
+  DeleteDC(dc);
+  placeShadow();
+}
+
 static void redraw() {
   compose();
   RECT r;
@@ -748,6 +793,7 @@ static void applySize(int size, double scale) {
   }
   present(x, y);
   redraw();
+  makeShadow();
 }
 
 // where the pointer is: the screen (a finger), the frame (drag), or nothing (passes through)
@@ -1108,8 +1154,10 @@ static void removeTrayIcon() {
 static void toggleWindow() {
   if (IsWindowVisible(gWnd)) {
     ShowWindow(gWnd, SW_HIDE);
+    placeShadow();  // (hides it)
   } else {
     ShowWindow(gWnd, SW_SHOWNOACTIVATE);
+    placeShadow();
     redraw();
     if (!gConsole) SetForegroundWindow(gWnd);
   }
@@ -1348,6 +1396,9 @@ static LRESULT CALLBACK wndProc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
     case WM_EXITSIZEMOVE:
       saveWindowPlace();
       return 0;
+    case WM_WINDOWPOSCHANGED:  // moved, raised or shown: the shadow stays just under it
+      placeShadow();
+      break;
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
       if (lp & (1 << 30)) return 0;  // held down: the game counts the first press only
@@ -1558,11 +1609,19 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
   // floating above other windows, outside the taskbar (the notification-area icon finds it)
   gWnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, APP_NAME_W, APP_NAME_W, WS_POPUP,
                          rest.left - pad, rest.top - pad, 1, 1, NULL, NULL, inst, NULL);
+  WNDCLASSEXW sc = {sizeof(sc)};  // the drop shadow's window: clicks go through it (WS_EX_TRANSPARENT), never active
+  sc.lpfnWndProc = DefWindowProcW;
+  sc.hInstance = inst;
+  sc.lpszClassName = L"PokeWinGochiShadow";
+  RegisterClassExW(&sc);
+  gShadow = CreateWindowExW(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+                            L"PokeWinGochiShadow", L"", WS_POPUP, rest.left, rest.top, 1, 1, NULL, NULL, inst, NULL);
   resizeSurface();
   hostFrameRGBA(gCanvas);
   compose();
   present(rest.left - pad, rest.top - pad);
   ShowWindow(gWnd, gConsole ? SW_SHOWNOACTIVATE : SW_SHOW);
+  makeShadow();
   if (!gConsole) SetForegroundWindow(gWnd);  // with the console, without stealing focus from whoever is testing
   gTaskbarCreated = RegisterWindowMessageW(L"TaskbarCreated");
   addTrayIcon();
