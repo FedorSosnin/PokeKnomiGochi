@@ -1158,10 +1158,10 @@ static void testGame() {
       auto same = [](const Cry &x, const Cry &y) {
         if (x.n != y.n) return false;
         for (int i = 0; i < x.n; i++) {
-          const CrySeg &p = x.seg[i], &q = y.seg[i];
-          if (p.ms != q.ms || p.f0 != q.f0 || p.f1 != q.f1 || p.v0 != q.v0 || p.v1 != q.v1 || p.duty != q.duty ||
-              p.vib != q.vib || p.vibHz != q.vibHz || p.harm != q.harm || p.hv != q.hv || p.rasp != q.rasp ||
-              p.nhz != q.nhz)
+          const CryNote &p = x.note[i], &q = y.note[i];
+          if (p.frames != q.frames || p.f0 != q.f0 || p.sweep != q.sweep || p.trill != q.trill || p.v0 != q.v0 ||
+              p.vstep != q.vstep || p.vevery != q.vevery || p.duty != q.duty || p.harm != q.harm || p.hv != q.hv ||
+              p.n0 != q.n0 || p.nevery != q.nevery || p.nhz != q.nhz || p.nshort != q.nshort)
             return false;
         }
         return true;
@@ -1176,8 +1176,8 @@ static void testGame() {
         for (uint8_t m : { VOICE_PET, VOICE_WIN }) {
           cryBuild(a, d, m);
           int ms = 0;
-          for (int i = 0; i < a.n; i++) ms += a.seg[i].ms;
-          CHECK(a.n >= 4 && ms > 200 && ms < 1400);  // two notes or more, under a second and a half
+          for (int i = 0; i < a.n; i++) ms += a.note[i].frames * 1000 / CRY_FPS;
+          CHECK(a.n >= 2 && ms > 200 && ms < 1600);  // two notes or more, under a second and a half or so
         }
       {  // the Shiny Pokedex page plays what the game plays: tools/voices.json is up to date (make -C host voices)
         std::vector<uint8_t> f = readFile(std::string(getcwd(nullptr, 0)) + "/../tools/voices.json");

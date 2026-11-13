@@ -65,19 +65,21 @@ ducks to 45% within a few milliseconds and comes back over about a quarter of a 
 
 ## Cries
 
-Each Pokémon has its own cry, in the manner of the old handhelds' sound chip (`src/cry.h`; Fedor: they "should be
-closer to how they sound in pokemon games"). It isn't a word, it's a creature's call:
-- two to four short notes on two pulse waves, the second a harmony or a near unison so they buzz together;
-- each note sweeps up or down with a fast warble, and the pulses' width flips halfway now and then;
-- noise underneath, a growl or a hiss;
-- the last note is held and falls away.
+Each Pokémon has its own cry, made the way the old handhelds' sound chip made sounds (`src/cry.h`; Fedor: they
+"should be closer to how they sound in pokemon games"). It isn't a word, it's a creature's call:
+- it changes in steps, 60 a second: each step the pitch moves on (a sweep, or a trill between two notes), the volume
+  steps along its envelope, and the pulse's width turns through a pattern, which makes it buzz and phase;
+- two pulse waves sound together, the second a near unison that beats against the first, or a fifth or an octave;
+- noise underneath with its own envelope: a growl, a hiss, or the chip's short loop, metallic;
+- two to four notes, the last one held and fading;
+- a line of evolutions shares one shape, the way a family sounds alike, the later forms lower and longer.
 
 All of it is ours, worked out from the Pokémon itself. No cry is copied or transcribed from any game.
 
-- **What sets it:** size and speed set the pitch and the pace. First forms are higher than final ones, small quick
-  Pokémon high and fast, big slow ones low and long, legends lower still. A few are set by hand, such as Jigglypuff
-  high and Snorlax low. Its type sets the rasp (rock and ground growl, water and ghosts warble), and its number seeds
-  the rest, so it always makes the same cry.
+- **What sets it:** size and speed set the pitch. First forms are higher than final ones, small quick Pokémon high,
+  big slow ones low, legends lower still. A few are set by hand, such as Jigglypuff high and Snorlax low. The line's
+  type sets the rasp and the trill (rock and ground growl, water and ghosts waver, electric ones crackle), and the
+  line's first form seeds the shape, so a Pokémon always makes the same cry.
 - **When:** petting yours at home (at most every 2.5 seconds; the hearts each time), a little higher and shorter; after
   a battle it wins (in the tower, whoever fought), the whole cry; patting a Pokédex entry's sprite.
 - **Where:** a computer and the web, with the effects and at Sound's level.
