@@ -7,7 +7,8 @@ turn), walking, from behind, asleep, hopping, attacking, hurt, attacking from be
 some have (eating, posing, nodding, sitting, a deep breath). It reads the packs the game loads
 (tools/sdcard/mons/pNNN.bin and psNNN.bin, made by pack_pmd.py), and the page plays them the way the game does:
 each frame on its own feet (sdmon.cpp's anchors, Ivysaur's legs and Magikarp's nap included), frame times as packed,
-and a shiny's four gold sparkles (drawSparkles()).
+and a shiny's four gold sparkles (drawSparkles()). A tap on a Pokemon plays its cry, as the game
+plays it (src/cry.h): the pieces are tools/voices.json, which `make -C host voices` writes.
 
   <out>/index.html            the page (tools/sprite_gallery.html, with the data put in)
   <out>/img/NNN-name.png      each form's frames, one row per view (indexed PNG; the page cuts them up)
@@ -34,6 +35,7 @@ import dex_data  # noqa: E402
 MONS = os.path.join(HERE, 'sdcard', 'mons')
 CACHE = os.path.join(HERE, 'pmd_cache')
 PAGE = os.path.join(HERE, 'sprite_gallery.html')  # the page, which this fills in
+VOICES = os.path.join(HERE, 'voices.json')         # each one's cry (make -C host voices)
 COLLAB = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master'
 WALKL, WALKR, SLEEP, WALKD = 1, 2, 3, 12
 # the room a card gives a sprite, in CSS px (the page's canvases): what it fits a Pokemon's standing view into
@@ -174,6 +176,7 @@ def main():
         if old.endswith('.png'):
             os.remove(os.path.join(img, old))
 
+    voices = json.load(open(VOICES, encoding='utf-8')) if os.path.exists(VOICES) else {}
     mons = []
     for num, slug, name, typ, *_ in dex_data.DEX:
         base = f'{num:03d}-{slug}'
@@ -182,7 +185,7 @@ def main():
         fit = min(FIT_W / max(sw, 1), FIT_H / max(sh, 1))
         scale = 3 if fit >= 3 else 2 if fit >= 2 else round(fit, 2)  # whole pixels when it fits
         mons.append({'n': num, 'id': base, 'name': name, 'type': typ, 'c': dex_data.TYPE_ACCENTS.get(typ, '#888'),
-                     's': scale, 'cr': list(who[num]), 'f': [reg, shi]})
+                     's': scale, 'cr': list(who[num]), 'f': [reg, shi], 'v': voices.get(str(num), [])})
 
     data = json.dumps(mons, separators=(',', ':'))
     page = open(PAGE, encoding='utf-8').read().replace('/*DATA*/[]', data.replace('</', '<\\/'))
