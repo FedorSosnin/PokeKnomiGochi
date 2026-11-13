@@ -37,9 +37,12 @@
     transform: translate(-50%, -50%); border-radius: 50%; box-sizing: border-box;
     background: linear-gradient(#de2121 0 calc(50% - var(--band) / 2), #000 0 calc(50% + var(--band) / 2), #fff 0); }
   @media (hover: hover) and (pointer: fine) { #ball:hover { --grow: var(--ring); } }
-  #screen { position: absolute; inset: calc(var(--ring) + var(--grow)); width: calc(100% - 2 * (var(--ring) + var(--grow)));
-    height: calc(100% - 2 * (var(--ring) + var(--grow))); border-radius: 50%; background: #000;
-    image-rendering: pixelated; touch-action: none; cursor: pointer; }
+  #screen, #crt { position: absolute; inset: calc(var(--ring) + var(--grow)); width: calc(100% - 2 * (var(--ring) + var(--grow)));
+    height: calc(100% - 2 * (var(--ring) + var(--grow))); border-radius: 50%; background: #000; }
+  #screen { image-rendering: pixelated; touch-action: none; cursor: pointer; }
+  #crt { pointer-events: none; display: none; }  /* the CRT screen under it; with it on, the game's canvas only takes the taps */
+  body.crt #crt { display: block; }
+  body.crt #screen { opacity: 0; }
   #bar { position: absolute; left: 0; right: 0; bottom: max(10px, env(safe-area-inset-bottom));
     display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 0 16px; }
   #bar button, #bar label { background: none; border: 1px solid #333; color: #9a9a9a; border-radius: 14px;
@@ -57,12 +60,13 @@
 <script>  // a phone has no arrow keys or Space: it tilts
   if (matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Tap, hold and swipe the screen · Tilt to aim';
 </script>
-<div id="ball"><canvas id="screen" width="466" height="466"></canvas></div>
+<div id="ball"><canvas id="crt"></canvas><canvas id="screen" width="466" height="466"></canvas></div>
 <div id="msg">Loading…</div>
 <button id="upd" type="button">New version · Reload</button>
 <div id="bar">
   <button id="tilt" type="button" hidden>Enable tilt</button>
-  <button id="size" type="button">Size: Small</button>
+  <button id="size" type="button">Size: Large</button>
+  <button id="crtBtn" type="button" hidden>CRT: On</button>
   <button id="sound" type="button">Sound on</button>
   <button id="auto" type="button">Auto-update: On</button>
   <button id="vibe" type="button" hidden>Vibration: On</button>
@@ -80,7 +84,7 @@ const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = '196e85d2cf';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = 'c2b532da8f';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -156,7 +160,8 @@ function frame() {
   const p = Module._webFrame();
   if (p) {
     img.data.set(HEAPU8.subarray(p, p + SIDE * SIDE * 4));
-    ctx.putImageData(img, 0, 0);
+    if (crtOn) crt.draw(img.data);
+    else ctx.putImageData(img, 0, 0);
   }
   requestAnimationFrame(frame);
 }
@@ -170,6 +175,12 @@ addEventListener('pagehide', () => { if (running && !skipSave) { Module._webSave
 // ---- touch and mouse: a finger on the 466 x 466 canvas ----
 function point(e) {
   const r = canvas.getBoundingClientRect();
+  if (crtOn) {  // through the CRT's curved glass (host/host_crt.cpp's hostCrtPoint), so it lands on what's shown
+    const nx = (e.clientX - r.left) / r.width * 2 - 1, ny = (e.clientY - r.top) / r.height * 2 - 1;
+    const f = (1 - CRT_K + CRT_K * (nx * nx + ny * ny)) / CRT_SHRINK;
+    const cl = (v) => Math.min(SIDE - 1, Math.max(0, Math.round(v)));
+    return [cl((nx * f + 1) * SIDE / 2), cl((ny * f + 1) * SIDE / 2)];
+  }
   return [Math.round((e.clientX - r.left) * SIDE / r.width), Math.round((e.clientY - r.top) * SIDE / r.height)];
 }
 // the mouse is a finger: it presses while the button is down (the same hand, a little lower)
@@ -361,7 +372,7 @@ async function showLive() {
 
 // ---- size: like the Mac app; each one shrinks to fit a smaller screen ----
 const SIZES = [['Small', 260], ['Medium', 380], ['Large', 520]];
-let sizeAt = 0;  // Small, unless they picked another
+let sizeAt = 2;  // Large, with the CRT screen on (Fedor: "how all of the apps opened by default"), unless they picked
 try {
   const kept = SIZES.findIndex((s) => s[0] === localStorage.getItem('pwg-size'));
   if (kept >= 0) sizeAt = kept;
@@ -375,6 +386,227 @@ function applySize() {
 }
 sizeBtn.addEventListener('click', () => { sizeAt = (sizeAt + 1) % SIZES.length; applySize(); });
 applySize();
+
+// ---- the CRT screen (Fedor: "That looks incredible", on by default): the Mac and Windows apps' look
+// (host/host_crt.cpp), as WebGL2 shaders at the screen's own pixels. Each scanline a soft beam that swells where the
+// picture is bright (233 of them), soft along the line, red and blue a hair apart, a glow and a wide warm halo,
+// CRT colour, the picture bulging as through curved glass into the tube's black edge, a reflection, grain. Without
+// WebGL2 the plain screen stays and its button hides ----
+const CRT_K = 0.09, CRT_SHRINK = 0.965;  // (as host_crt.cpp's K and SHRINK)
+const crtBtn = document.getElementById('crtBtn');
+const crt = makeCrt(document.getElementById('crt'));
+let crtOn = false;
+try { crtOn = !!crt && localStorage.getItem('pwg-crt') !== 'off'; } catch (e) { crtOn = !!crt; }
+function applyCrt() {
+  document.body.classList.toggle('crt', crtOn);
+  crtBtn.textContent = 'CRT: ' + (crtOn ? 'On' : 'Off');
+  try { localStorage.setItem('pwg-crt', crtOn ? 'on' : 'off'); } catch (e) {}
+  if (crtOn) crt.draw(img.data); else ctx.putImageData(img, 0, 0);
+}
+if (crt) {
+  crtBtn.hidden = false;
+  crtBtn.addEventListener('click', () => { crtOn = !crtOn; applyCrt(); });
+  new ResizeObserver(() => { if (crtOn) crt.draw(img.data); }).observe(document.getElementById('crt'));
+}
+applyCrt();
+
+function makeCrt(cv) {
+  const gl = cv.getContext('webgl2', { antialias: false, alpha: false, premultipliedAlpha: false });
+  if (!gl) return null;
+  const VS = '#version 300 es\nvoid main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); ' +
+    'gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }';
+  const HEAD = '#version 300 es\nprecision highp float;\nprecision highp int;\nout vec4 o;\n';
+  const prog = (fs) => {
+    const p = gl.createProgram();
+    for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, HEAD + fs]]) {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+      gl.attachShader(p, sh);
+    }
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const u = {};
+    for (let i = 0, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); i < n; i++) {
+      const name = gl.getActiveUniform(p, i).name;
+      u[name] = gl.getUniformLocation(p, name);
+    }
+    return { p, u };
+  };
+  let P;
+  try {
+    P = {
+      // CRT colour (as host_crt.cpp): saturation round each pixel's grey, contrast round the picture's mean grey
+      adjust: prog(`uniform sampler2D src; uniform float mean;
+        void main() {
+          vec3 c = texelFetch(src, ivec2(gl_FragCoord.xy), 0).rgb * 255.0;
+          float L = dot(c, vec3(0.299, 0.587, 0.114));
+          vec3 a = clamp(mean + (clamp(L + (c - L) * 1.18, 0.0, 255.0) - mean) * 1.08, 0.0, 255.0);
+          a.r = min(255.0, a.r * 1.02); a.b *= 0.96;
+          o = vec4(floor(a) / 255.0, 1.0);
+        }`),
+      down: prog(`uniform sampler2D src; uniform vec2 size; void main() { o = texture(src, gl_FragCoord.xy / size); }`),
+      blur: prog(`uniform sampler2D src; uniform ivec2 dir; uniform float sigma; uniform int radius;
+        void main() {
+          ivec2 p = ivec2(gl_FragCoord.xy), sz = textureSize(src, 0);
+          vec3 acc = vec3(0.0); float ws = 0.0;
+          for (int i = -radius; i <= radius; i++) {
+            float w = exp(-float(i * i) / (2.0 * sigma * sigma));
+            acc += texelFetch(src, clamp(p + dir * i, ivec2(0), sz - 1), 0).rgb * w; ws += w;
+          }
+          o = vec4(acc / ws, 1.0);
+        }`),
+      crt: prog(`uniform sampler2D A, B, H, shade, glass; uniform float side, phase, step, frame; uniform int sub;
+        vec3 a(int x, int y) { return texelFetch(A, ivec2(clamp(x, 0, 465), clamp(y, 0, 465)), 0).rgb * 255.0; }
+        vec3 beam(int k, int y) { return floor(0.55 * a(k >> 1, y) + 0.225 * (a(max(k - 1, 0) >> 1, y) + a(min(k + 1, 931) >> 1, y)) + 0.5); }
+        float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+        void main() {
+          vec2 px = vec2(gl_FragCoord.x, side - gl_FragCoord.y);  // from the top
+          float R = side * 0.5; vec2 n = (px - R) / R;
+          float f = (1.0 - 0.09 + 0.09 * dot(n, n)) / 0.965;  // the curved glass (CRT_K, CRT_SHRINK)
+          vec2 s = (n * f + 1.0) * 233.0;
+          vec3 pic = vec3(0.0);
+          if (length(px - R) <= R && s.x >= 0.0 && s.y >= 0.0 && s.x < 466.0 && s.y < 466.0) {
+            int ix2 = min(int(s.x * 2.0), 931), iy = min(int(s.y), 465);
+            vec3 g = beam(ix2, iy);
+            vec3 c = vec3(beam(max(ix2 - 1, 0), iy).r, g.g, beam(min(ix2 + 1, 931), iy).b);  // convergence
+            float L = (floor(floor(dot(g, vec3(0.3, 0.59, 0.11)) + 0.5) / 4.0) + 0.5) / 64.0, w = 0.85 + 1.35 * L, fl = 0.0;
+            for (int k = 0; k < 4; k++) {
+              if (k >= sub) break;
+              float yy = sub > 1 ? s.y + ((float(k) + 0.5) / float(sub) - 0.5) * step : s.y;
+              float d = abs(fract(yy * 0.5 + phase) - 0.5) * 4.0;
+              fl += exp(-(d / w) * (d / w)) * 1.2;
+            }
+            fl /= float(sub);
+            vec3 bl = floor(texture(B, s / 466.0).rgb * 255.0 * 0.22);
+            vec3 ha = floor(texture(H, s / 466.0).rgb * 255.0 * vec3(0.20, 0.15, 0.10));
+            pic = min(min(min(c * fl, 255.0) + bl, 255.0) + ha, 255.0);
+          }
+          float sh = texture(shade, px / side).r, al = texture(glass, px / side).r;
+          float gr = ((hash(px + frame) + hash(px * 1.7 + frame * 3.1) + hash(px * 2.3 - frame)) / 3.0 - 0.5) * 11.5;
+          vec3 v = pic * sh * (1.0 - al) + vec3(235.0, 240.0, 255.0) * al + gr;
+          o = vec4(clamp(floor(v + 0.5), 0.0, 255.0) / 255.0, 1.0);
+        }`),
+    };
+  } catch (e) { console.warn('CRT screen off:', e); return null; }
+  const tex = (w, h, filter, fmt = gl.RGBA8, f2 = gl.RGBA) => {
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, fmt, w, h, 0, f2, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+  };
+  const HF = 233, QF = 117;
+  const T = { src: tex(466, 466, gl.NEAREST), A: tex(466, 466, gl.LINEAR), half: tex(HF, HF, gl.LINEAR),
+    halfT: tex(HF, HF, gl.LINEAR), quart: tex(QF, QF, gl.LINEAR), quartT: tex(QF, QF, gl.LINEAR), shade: null, glass: null };
+  const fbs = new Map();
+  const target = (t, w, h) => {
+    if (!t) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h); return; }
+    let fb = fbs.get(t);
+    if (!fb) {
+      fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      fbs.set(t, fb);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.viewport(0, 0, w, h);
+  };
+  const run = (pr, uniforms, textures) => {
+    gl.useProgram(pr.p);
+    let unit = 0;
+    for (const [name, t] of Object.entries(textures)) {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.uniform1i(pr.u[name], unit++);
+    }
+    for (const [name, v] of Object.entries(uniforms)) {
+      const loc = pr.u[name];
+      if (Array.isArray(v)) (Number.isInteger(v[0]) && name === 'dir' ? gl.uniform2i : gl.uniform2f).call(gl, loc, v[0], v[1]);
+      else if (name === 'radius' || name === 'sub') gl.uniform1i(loc, v);
+      else gl.uniform1f(loc, v);
+    }
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+  // the rim (darkening softly, the picture fading into the tube's black edge) and the glass's reflection, made as
+  // host_crt.cpp makes them, on a grid of at most 640 (both are soft) for each size
+  const boxes = (sigma) => {
+    let wl = Math.floor(Math.sqrt(12 * sigma * sigma / 3 + 1)); if (wl % 2 === 0) wl--;
+    const m = Math.round((12 * sigma * sigma - 3 * wl * wl - 12 * wl - 9) / (-4 * wl - 4));
+    return [0, 1, 2].map((i) => (i < m ? wl : wl + 2));
+  };
+  const gauss = (buf, n, sigma) => {
+    const tmp = new Float32Array(n * n);
+    const line = (s, d, o, step, r) => {
+      if (r <= 0) { for (let i = 0; i < n; i++) d[o + i * step] = s[o + i * step]; return; }
+      const k = 1 / (2 * r + 1); let acc = 0;
+      for (let i = -r; i <= r; i++) acc += s[o + Math.min(n - 1, Math.max(0, i)) * step];
+      for (let i = 0; i < n; i++) {
+        d[o + i * step] = acc * k;
+        acc += s[o + Math.min(n - 1, i + r + 1) * step] - s[o + Math.max(0, i - r) * step];
+      }
+    };
+    for (const sz of boxes(sigma)) {
+      const r = (sz - 1) >> 1;
+      for (let y = 0; y < n; y++) line(buf, tmp, y * n, 1, r);
+      for (let x = 0; x < n; x++) line(tmp, buf, x, n, r);
+    }
+  };
+  let madeFor = 0;
+  function overlays(side) {
+    const n = Math.min(side, 640), sc = n / side, R = n / 2;
+    const vig = new Float32Array(n * n), edge = new Float32Array(n * n), refl = new Float32Array(n * n), arc = new Float32Array(n * n);
+    const er = R - 0.012 * n, rx0 = 0.08 * n, ry0 = 0.04 * n, rx1 = 0.70 * n, ry1 = 0.42 * n;
+    const rcx = (rx0 + rx1) / 2, rcy = (ry0 + ry1) / 2, ra = (rx1 - rx0) / 2, rb = (ry1 - ry0) / 2, arcR = 0.45 * n, arcW = 0.012 * n;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const i = y * n + x, dx = x + 0.5 - R, dy = y + 0.5 - R, r = Math.hypot(dx, dy);
+      vig[i] = r <= R ? 1 : 0; edge[i] = r <= er ? 1 : 0;
+      const ex = (x + 0.5 - rcx) / ra, ey = (y + 0.5 - rcy) / rb;
+      refl[i] = ex * ex + ey * ey <= 1 ? 34 : 0;
+      let ang = Math.atan2(dy, dx) * 180 / Math.PI; if (ang < 0) ang += 360;
+      arc[i] = r <= arcR && r >= arcR - arcW && ang >= 200 && ang <= 285 ? 70 : 0;
+    }
+    gauss(vig, n, n / 30); gauss(edge, n, n / 160); gauss(refl, n, n / 14); gauss(arc, n, Math.max(0.5, n / 160));
+    const sh = new Uint8Array(n * n), gl8 = new Uint8Array(n * n);
+    for (let i = 0; i < n * n; i++) { sh[i] = Math.round(vig[i] * edge[i] * 255); gl8[i] = Math.min(255, Math.round(refl[i] + arc[i])); }
+    for (const [key, data] of [['shade', sh], ['glass', gl8]]) {
+      if (T[key]) gl.deleteTexture(T[key]);
+      T[key] = tex(n, n, gl.LINEAR, gl.R8, gl.RED);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, n, n, gl.RED, gl.UNSIGNED_BYTE, data);
+    }
+    madeFor = side;
+    void sc;
+  }
+  let frameNo = 0;
+  return {
+    draw(bytes) {
+      const r = cv.getBoundingClientRect(), side = Math.max(64, Math.round(r.width * (window.devicePixelRatio || 1)));
+      if (cv.width !== side) cv.width = cv.height = side;
+      if (madeFor !== side) overlays(side);
+      gl.bindTexture(gl.TEXTURE_2D, T.src);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 466, 466, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+      let sum = 0, cnt = 0;  // the picture's mean grey, from every 4th pixel
+      for (let i = 0; i < bytes.length; i += 16, cnt++) sum += bytes[i] * 0.299 + bytes[i + 1] * 0.587 + bytes[i + 2] * 0.114;
+      target(T.A, 466, 466); run(P.adjust, { mean: Math.round(sum / cnt) }, { src: T.src });
+      target(T.half, HF, HF); run(P.down, { size: [HF, HF] }, { src: T.A });
+      target(T.quart, QF, QF); run(P.down, { size: [QF, QF] }, { src: T.half });
+      target(T.halfT, HF, HF); run(P.blur, { dir: [1, 0], sigma: 1.25, radius: 4 }, { src: T.half });
+      target(T.half, HF, HF); run(P.blur, { dir: [0, 1], sigma: 1.25, radius: 4 }, { src: T.halfT });
+      target(T.quartT, QF, QF); run(P.blur, { dir: [1, 0], sigma: 3.25, radius: 10 }, { src: T.quart });
+      target(T.quart, QF, QF); run(P.blur, { dir: [0, 1], sigma: 3.25, radius: 10 }, { src: T.quartT });
+      const step = 466 / side, sub = step > 1 / 1.75 ? 4 : 1;  // few rows a line: each row averages four samples
+      target(null, side, side);
+      run(P.crt, { side, phase: sub > 1 ? 0.25 : 0, step, frame: (frameNo = (frameNo + 1) % 997), sub },
+        { A: T.A, B: T.half, H: T.quart, shade: T.shade, glass: T.glass });
+    },
+  };
+}
 
 // Shown bigger than its 466 pixels, the screen keeps its pixels square and sharp; shown smaller (a
 // small window, a screen without Retina), whole rows and columns would drop out and the pixel art
@@ -439,6 +671,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=196e85d2cf"></script>
+<script src="pokewebgochi.js?v=c2b532da8f"></script>
 </body>
 </html>

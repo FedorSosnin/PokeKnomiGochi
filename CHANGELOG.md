@@ -6,13 +6,13 @@ All notable changes to the firmware. Versions match the number shown at the
 Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [Unreleased]
+## [2.1.2] - 2026-11-12
 
-- **A drop shadow under the Mac and Windows apps:** a soft shadow under the round window, as if it floats over the desktop. Clicks go through it to whatever is underneath.
 - **A CRT screen on the Mac, Windows and the web, on by default:** the game as on an old tube TV. Each scanline is a soft beam that swells where the picture is bright, the colours are richer with a warm glow and halo, and the picture bulges as through curved glass into the tube's dark edge, with a reflection and a little grain. Taps and clicks land on what you see through the curve. They now open at Large; **CRT Screen** in the Mac and Windows menu (a **CRT** button under the web game) turns it off.
-
-- **Your Pokémon's nickname in battles:** the HP panel and lines like "SPLASHY: DRAGON RAGE!" use the name you gave it, in wild and buddy battles, PokeDungeon and Knomi Tower.
 - **Bigger, sharper windows (Mac and Windows):** the sizes move up one: Small is about the old Medium, Medium the old Large, and a new Large is nearly as big as the web version's. Every size is drawn sharp: the screen is blown up by whole pixels first, and Small and Large land exactly on a Retina screen's pixels (Large on Windows at 100% and 200% scaling too), so the pixel art stays crisp instead of blurring.
+- **A drop shadow under the Mac and Windows apps:** a soft shadow under the round window, as if it floats over the desktop. Clicks go through it to whatever is underneath.
+- **Your Pokémon's nickname in battles:** the HP panel and lines like "SPLASHY: DRAGON RAGE!" use the name you gave it, in wild and buddy battles, PokeDungeon and Knomi Tower.
+- **Travel:** sliding between Knomi Island and Knomi Tower moves the whole map, so the tower no longer shows at the bottom of the island while it slides. Only the ✕ stays put.
 
 ## [2.1.1] - 2026-11-12
 
