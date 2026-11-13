@@ -42,12 +42,13 @@ Otherwise a song starts on its first beat.
 
 - **Sound** and **Music** each have a slider on the settings page, four notches from 0 (off) to 3, its knob showing
   the number (Fedor: "a slider with 4 notches. From 0 to 3"). A tap on a notch moves it there; a finger sliding along
-  it moves the choice and it lands where the finger lifts. Sound's is everything, music included; Music's is the
-  music's share under it. 3 is how they always played, and the default. Saved as `snd` and `sndv`, `mus` and `musv`:
+  it moves the choice and it lands where the finger lifts. Sound's is the effects and the cries, Music's the music,
+  each on its own (Fedor: "For sound, I want the two options to be split. the music and all other sounds"; until
+  2.1.3 Sound's was everything and Music's a share under it). 3 is how they always played, and the default. Saved as `snd` and `sndv`, `mus` and `musv`:
   turned off by Mute, it comes back on at its level.
-- **Mute Sound** in the Mac and Windows menus and the web's **Mute** turn Sound off and on. The menus' **Music**
+- **Mute Sound** in the Mac and Windows menus and the web's **Sound** button turn Sound off and on. The menus' **Music**
   submenu (Off, Low, Medium, High) and the web's **Music** button (a step down each click) set the music's.
-- With the music off, the effects still play. With Sound off, nothing does.
+- With the music off, the effects still play. With Sound off, the music still does.
 - A hidden window or tab fades the music out until it's shown again.
 
 ## The sound

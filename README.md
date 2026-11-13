@@ -48,7 +48,7 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Care for it.** Feed it berries from the backpack, give it a bath and turn the lights off for bed. It evolves when it's ready, and one day it says goodbye and walks off over the hill.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Music and cries.** On the Mac, Windows and the web, original chiptune plays on every screen: a home tune that turns slow and dreamy at night, a Travel tune and a battle theme for each zone, Knomi Tower, the legends, the mini games and more, 28 tracks in all. Every Pokémon has its own cry, when you pet it and when it wins. Sound and Music each have a level from 0 to 3 in Settings. (The Knomi has no speaker, so it stays quiet.)
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Music and cries.** On the Mac, Windows and the web, original chiptune plays on every screen: a home tune that turns slow and dreamy at night, a Travel tune and a battle theme for each zone, Knomi Tower, the legends, the mini games and more, 28 tracks in all. Every Pokémon has its own cry, when you pet it and when it wins. Sound (the effects and cries) and Music each have their own level from 0 to 3 in Settings. (The Knomi has no speaker, so it stays quiet.)
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Hold it for a menu.** Hold your finger on your Pokémon for a ring of Settings, Medals, Stats and the Pokédex.
 
@@ -436,7 +436,7 @@ The code also builds for the Waveshare ESP32-S3-Touch-AMOLED-1.75, a bigger roun
 - **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.
 - **Controls:** tap, hold and swipe the screen, as on the Knomi (see [How to play](#how-to-play)). On a phone, tilt it to aim the ball and to steer in PikaSurf and Berry Drop; where the browser asks first, **Enable tilt** turns it on. On Android it also buzzes along with the sounds; **Vibration** turns that off (iPhone browsers can't vibrate). On a computer, the mouse is a finger that presses when you click, the left and right arrows tilt, all four arrows walk in PokeDungeon, Space is the Knomi's button, and on a catch the left and right arrows choose a ball and Space or the up arrow throws it.
 - **Size and CRT:** it opens Large, with the CRT screen on. **Size** makes it Small or Medium, like the Mac app, and on a small screen it shrinks to fit. **CRT** turns the effect off for the Knomi's own look; a browser without WebGL 2 shows that look by itself.
-- **Music:** the **Music** button steps it down from High to Medium, Low and Off. Settings in the ring has Sound and Music levels from 0 to 3.
+- **Sound and Music:** **Sound** turns the effects and cries off and on, and **Music** steps the music down from High to Medium, Low and Off, each on its own. Settings in the ring has a level from 0 to 3 for each.
 - **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and the Mac and Windows apps use it too, so they all meet each other.
 - **Updates:** it updates itself: reload to get the newest version. A tab left open checks every hour and says when there is one; with **Auto-update** on (the button under the game; on unless you turn it off), it reloads onto it by itself once nobody has touched it for a minute on the home screen.
 

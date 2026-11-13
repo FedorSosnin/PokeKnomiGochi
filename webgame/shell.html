@@ -67,7 +67,7 @@
   <button id="tilt" type="button" hidden>Enable tilt</button>
   <button id="size" type="button">Size: Large</button>
   <button id="crtBtn" type="button" hidden>CRT: On</button>
-  <button id="sound" type="button">Sound on</button>
+  <button id="sound" type="button">Sound: On</button>
   <button id="music" type="button" hidden>Music: High</button>
   <button id="auto" type="button">Auto-update: On</button>
   <button id="vibe" type="button" hidden>Vibration: On</button>
@@ -266,9 +266,10 @@ function startAudio() {
   node.connect(audio.destination);
 }
 
-// ---- sound on/off: the same setting as the SND switch on the clock screen ----
+// ---- sound on/off: the same setting as the SND switch on the clock screen: the effects and the cries, apart from the
+// music (its own button, below) ----
 const soundBtn = document.getElementById('sound');
-function updateSoundButton() { soundBtn.textContent = Module._webSoundOn() ? 'Mute' : 'Unmute'; }
+function updateSoundButton() { soundBtn.textContent = 'Sound: ' + (Module._webSoundOn() ? 'On' : 'Off'); }
 soundBtn.addEventListener('click', () => {
   Module._webSetSound(Module._webSoundOn() ? 0 : 1);
   updateSoundButton();

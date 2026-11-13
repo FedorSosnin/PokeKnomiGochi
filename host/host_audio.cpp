@@ -22,8 +22,8 @@ static uint8_t gQueue[QUEUE_LEN];
 static std::atomic<uint32_t> gHead{0}, gTail{0};
 
 #if UI_V2
-// the music: the game says which track its screen wants (musicWant), the audio thread plays it. Silent with SOUND or
-// the Music switch off, while the pet sleeps, and while the window is hidden
+// the music: the game says which track its screen wants (musicWant), the audio thread plays it. Silent with the Music
+// switch off, while the pet sleeps, and while the window is hidden (SOUND off leaves it playing)
 static MusicPlayer gMusic;
 static std::atomic<uint8_t> gMusicWant{MUS_NONE};
 static std::atomic<bool> gMusicOn{true}, gMusicHidden{false};
@@ -32,7 +32,9 @@ static float gDuck = 1.0f;  // the music's level under the effects
 #define DUCK_IN_MS 4.0f     // how fast it gets out of the way (a time constant)
 #define DUCK_OUT_MS 120.0f  // ...and comes back
 // the levels, Low, Medium and High (1..3), kept apart from on and off, so switching back on comes back at the same
-// one: SOUND's is everything (saved as sndv), the music's its share under it (musv). High is how they always played
+// one. SOUND's is the effects' and the cries' (saved as sndv), MUSIC's the music's (musv), each on its own (Fedor:
+// "For sound, I want the two options to be split. the music and all other sounds"; until 2.1.3 SOUND's was everything,
+// the music's a share under it). High is how they always played
 static const float LEVEL_GAIN[4] = { 0.0f, 0.3f, 0.55f, 1.0f };
 static std::atomic<uint8_t> gSndLv{3}, gMusLv{3};
 static float gSndGain = 1.0f, gMusGain = 1.0f;  // (the audio thread's, eased toward the levels: no click)
@@ -161,20 +163,21 @@ static void startNote() {
 }
 
 #if UI_V2
-// an effect's sample with the music added under it (playing: an effect sounds, so the music ducks)
-// at SOUND's level, the music at its own under that
+// an effect's sample with the music added under it (playing: an effect sounds, so the music ducks): the effect and
+// the cry at SOUND's level, the music at its own
 static inline int16_t withMusic(int16_t s, bool playing) {
   static const float duckIn = 1.0f - expf(-1000.0f / (DUCK_IN_MS * SAMPLE_RATE));
   static const float duckOut = 1.0f - expf(-1000.0f / (DUCK_OUT_MS * SAMPLE_RATE));
   static const float ease = 1.0f - expf(-1000.0f / (LEVEL_EASE_MS * SAMPLE_RATE));
   float voice = gVoice.sample();
-  float target = playing || gVoice.active() ? DUCK_LEVEL : 1.0f;
-  gDuck += (target - gDuck) * (target < gDuck ? duckIn : duckOut);
   gSndGain += (LEVEL_GAIN[gSndLv.load(std::memory_order_relaxed)] - gSndGain) * ease;
+  // the music makes way as far as the effects are loud: DUCK_LEVEL at SOUND's High, hardly at Low
+  float target = playing || gVoice.active() ? 1.0f - (1.0f - DUCK_LEVEL) * gSndGain : 1.0f;
+  gDuck += (target - gDuck) * (target < gDuck ? duckIn : duckOut);
   gMusGain += (LEVEL_GAIN[gMusLv.load(std::memory_order_relaxed)] - gMusGain) * ease;
   float m = 0;
   gMusic.render(&m, 1, gDuck * gMusGain);
-  int32_t v = (int32_t)lrintf((s + (m + voice) * 32767.0f) * gSndGain);
+  int32_t v = (int32_t)lrintf((s + voice * 32767.0f) * gSndGain + m * 32767.0f);
   return (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
 }
 #endif
@@ -182,7 +185,7 @@ static inline int16_t withMusic(int16_t s, bool playing) {
 extern "C" void hostAudioRender(int16_t *out, int frames) {
 #if UI_V2
   {
-    bool quiet = !gOn || !gMusicOn;
+    bool quiet = !gMusicOn;
     uint8_t want = quiet || gSleeping || gMusicHidden ? (uint8_t)MUS_NONE : gMusicWant.load(std::memory_order_relaxed);
     gMusic.want(want, quiet);
     if (gVoiceReady.load(std::memory_order_acquire)) {

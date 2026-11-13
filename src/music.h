@@ -43,7 +43,7 @@ enum : uint8_t { VOICE_PET, VOICE_WIN };  // a Pokemon's cry (cry.h): petted, or
 #ifdef BOARD_HOST
 #define HAS_MUSIC 1
 void musicWant(uint8_t track);  // the track this screen wants: what plays follows it (host_audio.cpp)
-bool musicEnabled();            // the Music switch, saved as mus, on by default (SOUND off silences it too)
+bool musicEnabled();            // the Music switch, saved as mus, on by default (apart from SOUND, the effects')
 void musicSetEnabled(bool on);
 // the levels on the settings page: 1 low, 2 medium, 3 high (the default, how they always played). SOUND's is all of it,
 // the music included (saved as sndv); the music's is its share under that (musv). Setting one switches it on

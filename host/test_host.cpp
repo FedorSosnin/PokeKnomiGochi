@@ -1114,7 +1114,7 @@ static void testGame() {
     hostAudioRender(pcm.data(), HOST_AUDIO_RATE * 2);
     CHECK(!anySound(HOST_AUDIO_RATE / 10));
     hostMusicHidden(false);
-    // the levels: SOUND's is everything, the music's its share under it; setting one switches it on
+    // the levels: SOUND's is the effects', the music's its own, apart; setting one switches it on
     auto rms = [&](int n) {
       hostAudioRender(pcm.data(), n);
       double e = 0;
@@ -1152,6 +1152,20 @@ static void testGame() {
     double quiet = rms(HOST_AUDIO_RATE);
     CHECK(high > 0 && quiet < high * 0.5 && quiet > high * 0.1);
     musicSetVolume(3);
+    {  // Sound and Music apart (Fedor: "For sound, I want the two options to be split. the music and all other
+       // sounds"): SOUND's level and its switch leave the music as it plays (2.1.3 had it at 0.3 at Low, silent off)
+      hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 10);
+      double full = rms(HOST_AUDIO_RATE);
+      soundSetVolume(1);
+      hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 10);
+      double lowSnd = rms(HOST_AUDIO_RATE);
+      audioSetEnabled(false);
+      hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 4);
+      double offSnd = rms(HOST_AUDIO_RATE);
+      CHECK(full > 0 && lowSnd > full * 0.6 && lowSnd < full * 1.6 && offSnd > full * 0.6 && offSnd < full * 1.6);
+      audioSetEnabled(true);
+      soundSetVolume(3);
+    }
     {  // a Pokemon's cry (cry.h): its own, the same every time, short; it sounds with the effects, and not with SOUND
        // off
       Cry a, b;
