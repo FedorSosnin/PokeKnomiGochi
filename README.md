@@ -32,7 +32,7 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Climb Knomi Tower.** Walk the pier out to the tower's islet and take your Pokémon and two friends from your Pokédex up eight floors of type guardians, with HP carrying over from fight to fight. At the top waits the Legend, and then Mewtwo: beat them both for a Master Ball, every time you do.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Ultra Balls and Master Balls.** Every battle you see through fills two bars, which pop up after each fight to show how close you are: an Ultra Ball every 25, which triples your catch chance, and a Master Ball every 100, which always catches.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Ultra Balls and Master Balls.** Every battle you win fills two bars, which pop up after each fight to show how close you are: an Ultra Ball every 25, which triples your catch chance, and a Master Ball every 100, which always catches.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **The Repel.** Ten minutes of mini games earn a Repel. Spray it from the backpack and weaker wild Pokémon stay away for 3 minutes, so the ones you're hunting turn up.
 
@@ -47,6 +47,8 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **A trophy room.** All 26 medals as things in one room: badges in a case (Knomi Tower's too), statues, cups, a shiny gem, a gleam sweeping over the ones you've won. Tap a group for its shelf, then a medal for how to earn it.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Care for it.** Feed it berries from the backpack, give it a bath and turn the lights off for bed. It evolves when it's ready, and one day it says goodbye and walks off over the hill.
+
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Music and cries.** On the Mac, Windows and the web, original chiptune plays on every screen: a home tune that turns slow and dreamy at night, a Travel tune and a battle theme for each zone, Knomi Tower, the legends, the mini games and more, 28 tracks in all. Every Pokémon has its own cry, when you pet it and when it wins. Sound and Music each have a level from 0 to 3 in Settings. (The Knomi has no speaker, so it stays quiet.)
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Hold it for a menu.** Hold your finger on your Pokémon for a ring of Settings, Medals, Stats and the Pokédex.
 
@@ -434,6 +436,7 @@ The code also builds for the Waveshare ESP32-S3-Touch-AMOLED-1.75, a bigger roun
 - **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.
 - **Controls:** tap, hold and swipe the screen, as on the Knomi (see [How to play](#how-to-play)). On a phone, tilt it to aim the ball and to steer in PikaSurf and Berry Drop; where the browser asks first, **Enable tilt** turns it on. On Android it also buzzes along with the sounds; **Vibration** turns that off (iPhone browsers can't vibrate). On a computer, the mouse is a finger that presses when you click, the left and right arrows tilt, all four arrows walk in PokeDungeon, Space is the Knomi's button, and on a catch the left and right arrows choose a ball and Space or the up arrow throws it.
 - **Size and CRT:** it opens Large, with the CRT screen on. **Size** makes it Small or Medium, like the Mac app, and on a small screen it shrinks to fit. **CRT** turns the effect off for the Knomi's own look; a browser without WebGL 2 shows that look by itself.
+- **Music:** the **Music** button steps it down from High to Medium, Low and Off. Settings in the ring has Sound and Music levels from 0 to 3.
 - **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and the Mac and Windows apps use it too, so they all meet each other.
 - **Updates:** it updates itself: reload to get the newest version. A tab left open checks every hour and says when there is one; with **Auto-update** on (the button under the game; on unless you turn it off), it reloads onto it by itself once nobody has touched it for a minute on the home screen.
 
@@ -449,11 +452,11 @@ The same game as a round window on your Mac desktop, in a Poké Ball ring with a
 
    Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/PokeMacGochi.app`
 
-**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Berry Drop and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle; on a catch, the left and right arrows choose a ball and Space or the up arrow throws it. Drag the red and white ring to move the window: it grows when the mouse is over it, so it's easy to grab, and the screen inside is only for touching, with the mouse as a finger. Right-click it, or click the Poké Ball in the menu bar, for About, Size, CRT Screen, Mute Sound, Check for Updates, Update Automatically and Quit.
+**Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Berry Drop and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle; on a catch, the left and right arrows choose a ball and Space or the up arrow throws it. Drag the red and white ring to move the window: it grows when the mouse is over it, so it's easy to grab, and the screen inside is only for touching, with the mouse as a finger. Right-click it, or click the Poké Ball in the menu bar, for About, Size, CRT Screen, Mute Sound, Music (Off, Low, Medium or High), Check for Updates, Update Automatically and Quit.
 
 **Size and CRT Screen:** it opens Large, with the CRT screen on. **Size** makes it Medium or Small, sharp at every size, and **CRT Screen** turns the effect off for the Knomi's own look.
 
-Your pet, the sound and CRT settings, and the window's size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
+Your pet, the sound, music and CRT settings, and the window's size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 
 **Updates:** PokeMacGochi checks for a new version 10 seconds after it opens and then every hour, counting the time the Mac sleeps, so a version out overnight is there by morning. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and reopens on it. Turned off, it tells you once when one is out. From 1.30 on it updates itself, like the Knomi: click **Update** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and reopens on it a few seconds later. Your pet stays, since it's saved outside the app. Older versions get the new DMG instead: quit PokeMacGochi, open the DMG and drag it into Applications, choosing **Replace**.
 
@@ -469,11 +472,11 @@ The same game as a round window on your Windows desktop, in a Poké Ball ring wi
 2. Open it. Windows warns that it **protected your PC**, because the app isn't signed by a paid developer certificate. Click **More info**, then **Run anyway**. After that it opens normally.
 3. The first time, Windows Firewall may ask whether PokeWinGochi can use your network. Allow it on **private networks**, so buddies on your Wi-Fi can find you.
 
-**Controls:** the same as the Mac app. Click, hold and swipe like a touch screen; the left and right arrows tilt, all four arrows walk in PokeDungeon, and Space is the Knomi's button; on a catch, the left and right arrows choose a ball and Space or the up arrow throws it. Drag the ring to move the window: it grows when the mouse is over it, and the screen inside is only for touching. Right-click it, or click the Poké Ball by the clock, for About, Size, CRT Screen, Mute Sound, Check for Updates, Update Automatically and Quit. To start it with Windows, put a shortcut to it in the Startup folder (press Win+R and type `shell:startup`).
+**Controls:** the same as the Mac app. Click, hold and swipe like a touch screen; the left and right arrows tilt, all four arrows walk in PokeDungeon, and Space is the Knomi's button; on a catch, the left and right arrows choose a ball and Space or the up arrow throws it. Drag the ring to move the window: it grows when the mouse is over it, and the screen inside is only for touching. Right-click it, or click the Poké Ball by the clock, for About, Size, CRT Screen, Mute Sound, Music (Off, Low, Medium or High), Check for Updates, Update Automatically and Quit. To start it with Windows, put a shortcut to it in the Startup folder (press Win+R and type `shell:startup`).
 
 It opens Large, with the CRT screen, like the Mac app: **Size** and **CRT Screen** in its menu change them.
 
-Your pet, the sound and CRT settings, and the window's size and place are saved in `%APPDATA%\PokeWinGochi`, separate from the app; the game's pictures are unpacked to `%LOCALAPPDATA%\PokeWinGochi`. Only one copy runs on that save at a time.
+Your pet, the sound, music and CRT settings, and the window's size and place are saved in `%APPDATA%\PokeWinGochi`, separate from the app; the game's pictures are unpacked to `%LOCALAPPDATA%\PokeWinGochi`. Only one copy runs on that save at a time.
 
 **Updates:** it checks for a new version when it opens and then every hour, counting the time the PC sleeps. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and starts again on it. Turned off, it tells you once when one is out. From 1.13 on it updates itself, like the Knomi: click **Yes** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and starts again on it a few seconds later. Your pet stays. On older versions, quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one.
 
