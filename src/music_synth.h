@@ -1,9 +1,9 @@
 #pragma once
 // V2: the music player (music.h). Four voices, as a handheld of the square-wave effects' era had: two pulse waves
-// (12.5%, 25% or 50% duty) for the tune and its harmony, a stepped triangle for the bass and a drum voice (noise, with
-// a falling tone under it for the kick and the toms). Each note is shaped by its instrument's envelope, with vibrato
-// on held notes, slides between slurred ones and the chord arpeggios a pulse plays as one note. The pulses are
-// band-limited (polyBLEP), so their high notes stay clean at 48 kHz.
+// (12.5%, 25% or 50% duty) for the tune and its harmony, a stepped triangle or a 4-bit wave for the bass and a drum
+// voice (noise, with a falling tone under it for the kick and the toms). Each note is shaped by its instrument's
+// envelope, with vibrato on held notes, slides between slurred ones and the chord arpeggios a pulse plays as one
+// note. The pulses are band-limited (polyBLEP), so their high notes stay clean at 48 kHz.
 //
 // A song is four byte streams, one a voice (tools/music/songs.py writes them into music_data.h):
 //   1..108       a note (MIDI number), then its length in ticks (96 a whole note); +0x80: slurred from the last one
@@ -28,7 +28,11 @@
 #define MS_SLUR 0x80
 #define MS_TICKS_PER_BEAT 24
 
-enum : uint8_t { MW_P12, MW_P25, MW_P50, MW_TRI };
+enum : uint8_t { MW_P12, MW_P25, MW_P50, MW_TRI, MW_WAVE };
+// MW_WAVE: a handheld's wave voice, 32 steps of 0..15 (its own shape: a rounded pulse leaning a little), the warm,
+// slightly buzzy bass of the old portable consoles; it averages 7.5, so it's centred
+static const uint8_t MUSIC_WAVE[32] = { 8, 11, 13, 14, 15, 15, 15, 15, 14, 14, 13, 13, 12, 12, 11, 10,
+                                        7, 4, 2, 1, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 5 };
 struct MusicInst {
   uint8_t wave;
   float atk, dec, sus, rel;  // the envelope: ms, ms, its level 0..1, ms
@@ -340,6 +344,8 @@ class MusicPlayer {
       int k = (int)(v.phase * 32.0f);
       int lvl = k < 16 ? k : 31 - k;
       out = (lvl - 7.5f) / 7.5f;
+    } else if (in.wave == MW_WAVE) {
+      out = (MUSIC_WAVE[(int)(v.phase * 32.0f) & 31] - 7.5f) / 7.5f;
     } else {
       float duty = in.wave == MW_P12 ? 0.125f : in.wave == MW_P25 ? 0.25f : 0.5f;
       out = v.phase < duty ? 1.0f : -1.0f;

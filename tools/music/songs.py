@@ -38,6 +38,12 @@ INSTRUMENTS = [
     ('bass',   'MW_TRI', 2, 0, 1.0, 30, 0, 22, 0, 0, 0, 0),              # the triangle, a little gap between notes
     ('bassleg', 'MW_TRI', 2, 0, 1.0, 40, 0, 4, 0, 0, 0, 30),             # ...joined up
     ('basspl', 'MW_TRI', 2, 160, 0.35, 30, 0, 10, 0, 0, 0, 0),           # ...plucked
+    # the old handhelds' sound (the home): a half pulse that settles after its attack and wavers once it's held, a
+    # quarter pulse picking out the chords under it, and the wave voice's bass, short and bouncy
+    ('gblead', 'MW_P50', 2, 260, 0.68, 60, 0, 10, 0.24, 5.6, 260, 0),
+    ('gbpick', 'MW_P25', 2, 110, 0.30, 45, 0, 8, 0, 0, 0, 0),
+    ('gbharm', 'MW_P25', 2, 240, 0.50, 60, 0, 10, 0.16, 5.6, 300, 0),
+    ('gbwave', 'MW_WAVE', 2, 0, 1.0, 25, 0, 26, 0, 0, 0, 0),
 ]
 INST = {name: i for i, (name, *_) in enumerate(INSTRUMENTS)}
 
@@ -100,29 +106,40 @@ s.section('B', 8, 'F | G | Em | Am | Dm7 | G | Csus4 | C', """
 s.form(['I'], ['A', 'B'])
 
 # ------------------------------------------------------------------ Home: by day, the pet's own tune
-s = add(song('HOME', 'Home', 104, key=('F', 'major'), insts=('lead', 'stab', 'bass'), vols=(13, 8, 15, 9)))
+# In the manner of the old handhelds' hometowns (an original tune, nothing borrowed): a warm major key, a half pulse
+# singing with a late vibrato, a quarter pulse under it picking out the chords then following the tune a third or a
+# sixth below, the wave voice's bass bouncing on eighths, only a soft hat for drums; the minor iv and the B7 for the
+# wistful turns.
+s = add(song('HOME', 'Home', 116, key=('D', 'major'), insts=('gblead', 'gbpick', 'gbwave'), vols=(13, 9, 10, 9),
+             bass_lo=38))
+HAT = '16: . . h . . . h . . . h . . . h .'
+HAT_END = '16: . . h . . . h . . . h . h . h h'
+HOME_BASS = '8: R O 5 O R O 5 A'
+HOME_PICK = '8: 1 2 3 2 1 2 3 2'
 HOME_A = """
-  o5 r8 c8 f8 a8 o6 c4 o5 a8 f8 | a4 g8 f8 d4. f8 | f8 g8 f8 d8 o4 b-4 o5 c8 d8 | e4. d8 c4 r4 |
-  r8 c8 f8 a8 o6 c8 d8 c8 o5 a8 | o6 d4 c8 o5 a8 f4 d8 f8 | g4 b-8 a8 g8 e8 c8 e8 | f2 r8 c8 d8 e8 |"""
+  o5 a4. f+8 a8 o6 d8 c+8 d8 | e4 c+8 o5 a8 f+4 a4 | g4 b8 o6 d8 e4 d8 o5 b8 | o6 c+2. o5 a8 b8 |
+  o6 d4. c+8 o5 b8 a8 f+8 a8 | g4. f+8 g8 a8 b8 o6 d8 | e4 d8 o5 b8 a4 o6 c+4 | d2. r4 |"""
 HOME_A2 = """
-  o5 f8 a8 o6 c8 o5 a8 o6 f4 e8 d8 | d4 c8 o5 a8 f4 a8 o6 c8 | d4. c8 o5 b-4 a8 g8 | g4 a8 g8 e4 c4 |
-  c4 e8 a8 o6 c4 o5 b8 a8 | a4 f8 d8 f4 a4 | g8 f8 g8 a8 b-8 a8 g8 e8 | f2. r4 |"""
+  o5 a4. f+8 a8 o6 d8 c+8 d8 | e4 c+8 o5 a8 f+4 a4 | b4. a8 g8 a8 b8 o6 d8 | d4 o5 b-4 g2 |
+  a4. f+8 d4 f+4 | f+4 d+8 f+8 a4 b4 | g4 e8 g8 o6 c+4 o5 a4 | d2. r4 |"""
 HOME_B = """
-  o6 d4. c8 o5 b-4 f4 | g4. a8 g4 e4 | a4. g8 a4 o6 c4 | d2 o5 a4 f4 |
-  o6 d4. c8 o5 b-4 o6 d4 | e4. d8 c4 o5 g4 | b-4 a8 g8 f4 d4 | e4 g4 b-4 g8 e8 |"""
-HOME_CH = ('F | Dm | Bb | C | F | Dm | Gm7 C7 | F', 'F | Dm | Bb | C | Am | Dm | Gm7 C7 | F',
-           'Bb | C | Am | Dm | Bb | C | Gm7 | C7')
-s.section('I', 2, 'F | C7', None, STAB8, '8: R . 5 . O . 5 A', [POP, POP_FILL])
-s.section('A', 8, HOME_CH[0], HOME_A, STAB8, '8: R . 5 . O . 5 A', [POP] * 7 + [POP_FILL])
-s.section('A2', 8, HOME_CH[1], HOME_A2, STAB8, '8: R . 5 . O . 5 A', [POP] * 7 + [POP_FILL])
-s.section('B', 8, HOME_CH[2], HOME_B, 'thirds', '4: R - 5 -', ['16: k . h . . . h . k . h . . . h .'] * 7 + [POP_FILL],
-          insts=('lead', 'soft', 'bass'), vols=(13, 7, 15, 8))
+  o5 b4. o6 c+8 d4 o5 b4 | o6 c+4. o5 b8 a4 e4 | f+4. g+8 a4 o6 c+4 | d2 o5 b4 f+4 |
+  g4. f+8 e4 g4 | c+4 e8 a8 o6 c+4 e4 | d4 o5 b4 b-4 g4 | a4 g4 e4 c+4 |"""
+HOME_CH = ('D | F#m7 | G | A | Bm | G | Em7 A7 | D', 'D | F#m7 | G | Gm | D/F# | B7 | Em7 A7 | D',
+           'G | A | F#m | Bm | Em7 | A | G Gm | A7')
+s.section('I', 2, 'D | A7', None, HOME_PICK, HOME_BASS, [HAT, HAT_END])
+s.section('A', 8, HOME_CH[0], HOME_A, HOME_PICK, HOME_BASS, [HAT] * 7 + [HAT_END])
+s.section('A2', 8, HOME_CH[1], HOME_A2, 'thirds', HOME_BASS, [HAT] * 7 + [HAT_END],
+          insts=('gblead', 'gbharm', 'gbwave'), vols=(13, 8, 10, 9))
+s.section('B', 8, HOME_CH[2], HOME_B, 'sixths', '4: R 5 O 5', [HAT] * 7 + [HAT_END],
+          insts=('gblead', 'gbharm', 'gbwave'), vols=(13, 8, 10, 9))
 s.form(['I'], ['A', 'A2', 'B', 'A2'])
 
 # ------------------------------------------------------------------ Night: the home's tune, slower and softer
-s = add(song('NIGHT', 'Night', 80, key=('F', 'major'), insts=('bell25', 'pad12', 'bassleg'), vols=(13, 6, 12, 6)))
+s = add(song('NIGHT', 'Night', 84, key=('D', 'major'), insts=('bell25', 'pad12', 'bassleg'), vols=(13, 6, 12, 6),
+             bass_lo=38))
 NIGHT_DR = '16: . . . . r . . . . . . . r . . .'
-s.section('I', 2, 'F | C7', None, '1: x', '2: R 5', None)
+s.section('I', 2, 'D | A7', None, '1: x', '2: R 5', None)
 s.section('A', 8, HOME_CH[0], HOME_A, '1: x', '2: R 5', [NIGHT_DR])
 s.section('A2', 8, HOME_CH[1], HOME_A2, '1: x', '2: R 5', [NIGHT_DR])
 s.section('B', 8, HOME_CH[2], HOME_B, 'sixths', '2: R 5', [NIGHT_DR], insts=('bell25', 'soft', 'bassleg'),
@@ -463,7 +480,7 @@ s.form([], ['A'])
 # home and the menus at -24.5 dBFS, the battles and the games at -24, the night and the goodbye softer, the jingles
 # louder; the sparse ones (the dungeon, the quiz) a little under, their notes being short.
 GAINS = {
-    'HELLO': 0.92, 'HOME': 1.0, 'NIGHT': 1.0, 'MENU': 1.03, 'TRAVEL': 0.81, 'TOWER': 0.84,
+    'HELLO': 0.92, 'HOME': 0.84, 'NIGHT': 1.0, 'MENU': 1.03, 'TRAVEL': 0.81, 'TOWER': 0.84,
     'FOREST': 0.80, 'BEACH': 0.92, 'CAVE': 1.17, 'MANSION': 1.29, 'FIELD': 0.76,
     'LEGEND': 0.78, 'TOWER_FIGHT': 0.79, 'BUDDY': 1.02, 'VICTORY': 0.80,
     'BERRY': 1.24, 'RUN': 0.88, 'SURF': 0.91, 'DUNGEON': 1.29, 'QUIZ': 1.41, 'VOLLEY': 0.89,

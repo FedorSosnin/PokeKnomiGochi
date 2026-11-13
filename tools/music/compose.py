@@ -353,24 +353,33 @@ def harmony_items(pattern, timeline, total, bar_ticks, lo, hi):
     return from_steps(sym_at, total, step, pitch)
 
 
-def thirds_below(items, scale_root, scale_pcs, steps=2):
-    """The melody a diatonic third (steps=2) or sixth (steps=5) below."""
+def thirds_below(items, timeline, scale_abs, sixths=False):
+    """The melody a third (or a sixth) below, fitted to the chord under each note: a chord note a third (a sixth)
+    down if there is one; else the key's note there, unless it's a semitone from a chord note (D over a B7); else
+    a chord note a fourth (a fifth) down; else a minor third (a minor sixth)."""
+    near, far, last = ((3, 4), 5, 3) if not sixths else ((8, 9), 7, 8)
     out = []
+    t = 0
     for it in items:
         if it[0] != 'note':
             out.append(it)
+            if it[0] == 'rest':
+                t += it[1]
             continue
         n = it[1]
-        if n % 12 in [(scale_root + p) % 12 for p in scale_pcs]:
-            k = 0
-            m = n
-            while k < steps:
-                m -= 1
-                if m % 12 in [(scale_root + p) % 12 for p in scale_pcs]:
-                    k += 1
-        else:
-            m = n - (3 if steps == 2 else 8)
+        pcs = chord_at(timeline, t)['pcs']
+
+        def clashes(m):
+            return any((m - c) % 12 in (1, 11) for c in pcs)
+        m = next((n - d for d in near if (n - d) % 12 in pcs), None)
+        if m is None:
+            m = next((n - d for d in near if (n - d) % 12 in scale_abs and not clashes(n - d)), None)
+        if m is None and (n - far) % 12 in pcs:
+            m = n - far
+        if m is None:
+            m = n - last
         out.append(('note', m, it[2], it[3]))
+        t += it[2]
     return out
 
 
@@ -541,7 +550,7 @@ class Builder:
         elif PATTERN.match(h):
             hi = harmony_items(h, tl, total, self.bar, self.harm[0], self.harm[1])
         elif h in ('thirds', 'sixths'):
-            hi = thirds_below(mel, self.key_root, self.scale, 2 if h == 'thirds' else 5)
+            hi = thirds_below(mel, tl, self.scale_abs, h == 'sixths')
         elif h.startswith('echo'):
             hi = echo(mel, int(h.split()[1]), total)
         else:

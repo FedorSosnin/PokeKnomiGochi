@@ -2,7 +2,7 @@
 # The music's test copy of PokeMacGochi, apart from the real app: its own save folder, its own buddy port (it never
 # visits the real pets), and another bundle id. It opens on the home with a Charizard awake, so the home's music plays
 # (by day Home, from dusk to dawn Night). The test state isn't saved (NOSAVE): each launch starts the same.
-#   tools/music_test.sh
+#   tools/music_test.sh [n]     n: start on track n (2: Home by day, whatever the hour)
 # The Terminal window takes console commands:
 #   MUSIC n    plays track n whatever the screen (src/music.h: 1 Hello, 2 Home, 3 Night, 4 Menu, 5 Travel, 6 Tower,
 #              7-11 the Forest's, Beach's, Cave's, Mansion's and Field's battles, 12 Legend, 13 Tower battle,
@@ -23,5 +23,5 @@ if [[ ! -d $APP || $SRC/Contents/MacOS/PokeMacGochi -nt $APP/Contents/MacOS/Poke
 fi
 SAVE="$HOME/Library/Application Support/PokeMacGochi-MusicTest"
 mkdir -p "$SAVE"
-{ sleep 2; echo NOSAVE; echo "TOWERPET 6 30 60 10 60"; cat; } |
+{ sleep 2; echo NOSAVE; echo "TOWERPET 6 30 60 10 60"; [[ -n "$1" ]] && echo "MUSIC $1"; cat; } |
   POKEMACGOCHI_SAVE_DIR="$SAVE" POKEMACGOCHI_BUDDY_PORT=47391 $APP/Contents/MacOS/PokeMacGochi --console

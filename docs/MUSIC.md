@@ -16,7 +16,7 @@ it's left for later.
 | Screen | Track |
 |---|---|
 | Choosing a starter, picking an egg | Hello |
-| Home by day | Home: fades out after 2 minutes untouched, back on the next tap |
+| Home by day | Home, in the manner of the old handhelds' hometowns: fades out after 2 minutes untouched, back on the next tap |
 | Home from dusk to dawn, the pet awake | Night: Home's tune, slower, on a bell |
 | The pet asleep | nothing |
 | Card, Pokédex, trophies, settings, buddies, games menu, trade | Menu |
@@ -49,7 +49,7 @@ Otherwise a song starts on its first beat.
 
 `src/music_synth.h` is a four-voice player:
 - two pulse waves (12.5%, 25% or 50% duty), band-limited so high notes stay clean;
-- a stepped triangle for the bass;
+- a stepped triangle for the bass, or a 4-bit wave like the old handhelds' (the home's);
 - a drum voice (noise, with a falling tone for the kick and the toms).
 
 Each note follows its instrument's envelope. Held notes get vibrato, slurred notes slide, and a chord can play as a
@@ -76,5 +76,5 @@ The compiler checks that every bar adds up, that a song's four voices end togeth
 `src/music.h` has a song. `test/test_tools.py` checks that `src/music_data.h` matches the songs.
 
 To hear a track in the game, run `tools/music_test.sh` (or `tools/Music Test.command`). It opens a test copy of the
-Mac app with its own save and buddy port. In its Terminal window, `MUSIC n` plays track n whatever the screen, and
-`MUSIC` alone gives the music back to the screens.
+Mac app with its own save and buddy port. `tools/music_test.sh 2` starts it on Home whatever the hour. In its Terminal
+window, `MUSIC n` plays track n whatever the screen, and `MUSIC` alone gives the music back to the screens.
