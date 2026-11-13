@@ -221,8 +221,8 @@ Three items you earn by playing, kept with you from one Pokémon to the next (up
 
 | Item | How to earn it | What it does |
 |---|---|---|
-| **Ultra Ball** | Every 25 battles you fight to the end, won or lost | Triples your catch chance when it hits. |
-| **Master Ball** | Every 100 battles you fight to the end, won or lost | Always catches the Pokémon it hits. |
+| **Ultra Ball** | Every 25 battles you win | Triples your catch chance when it hits. |
+| **Master Ball** | Every 100 battles you win | Always catches the Pokémon it hits. |
 | **Repel** | Every 10 minutes of mini games | Spray it from the backpack: for 3 minutes, weaker wild Pokémon stay away. |
 
 Running away, battles with buddies and PokeDungeon don't count toward the balls. Ultra and Master Balls sit beside your Poké Balls on the catch screen while you have them (with both, the Poké Ball in the middle); one that misses isn't used up. While a Repel works, wild Pokémon below your Pokémon's level, or with lower base stats, stay away, and in a zone you haven't finished, every Pokémon there except its legendary is equally likely; shiny odds don't change. The backpack shows a badge with its minutes left. Only time spent actually playing counts toward a Repel: sitting in a game without touching it earns nothing.
