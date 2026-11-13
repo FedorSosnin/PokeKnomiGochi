@@ -697,7 +697,7 @@ static bool v2AboutQrOpen();            // V2: a link's QR code is over the Abou
 #if HAS_MUSIC
 static uint8_t v2MusicPick(uint32_t now);  // V2: the music this screen wants (music_v2.h, included with the scene)
 static void v2MusicForce(int track);       // ...or one track whatever the screen (the console's MUSIC)
-static void v2SayPet();                    // ...and a Pokemon saying its name: petted, after a win, in the Pokedex
+static void v2SayPet();                    // ...and a Pokemon's cry: petted, after a win, in the Pokedex
 static void v2SayWin();
 static void v2SayDex();
 #endif

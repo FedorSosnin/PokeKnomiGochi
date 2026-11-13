@@ -63,23 +63,26 @@ fast arpeggio on one voice.
 `host/host_audio.cpp` mixes the music under the effects at about 8 dB below them. When an effect plays, the music
 ducks to 45% within a few milliseconds and comes back over about a quarter of a second, so the effects stay clear.
 
-## Voices
+## Cries
 
-Each Pokémon says its name in chirps (`src/chirp.h`; Fedor: "make each ones sound like its name is being said, but in
-a chiptune sound"). It's our own sound, made from the name, not any game's cries.
+Each Pokémon has its own cry, in the manner of the old handhelds' sound chip (`src/cry.h`; Fedor: they "should be
+closer to how they sound in pokemon games"). It isn't a word, it's a creature's call:
+- two to four short notes on two pulse waves, the second a harmony or a near unison so they buzz together;
+- each note sweeps up or down with a fast warble, and the pulses' width flips halfway now and then;
+- noise underneath, a growl or a hiss;
+- the last note is held and falls away.
 
-- **How:** the name splits into syllables, from Latin letters, Japanese kana or Korean Hangul, in the game's language.
-  Each syllable is a quick blip on a pulse wave:
-  - its vowel sets the tone: i bright and high, a open, u round and low;
-  - its consonants make a click (p, t, k), a hiss (s, sh, f) or a slide in (m, n, l, r);
-  - the last syllable is held and rises.
-- **Pitch:** first forms chirp higher than final ones, quick Pokémon higher, sturdy ones lower and legends lower
-  still. A few are set by hand, such as Jigglypuff high and Snorlax low.
-- **When:** petting yours at home (by its nickname, at most every 2.5 seconds; the hearts each time), after a battle
-  it wins (in the tower, whoever fought), and patting a Pokédex entry's sprite.
+All of it is ours, worked out from the Pokémon itself. No cry is copied or transcribed from any game.
+
+- **What sets it:** size and speed set the pitch and the pace. First forms are higher than final ones, small quick
+  Pokémon high and fast, big slow ones low and long, legends lower still. A few are set by hand, such as Jigglypuff
+  high and Snorlax low. Its type sets the rasp (rock and ground growl, water and ghosts warble), and its number seeds
+  the rest, so it always makes the same cry.
+- **When:** petting yours at home (at most every 2.5 seconds; the hearts each time), a little higher and shorter; after
+  a battle it wins (in the tower, whoever fought), the whole cry; patting a Pokédex entry's sprite.
 - **Where:** a computer and the web, with the effects and at Sound's level.
-- **The Shiny Pokédex:** tapping a Pokémon there plays its voice too. `make -C host voices` writes the voices into
-  `tools/voices.json` for the page builder, and the host tests check that file matches `chirp.h`.
+- **The Shiny Pokédex:** tapping a Pokémon there plays its cry too. `make -C host voices` writes the cries into
+  `tools/voices.json` for the page builder, and the host tests check that file matches `cry.h`.
 
 ## Writing a song
 

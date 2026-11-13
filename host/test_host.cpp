@@ -28,7 +28,7 @@
 #include "sdmon.h"
 #include "power.h"
 #include "music.h"
-#include "chirp.h"
+#include "cry.h"
 #include "voice_json.h"
 #include <Preferences.h>
 
@@ -1152,29 +1152,45 @@ static void testGame() {
     double quiet = rms(HOST_AUDIO_RATE);
     CHECK(high > 0 && quiet < high * 0.5 && quiet > high * 0.1);
     musicSetVolume(3);
-    {  // a Pokemon says its name in chirps (chirp.h): a chirp a syllable, in Latin letters, kana and Hangul; it sounds
-       // with the effects, and not with SOUND off
-      ChirpSyl syl[CHIRP_SYL_MAX];
-      CHECK(chirpSyllables("PIKACHU", syl) == 3 && syl[0].v == 'i' && syl[1].v == 'a' && syl[2].v == 'u');
-      CHECK(chirpSyllables("CHARMANDER", syl) == 3 && syl[0].on == CS_AFFRIC);
-      CHECK(chirpSyllables("ARCANINE", syl) == 3);  // its last e silent
-      CHECK(chirpSyllables("SQUIRTLE", syl) == 2);  // ...but not -le's
-      CHECK(chirpSyllables("\xe3\x83\x95\xe3\x82\xb7\xe3\x82\xae\xe3\x83\x80\xe3\x83\x8d", syl) == 5);  // fu shi gi da ne
-      CHECK(chirpSyllables("\xe3\x83\x94\xe3\x82\xab\xe3\x83\x81\xe3\x83\xa5\xe3\x82\xa6", syl) == 3 && syl[2].lng);  // pi ka chuu
-      CHECK(chirpSyllables("\xec\x9d\xb4\xec\x83\x81\xed\x95\xb4\xec\x94\xa8", syl) == 4);  // i sang hae ssi
-      CHECK(chirpPitch(25) > chirpPitch(26) && chirpPitch(143) < 0);  // Pikachu higher than Raichu; Snorlax low
-      {  // the Shiny Pokedex page says what the game says: tools/voices.json is up to date (make -C host voices)
+    {  // a Pokemon's cry (cry.h): its own, the same every time, short; it sounds with the effects, and not with SOUND
+       // off
+      Cry a, b;
+      auto same = [](const Cry &x, const Cry &y) {
+        if (x.n != y.n) return false;
+        for (int i = 0; i < x.n; i++) {
+          const CrySeg &p = x.seg[i], &q = y.seg[i];
+          if (p.ms != q.ms || p.f0 != q.f0 || p.f1 != q.f1 || p.v0 != q.v0 || p.v1 != q.v1 || p.duty != q.duty ||
+              p.vib != q.vib || p.vibHz != q.vibHz || p.harm != q.harm || p.hv != q.hv || p.rasp != q.rasp ||
+              p.nhz != q.nhz)
+            return false;
+        }
+        return true;
+      };
+      cryBuild(a, 25, VOICE_PET);
+      cryBuild(b, 25, VOICE_PET);
+      CHECK(same(a, b));  // the same cry each time
+      cryBuild(b, 26, VOICE_PET);
+      CHECK(!same(a, b));  // Raichu's isn't Pikachu's
+      CHECK(cryPitch(25) > cryPitch(26) && cryPitch(143) < 0);  // Pikachu higher than Raichu; Snorlax low
+      for (int16_t d = 1; d <= DEX_COUNT; d++)
+        for (uint8_t m : { VOICE_PET, VOICE_WIN }) {
+          cryBuild(a, d, m);
+          int ms = 0;
+          for (int i = 0; i < a.n; i++) ms += a.seg[i].ms;
+          CHECK(a.n >= 4 && ms > 200 && ms < 1400);  // two notes or more, under a second and a half
+        }
+      {  // the Shiny Pokedex page plays what the game plays: tools/voices.json is up to date (make -C host voices)
         std::vector<uint8_t> f = readFile(std::string(getcwd(nullptr, 0)) + "/../tools/voices.json");
-        CHECK(std::string(f.begin(), f.end()) == chirpVoicesJson());
+        CHECK(std::string(f.begin(), f.end()) == cryVoicesJson());
       }
       musicSetEnabled(false);
       hostAudioRender(pcm.data(), HOST_AUDIO_RATE * 2);
       CHECK(!anySound(HOST_AUDIO_RATE / 10));
-      voiceSay(25, "PIKACHU", VOICE_PET);
+      voiceSay(25, VOICE_PET);
       CHECK(anySound(HOST_AUDIO_RATE));
       hostAudioRender(pcm.data(), HOST_AUDIO_RATE);
       audioSetEnabled(false);
-      voiceSay(25, "PIKACHU", VOICE_PET);
+      voiceSay(25, VOICE_PET);
       CHECK(!anySound(HOST_AUDIO_RATE));
       audioSetEnabled(true);
       musicSetEnabled(true);

@@ -7,8 +7,8 @@ turn), walking, from behind, asleep, hopping, attacking, hurt, attacking from be
 some have (eating, posing, nodding, sitting, a deep breath). It reads the packs the game loads
 (tools/sdcard/mons/pNNN.bin and psNNN.bin, made by pack_pmd.py), and the page plays them the way the game does:
 each frame on its own feet (sdmon.cpp's anchors, Ivysaur's legs and Magikarp's nap included), frame times as packed,
-and a shiny's four gold sparkles (drawSparkles()). A tap on a Pokemon plays its voice, its name said in chirps, as
-the game says it (src/chirp.h): the pieces are tools/voices.json, which `make -C host voices` writes.
+and a shiny's four gold sparkles (drawSparkles()). A tap on a Pokemon plays its cry, as the game
+plays it (src/cry.h): the pieces are tools/voices.json, which `make -C host voices` writes.
 
   <out>/index.html            the page (tools/sprite_gallery.html, with the data put in)
   <out>/img/NNN-name.png      each form's frames, one row per view (indexed PNG; the page cuts them up)
@@ -35,7 +35,7 @@ import dex_data  # noqa: E402
 MONS = os.path.join(HERE, 'sdcard', 'mons')
 CACHE = os.path.join(HERE, 'pmd_cache')
 PAGE = os.path.join(HERE, 'sprite_gallery.html')  # the page, which this fills in
-VOICES = os.path.join(HERE, 'voices.json')         # each one's voice (make -C host voices)
+VOICES = os.path.join(HERE, 'voices.json')         # each one's cry (make -C host voices)
 COLLAB = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master'
 WALKL, WALKR, SLEEP, WALKD = 1, 2, 3, 12
 # the room a card gives a sprite, in CSS px (the page's canvases): what it fits a Pokemon's standing view into

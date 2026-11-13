@@ -2,14 +2,14 @@
 // (a jingle once), at the computers' 48 kHz, as music_synth.h plays them in the game, and a page (index.html) that
 // plays them in a browser. `make -C host music`.
 //   music_wav <folder> [name]    only the songs whose track name contains name
-//   music_wav --json <file>      every Pokemon's voice as JSON, for the Shiny Pokedex (voice_json.h)
+//   music_wav --json <file>      every Pokemon's cry as JSON, for the Shiny Pokedex (voice_json.h)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <vector>
 #include "music_synth.h"
-#include "chirp.h"
+#include "cry.h"
 #include "voice_json.h"
 
 static const char *const TRACK_IDS[MUS_COUNT] = {
@@ -62,30 +62,30 @@ static bool writeWav(const char *path, const std::vector<float> &buf, int rate) 
   return true;
 }
 
-// a Pokemon saying its name (chirp.h), added to buf
-static void sayInto(std::vector<float> &buf, const char *name, int16_t dex, uint8_t mood, int rate) {
-  Chirp c;
-  chirpBuild(c, name, dex, mood);
+// a Pokemon's cry (cry.h), added to buf
+static void cryInto(std::vector<float> &buf, int16_t dex, uint8_t mood, int rate) {
+  Cry c;
+  cryBuild(c, dex, mood);
   c.delayMs = 0;
-  ChirpPlayer p;
+  CryPlayer p;
   p.begin((float)rate);
   p.start(c);
   for (int i = 0; i < rate * 4 && p.active(); i++) buf.push_back(p.sample());
   buf.insert(buf.end(), rate / 10, 0.0f);
 }
 
-// the voices: a few Pokemon petted and after a win, and all 151 petted, in the Pokedex's order
+// the cries: a few Pokemon petted and after a win, and all 151 petted, in the Pokedex's order
 static void voices(const char *dir, FILE *html, int rate) {
   static const int16_t SOME[] = { 25, 1, 4, 7, 6, 39, 143, 150, 129, 94 };
-  if (html) fprintf(html, "<h2>Voices</h2>\n<p>Each Pokemon says its name in chirps: petted at home, and after a win."
-                          "</p><table>\n");
+  if (html) fprintf(html, "<h2>Cries</h2>\n<p>Each Pokemon's own cry, in the old handhelds' sound: petted at home, "
+                          "and after a win.</p><table>\n");
   for (int16_t d : SOME) {
     char path[512], low[24];
     snprintf(low, sizeof(low), "%s", DEX_TBL[d].name);
     for (char *q = low; *q; q++) *q = (char)(*q >= 'A' && *q <= 'Z' ? *q + 32 : *q);
     for (int m = 0; m < 2; m++) {
       std::vector<float> buf;
-      sayInto(buf, DEX_TBL[d].name, d, m ? VOICE_WIN : VOICE_PET, rate);
+      cryInto(buf, d, m ? VOICE_WIN : VOICE_PET, rate);
       snprintf(path, sizeof(path), "%s/voice_%03d_%s_%s.wav", dir, d, low, m ? "win" : "pet");
       writeWav(path, buf, rate);
     }
@@ -94,20 +94,9 @@ static void voices(const char *dir, FILE *html, int rate) {
                     "</audio></td><td>won <audio controls preload=none src=\"voice_%03d_%s_win.wav\"></audio></td></tr>\n",
               d, DEX_TBL[d].name, d, low, d, low);
   }
-  {  // in Japanese and Korean too
-    std::vector<float> buf;
-    sayInto(buf, DEX_NAME_JA[25], 25, VOICE_PET, rate);
-    sayInto(buf, DEX_NAME_KO[25], 25, VOICE_PET, rate);
-    char path[512];
-    snprintf(path, sizeof(path), "%s/voice_025_pikachu_ja_ko.wav", dir);
-    writeWav(path, buf, rate);
-    if (html)
-      fprintf(html, "<tr><td>#25</td><td><b>%s, %s</b></td><td colspan=2>in Japanese, then Korean <audio controls "
-                    "preload=none src=\"voice_025_pikachu_ja_ko.wav\"></audio></td></tr>\n", DEX_NAME_JA[25], DEX_NAME_KO[25]);
-  }
   std::vector<float> all;
   for (int16_t d = 1; d <= DEX_COUNT; d++) {
-    sayInto(all, DEX_TBL[d].name, d, VOICE_PET, rate);
+    cryInto(all, d, VOICE_PET, rate);
     all.insert(all.end(), rate / 4, 0.0f);
   }
   char path[512];
@@ -116,7 +105,7 @@ static void voices(const char *dir, FILE *html, int rate) {
   if (html)
     fprintf(html, "<tr><td></td><td><b>All 151</b></td><td colspan=2>petted, in the Pokedex's order (%.0f s) <audio controls "
                   "preload=none src=\"voices_all.wav\"></audio></td></tr>\n</table>\n", all.size() / (double)rate);
-  printf("voices: %zu files, all 151 in %.0f s\n", sizeof(SOME) / sizeof(SOME[0]) * 2 + 2, all.size() / (double)rate);
+  printf("cries: %zu files, all 151 in %.0f s\n", sizeof(SOME) / sizeof(SOME[0]) * 2 + 1, all.size() / (double)rate);
 }
 
 int main(int argc, char **argv) {
@@ -126,7 +115,7 @@ int main(int argc, char **argv) {
       perror(argv[2]);
       return 1;
     }
-    fputs(chirpVoicesJson().c_str(), f);
+    fputs(cryVoicesJson().c_str(), f);
     fclose(f);
     return 0;
   }

@@ -31,23 +31,24 @@ static uint8_t v2MusicTower() {
   }
 }
 
-// ----- a Pokemon saying its name in chirps (chirp.h; Fedor: "make Pokemon sounds for when they win or get pet")
-#define VOICE_PET_EVERY_MS 2500  // petting it again and again: its voice now and then, the hearts each time
+// ----- a Pokemon's cry (cry.h; Fedor: "make Pokemon sounds for when they win or get pet", "closer to how they sound
+// in pokemon games")
+#define VOICE_PET_EVERY_MS 2500  // petting it again and again: its cry now and then, the hearts each time
 static uint32_t v2VoiceT = 0;
-// yours, petted at home: by the name you gave it
+// yours, petted at home
 static void v2SayPet() {
   if (pet.sleeping || pet.isEgg() || pet.ceremony) return;
   uint32_t now = millis();
   if (v2VoiceT && now - v2VoiceT < VOICE_PET_EVERY_MS) return;
   v2VoiceT = now ? now : 1;
-  voiceSay(pet.speciesId, pet.nick[0] ? pet.nick : dexName(pet.speciesId), VOICE_PET);
+  voiceSay(pet.speciesId, VOICE_PET);
 }
 // ...after a battle it won (in Knomi Tower, whichever of your team fought)
-static void v2SayWin() { voiceSay(bMe.dex, v2BtlName(bMe), VOICE_WIN); }
+static void v2SayWin() { voiceSay(bMe.dex, VOICE_WIN); }
 // a Pokedex entry's, its sprite patted
 static void v2SayDex() {
   int16_t d = galleryOpen && galleryDetail ? galleryDetail : zoneScreen == ZS_ZONE && zoneDetail ? zoneDetail : 0;
-  if (d >= 1 && d <= DEX_COUNT) voiceSay(d, dexName(d), VOICE_PET);
+  if (d >= 1 && d <= DEX_COUNT) voiceSay(d, VOICE_PET);
 }
 
 // in the order render() draws the screens: the first open one is the one showing

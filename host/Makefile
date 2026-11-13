@@ -56,11 +56,11 @@ music: $(BUILD)/music_wav
 	@mkdir -p $(ROOT)/build/music
 	$(BUILD)/music_wav $(ROOT)/build/music $(ONLY)
 
-# every Pokemon's voice for the Shiny Pokedex page (tools/make_sprite_gallery.py): make voices
+# every Pokemon's cry for the Shiny Pokedex page (tools/make_sprite_gallery.py): make voices
 voices: $(BUILD)/music_wav
 	$(BUILD)/music_wav --json $(ROOT)/tools/voices.json
 
-$(BUILD)/music_wav: music_wav.cpp voice_json.h $(ROOT)/src/music.h $(ROOT)/src/music_synth.h $(ROOT)/src/music_data.h $(ROOT)/src/chirp.h
+$(BUILD)/music_wav: music_wav.cpp voice_json.h $(ROOT)/src/music.h $(ROOT)/src/music_synth.h $(ROOT)/src/music_data.h $(ROOT)/src/cry.h
 	@mkdir -p $(BUILD)
 	$(CXX) $(ALLFLAGS) -o $@ music_wav.cpp
 

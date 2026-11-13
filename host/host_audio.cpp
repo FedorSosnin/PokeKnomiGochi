@@ -10,7 +10,7 @@
 #include <atomic>
 #if UI_V2
 #include "music_synth.h"
-#include "chirp.h"
+#include "cry.h"
 #endif
 
 #define SAMPLE_RATE HOST_AUDIO_RATE
@@ -44,14 +44,14 @@ static void saveLevel(const char *key, uint8_t v) {
   p.putUChar(key, v);
   p.end();
 }
-// a Pokemon saying its name (chirp.h): built here on the game's thread, handed over when the audio thread has taken
-// the last one (a new one while that's still waiting is dropped)
-static ChirpPlayer gVoice;
-static Chirp gVoiceNext;
+// a Pokemon's cry (cry.h): built here on the game's thread, handed over when the audio thread has taken the last one
+// (a new one while that's still waiting is dropped)
+static CryPlayer gVoice;
+static Cry gVoiceNext;
 static std::atomic<bool> gVoiceReady{false};
-void voiceSay(int16_t dex, const char *name, uint8_t mood) {
+void voiceSay(int16_t dex, uint8_t mood) {
   if (gSleeping || !gOn || gVoiceReady.load(std::memory_order_acquire)) return;
-  chirpBuild(gVoiceNext, name, dex, mood);
+  cryBuild(gVoiceNext, dex, mood);
   gVoiceReady.store(true, std::memory_order_release);
 }
 void musicWant(uint8_t track) { gMusicWant.store(track, std::memory_order_relaxed); }
