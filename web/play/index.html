@@ -67,7 +67,7 @@
   <button id="tilt" type="button" hidden>Enable tilt</button>
   <button id="size" type="button">Size: Large</button>
   <button id="crtBtn" type="button" hidden>CRT: On</button>
-  <button id="sound" type="button">Sound on</button>
+  <button id="sound" type="button">Sound: On</button>
   <button id="music" type="button" hidden>Music: High</button>
   <button id="auto" type="button">Auto-update: On</button>
   <button id="vibe" type="button" hidden>Vibration: On</button>
@@ -85,7 +85,7 @@ const img = ctx.createImageData(SIDE, SIDE);
 const msg = document.getElementById('msg');
 let skipSave = false;  // an import replaces the save: the running game must not write over it
 
-const BUILD = '517a970a8a';  // stamped by build.sh: every file of one version is fetched together
+const BUILD = 'f8d6ba2e11';  // stamped by build.sh: every file of one version is fetched together
 var Module = {
   noInitialRun: false,
   locateFile: (path) => path + '?v=' + BUILD,
@@ -266,9 +266,10 @@ function startAudio() {
   node.connect(audio.destination);
 }
 
-// ---- sound on/off: the same setting as the SND switch on the clock screen ----
+// ---- sound on/off: the same setting as the SND switch on the clock screen: the effects and the cries, apart from the
+// music (its own button, below) ----
 const soundBtn = document.getElementById('sound');
-function updateSoundButton() { soundBtn.textContent = Module._webSoundOn() ? 'Mute' : 'Unmute'; }
+function updateSoundButton() { soundBtn.textContent = 'Sound: ' + (Module._webSoundOn() ? 'On' : 'Off'); }
 soundBtn.addEventListener('click', () => {
   Module._webSetSound(Module._webSoundOn() ? 0 : 1);
   updateSoundButton();
@@ -410,8 +411,8 @@ applySize();
 // ---- the CRT screen (Fedor: "That looks incredible", on by default): the Mac and Windows apps' look
 // (host/host_crt.cpp), as WebGL2 shaders at the screen's own pixels. Each scanline a soft beam that swells where the
 // picture is bright (233 of them), soft along the line, red and blue a hair apart, a glow and a wide warm halo,
-// CRT colour, the picture bulging as through curved glass into the tube's black edge, a reflection, grain. Without
-// WebGL2 the plain screen stays and its button hides ----
+// CRT colour, the picture bulging as through curved glass out to the rim, darkening into it, a reflection, grain.
+// Without WebGL2 the plain screen stays and its button hides ----
 const CRT_K = 0.045, CRT_SHRINK = 0.965;  // (as host_crt.cpp's K and SHRINK)
 const crtBtn = document.getElementById('crtBtn');
 const crt = makeCrt(document.getElementById('crt'));
@@ -489,7 +490,10 @@ function makeCrt(cv) {
           vec2 px = vec2(gl_FragCoord.x, side - gl_FragCoord.y);  // from the top
           float R = side * 0.5; vec2 n = (px - R) / R;
           float f = (1.0 - 0.045 + 0.045 * dot(n, n)) / 0.965;  // the curved glass (CRT_K, CRT_SHRINK)
-          vec2 s = (n * f + 1.0) * 233.0;
+          vec2 d = n * f * 233.0;  // past the canvas's round edge, the edge's colour (host_crt.cpp's EDGE_R)...
+          float ly = d.y + 233.0;  // ...but the scanlines go on straight (host_crt.cpp's gLineY)
+          if (length(d) > 232.5) d *= 232.5 / length(d);
+          vec2 s = d + 233.0;
           vec3 pic = vec3(0.0);
           if (length(px - R) <= R && s.x >= 0.0 && s.y >= 0.0 && s.x < 466.0 && s.y < 466.0) {
             int ix2 = min(int(s.x * 2.0), 931), iy = min(int(s.y), 465);
@@ -498,7 +502,7 @@ function makeCrt(cv) {
             float L = (floor(floor(dot(g, vec3(0.3, 0.59, 0.11)) + 0.5) / 4.0) + 0.5) / 64.0, w = 0.85 + 1.35 * L, fl = 0.0;
             for (int k = 0; k < 4; k++) {
               if (k >= sub) break;
-              float yy = sub > 1 ? s.y + ((float(k) + 0.5) / float(sub) - 0.5) * step : s.y;
+              float yy = sub > 1 ? ly + ((float(k) + 0.5) / float(sub) - 0.5) * step : ly;
               float d = abs(fract(yy * 0.5 + phase) - 0.5) * 4.0;
               fl += exp(-(d / w) * (d / w)) * 1.2;
             }
@@ -558,7 +562,7 @@ function makeCrt(cv) {
     }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   };
-  // the rim (darkening softly, the picture fading into the tube's black edge) and the glass's reflection, made as
+  // the rim (darkening softly, the picture fading out at its hairline edge) and the glass's reflection, made as
   // host_crt.cpp makes them, on a grid of at most 640 (both are soft) for each size
   const boxes = (sigma) => {
     let wl = Math.floor(Math.sqrt(12 * sigma * sigma / 3 + 1)); if (wl % 2 === 0) wl--;
@@ -586,7 +590,7 @@ function makeCrt(cv) {
   function overlays(side) {
     const n = Math.min(side, 640), sc = n / side, R = n / 2;
     const vig = new Float32Array(n * n), edge = new Float32Array(n * n), refl = new Float32Array(n * n), arc = new Float32Array(n * n);
-    const er = R - 0.012 * n, rx0 = 0.08 * n, ry0 = 0.04 * n, rx1 = 0.70 * n, ry1 = 0.42 * n;
+    const er = R - 0.004 * n, rx0 = 0.08 * n, ry0 = 0.04 * n, rx1 = 0.70 * n, ry1 = 0.42 * n;
     const rcx = (rx0 + rx1) / 2, rcy = (ry0 + ry1) / 2, ra = (rx1 - rx0) / 2, rb = (ry1 - ry0) / 2, arcR = 0.45 * n, arcW = 0.012 * n;
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
       const i = y * n + x, dx = x + 0.5 - R, dy = y + 0.5 - R, r = Math.hypot(dx, dy);
@@ -697,6 +701,6 @@ document.getElementById('import').addEventListener('change', async (e) => {
   sync(() => location.reload());
 });
 </script>
-<script src="pokewebgochi.js?v=517a970a8a"></script>
+<script src="pokewebgochi.js?v=f8d6ba2e11"></script>
 </body>
 </html>
