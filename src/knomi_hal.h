@@ -81,6 +81,7 @@ public:
       const uint8_t *rim = gKnomiRim ? gKnomiRim + y * PANEL_SIZE : nullptr;
       const int x0 = rim ? gKnomiRimX0[y] : 0, x1 = rim ? gKnomiRimX1[y] : PANEL_SIZE;
       const int i0 = rim ? gKnomiRimI0[y] : 0, i1 = rim ? gKnomiRimI1[y] : PANEL_SIZE;
+      const int cy = y * (LCD_HEIGHT / 2) / PANEL_SIZE;  // the canvas's cell row (for what's over the shadow)
 #endif
       for (int x = 0; x < PANEL_SIZE; x++) {
 #if UI_V2
@@ -94,7 +95,7 @@ public:
         s = (s >> 2) & 0x07E0F81F;
         uint16_t c = (uint16_t)(s | (s >> 16));
 #if UI_V2
-        if (x < i0 || x >= i1) c = knomiRimPixel(c, rim[x]);
+        if ((x < i0 || x >= i1) && !(gKnomiLiftOn && knomiLifted(sx >> 1, cy))) c = knomiRimPixel(c, rim[x]);
 #endif
         panel[r.base + x * r.dx + y * r.dy] = c;
       }

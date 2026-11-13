@@ -278,12 +278,36 @@ static void v2Bar(uint16_t *fb, const V2Bar &b, uint8_t val, const char *lab, bo
       if (v2In(track, fx, fy, r2)) v2Cell(fb, x, y, tcol, ta);
     }
   }
+#ifdef KNOMI_RIM  // the Knomi: the label over its rim's shadow (knomi_rim.h), so it reads as before
+  {
+    // its box: the letters along the bar (12 px each, 18 a kana or hangul) and their edge, with room to spare
+    const float D = 0.01745329f, rm = (V2_BAR_RIN + V2_BAR_ROUT) / 2.0f, mid = (a0 + a1) / 2.0f;
+    int n = 0;
+    for (const char *p = lab; *p; p += v2Utf8Len(p)) n++;
+    float half = ((gCjkFont ? 18 : 12) * n / 2.0f + 10) / rm;
+    int bx0 = 466, by0 = 466, bx1 = 0, by1 = 0;
+    for (int k = 0; k <= 8; k++)
+      for (int rr = -16; rr <= 16; rr += 32) {
+        float a = mid * D - half + 2 * half * k / 8;
+        int px = (int)(CX + (rm + rr) * cosf(a)), py = (int)(CY + (rm + rr) * sinf(a));
+        bx0 = px < bx0 ? px : bx0, by0 = py < by0 ? py : by0, bx1 = px > bx1 ? px : bx1, by1 = py > by1 ? py : by1;
+      }
+    bx0 -= 4, by0 -= 4, bx1 += 4, by1 += 4;
+    bool kept = knomiLiftKeep(fb, bx0, by0, bx1, by1);
+    v2BarLabel(fb, lab, mid, UI_WHITE);
+    if (kept) knomiLiftMark(fb, bx0, by0, bx1, by1);
+  }
+#else
   v2BarLabel(fb, lab, (a0 + a1) / 2, UI_WHITE);
+#endif
 }
 
 static void v2DrawBars() {
   uint16_t *fb = (uint16_t *)gfx->getFramebuffer();
   bool dim = pet.sleeping;
+#ifdef KNOMI_RIM
+  knomiLiftClear();  // (the labels mark what goes over the rim's shadow)
+#endif
   v2Bar(fb, V2_BARS[0], pet.fullness, T(S_BAR_FOOD), dim);
   v2Bar(fb, V2_BARS[1], pet.joy, T(S_BAR_JOY), dim);
   v2Bar(fb, V2_BARS[2], pet.energy, T(S_BAR_ENE), dim);

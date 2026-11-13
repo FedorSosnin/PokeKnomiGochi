@@ -2393,6 +2393,9 @@ uint32_t lastScreenKey = 0;
 
 // Draws a frame and returns true if it flushed it to the panel.
 bool render() {
+#ifdef KNOMI_RIM
+  gKnomiLiftOn = false;  // V2: nothing over the Knomi's rim until this frame's need bars mark their labels (knomi_rim.h)
+#endif
 #if UI_V2
   if (v2Sliding()) {  // V2: a page sliding: its frames are made from the two pages, nothing drawn (slide_v2.h)
     gfx->flush();
