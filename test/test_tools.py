@@ -238,6 +238,11 @@ class TestGeneratedFiles(unittest.TestCase):
         with open(brand_assets.WEB_LOGO) as fh:
             self.assertEqual(fh.read(), brand_assets.logo().svg(),
                              'webgame/assets/logo.svg does not match tools/brand_assets.py (run it)')
+        w, h = brand_assets.logo().norm().size()  # the page shows it at 2x: whole pixels, crisp
+        with open(os.path.join(ROOT, 'webgame', 'shell.html'), encoding='utf-8') as fh:
+            page = fh.read()
+        self.assertIn('<img id="logo" src="logo.svg" width="%d" height="%d"' % (2 * w, 2 * h), page)
+        self.assertIn('width: %dpx; height: %dpx; image-rendering: pixelated' % (2 * w, 2 * h), page)
 
     def test_generated_files_say_they_are_generated(self):
         for name in ('dex.h', 'species.h'):

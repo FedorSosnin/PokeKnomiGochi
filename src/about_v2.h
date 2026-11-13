@@ -324,9 +324,9 @@ static bool v2CoinHit(int16_t x, int16_t y) {
 #define V2_ABOUT_PANEL_X1 400
 #define V2_ABOUT_PANEL_Y0 212  // (just under the coin)
 #define V2_ABOUT_PANEL_Y1 374  // (just over "Page 2 of 2")
-#define V2_ABOUT_LOGO_Y 222    // the logo's top: 2 px a logo pixel
-#define V2_ABOUT_VER_Y 286     // the version, under it
-#define V2_ABOUT_MADE_Y 306
+#define V2_ABOUT_LOGO_Y 220    // the logo's top: 2 px a logo pixel
+#define V2_ABOUT_VER_Y (V2_ABOUT_LOGO_Y + 2 * BRAND_LOGO_H + 8)  // the version, under it
+#define V2_ABOUT_MADE_Y (V2_ABOUT_VER_Y + 18)
 #define V2_ABOUT_BTN_Y0 330
 #define V2_ABOUT_BTN_Y1 366
 // the game's logo (tools/brand_assets.py), s screen pixels a logo pixel, its middle at cx and its top at y: each row's

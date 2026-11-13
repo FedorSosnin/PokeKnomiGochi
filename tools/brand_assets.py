@@ -338,14 +338,27 @@ def save_icon(what, base):
         icon(design, what).image(size // design).save(os.path.join(OUT, '%s-%d.png' % (base, size)), optimize=True)
 
 
+def badge(n, what):
+    """the icon as the logo shows it: a dark outline round it and a shadow under, as the name has (Fedor: "we need to
+    add a black border like the catch and 151 have")"""
+    p = icon(n, what)
+    px = set(p.p)
+    ring = around(px)
+    q = Pic()
+    q.put({(x, y + 1) for (x, y) in px | ring} - px - ring, INK)  # the shadow
+    q.put(ring, INK)
+    q.p.update(p.p)
+    return q
+
+
 def logo():
     """the logo: the game's icon, then the name"""
-    return row(icon(20, 'game'), name())
+    return row(badge(20, 'game'), name())
 
 
 def logo_large():
     """the logo drawn larger, not scaled (the About page): the icon at 28, the name's 12 px letters"""
-    return row(icon(28, 'game'), name(font=LARGE), gap=5)
+    return row(badge(28, 'game'), name(font=LARGE), gap=5)
 
 
 def header(p):
@@ -389,9 +402,9 @@ def main():
     with open(HEADER, 'w') as f:
         f.write(header(logo_large()))
     save(name(), 'catch151-name')
-    save(row(icon(20, 'dex'), name(), board('DEX', GOLD, GOLD_L)), 'catch151-dex')
+    save(row(badge(20, 'dex'), name(), board('DEX', GOLD, GOLD_L)), 'catch151-dex')
     for dev in ('KNOMI', 'MAC', 'WINDOWS', 'WEB'):
-        save(row(icon(20, 'game'), name(), board('FOR ' + dev)), 'catch151-for-' + dev.lower(), scales=(2,))
+        save(row(badge(20, 'game'), name(), board('FOR ' + dev)), 'catch151-for-' + dev.lower(), scales=(2,))
     save_icon('game', 'catch151-icon')
     save_icon('dex', 'catch151-dex-icon')
     print('brand: %d files in %s' % (len(os.listdir(OUT)), os.path.relpath(OUT, ROOT)))
