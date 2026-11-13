@@ -347,6 +347,11 @@ class TestDexPage(unittest.TestCase):
         self.assertEqual(asked, set(copied))
         for name in asked:
             self.assertTrue(os.path.exists(os.path.join(TOOLS, 'assets', 'brand', name)), name)
+        # the logo at exactly 2x its pixels (a redraw that changes its size has to change the page too)
+        with open(os.path.join(TOOLS, 'assets', 'brand', 'catch151-dex.svg'), encoding='utf-8') as f:
+            w, h = map(int, re.search(r'<svg[^>]* width="(\d+)" height="(\d+)"', f.read()).groups())
+        shown = re.search(r'<img src="brand/catch151-dex.svg" width="(\d+)" height="(\d+)"', page).groups()
+        self.assertEqual(tuple(map(int, shown)), (2 * w, 2 * h), 'sprite_gallery.html: the logo at 2x')
 
 
 class TestSpritePacks(unittest.TestCase):
