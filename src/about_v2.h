@@ -316,19 +316,19 @@ static bool v2CoinHit(int16_t x, int16_t y) {
   return dx * dx + dy * dy <= 92 * 92;
 }
 
-// ----- the About page: the coin, then a panel with the game's logo and its version, who made it, and the links: on a
-// computer or the web they open in the browser; the Knomi can't, so it shows the link's QR code for a phone to scan.
-// Fedor picked the logo in the panel, the panel "a bit bigger", the who-made-it line "a bit less wide", then "the
-// 3DPrintSOS coin a bit smaller and our new logo larger": the coin 72 px (it was 96), the logo drawn larger -----
+// ----- the About page: the coin, then a panel with the game's logo, its version and the links: on a computer or the
+// web they open in the browser; the Knomi can't, so it shows the link's QR code for a phone to scan. Fedor picked the
+// logo in the panel, the panel "a bit bigger", then "the 3DPrintSOS coin a bit smaller and our new logo larger" (the
+// coin 72 px, it was 96; the logo drawn larger), and no who-made-it line: "we have the whole coin there and github AND
+// youtube. That should be enough." -----
 #define V2_ABOUT_PANEL_X0 66   // (between the page arrows: they end at x 62 and start at 404, down to y 254)
 #define V2_ABOUT_PANEL_X1 400
 #define V2_ABOUT_PANEL_Y0 212  // (just under the coin)
 #define V2_ABOUT_PANEL_Y1 374  // (just over "Page 2 of 2")
-#define V2_ABOUT_LOGO_Y 220    // the logo's top: 2 px a logo pixel
-#define V2_ABOUT_VER_Y (V2_ABOUT_LOGO_Y + 2 * BRAND_LOGO_H + 8)  // the version, under it
-#define V2_ABOUT_MADE_Y (V2_ABOUT_VER_Y + 18)
-#define V2_ABOUT_BTN_Y0 330
-#define V2_ABOUT_BTN_Y1 366
+#define V2_ABOUT_LOGO_Y 224    // the logo's top: 2 px a logo pixel
+#define V2_ABOUT_VER_Y (V2_ABOUT_LOGO_Y + 2 * BRAND_LOGO_H + 12)  // the version, under it
+#define V2_ABOUT_BTN_Y0 324
+#define V2_ABOUT_BTN_Y1 360
 // the game's logo (tools/brand_assets.py), s screen pixels a logo pixel, its middle at cx and its top at y: each row's
 // runs of one colour, one rectangle each
 static void v2BrandLogo(int cx, int y, int s) {
@@ -381,8 +381,6 @@ static void v2About() {
   gfx->setTextColor(V2_INK_MUTED);
   setCur(centerX(v, 2), V2_ABOUT_VER_Y);
   printT(v);
-  setCur(centerX(T(S_MADE_BY), 2), V2_ABOUT_MADE_Y);
-  printT(T(S_MADE_BY));
   {
     V2_HOVER(V2_GH_X0, V2_ABOUT_BTN_Y0, V2_GH_X1 - V2_GH_X0, V2_ABOUT_BTN_Y1 - V2_ABOUT_BTN_Y0);
     v2LabelButton(V2_GH_X0, V2_ABOUT_BTN_Y0, V2_GH_X1, V2_ABOUT_BTN_Y1, "GITHUB", V2_GH_COL);

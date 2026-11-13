@@ -131,7 +131,7 @@ enum StrId : STRID_BASE {
   S_POKE_BALL, S_THROW_FMT,  // V2: the catch's button names the ball chosen: "Throw %s" with "Poke Ball" (or the Ultra's, the Master's)
   S_PICK_THROW, S_TAP_THROW, S_AIM_LEAN,  // V2: its hint in the sky: choose a ball then THROW (or only THROW), then how to aim
   S_SOUND, S_LANGUAGE,  // V2: the settings page's rows
-  S_ABOUT, S_MADE_BY, S_SCAN_PHONE,  // V2: the About page: its board, who made it, and under a link's QR code (the Knomi)
+  S_ABOUT, S_SCAN_PHONE,  // V2: the About page: its board, and under a link's QR code (the Knomi)
   // V2: Knomi Tower (tower.h, tower_v2.h)
   S_WILD, S_ALL, S_TOWER, S_TOWER_TITLE, S_CLIMB, S_LEGEND, S_TWR_HOW, S_LETS_CLIMB, S_TWR_TIRED, S_PICK_FRIENDS, S_GO, S_WHO_FIRST, S_STRONG, S_WEAK, S_FAINTED, S_FLOOR_WON_FMT, S_NEXT_FMT, S_GATE_FMT, S_ULTRA_GOT_FMT, S_CLIMB_OVER, S_BEAT_YOU_FMT, S_YOURS, S_TWR_TIP, S_BEAT_BOTH, S_FIGHT, S_TOWER_MASTER, S_MASTER_PLUS, S_BADGE_FMT, S_BADGES_FMT, S_HALL_OF_FAME,
   S_YOUR_TEAM, S_TAP_CHANGE, S_TWR_BEST_FMT, S_DRAIN_FMT,
