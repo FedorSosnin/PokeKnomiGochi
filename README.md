@@ -6,7 +6,7 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 | | |
 |:--:|:--:|
-| <img src="docs/images/v2/crt-cave.webp" width="404" alt="PokeMacGochi with its CRT screen, in its Poké Ball ring: Moltres in the Cave, with Pikachu and Venomoth visiting"> | <img src="docs/images/v2/knomi-gameboys.gif" width="360" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, on a desk beside two Game Boys: Gengar walking past the haunted Mansion"> |
+| <img src="docs/images/v2/crt-cave.webp" width="404" alt="PokeMacGochi with its CRT screen, in its Poké Ball ring: Moltres flying through the Cave as the ground slides by, with Pikachu visiting"> | <img src="docs/images/v2/knomi-gameboys.gif" width="360" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, on a desk beside two Game Boys: Gengar walking past the haunted Mansion"> |
 | **On your computer**<br><sub>Mac, Windows and the browser, with the CRT screen</sub> | **On the Knomi V2**<br><sub>its real round screen, in a 3D-printed Poké Ball</sub> |
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows). **CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look.
