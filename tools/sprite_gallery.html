@@ -107,7 +107,9 @@
      "Dont fear white space") */
   .phead { display:flex; align-items:flex-start; padding:28px 32px 0; }
   .pnum { display:block; color:var(--muted); font-size:.85rem; font-variant-numeric:tabular-nums; }
-  .phead h2 { margin:2px 0 12px; font-size:1.65rem; line-height:1.2; }
+  .pname { display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; margin:2px 0 12px; }
+  .pname h2 { margin:0; font-size:1.65rem; line-height:1.2; }
+  .pname .btn { padding:5px 14px; font-size:.84rem; }
   .phead .close { margin:-8px -12px 0 auto; }
   .hero { display:grid; grid-template-columns:auto 1fr; gap:40px; align-items:center; padding:28px 32px 0; }
   .both2 { display:flex; gap:12px; }
@@ -222,6 +224,9 @@
     .hero > div:last-child { justify-self:stretch; }
     .form1 canvas { width:124px; height:108px; }
     .fact { font-size:1.06rem; max-width:none; }
+    .pname { flex-wrap:nowrap; gap:12px; }
+    .pname .btn { flex:none; padding:4px 11px; }  /* (only its note on a phone, so it stays beside a long name) */
+    .pname .lbl { display:none; }
     .tabs { margin:40px 20px 0; gap:22px; }
     .panel { padding:24px 20px 0; }
     .dfoot { margin:40px 20px 0; }
@@ -301,7 +306,7 @@
 </div>
 <dialog id="dlg" aria-labelledby="dname">
   <div class="phead">
-    <div><span class="pnum" id="dnum"></span><h2 id="dname"></h2><span class="type" id="dtype"></span></div>
+    <div><span class="pnum" id="dnum"></span><div class="pname"><h2 id="dname"></h2><button class="btn" id="dsay" aria-label="Its cry">♪<span class="lbl"> Its cry</span></button></div><span class="type" id="dtype"></span></div>
     <button class="close" id="dclose" aria-label="Close">×</button>
   </div>
   <div class="hero">
@@ -313,7 +318,6 @@
       <p class="fact" id="dfact"></p>
       <ul class="facts" id="dfacts"></ul>
       <div class="acts">
-        <button class="btn" id="dsay">♪ Its cry</button>
         <button class="btn" id="dpick" aria-pressed="false"></button>
       </div>
     </div>
