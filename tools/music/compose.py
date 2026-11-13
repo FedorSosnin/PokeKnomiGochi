@@ -122,7 +122,6 @@ def mml(text, bar_ticks, instruments, where):
     octave = 4
     default = WHOLE // 8
     slur_next = False
-    bar_start_ticks = [0]  # ticks at the last bar line, per repeat level (checked on the flat result)
     text = text.strip()
     while pos < len(text):
         m = TOKEN.match(text, pos)
