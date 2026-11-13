@@ -2416,6 +2416,9 @@ uint32_t lastScreenKey = 0;
 
 // Draws a frame and returns true if it flushed it to the panel.
 bool render() {
+#ifdef KNOMI_RIM
+  gKnomiLiftOn = false;  // V2: nothing over the Knomi's rim until this frame's need bars mark their labels (knomi_rim.h)
+#endif
 #if UI_V2
   if (v2Sliding()) {  // V2: a page sliding: its frames are made from the two pages, nothing drawn (slide_v2.h)
     gfx->flush();
@@ -3946,14 +3949,15 @@ void battleFinish(bool won) {
   if (won) v2SayWin();  // V2: yours says its name
 #endif
 #if UI_V2
-  if (bTower) {  // V2: a Knomi Tower fight fills the balls' bars like any (Fedor); the rest of its end is the climb's
-    v2MasterNew = pet.fightPays();
+  if (bTower) {  // V2: a Knomi Tower fight won fills the balls' bars like any (Fedor); the rest of its end is the climb's
+    v2MasterNew = won ? pet.fightPays() : 0;
     bGain = 0;
     sfxPlay(won ? SFX_LEVEL : SFX_DENY);
     battleSetPhase(BP_END);
     return;
   }
-  v2MasterNew = bPvp ? 0 : pet.fightPays();  // V2: a fight fought to the end fills the balls' bars (master_v2.h)
+  // V2: a fight won fills the balls' bars (master_v2.h; Fedor: "You should only get one for winning one")
+  v2MasterNew = bPvp || !won ? 0 : pet.fightPays();
 #endif
   if (bPvp) {
     pet.friendlyBattle(won);
@@ -4874,7 +4878,7 @@ void renderBattle() {
         battleCenterLine(b, 380);
       }
 #if UI_V2
-      if (!bPvp) v2MasterEnd(millis() - bPhaseT);  // V2: the Master Ball's bar, or the one it earned
+      if (!bPvp && bWon) v2MasterEnd(millis() - bPhaseT);  // V2: the balls' bars, or the one it earned (a loss: none)
 #endif
       break;
     }

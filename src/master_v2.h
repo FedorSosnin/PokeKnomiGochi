@@ -1,10 +1,10 @@
 // V2 step 7: fights pay, the Master Ball and the Ultra Ball (Fedor). scene_v2.h includes this at its end, so it's
 // only there with UI_V2 on.
 //
-// Every wild or Travel battle fought to the end, won or lost (not run from; buddy battles and the dungeon don't
-// count), fills two bars a step (pet.fightPays()): ULTRA_FIGHTS of them earn an Ultra Ball, which triples the catch
+// Every wild, Travel or Knomi Tower battle won (Fedor: "You should only get one for winning one"; until 2.1.2 a loss
+// counted too; buddy battles and the dungeon don't count) fills two bars a step (pet.fightPays()): ULTRA_FIGHTS of them earn an Ultra Ball, which triples the catch
 // chance of a throw that hits, and MASTER_FIGHTS (Fedor: REALLY rare) a Master Ball, which always catches what it
-// hits. They stack. The Ultra Ball's bar shows at a fight's end, both on the card's pages; a fight that earns one
+// hits. They stack. The bars show at a won fight's end, both on the card's pages; a fight that earns one
 // brings a moment of its own on the Caught screen's gold burst (a Master Ball's, when it earns both). On the catch
 // the balls you hold sit in a row over the band, the Master Ball, the Ultra Ball, then the Poke Ball: tap one to throw
 // it. An Ultra or a Master Ball that hits is used up; a miss doesn't use it (it comes back). Any ball that hits ends

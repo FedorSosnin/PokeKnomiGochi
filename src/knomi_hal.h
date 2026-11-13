@@ -9,6 +9,10 @@
 #include <esp_heap_caps.h>
 #include <soc/usb_serial_jtag_reg.h>
 #include <soc/soc.h>
+#include "ui_v2.h"
+#if UI_V2
+#include "knomi_rim.h"  // V2: the screen darkens softly into its rim
+#endif
 
 // GC9A01 with AW9346 backlight: 16 levels stepped down by pulses (BTT driver). The chip only steps
 // down, wrapping from the dimmest back to the brightest, so counting from where it was supposed to be
@@ -57,6 +61,9 @@ public:
     size_t s = PANEL_SIZE * PANEL_SIZE * 2;
     panel = (uint16_t *)heap_caps_malloc(s, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
     if (!panel) panel = (uint16_t *)ps_malloc(s);
+#if UI_V2
+    knomiRimBegin(PANEL_SIZE);
+#endif
     return panel != nullptr;
   }
 
@@ -70,11 +77,27 @@ public:
     for (int y = 0; y < PANEL_SIZE; y++) {
       const uint16_t *a = _framebuffer + (2 * (y * (LCD_HEIGHT / 2) / PANEL_SIZE)) * LCD_WIDTH;
       const uint16_t *b = a + LCD_WIDTH;
+#if UI_V2  // the rim (knomi_rim.h): black past the round screen, darkening toward its edge, the middle as it is
+      const uint8_t *rim = gKnomiRim ? gKnomiRim + y * PANEL_SIZE : nullptr;
+      const int x0 = rim ? gKnomiRimX0[y] : 0, x1 = rim ? gKnomiRimX1[y] : PANEL_SIZE;
+      const int i0 = rim ? gKnomiRimI0[y] : 0, i1 = rim ? gKnomiRimI1[y] : PANEL_SIZE;
+      const int cy = y * (LCD_HEIGHT / 2) / PANEL_SIZE;  // the canvas's cell row (for what's over the shadow)
+#endif
       for (int x = 0; x < PANEL_SIZE; x++) {
+#if UI_V2
+        if (x < x0 || x >= x1) {
+          panel[r.base + x * r.dx + y * r.dy] = 0;
+          continue;
+        }
+#endif
         int sx = 2 * (x * (LCD_WIDTH / 2) / PANEL_SIZE);
         uint32_t s = expand(a[sx]) + expand(a[sx + 1]) + expand(b[sx]) + expand(b[sx + 1]);
         s = (s >> 2) & 0x07E0F81F;
-        panel[r.base + x * r.dx + y * r.dy] = (uint16_t)(s | (s >> 16));
+        uint16_t c = (uint16_t)(s | (s >> 16));
+#if UI_V2
+        if ((x < i0 || x >= i1) && !(gKnomiLiftOn && knomiLifted(sx >> 1, cy))) c = knomiRimPixel(c, rim[x]);
+#endif
+        panel[r.base + x * r.dx + y * r.dy] = c;
       }
     }
     _output->draw16bitRGBBitmap(0, 0, panel, PANEL_SIZE, PANEL_SIZE);

@@ -9,12 +9,13 @@ namespace {
 
 const int C = HOST_CANVAS_SIZE;    // 466
 const int Q = (C + 3) / 4;         // the halo's quarter-size grid (117)
-const float K = 0.09f;             // the glass's bulge: the middle magnified, the rim squeezed (0.11 at first: Fedor,
-                                   // "lessen the distortion but just a tiny bit. On medium size it can be a bit overwhelming")
+const float K = 0.045f;            // the glass's bulge: the middle magnified, the rim squeezed (0.11 at first: Fedor,
+                                   // "lessen the distortion but just a tiny bit. On medium size it can be a bit overwhelming";
+                                   // 0.09 in 2.1.2, then half: "I just want this lite effect as on")
 const float SHRINK = 0.965f;       // the picture stops short of the rim (the tube's black edge)
 const float SAT = 1.18f, CON = 1.08f;  // CRT colour: richer, deeper blacks
-const float BLOOM = 0.22f;         // the glow on bright pixels (2.5 game pixels wide)
-const float HAL_R = 0.20f, HAL_G = 0.15f, HAL_B = 0.10f;  // the halo in the glass: wide and warm (13 game pixels)
+const float BLOOM = 0.11f;         // the glow on bright pixels (2.5 game pixels wide; 2.1.2's was twice it)
+const float HAL_R = 0.10f, HAL_G = 0.075f, HAL_B = 0.05f;  // the halo in the glass: wide and warm (13 game pixels; also half)
 
 // per frame
 uint8_t gAdj[C * C * 3];           // the picture in CRT colour
@@ -32,6 +33,23 @@ float gLut[65][64];                // a line's light: exp(-(d/w)^2) * 1.2 by dis
 bool gLutMade = false;
 
 inline uint8_t clamp8(float v) { return v <= 0 ? 0 : v >= 255 ? 255 : (uint8_t)(v + 0.5f); }
+
+// Whites and light greys stay apart (Fedor: "Some of the white and light gray get completely washed out on CRT
+// mode"). The glow and the halo fade out as a pixel nears white, by its brightness cubed, so they still light the
+// dark and middle tones as before. And a colour that runs past 255 is scaled down whole, keeping its tint, instead
+// of each channel clipping on its own toward white.
+inline float glowFade(const float *v) {
+  float l = (0.3f * v[0] + 0.59f * v[1] + 0.11f * v[2]) / 255;
+  if (l > 1) l = 1;
+  return 1 - l * l * l;
+}
+inline void fitWhole(float *v) {
+  float t = fmaxf(v[0], fmaxf(v[1], v[2]));
+  if (t > 255) {
+    float k = 255 / t;
+    v[0] *= k, v[1] *= k, v[2] *= k;
+  }
+}
 
 // a Gaussian blur as three box blurs (as Pillow's), edges extended, on a planar w x h float image
 void boxesForGauss(float sigma, int sizes[3]) {
@@ -239,13 +257,12 @@ void hostCrtRows(uint8_t *out, int stride, bool bgra, int y0, int y1, uint32_t f
         int gi = ((int)sy * C + (int)sx) * 3;
         if (gi > (C * C - 1) * 3) gi = (C * C - 1) * 3;
         float line[3] = {cr * f, cg * f, cb * f};
-        for (int c = 0; c < 3; c++) {
-          float v = line[c] > 255 ? 255 : line[c];
-          v += gGlowB[gi + c];
-          if (v > 255) v = 255;
-          v += gGlowH[gi + c];
-          pic[c] = v > 255 ? 255 : v;
-        }
+        fitWhole(line);  // whites and light greys stay apart (glowFade)
+        float w = glowFade(line);
+        for (int c = 0; c < 3; c++) line[c] += gGlowB[gi + c] * w;
+        w = glowFade(line);
+        for (int c = 0; c < 3; c++) pic[c] = line[c] + gGlowH[gi + c] * w;
+        fitWhole(pic);
       }
       float sh = gShade[i] / 255.0f, a = gGlass[i] / 255.0f;
       // grain: about 3 levels either way, new every frame

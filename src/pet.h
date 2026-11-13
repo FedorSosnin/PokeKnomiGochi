@@ -37,7 +37,7 @@
 #define CELEBRATE_MS 5000UL                // a new medal or streak milestone on screen
 #define FAREWELL_AGE_MIN (3UL * 24 * 60)   // says goodbye after 3 game days (in final form)
 #if UI_V2
-#define MASTER_FIGHTS 100  // V2: fights fought to the end for a Master Ball (Fedor: REALLY rare)
+#define MASTER_FIGHTS 100  // V2: fights won for a Master Ball (Fedor: REALLY rare)
 #define ULTRA_FIGHTS 25    // ...and for an Ultra Ball (Fedor)
 #define ULTRA_MAX 99
 #define MASTER_MAX 99     // the most you can hold
@@ -291,12 +291,12 @@ public:
     save();
   }
 #if UI_V2
-  // V2 (Fedor): fights pay. Every wild or Travel battle fought to the end, won or lost, fills two bars a step:
+  // V2 (Fedor): fights pay. Every wild, Travel or tower battle won (a loss doesn't count) fills two bars a step:
   // ULTRA_FIGHTS of them earn an Ultra Ball, which triples the catch chance of a throw that hits, and MASTER_FIGHTS
   // a Master Ball, which always catches what it hits. They stack, and the bars and the balls are the trainer's:
   // they stay through a goodbye (START OVER erases them, as everything)
   uint8_t masterBar = 0, masterBalls = 0, ultraBar = 0, ultraBalls = 0;
-  uint8_t fightPays();   // a fight fought to the end: what it earned, 1 a Master Ball, 2 an Ultra Ball (saved with it)
+  uint8_t fightPays();   // a fight won: what it earned, 1 a Master Ball, 2 an Ultra Ball (saved with it)
   bool masterFight() { return fightPays() & 1; }
   bool useMasterBall();  // one thrown that hit: false if there was none
   bool useUltraBall();

@@ -1,12 +1,19 @@
 # PokeKnomiGochi
 
-[![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](relay/README.md)
+<p align="center">
+  <a href="https://fedorsosnin.github.io/PokeKnomiGochi/"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Ffedorsosnin.github.io%2FPokeKnomiGochi%2Fupdate.json&query=%24.version&label=Knomi%20V2&prefix=install%20v&color=e8742a&cacheSeconds=3600" alt="Install on the Knomi V2 from your browser"></a>
+  <a href="https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest/download/PokeMacGochi.dmg"><img src="https://img.shields.io/badge/download-Mac-6e6e73?logo=apple&logoColor=white" alt="Download PokeMacGochi for the Mac"></a>
+  <a href="https://github.com/FedorSosnin/PokeKnomiGochi/releases?q=win-v&expanded=true"><img src="https://img.shields.io/badge/download-Windows%20PC-0078d4" alt="Download PokeWinGochi for Windows"></a>
+  <a href="https://pokewebgochi.3dprintsos.com"><img src="https://img.shields.io/badge/play-in%20your%20browser-de2121" alt="Play PokeWebGochi in your browser"></a>
+  <a href="https://fedorsosnin.github.io/PokeKnomiGochi/sprites/"><img src="https://img.shields.io/badge/online-Pok%C3%A9dex-d4a017" alt="The online Shiny Pokédex"></a>
+  <a href="relay/README.md"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=2ea043&cacheSeconds=300" alt="Live players right now"></a>
+</p>
 
 A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made for 3D printers, and for your Mac, your Windows PC and your browser. Raise any of the original 151 as it walks through its own pixel world, battle and catch wild Pokémon, climb Knomi Tower, fill your [Pokédex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/), and play mini games by tapping and tilting.
 
 | | |
 |:--:|:--:|
-| <img src="docs/images/v2/crt-cave.webp" width="404" alt="PokeMacGochi with its CRT screen, in its Poké Ball ring: Moltres in the Cave, with Pikachu and Venomoth visiting"> | <img src="docs/images/v2/knomi-gameboys.gif" width="360" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, on a desk beside two Game Boys: Gengar walking past the haunted Mansion"> |
+| <img src="docs/images/v2/crt-cave.webp" width="404" alt="PokeMacGochi with its CRT screen, in its Poké Ball ring: Moltres flying through the Cave as the ground slides by, with Pikachu visiting"> | <img src="docs/images/v2/knomi-gameboys.gif" width="360" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, on a desk beside two Game Boys: Gengar walking past the haunted Mansion"> |
 | **On your computer**<br><sub>Mac, Windows and the browser, with the CRT screen</sub> | **On the Knomi V2**<br><sub>its real round screen, in a 3D-printed Poké Ball</sub> |
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows). **CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look.
@@ -221,8 +228,8 @@ Three items you earn by playing, kept with you from one Pokémon to the next (up
 
 | Item | How to earn it | What it does |
 |---|---|---|
-| **Ultra Ball** | Every 25 battles you fight to the end, won or lost | Triples your catch chance when it hits. |
-| **Master Ball** | Every 100 battles you fight to the end, won or lost | Always catches the Pokémon it hits. |
+| **Ultra Ball** | Every 25 battles you win | Triples your catch chance when it hits. |
+| **Master Ball** | Every 100 battles you win | Always catches the Pokémon it hits. |
 | **Repel** | Every 10 minutes of mini games | Spray it from the backpack: for 3 minutes, weaker wild Pokémon stay away. |
 
 Running away, battles with buddies and PokeDungeon don't count toward the balls. Ultra and Master Balls sit beside your Poké Balls on the catch screen while you have them (with both, the Poké Ball in the middle); one that misses isn't used up. While a Repel works, wild Pokémon below your Pokémon's level, or with lower base stats, stay away, and in a zone you haven't finished, every Pokémon there except its legendary is equally likely; shiny odds don't change. The backpack shows a badge with its minutes left. Only time spent actually playing counts toward a Repel: sitting in a game without touching it earns nothing.
