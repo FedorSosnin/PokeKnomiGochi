@@ -47,7 +47,7 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 ## On your computer
 
-The Mac and Windows apps and the browser game, as they open: in the Poké Ball ring, with the CRT screen on. **CRT Screen** in the apps' menu, or the **CRT** button under the browser game, picks **On**, **Lite** (half the glow and half the curve) or **Off** for the Knomi's own look.
+The Mac and Windows apps and the browser game, as they open: in the Poké Ball ring, with the CRT screen on. **CRT Screen** in the apps' menu, or the **CRT** button under the browser game, turns it off for the Knomi's own look.
 
 | | |
 |:--:|:--:|
@@ -426,7 +426,7 @@ The code also builds for the Waveshare ESP32-S3-Touch-AMOLED-1.75, a bigger roun
 - **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser. Coming from V1, your Pokémon comes along by itself, and V1's save stays as it was.
 - **One tab at a time:** a second tab offers **Play here**, which moves the game over after the first one saves.
 - **Controls:** tap, hold and swipe the screen, as on the Knomi (see [How to play](#how-to-play)). On a phone, tilt it to aim the ball and to steer in PikaSurf and Berry Drop; where the browser asks first, **Enable tilt** turns it on. On Android it also buzzes along with the sounds; **Vibration** turns that off (iPhone browsers can't vibrate). On a computer, the mouse is a finger that presses when you click, the left and right arrows tilt, all four arrows walk in PokeDungeon, Space is the Knomi's button, and on a catch the left and right arrows choose a ball and Space or the up arrow throws it.
-- **Size and CRT:** it opens Large, with the CRT screen on. **Size** makes it Small or Medium, like the Mac app, and on a small screen it shrinks to fit. **CRT** goes from On to **Lite** (half the glow and half the curve) to **Off**, the Knomi's own look; a browser without WebGL 2 shows that look by itself.
+- **Size and CRT:** it opens Large, with the CRT screen on. **Size** makes it Small or Medium, like the Mac app, and on a small screen it shrinks to fit. **CRT** turns the effect off for the Knomi's own look; a browser without WebGL 2 shows that look by itself.
 - **Buddies:** browsers can't send the Knomi's local Wi-Fi messages, so they meet buddies through a small relay on the internet that only passes those same messages between devices on the same home network and stores nothing. Knomis and the Mac and Windows apps use it too, so they all meet each other.
 - **Updates:** it updates itself: reload to get the newest version. A tab left open checks every hour and says when there is one; with **Auto-update** on (the button under the game; on unless you turn it off), it reloads onto it by itself once nobody has touched it for a minute on the home screen.
 
@@ -444,7 +444,7 @@ The same game as a round window on your Mac desktop, in a Poké Ball ring with a
 
 **Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Berry Drop and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle; on a catch, the left and right arrows choose a ball and Space or the up arrow throws it. Drag the red and white ring to move the window: it grows when the mouse is over it, so it's easy to grab, and the screen inside is only for touching, with the mouse as a finger. Right-click it, or click the Poké Ball in the menu bar, for About, Size, CRT Screen, Mute Sound, Check for Updates, Update Automatically and Quit.
 
-**Size and CRT Screen:** it opens Large, with the CRT screen on. **Size** makes it Medium or Small, sharp at every size, and **CRT Screen** picks **On**, **Lite** (half the glow and half the curve) or **Off** for the Knomi's own look.
+**Size and CRT Screen:** it opens Large, with the CRT screen on. **Size** makes it Medium or Small, sharp at every size, and **CRT Screen** turns the effect off for the Knomi's own look.
 
 Your pet, the sound and CRT settings, and the window's size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 

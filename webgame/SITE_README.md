@@ -8,7 +8,7 @@
 
 <p align="center"><img src="images/web-desktop.webp" alt="PokeWebGochi in a browser, with the CRT screen: Charmeleon in the Field on a sunny morning, inside a Poké Ball ring" width="760"></p>
 
-**CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look. The **CRT** button under the game goes On, **Lite** (half the glow and half the curve) and Off, and **Size** makes the screen smaller.
+**CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look. The **CRT** button under the game turns it off, and **Size** makes the screen smaller.
 
 | | | |
 |:--:|:--:|:--:|

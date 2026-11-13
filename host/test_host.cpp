@@ -1059,7 +1059,7 @@ static void testCrt() {
   float cx, cy;
   CHECK(hostCrtPoint(500, 500, 1000, cx, cy) && fabsf(cx - 233) < 0.01f && fabsf(cy - 233) < 0.01f);
   const float d0 = 200 * 466.0f / 1000;  // 200 of 1000 screen pixels from the middle, in the canvas's pixels unbent
-  CHECK(hostCrtPoint(300, 500, 1000, cx, cy) && cx > 233 - d0 * 0.97f && cx < 233 - d0 * 0.88f);  // magnified in the middle
+  CHECK(hostCrtPoint(300, 500, 1000, cx, cy) && cx > 233 - d0 && cx < 233 - d0 * 0.99f);  // magnified in the middle
   CHECK(!hostCrtPoint(998, 500, 1000, cx, cy) && cx >= 466);  // the rim: off the picture
   float ax, ay, bx, by;
   hostCrtPoint(250, 250, 500, ax, ay);  // the same place on any size
@@ -1080,28 +1080,21 @@ static void testCrt() {
   std::vector<uint8_t> bgr(side * side * 4);
   hostCrtRows(bgr.data(), side * 4, true, 140, 141, 1);
   CHECK(bgr[(140 * side + 150) * 4 + 2] == out[(140 * side + 150) * 4 + 0]);  // BGRA swaps red and blue only
-  // Lite: the glass bulges half as much, so a point off the middle lands nearer where it would unbent
-  float lx, ly;
-  hostCrtPoint(300, 500, 1000, cx, cy);
-  CHECK(hostCrtPoint(300, 500, 1000, lx, ly, true) && lx < cx && lx > 233 - d0 * 1.0f && fabsf(ly - 233) < 0.01f);
-  CHECK(hostCrtPoint(500, 500, 1000, lx, ly, true) && fabsf(lx - 233) < 0.01f);
   // whites and light greys stay apart (2.1.2 glowed both to nearly 255): white on the left, the HP bar's beige on
   // the right; the beige stays darker than the white and keeps its tint
   for (int i = 0; i < HOST_CANVAS_SIZE * HOST_CANVAS_SIZE; i++) {
     bool white = i % HOST_CANVAS_SIZE < HOST_CANVAS_SIZE / 2;
     canvas[i * 4] = white ? 255 : 222, canvas[i * 4 + 1] = white ? 255 : 211, canvas[i * 4 + 2] = white ? 255 : 189;
   }
-  for (int lite = 0; lite < 2; lite++) {
-    hostCrtPrepare(canvas, side, lite);
-    hostCrtRows(out.data(), side * 4, false, 0, side, 1);
-    double sum[2][3] = {};
-    for (int y = 120; y < 180; y++)
-      for (int x = 0; x < 60; x++)
-        for (int c = 0; c < 3; c++) sum[0][c] += at(60 + x, y, c), sum[1][c] += at(180 + x, y, c);
-    auto luma = [&](int h) { return (0.299 * sum[h][0] + 0.587 * sum[h][1] + 0.114 * sum[h][2]) / 3600; };
-    CHECK(luma(0) > 225 && luma(0) - luma(1) > 15);
-    CHECK((sum[1][0] - sum[1][2]) / 3600 > 30);  // still beige, not white
-  }
+  hostCrtPrepare(canvas, side);
+  hostCrtRows(out.data(), side * 4, false, 0, side, 1);
+  double sum[2][3] = {};
+  for (int y = 120; y < 180; y++)
+    for (int x = 0; x < 60; x++)
+      for (int c = 0; c < 3; c++) sum[0][c] += at(60 + x, y, c), sum[1][c] += at(180 + x, y, c);
+  auto luma = [&](int h) { return (0.299 * sum[h][0] + 0.587 * sum[h][1] + 0.114 * sum[h][2]) / 3600; };
+  CHECK(luma(0) > 225 && luma(0) - luma(1) > 15);
+  CHECK((sum[1][0] - sum[1][2]) / 3600 > 30);  // still beige, not white
 }
 
 int main() {
