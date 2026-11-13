@@ -4,8 +4,8 @@
 // It reads like a tube, not a filter: each scanline is a soft beam that swells where the picture is bright
 // (233 of them: two of the game's rows each, as an old console's 240), the beam soft along the line and sharp
 // across it, red and blue a hair apart (convergence), a glow on bright pixels and a wide warm halo in the glass,
-// richer colour with deeper blacks, the picture bulging as through curved glass and fading into the tube's black
-// edge, a reflection on the glass, and grain. Tuned on mockups at 2x (Large on a Retina Mac); its sizes are in
+// richer colour with deeper blacks, the picture bulging as through curved glass, its edge drawn on out to the rim and
+// darkening softly into it (since 2.1.4; before, a black edge), a reflection on the glass, and grain. Tuned on mockups at 2x (Large on a Retina Mac); its sizes are in
 // the game's pixels, so it looks the same at any size. Since 2.1.3 the glow, the halo and the glass's bulge are half
 // 2.1.2's (Fedor, of a Lite look tried beside it: "I just want this lite effect as on").
 #pragma once
