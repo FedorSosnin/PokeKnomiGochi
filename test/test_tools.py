@@ -235,8 +235,8 @@ class TestGeneratedFiles(unittest.TestCase):
             self.assertIn('GENERATED', head, f'{name} should say it is generated')
 
 
-class TestKnomiDex(unittest.TestCase):
-    """The KnomiDex page (tools/make_sprite_gallery.py) shows tools/dex.json: the game's own tables and battle rules
+class TestDexPage(unittest.TestCase):
+    """The Catch 151 Dex page (tools/make_sprite_gallery.py) shows tools/dex.json: the game's own tables and battle rules
     as `make -C host dex` writes them (the host tests check it against the compiled game). Here: it agrees with the
     sources those tables are generated from (dex_data.py, dex_stats.py, dex_moves.py through gen_moves.py,
     dex_facts.py), so a change there that wasn't carried to the page shows up without building the host."""
@@ -339,6 +339,14 @@ class TestKnomiDex(unittest.TestCase):
         with open(os.path.join(TOOLS, 'make_sprite_gallery.py'), encoding='utf-8') as f:
             maker = f.read()
         self.assertIn("'dex.json'", maker)
+        # its logo and icons: each one the page asks for is one the build copies (read, not imported: it needs
+        # Pillow), and is in tools/assets/brand
+        import ast
+        copied = ast.literal_eval(re.search(r'^BRAND_FILES = (\[.*\])$', maker, re.M).group(1))
+        asked = set(re.findall(r'"brand/([^"]+)"', page))
+        self.assertEqual(asked, set(copied))
+        for name in asked:
+            self.assertTrue(os.path.exists(os.path.join(TOOLS, 'assets', 'brand', name)), name)
 
 
 class TestSpritePacks(unittest.TestCase):

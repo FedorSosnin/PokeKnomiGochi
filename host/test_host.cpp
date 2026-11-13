@@ -1194,7 +1194,7 @@ static void testGame() {
           for (int i = 0; i < a.n; i++) ms += a.note[i].frames * 1000 / CRY_FPS;
           CHECK(a.n >= 2 && ms > 200 && ms < 1600);  // two notes or more, under a second and a half or so
         }
-      {  // the KnomiDex page plays what the game plays: tools/voices.json is up to date (make -C host voices)
+      {  // the Catch 151 Dex page plays what the game plays: tools/voices.json is up to date (make -C host voices)
         std::vector<uint8_t> f = readFile(std::string(getcwd(nullptr, 0)) + "/../tools/voices.json");
         CHECK(std::string(f.begin(), f.end()) == cryVoicesJson());
       }
@@ -1228,7 +1228,7 @@ static void testGame() {
   rmdir(save.c_str());
 }
 
-// the KnomiDex page says what the game says: tools/dex.json is the game's Pokedex, moves and type chart as they
+// the Catch 151 Dex page says what the game says: tools/dex.json is the game's Pokedex, moves and type chart as they
 // are now (make -C host dex), and it reads them right
 static void testDexPage() {
   std::vector<uint8_t> f = readFile(std::string(getcwd(nullptr, 0)) + "/../tools/dex.json");

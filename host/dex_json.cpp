@@ -1,4 +1,4 @@
-// Writes the game's Pokedex, moves and type chart as JSON for the Shiny Pokedex page (dex_json.h).
+// Writes the game's Pokedex, moves and type chart as JSON for the Catch 151 Dex page (dex_json.h).
 // `make -C host dex`.
 //   dex_json <file>
 #include <stdio.h>

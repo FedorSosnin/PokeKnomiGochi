@@ -11,7 +11,7 @@ Wi-Fi updates from the same place.
 - `knomi/firmware/`: the firmware, and the sprites packed for the Knomi's flash.
 - `knomi/update.json`: what a Knomi checks for a Wi-Fi update.
 
-The site also has the **KnomiDex** at `/sprites/`, every sprite the game uses in every view, with its artists. It isn't
+The site also has the **Catch 151 Dex** at `/sprites/`, every sprite the game uses in every view, with its artists. It isn't
 kept here: the deploy builds it from the packs with `tools/make_sprite_gallery.py` (the page is
 `tools/sprite_gallery.html`; a tap on a Pokémon plays its voice, from `tools/voices.json`, which `make -C host voices`
 writes). To see it locally, `python3 tools/make_sprite_gallery.py` (it needs Pillow) and serve `build/sprites/`.

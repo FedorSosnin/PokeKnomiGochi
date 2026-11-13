@@ -5,7 +5,7 @@
   <a href="https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest/download/PokeMacGochi.dmg"><img src="https://img.shields.io/badge/download-Mac-6e6e73?logo=apple&logoColor=white" alt="Download PokeMacGochi for the Mac"></a>
   <a href="https://github.com/FedorSosnin/PokeKnomiGochi/releases?q=win-v&expanded=true"><img src="https://img.shields.io/badge/download-Windows%20PC-0078d4" alt="Download PokeWinGochi for Windows"></a>
   <a href="https://pokewebgochi.3dprintsos.com"><img src="https://img.shields.io/badge/play-in%20your%20browser-de2121" alt="Play PokeWebGochi in your browser"></a>
-  <a href="https://fedorsosnin.github.io/PokeKnomiGochi/sprites/"><img src="https://img.shields.io/badge/online-KnomiDex-d4a017" alt="The online KnomiDex"></a>
+  <a href="https://fedorsosnin.github.io/PokeKnomiGochi/sprites/"><img src="https://img.shields.io/badge/online-Catch_151_Dex-d4a017" alt="The online Catch 151 Dex"></a>
   <a href="relay/README.md"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=2ea043&cacheSeconds=300" alt="Live players right now"></a>
 </p>
 
@@ -18,7 +18,7 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 **No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows). **CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look.
 
-**[KnomiDex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/)**: all 151, regular and shiny, in every view the game has (standing, turning, walking, from behind, asleep, attacking and more), sorted by number or type, each credited to its artists. Each one's page says what the game's Pokédex says about it, with its stats and every move it learns; pick a few to see their match-ups, and tick the ones you have.
+**[Catch 151 Dex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/)**: all 151, regular and shiny, in every view the game has (standing, turning, walking, from behind, asleep, attacking and more), sorted by number or type, each credited to its artists. Each one's page says what the game's Pokédex says about it, with its stats and every move it learns; pick a few to see their match-ups, and tick the ones you have.
 
 ## What's in it
 
@@ -491,7 +491,7 @@ To build it yourself, run `windows/build.sh` on a Mac or Linux with [llvm-mingw]
 ## Credits and license
 
 - **Sprites:** the community artists of [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), under CC BY-NC 4.0.
-- **Each sprite's artists**, and what the game changed and added: the [KnomiDex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/).
+- **Each sprite's artists**, and what the game changed and added: the [Catch 151 Dex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/).
 - **Full list:** [`CREDITS.md`](CREDITS.md).
 
 The source code is [MIT licensed](LICENSE). The sprites and Pokémon names are not covered by that license and are for **personal, non-commercial use only**. The 3D-printed case is a remix shared under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/); see [`CREDITS.md`](CREDITS.md).

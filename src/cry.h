@@ -14,7 +14,7 @@
 // Its size and speed set the pitch (small and quick ones high, big slow ones low), its type the rasp, the trill and
 // the noise, its line's first form seeds the shape, so a Pokemon always makes the same cry. Petted it's a little
 // higher and shorter; after a win it's the whole cry, a moment after the level-up blip. cryBuild() runs on the game's
-// thread; CryPlayer plays the result on the audio thread (host_audio.cpp), and the KnomiDex page plays the same
+// thread; CryPlayer plays the result on the audio thread (host_audio.cpp), and the Catch 151 Dex page plays the same
 // notes (host/voice_json.h, tools/voices.json).
 #include <stdint.h>
 #include <math.h>

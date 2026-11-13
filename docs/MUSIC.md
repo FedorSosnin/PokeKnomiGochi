@@ -84,7 +84,7 @@ All of it is ours, worked out from the Pokémon itself. No cry is copied or tran
 - **When:** petting yours at home (at most every 2.5 seconds; the hearts each time), a little higher and shorter; after
   a battle it wins (in the tower, whoever fought), the whole cry; patting a Pokédex entry's sprite.
 - **Where:** a computer and the web, with the effects and at Sound's level.
-- **The KnomiDex:** each Pokémon's page there has a button that plays its cry too. `make -C host voices` writes the cries into
+- **The Catch 151 Dex:** each Pokémon's page there has a button that plays its cry too. `make -C host voices` writes the cries into
   `tools/voices.json` for the page builder, and the host tests check that file matches `cry.h`.
 
 ## Writing a song

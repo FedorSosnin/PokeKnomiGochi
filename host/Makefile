@@ -56,7 +56,7 @@ music: $(BUILD)/music_wav
 	@mkdir -p $(ROOT)/build/music
 	$(BUILD)/music_wav $(ROOT)/build/music $(ONLY)
 
-# every Pokemon's cry for the KnomiDex page (tools/make_sprite_gallery.py): make voices
+# every Pokemon's cry for the Catch 151 Dex page (tools/make_sprite_gallery.py): make voices
 voices: $(BUILD)/music_wav
 	$(BUILD)/music_wav --json $(ROOT)/tools/voices.json
 
@@ -64,7 +64,7 @@ $(BUILD)/music_wav: music_wav.cpp voice_json.h $(ROOT)/src/music.h $(ROOT)/src/m
 	@mkdir -p $(BUILD)
 	$(CXX) $(ALLFLAGS) -o $@ music_wav.cpp
 
-# the game's Pokedex, moves and type chart for the KnomiDex page (tools/make_sprite_gallery.py): make dex
+# the game's Pokedex, moves and type chart for the Catch 151 Dex page (tools/make_sprite_gallery.py): make dex
 dex: $(BUILD)/dex_json
 	$(BUILD)/dex_json $(ROOT)/tools/dex.json
 

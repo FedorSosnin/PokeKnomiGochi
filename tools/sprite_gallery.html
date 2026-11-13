@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KnomiDex</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffcd28' d='M7 1h2v5h5v2H9v5H7V8H2V6h5z'/%3E%3Cpath fill='%23fff' d='M7 6h2v2H7z'/%3E%3C/svg%3E">
+<title>Catch 151 Dex</title>
+<link rel="icon" type="image/png" sizes="16x16" href="brand/catch151-dex-icon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="brand/catch151-dex-icon-32.png">
+<link rel="apple-touch-icon" href="brand/catch151-dex-icon-180.png">
 <meta name="description" content="PokeKnomiGochi's Pokédex: all 151 Gen 1 Pokémon, regular and shiny, in every view the game has, with what the game's Pokédex says about each, every move it learns, its match-ups, and a tick for the ones you have.">
 <!-- The template tools/make_sprite_gallery.py fills in (it puts the data where the empty list and object are). -->
 <style>
@@ -19,8 +21,8 @@
   header { position:sticky; top:0; z-index:2; background:var(--head); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
     border-bottom:1px solid var(--line); padding:12px 16px 10px; }
   .top { display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
-  h1 { font-size:1.3rem; margin:0; }
-  h1 span { color:#e0a800; }
+  h1 { margin:2px 0 12px; line-height:0; }
+  h1 img { display:block; image-rendering:pixelated; }  /* the logo at 2x (tools/assets/brand) */
   .sub { color:var(--muted); font-size:.85rem; margin:0; }
   .ctl { margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
   input[type=search] { font:inherit; font-size:.9rem; background:var(--card); color:var(--ink); border:1px solid var(--line);
@@ -257,7 +259,7 @@
 <header>
   <div class="top">
     <div>
-      <h1><span>★</span> KnomiDex</h1>
+      <h1><img src="brand/catch151-dex.svg" width="244" height="40" alt="Catch 151 Dex"></h1>
       <p class="sub">All 151 of <a href="https://github.com/FedorSosnin/PokeKnomiGochi">PokeKnomiGochi</a>'s Pokémon, regular and shiny, moving the way they do in the game.
       Tap one for its page, its moves and its cry; tap the ball when you have it; pick a few for their match-ups.</p>
     </div>
@@ -506,7 +508,7 @@ const hitsOn = (a, d, lvl) => [...new Set(battleMoves(a, lvl, d))].map((id) => h
 // ---- what you have: the viewer's own, kept in their browser ----
 // { v: 1, mons: { "25": { regular: { owned: true }, shiny: { owned: true } } } }: a record per Pokémon and form, so
 // more can go in later (its stars, a nickname, what a save exported from the game says) without a new key
-const STORE = 'knomidex';
+const STORE = 'catch151-dex';
 let book = loadBook();
 function loadBook() {
   try {

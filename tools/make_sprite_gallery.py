@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The KnomiDex (the sprite gallery), published with the installer at https://fedorsosnin.github.io/PokeKnomiGochi/sprites/
+"""The Catch 151 Dex (the sprite gallery), published with the installer at https://fedorsosnin.github.io/PokeKnomiGochi/sprites/
 (.github/workflows/pages.yml builds it there on every deploy; nothing it makes is kept in git).
 
 All 151 Pokemon, regular and shiny, in every view the game has: standing, turning round (the Pokedex entry's
@@ -19,6 +19,7 @@ host tests check it's up to date). The owned marks are the viewer's own, kept in
   <out>/index.html            the page (tools/sprite_gallery.html, with the data put in)
   <out>/img/NNN-name.png      each form's frames, one row per view (indexed PNG; the page cuts them up)
   <out>/img/NNN-name-shiny.png
+  <out>/brand/...             its logo and icons (tools/assets/brand, drawn by brand_assets.py)
 
 Each sprite is credited to its artists, from SpriteCollab's tracker.json and credit_names.txt (fetched into
 tools/pmd_cache/, not in git; --refresh fetches them again).
@@ -27,6 +28,7 @@ tools/pmd_cache/, not in git; --refresh fetches them again).
 """
 import json
 import os
+import shutil
 import struct
 import sys
 import urllib.request
@@ -43,6 +45,8 @@ CACHE = os.path.join(HERE, 'pmd_cache')
 PAGE = os.path.join(HERE, 'sprite_gallery.html')  # the page, which this fills in
 VOICES = os.path.join(HERE, 'voices.json')         # each one's cry (make -C host voices)
 DEX = os.path.join(HERE, 'dex.json')               # the game's Pokedex, moves and type chart (make -C host dex)
+BRAND = os.path.join(HERE, 'assets', 'brand')      # its logo (at 2x in the header) and its icons (brand_assets.py)
+BRAND_FILES = ['catch151-dex.svg', 'catch151-dex-icon-16.png', 'catch151-dex-icon-32.png', 'catch151-dex-icon-180.png']
 COLLAB = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master'
 WALKL, WALKR, SLEEP, WALKD = 1, 2, 3, 12
 # the room a card gives a sprite, in CSS px (the page's canvases): what it fits a Pokemon's standing view into
@@ -206,6 +210,9 @@ def main():
     page = open(PAGE, encoding='utf-8').read()
     page = page.replace('/*DATA*/[]', data.replace('</', '<\\/')).replace('/*GAME*/{}', tables.replace('</', '<\\/'))
     open(os.path.join(out, 'index.html'), 'w', encoding='utf-8').write(page)
+    os.makedirs(os.path.join(out, 'brand'), exist_ok=True)
+    for name in BRAND_FILES:
+        shutil.copyfile(os.path.join(BRAND, name), os.path.join(out, 'brand', name))
     size = sum(os.path.getsize(os.path.join(img, f)) for f in os.listdir(img))
     print(f'{os.path.relpath(out, ROOT)}: {len(mons)} Pokemon, {len(os.listdir(img))} sheets ({size // 1024} KB), '
           f'index.html {os.path.getsize(os.path.join(out, "index.html")) // 1024} KB')

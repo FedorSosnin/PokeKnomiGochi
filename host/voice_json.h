@@ -1,5 +1,5 @@
 #pragma once
-// Every Pokemon's cry (cry.h), petted, as JSON for the KnomiDex page (tools/make_sprite_gallery.py puts it in;
+// Every Pokemon's cry (cry.h), petted, as JSON for the Catch 151 Dex page (tools/make_sprite_gallery.py puts it in;
 // tools/sprite_gallery.html plays it), a list of notes each:
 //   [steps, f0 Hz, sweep (thousandths of a semitone a step), trill (hundredths), v0, vstep, vevery, duty, harm
 //    (hundredths), hv, n0, nevery, noise Hz, short loop]

@@ -1,13 +1,13 @@
 # Publishes to GitHub Pages: the Knomi installer at the root (the README's link, and where Knomis
 # download Wi-Fi updates from), the Waveshare one under /waveshare/, /play/ pointing to
-# PokeWebGochi's own site (tools/publish_web.sh), and the KnomiDex under /sprites/, built from the packs.
+# PokeWebGochi's own site (tools/publish_web.sh), and the Catch 151 Dex under /sprites/, built from the packs.
 name: Pages
 
 on:
   push:
     branches: [main]
     paths: ['web/**', '.github/workflows/pages.yml', 'tools/sdcard/mons/**', 'tools/dex_data.py',
-            'tools/make_sprite_gallery.py', 'tools/sprite_gallery.html', 'tools/voices.json', 'tools/dex.json']
+            'tools/make_sprite_gallery.py', 'tools/sprite_gallery.html', 'tools/voices.json', 'tools/dex.json', 'tools/assets/brand/**']
   workflow_dispatch:
 
 permissions:
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Build the KnomiDex
+      - name: Build the Catch 151 Dex
         run: |
           pip install pillow
           python3 tools/make_sprite_gallery.py site/sprites

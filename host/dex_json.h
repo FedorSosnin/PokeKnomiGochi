@@ -1,5 +1,5 @@
 #pragma once
-// The game's Pokedex, moves and type chart as JSON for the Shiny Pokedex page (tools/make_sprite_gallery.py puts it
+// The game's Pokedex, moves and type chart as JSON for the Catch 151 Dex page (tools/make_sprite_gallery.py puts it
 // in; tools/sprite_gallery.html shows it), straight from the tables and rules the game itself uses, so the page can't
 // say something the game doesn't:
 //   types   TYPE_NAME (dexfacts.h), in TY_* order

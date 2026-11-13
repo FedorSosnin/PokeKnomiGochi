@@ -5,7 +5,7 @@
 #include "../src/dex.h"
 #include "../src/zones.h"
 #include "../src/battle.h"
-#include "../host/dex_json.h"  // what the KnomiDex page says about training
+#include "../host/dex_json.h"  // what the Catch 151 Dex page says about training
 #include <string.h>
 
 // ---------------------------------------------------------------- helpers
@@ -557,8 +557,8 @@ TEST(stats, formula_base_by_genes_plus_level_and_training) {
   CHECK_EQ(p.atkStat(), (uint16_t)(52 * 110 / 100 + 10 + 20));
 }
 
-// the KnomiDex page tells how training is earned (host/dex_json.h, into tools/dex.json): it's what your Pokemon gets
-TEST(stats, knomidex_says_how_training_is_earned) {
+// the Catch 151 Dex page tells how training is earned (host/dex_json.h, into tools/dex.json): it's what your Pokemon gets
+TEST(stats, dex_page_says_how_training_is_earned) {
   Pet p;
   makePet(p, 4);
   for (const DexTrainGame &g : DEX_TRAIN_GAMES) {
