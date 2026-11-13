@@ -7,8 +7,8 @@ turn), walking, from behind, asleep, hopping, attacking, hurt, attacking from be
 some have (eating, posing, nodding, sitting, a deep breath). It reads the packs the game loads
 (tools/sdcard/mons/pNNN.bin and psNNN.bin, made by pack_pmd.py), and the page plays them the way the game does:
 each frame on its own feet (sdmon.cpp's anchors, Ivysaur's legs and Magikarp's nap included), frame times as packed,
-and a shiny's four gold sparkles (drawSparkles()). A tap on a Pokemon plays its cry, as the game
-plays it (src/cry.h): the pieces are tools/voices.json, which `make -C host voices` writes.
+and a shiny's four gold sparkles (drawSparkles()). The cry button on a Pokemon's page plays its cry, as
+the game plays it (src/cry.h): the pieces are tools/voices.json, which `make -C host voices` writes.
 
 Each Pokemon's page also says what the game's Pokedex says about it (its fact), its base stats, how it evolves, every
 move it learns with the game's power for it and when it's on its battle buttons, and what it's strong and weak

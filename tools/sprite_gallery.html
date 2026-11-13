@@ -220,7 +220,7 @@
     <div>
       <h1><span>★</span> KnomiDex</h1>
       <p class="sub">All 151 of <a href="https://github.com/FedorSosnin/PokeKnomiGochi">PokeKnomiGochi</a>'s Pokémon, regular and shiny, moving the way they do in the game.
-      Tap one for its cry, its page and its moves; tap the ball when you have it; pick a few for their match-ups.</p>
+      Tap one for its page, its moves and its cry; tap the ball when you have it; pick a few for their match-ups.</p>
     </div>
     <div class="ctl">
       <input type="search" id="q" placeholder="Name, number or type" aria-label="Find a Pokémon">
@@ -824,7 +824,6 @@ function say(m) {
 }
 function openMon(i) {
   const m = MONS[i];
-  say(m);
   dlgMon = i; dlgShiny = state.form === 'shiny';
   document.getElementById('dname').textContent = `${no(m.n)} ${m.name}`;
   const ty = document.getElementById('dtype');
@@ -843,7 +842,6 @@ function openMon(i) {
 document.querySelectorAll('#dforms button').forEach((b) => b.addEventListener('click', () => { dlgShiny = b.dataset.form === 'shiny'; fillDialog(); }));
 document.getElementById('dclose').addEventListener('click', () => dlg.close());
 document.getElementById('dsay').addEventListener('click', () => say(MONS[dlgMon]));
-tiles.addEventListener('click', (e) => { if (e.target.closest('.tile')) say(MONS[dlgMon]); });  // (a tap on it, too)
 dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
 dlg.addEventListener('close', () => { dlgCanvases.forEach((c) => live.delete(c)); dlgCanvases = []; });
 
