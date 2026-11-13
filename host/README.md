@@ -68,10 +68,14 @@ The save lives in `~/Library/Application Support/PokeMacGochi`, separate from an
 | All four arrows | Walk in PokeDungeon |
 | Space | The Knomi's button: tap for a wild battle, 1-3 s for screen off, 10 s to ask about erasing the save |
 | Drag the Pokéball ring | Move the window (the ring grows under the mouse; the screen is only for touching, with the mouse as a finger) |
-| Right-click, or the Pokéball in the menu bar | About, Show/Hide, Size, Mute Sound (the game's own sound setting) and Quit |
+| Right-click, or the Pokéball in the menu bar | About, Show/Hide, Size, CRT Screen, Mute Sound (the game's own sound setting) and Quit |
 | Cmd-Q | Quit |
 
 For testing, launching with `--console` keeps the app from taking keyboard focus and reads the Knomi's serial commands from stdin (`HEALTH`, `GAMES`, `WILD 25`...). It also takes `MOUSE down|drag|up|right x y` and `KEY down|up code`, which go through AppKit's event queue, `MENU n`, which triggers menu item n, and `HOVER on|off`, which grows or shrinks the ring as the mouse would. `POKEMACGOCHI_SAVE_DIR` points the app at another save folder.
+
+## The screen
+
+The window comes in three sizes, Small, Medium and Large (245, 300 and 478 points across, ring included), and opens Large. With the CRT screen off, the game's 466 × 466 frame is copied in whole pixels, never blurred, so it stays sharp at every size. With it on (the default), `host_crt.cpp` draws the frame as a CRT at the window's own pixels: `hostCrtPrepare()` once a frame (colour, the beam's grid, the glow and the halo), then `hostCrtRows()` in bands of rows on several cores (8 bands at once on a Mac, 4 threads on Windows): each of 233 scanlines a soft beam that swells where the picture is bright, the picture bulging as through curved glass, a reflection and a little grain. `hostCrtPoint()` maps a click back through the glass, so it lands on what's shown. The browser's page draws the same look as WebGL2 shaders (`webgame/shell.html`). Under the window, a soft drop shadow (`host_shadow.h`) sits in a window of its own that clicks pass through: a child window on the Mac, a layered window on Windows.
 
 ## Buddies
 

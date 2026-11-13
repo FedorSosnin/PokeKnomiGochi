@@ -6,7 +6,9 @@
 
 ### [▶ Play now at pokewebgochi.3dprintsos.com](https://pokewebgochi.3dprintsos.com)
 
-<p align="center"><img src="images/web-desktop.png" alt="PokeWebGochi in a browser: Charmeleon in the Field on a sunny morning, inside a Poké Ball ring" width="760"></p>
+<p align="center"><img src="images/web-desktop.webp" alt="PokeWebGochi in a browser, with the CRT screen: Charmeleon in the Field on a sunny morning, inside a Poké Ball ring" width="760"></p>
+
+**CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look. The **CRT** button under the game turns it off, and **Size** makes the screen smaller.
 
 | | | |
 |:--:|:--:|:--:|
@@ -27,7 +29,7 @@
 
 ## On your phone
 
-<img src="images/web-phone.png" alt="PokeWebGochi on a phone" width="260" align="right">
+<img src="images/web-phone.webp" alt="PokeWebGochi on a phone, with the CRT screen" width="260" align="right">
 
 Open [pokewebgochi.3dprintsos.com](https://pokewebgochi.3dprintsos.com) and tap **Share → Add to Home Screen** (iPhone) or **Install app** (Android). It gets its own icon and opens full screen, like an app.
 
