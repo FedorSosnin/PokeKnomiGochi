@@ -22,7 +22,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <style>
-  :root { --fit: min(92vw, calc(100vh - 110px)); --side: min(var(--fit), 260px);
+  :root { --fit: min(92vw, calc(100vh - 172px)); --side: min(var(--fit), 260px);
     --ring: calc(var(--side) * 0.025); --band: calc(var(--side) * 0.04); }
   html, body { margin: 0; height: 100%; background: #000; color: #9a9a9a; overflow: hidden;
     font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -48,14 +48,18 @@
   #bar button, #bar label { background: none; border: 1px solid #333; color: #9a9a9a; border-radius: 14px;
     padding: 4px 12px; font: inherit; cursor: pointer; }
   #bar button:hover, #bar label:hover { border-color: #666; color: #ddd; }
-  #hint { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 0; right: 0; text-align: center; }
-  #upd { position: absolute; top: max(34px, calc(env(safe-area-inset-top) + 24px)); left: 50%; transform: translateX(-50%);
+  /* the game's logo at the top (tools/brand_assets.py): pixel art, 2 px a pixel, the hint under it */
+  #logo { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+    width: 174px; height: 46px; image-rendering: pixelated; image-rendering: crisp-edges; }
+  #hint { position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 56px); left: 0; right: 0; text-align: center; }
+  #upd { position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 80px); left: 50%; transform: translateX(-50%);
     display: none; background: #1e7d3c; color: #fff; border: 0; border-radius: 14px; padding: 6px 14px; font: inherit; cursor: pointer; }
   #msg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #ddd; }
   @media (max-height: 520px) { #hint { display: none; } }
 </style>
 </head>
 <body>
+<img id="logo" src="logo.svg" width="174" height="46" alt="Catch 151">
 <div id="hint">Tap, hold and swipe the screen · ← → tilt · arrows walk in PokeDungeon · Space: wild battle · Space or ↑ throws on a catch</div>
 <script>  // a phone has no arrow keys or Space: it tilts
   if (matchMedia('(pointer: coarse)').matches) document.getElementById('hint').textContent = 'Tap, hold and swipe the screen · Tilt to aim';
