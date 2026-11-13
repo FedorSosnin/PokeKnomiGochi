@@ -1,6 +1,13 @@
 # PokeKnomiGochi
 
-[![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](relay/README.md)
+<p align="center">
+  <a href="https://fedorsosnin.github.io/PokeKnomiGochi/"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Ffedorsosnin.github.io%2FPokeKnomiGochi%2Fupdate.json&query=%24.version&label=Knomi%20V2&prefix=install%20v&color=e8742a&cacheSeconds=3600" alt="Install on the Knomi V2 from your browser"></a>
+  <a href="https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest/download/PokeMacGochi.dmg"><img src="https://img.shields.io/badge/download-Mac-6e6e73?logo=apple&logoColor=white" alt="Download PokeMacGochi for the Mac"></a>
+  <a href="https://github.com/FedorSosnin/PokeKnomiGochi/releases?q=win-v&expanded=true"><img src="https://img.shields.io/badge/download-Windows%20PC-0078d4" alt="Download PokeWinGochi for Windows"></a>
+  <a href="https://pokewebgochi.3dprintsos.com"><img src="https://img.shields.io/badge/play-in%20your%20browser-de2121" alt="Play PokeWebGochi in your browser"></a>
+  <a href="https://fedorsosnin.github.io/PokeKnomiGochi/sprites/"><img src="https://img.shields.io/badge/online-Pok%C3%A9dex-d4a017" alt="The online Shiny Pokédex"></a>
+  <a href="relay/README.md"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=2ea043&cacheSeconds=300" alt="Live players right now"></a>
+</p>
 
 A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made for 3D printers, and for your Mac, your Windows PC and your browser. Raise any of the original 151 as it walks through its own pixel world, battle and catch wild Pokémon, climb Knomi Tower, fill your [Pokédex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/), and play mini games by tapping and tilting.
 
