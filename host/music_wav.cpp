@@ -2,7 +2,7 @@
 // (a jingle once), at the computers' 48 kHz, as music_synth.h plays them in the game, and a page (index.html) that
 // plays them in a browser. `make -C host music`.
 //   music_wav <folder> [name]    only the songs whose track name contains name
-//   music_wav --json <file>      every Pokemon's cry as JSON, for the Shiny Pokedex (voice_json.h)
+//   music_wav --json <file>      every Pokemon's cry as JSON, for the KnomiDex (voice_json.h)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

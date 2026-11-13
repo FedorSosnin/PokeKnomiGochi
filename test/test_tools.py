@@ -3,6 +3,7 @@
 
   python3 test/test_tools.py
 """
+import json
 import os
 import re
 import shutil
@@ -232,6 +233,80 @@ class TestGeneratedFiles(unittest.TestCase):
             with open(os.path.join(ROOT, 'src', name)) as fh:
                 head = fh.read(400)
             self.assertIn('GENERATED', head, f'{name} should say it is generated')
+
+
+class TestKnomiDex(unittest.TestCase):
+    """The KnomiDex page (tools/make_sprite_gallery.py) shows tools/dex.json: the game's own tables and battle rules
+    as `make -C host dex` writes them (the host tests check it against the compiled game). Here: it agrees with the
+    sources those tables are generated from (dex_data.py, dex_stats.py, dex_moves.py through gen_moves.py,
+    dex_facts.py), so a change there that wasn't carried to the page shows up without building the host."""
+
+    @classmethod
+    def setUpClass(cls):
+        with open(os.path.join(TOOLS, 'dex.json'), encoding='utf-8') as f:
+            cls.dex = json.load(f)
+
+    def test_each_pokemon(self):
+        from dex_data import DEX, TYPE_ACCENTS
+        from dex_facts import FACTS
+        from dex_stats import BASE_STATS
+        self.assertEqual([t.lower() for t in self.dex['types']], list(TYPE_ACCENTS))
+        self.assertEqual(sorted(self.dex['mons'], key=int), [str(n) for n in range(1, 152)])
+        for num, _, name, typ, evo, lvl in DEX:
+            m = self.dex['mons'][str(num)]
+            self.assertEqual(self.dex['types'][m['type']].lower(), typ, name)
+            self.assertEqual(m['fact'], FACTS[num], f'{name}: its fact (make -C host dex)')
+            self.assertEqual(tuple(m['stats']), BASE_STATS[num], name)
+            want = [[b, lvl] for b in (134, 135, 136)] if num == 133 else [[evo, lvl]] if evo else []
+            self.assertEqual(m['evo'], want, name)
+            self.assertIn(m['rarity'], (0, 1, 2, 3), name)
+
+    def test_moves_as_the_game_counts_them(self):
+        import gen_moves
+        from dex_data import DEX
+        from dex_moves import MOVES
+        types = [t.lower() for t in self.dex['types']]
+        self.assertEqual(self.dex['moves'][0], ['STRUGGLE', 0, 50])
+        sets = gen_moves.full_learnsets()
+        for num, _, name, *_ in DEX:
+            got = [(lvl, self.dex['moves'][mid]) for lvl, mid in self.dex['mons'][str(num)]['learn']]
+            want = []
+            for lvl, mid in sets[num]:
+                mname, mtype, power, acc = MOVES[mid]
+                want.append((lvl, [gen_moves.GEN1_NAMES.get(mname, mname.upper()), types.index(mtype),
+                                   gen_moves.effective_power(mname, power, acc)]))
+            self.assertEqual(got, want, f'{name}: its moves (make -C host dex)')
+            battle = self.dex['mons'][str(num)]['battle']
+            if num == 132:  # Ditto: its foe's moves
+                self.assertEqual(battle, [], name)
+                continue
+            # the battle buttons: from level 1, each change at a higher level, only moves it has learned by then
+            self.assertEqual(battle[0][0], 1, name)
+            self.assertEqual([b[0] for b in battle], sorted({b[0] for b in battle}), name)
+            for b in battle:
+                known = {mid for lvl, mid in self.dex['mons'][str(num)]['learn'] if lvl <= b[0]} | {0}
+                self.assertTrue(set(b[1:]) <= known and 1 <= len(b[1:]) <= 2, f'{name}: {b}')
+
+    def test_type_chart(self):
+        chart, t = self.dex['chart'], {n.lower(): i for i, n in enumerate(self.dex['types'])}
+        self.assertEqual(len(chart), len(t))
+        for row in chart:
+            self.assertRegex(row, f'^[0124]{{{len(t)}}}$')
+        x2 = lambda a, d: int(chart[t[a]][t[d]])  # noqa: E731
+        self.assertEqual(x2('water', 'fire'), 4)
+        self.assertEqual(x2('electric', 'ground'), 0)
+        self.assertEqual(x2('normal', 'ghost'), 0)
+        self.assertEqual(x2('ghost', 'psychic'), 0)  # (Red and Blue's)
+        self.assertEqual(x2('fire', 'water'), 1)
+
+    def test_page_takes_it(self):
+        with open(os.path.join(TOOLS, 'sprite_gallery.html'), encoding='utf-8') as f:
+            page = f.read()
+        for hole in ('/*DATA*/[]', '/*GAME*/{}'):
+            self.assertEqual(page.count(hole), 1, f'sprite_gallery.html: where the data goes, {hole}')
+        with open(os.path.join(TOOLS, 'make_sprite_gallery.py'), encoding='utf-8') as f:
+            maker = f.read()
+        self.assertIn("'dex.json'", maker)
 
 
 class TestSpritePacks(unittest.TestCase):

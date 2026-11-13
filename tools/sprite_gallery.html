@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shiny Pokédex</title>
+<title>KnomiDex</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffcd28' d='M7 1h2v5h5v2H9v5H7V8H2V6h5z'/%3E%3Cpath fill='%23fff' d='M7 6h2v2H7z'/%3E%3C/svg%3E">
-<meta name="description" content="All 151 Gen 1 Pokémon, regular and shiny, in every view PokeKnomiGochi has: standing, turning, walking, from behind, asleep, attacking and more.">
-<!-- The template tools/make_sprite_gallery.py fills in (it puts the data where the empty list is). -->
+<meta name="description" content="PokeKnomiGochi's Pokédex: all 151 Gen 1 Pokémon, regular and shiny, in every view the game has, with what the game's Pokédex says about each, every move it learns, its match-ups, and a tick for the ones you have.">
+<!-- The template tools/make_sprite_gallery.py fills in (it puts the data where the empty list and object are). -->
 <style>
   /* dark, always (Fedor): the sprites and the sparkles look best on it, the way the game shows them */
   :root { color-scheme:dark; --bg:#1b1b25; --ink:#eeeadb; --muted:#a9a7a0; --accent:#ff7a63; --line:#3a3a48; --card:#262633;
-    --head:rgba(27,27,37,.94); --shade:rgba(0,0,0,.32); }
+    --head:rgba(27,27,37,.94); --shade:rgba(0,0,0,.32); --gold:#ffcd28; --red:#e8503a;
+    --good:#8fe09b; --goodbg:rgba(88,184,104,.2); --weak:#f2b45e; --weakbg:rgba(232,162,60,.18); --none:rgba(255,255,255,.07); }
   * { box-sizing: border-box; }
   body { margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
   a { color:var(--accent); }
@@ -25,9 +26,12 @@
   input[type=search] { font:inherit; font-size:.9rem; background:var(--card); color:var(--ink); border:1px solid var(--line);
     border-radius:8px; padding:6px 10px; width:200px; }
   .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
-  .seg button { font-size:.9rem; background:var(--card); color:var(--muted); border:0; padding:6px 11px; cursor:pointer; }
+  .seg button { font-size:.9rem; background:var(--card); color:var(--muted); border:0; padding:6px 11px; cursor:pointer; white-space:nowrap; }
   .seg button + button { border-left:1px solid var(--line); }
   .seg button[aria-pressed=true] { background:var(--accent); color:#fff; }
+  .seg small { opacity:.85; font-size:.78rem; }
+  .pickbtn { font-size:.9rem; background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:6px 12px; cursor:pointer; white-space:nowrap; }
+  .pickbtn[aria-pressed=true] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
   .views { display:flex; gap:6px; margin-top:10px; overflow-x:auto; scrollbar-width:none; }
   .views::-webkit-scrollbar { display:none; }
   .chip { font-size:.85rem; white-space:nowrap; border:1px solid var(--line); background:var(--card); color:var(--muted);
@@ -35,19 +39,40 @@
   .chip[aria-pressed=true] { background:var(--ink); border-color:var(--ink); color:var(--bg); }
   main { display:grid; grid-template-columns:repeat(auto-fill, minmax(164px, 1fr)); gap:12px; padding:16px; }
   body.both main { grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); }
-  .card { display:block; width:100%; margin:0; text-align:center; background:var(--card); border:1px solid var(--line);
-    border-top:3px solid var(--t); border-radius:10px; padding:6px 6px 8px; cursor:pointer; min-width:0; }
+  body.picking main { padding-bottom:96px; }
+  .card { position:relative; min-width:0; background:var(--card); border:1px solid var(--line); border-top:3px solid var(--t); border-radius:10px; }
   .card:hover { border-color:var(--t); }
-  .card:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .open { display:block; width:100%; margin:0; text-align:center; background:none; border:0; border-radius:10px; padding:6px 6px 8px; cursor:pointer; }
+  .open:focus-visible, .own:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
   .stage { display:flex; justify-content:center; gap:4px; }
   canvas { display:block; width:144px; height:124px; }
   body:not(.both) .card canvas + canvas { display:none; }
   .name { display:block; margin-top:2px; font-size:.82rem; font-weight:600; }
   .num { color:var(--muted); font-weight:400; }
+  /* the ball in a card's corner: yours (the form the card shows), ringed when you don't have it yet */
+  .own { position:absolute; top:4px; right:4px; width:32px; height:32px; padding:5px; border:0; background:none; border-radius:50%; cursor:pointer; line-height:0; }
+  .own svg { width:22px; height:22px; }
+  .own .bo { fill:none; stroke:var(--muted); stroke-width:1.4; opacity:.55; }
+  .own .bt, .own .bb { fill:none; }
+  .own .bl { stroke:var(--muted); stroke-width:1.4; opacity:.55; }
+  .own .bc { fill:var(--card); stroke:var(--muted); stroke-width:1.4; opacity:.7; }
+  .own[aria-pressed=true] .bo, .own[aria-pressed=true] .bl { stroke:#1b1b25; stroke-width:1.6; opacity:1; }
+  .own[aria-pressed=true] .bt { fill:var(--red); }
+  .own[aria-pressed=true] .bb { fill:#f4f1e6; }
+  .own[aria-pressed=true] .bc { fill:#f4f1e6; stroke:#1b1b25; opacity:1; }
+  .own.s[aria-pressed=true] .bt { fill:var(--gold); }
+  .own:hover .bo, .own:hover .bl, .own:hover .bc { opacity:1; }
+  body.regular .own.s, body.shiny .own.r { display:none; }
+  body.both .own.r { right:auto; left:4px; }
+  /* picked for the match-ups */
+  .card.picked { outline:2px solid var(--accent); outline-offset:1px; }
+  .card.picked::after { content:attr(data-pick); position:absolute; top:-9px; left:50%; transform:translateX(-50%); min-width:22px; height:22px;
+    border-radius:11px; background:var(--accent); color:#fff; font-size:.78rem; font-weight:700; line-height:22px; text-align:center; padding:0 6px; }
   .group { grid-column:1 / -1; display:flex; align-items:center; gap:8px; margin:10px 0 -2px; font-size:1rem; text-transform:capitalize; }
   .group:first-child { margin-top:0; }
   .group::before { content:""; width:12px; height:12px; border-radius:50%; background:var(--t); }
   .group small { color:var(--muted); font-weight:400; font-size:.82rem; }
+  .empty { grid-column:1 / -1; color:var(--muted); text-align:center; padding:30px 0; }
   .hide { display:none !important; }
   footer { color:var(--muted); font-size:.85rem; padding:8px 16px 40px; max-width:780px; }
   footer h2 { color:var(--ink); font-size:1.05rem; margin:1.2rem 0 .3rem; }
@@ -55,27 +80,137 @@
   footer p { margin:.3rem 0; }
   footer ul { margin:.2rem 0; padding-left:1.2rem; }
   footer b { color:var(--ink); }
+  /* the tray of picked ones, while picking */
+  .tray { position:fixed; left:0; right:0; bottom:0; z-index:3; background:var(--head); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    border-top:1px solid var(--line); padding:10px 16px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px; align-items:center; }
+  .tpicks { display:flex; gap:6px; overflow-x:auto; flex:1; min-width:0; scrollbar-width:none; align-items:center; }
+  .tpicks::-webkit-scrollbar { display:none; }
+  .tpicks .hint { color:var(--muted); font-size:.85rem; white-space:nowrap; }
+  .tpick { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; font-size:.8rem; font-weight:600; border-radius:999px;
+    border:1px solid var(--t); background:var(--card); padding:3px 4px 3px 10px; cursor:pointer; }
+  .tpick span { color:var(--muted); font-size:1rem; line-height:1; padding:0 4px; }
+  .go { font-size:.9rem; font-weight:600; background:var(--accent); color:#fff; border:0; border-radius:8px; padding:8px 14px; cursor:pointer; white-space:nowrap; }
+  .go:disabled { opacity:.45; cursor:default; }
+  .ghost { font-size:.9rem; background:none; color:var(--muted); border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  /* a Pokémon's own page, and the match-ups */
   dialog { border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--ink); padding:0;
     width:min(760px, calc(100vw - 32px)); max-height:calc(100vh - 32px); }
   dialog::backdrop { background:rgba(10,10,20,.55); }
+  #dlg { height:min(880px, calc(100vh - 32px)); }  /* (the same from tab to tab, so it doesn't jump) */
   .dhead { position:sticky; top:0; z-index:1; background:var(--bg); display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center;
     padding:14px 16px; border-bottom:1px solid var(--line); }
   .dhead h2 { margin:0; font-size:1.15rem; }
   .type { font-size:.75rem; font-weight:600; color:#fff; border-radius:999px; padding:2px 10px; text-transform:uppercase; }
   .close { margin-left:auto; border:0; background:none; font-size:1.5rem; line-height:1; cursor:pointer; color:var(--muted); padding:2px 6px; }
   .say { border:1px solid var(--line); background:var(--card); border-radius:999px; padding:3px 12px; cursor:pointer; font-size:.85rem; }
-  .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(156px, 1fr)); gap:10px; padding:14px 16px 4px; }
+  .about { padding:14px 16px 4px; display:grid; grid-template-columns:1fr 230px; gap:6px 24px; }
+  .fact { margin:0; font-size:1.02rem; }
+  .fact::before { content:"“"; color:var(--muted); }
+  .fact::after { content:"”"; color:var(--muted); }
+  .facts { margin:.5rem 0 0; padding:0; list-style:none; font-size:.86rem; color:var(--muted); }
+  .facts li { margin:.15rem 0; }
+  .facts b { color:var(--ink); font-weight:600; }
+  .link { background:none; border:0; padding:0; color:var(--accent); cursor:pointer; text-decoration:underline; text-underline-offset:2px; font-weight:600; }
+  .stats { margin:0; display:grid; grid-template-columns:auto 2.2em 1fr; gap:3px 8px; align-items:center; font-size:.8rem; }
+  .stats dt { color:var(--muted); }
+  .stats dd { margin:0; text-align:right; font-variant-numeric:tabular-nums; }
+  .bar { height:7px; border-radius:4px; background:var(--none); overflow:hidden; }
+  .bar i { display:block; height:100%; border-radius:4px; background:var(--t); }
+  .acts { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .tog { display:inline-flex; align-items:center; gap:6px; font-size:.85rem; border:1px solid var(--line); background:var(--card);
+    border-radius:999px; padding:4px 12px 4px 6px; cursor:pointer; }
+  .tog svg { width:20px; height:20px; }
+  .tog .bo, .tog .bl { fill:none; stroke:var(--muted); stroke-width:1.4; }
+  .tog .bt, .tog .bb { fill:none; }
+  .tog .bc { fill:var(--card); stroke:var(--muted); stroke-width:1.4; }
+  .tog[aria-pressed=true] { border-color:var(--ink); }
+  .tog[aria-pressed=true] .bo, .tog[aria-pressed=true] .bl { stroke:#1b1b25; stroke-width:1.6; }
+  .tog[aria-pressed=true] .bt { fill:var(--red); }
+  .tog.s[aria-pressed=true] .bt { fill:var(--gold); }
+  .tog[aria-pressed=true] .bb, .tog[aria-pressed=true] .bc { fill:#f4f1e6; }
+  .tog[aria-pressed=true] .bc { stroke:#1b1b25; }
+  .tabs { display:flex; gap:4px; padding:12px 16px 0; border-bottom:1px solid var(--line); }
+  .tab { border:0; background:none; color:var(--muted); padding:6px 12px 8px; cursor:pointer; font-size:.92rem; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tab[aria-selected=true] { color:var(--ink); border-bottom-color:var(--accent); font-weight:600; }
+  .panel { padding:12px 16px 4px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(156px, 1fr)); gap:10px; }
   .tile { margin:0; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:4px 4px 6px; text-align:center; font-size:.8rem; }
   .tile canvas { margin:0 auto; }
-  .dfoot { padding:6px 16px 16px; font-size:.8rem; color:var(--muted); }
+  .note { color:var(--muted); font-size:.82rem; margin:.2rem 0 .7rem; }
+  table { border-collapse:collapse; font-size:.85rem; }
+  .mt { width:100%; }
+  .mt th { text-align:left; color:var(--muted); font-weight:500; font-size:.76rem; padding:4px 6px; border-bottom:1px solid var(--line); }
+  .mt td { padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  .mt .r { text-align:right; font-variant-numeric:tabular-nums; }
+  .mt tr.mine td:nth-child(2) { font-weight:700; }
+  .mt tr.never td { color:var(--muted); }
+  .mt .tin { display:none; }
+  .tc { display:inline-block; font-size:.68rem; font-weight:600; color:#fff; border-radius:999px; padding:1px 7px; text-transform:uppercase; white-space:nowrap; }
+  .tag { display:inline-block; font-size:.68rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:0 6px; white-space:nowrap; }
+  .x { display:inline-block; min-width:2.3em; text-align:center; font-size:.78rem; font-weight:700; border-radius:6px; padding:1px 5px; font-variant-numeric:tabular-nums; }
+  .x4 { color:var(--good); background:var(--goodbg); }
+  .x1 { color:var(--weak); background:var(--weakbg); }
+  .x0 { color:var(--muted); background:var(--none); }
+  .x2 { color:var(--muted); }
+  .lists { display:grid; grid-template-columns:1fr 1fr; gap:4px 24px; }
+  .lists h4 { margin:.5rem 0 .25rem; font-size:.86rem; }
+  .lists p { margin:.2rem 0; display:flex; gap:6px; align-items:baseline; flex-wrap:wrap; font-size:.84rem; }
+  .lists p > .x { flex:none; }
+  .dfoot { padding:10px 16px 16px; font-size:.8rem; color:var(--muted); }
   .dfoot p { margin:.3rem 0; }
+  /* the match-ups */
+  .lvl { display:flex; align-items:center; gap:8px; font-size:.9rem; color:var(--muted); }
+  .lvl input { width:140px; accent-color:var(--accent); }
+  .lvl output { color:var(--ink); font-weight:600; min-width:2ch; font-variant-numeric:tabular-nums; }
+  .team { display:flex; gap:8px; padding:12px 16px 0; overflow-x:auto; }
+  .mon { position:relative; flex:none; width:118px; text-align:center; background:var(--card); border:1px solid var(--line); border-top:3px solid var(--t);
+    border-radius:10px; padding:2px 2px 6px; font-size:.78rem; }
+  .mon canvas { width:112px; height:96px; margin:0 auto; cursor:pointer; }
+  .mon b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mon .rm { position:absolute; top:0; right:2px; border:0; background:none; color:var(--muted); font-size:1.2rem; cursor:pointer; padding:0 4px; }
+  .add { flex:none; width:90px; border:1px dashed var(--line); border-radius:10px; background:none; color:var(--muted); cursor:pointer; font-size:.85rem; }
+  section.m { padding:6px 16px 4px; }
+  section.m h3 { font-size:1rem; margin:.8rem 0 .1rem; }
+  .scroll { overflow-x:auto; }
+  .grid th, .grid td { padding:4px 5px; text-align:center; }
+  .grid thead th { font-size:.72rem; font-weight:600; color:var(--ink); vertical-align:bottom; }
+  .nm { display:block; max-width:76px; margin:0 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .grid tbody th { text-align:left; font-size:.78rem; white-space:nowrap; }
+  .grid .corner { color:var(--muted); font-weight:400; text-align:left; }
+  .grid td.self { color:var(--line); }
+  .grid td small { display:block; font-size:.66rem; color:var(--muted); max-width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:1px auto 0; }
+  .grid tbody tr + tr th, .grid tbody tr + tr td { border-top:1px solid var(--line); }
+  .pairs { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:10px; margin-top:.5rem; }
+  .pair { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 12px 10px; }
+  .pair h4 { margin:0 0 .2rem; font-size:.9rem; }
+  .side { margin:.45rem 0 0; }
+  .side > div { font-size:.8rem; color:var(--muted); }
+  .side ul { margin:.15rem 0 0; padding:0; list-style:none; }
+  .side li { display:grid; grid-template-columns:1fr auto; gap:0 8px; align-items:center; font-size:.82rem; padding:3px 0; }
+  .side li .mv { font-weight:600; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .side li .why { grid-column:1; color:var(--muted); font-size:.74rem; }
+  .side li .hit { grid-column:2; grid-row:1 / span 2; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .verdict { margin:.5rem 0 0; padding-top:.4rem; border-top:1px solid var(--line); font-size:.8rem; color:var(--muted); }
+  .verdict b { color:var(--ink); }
+  .who { color:var(--t); font-weight:700; }
   @media (max-width: 560px) {
     header { position:static; }  /* (on a phone it would take half the screen) */
     main { grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; padding:12px 16px; }
     body.both main { grid-template-columns:1fr; }
     .ctl { margin-left:0; }
+    input[type=search] { width:100%; }
     canvas { width:136px; }
-    .tiles { grid-template-columns:repeat(2, 1fr); padding:12px; }
+    .tiles { grid-template-columns:repeat(2, 1fr); }
+    .tile canvas { width:100%; }
+    .about { grid-template-columns:1fr; }
+    .lists { grid-template-columns:1fr; }
+    .mt .tcol { display:none; }
+    .mt .tin { display:inline; }
+    .mt th, .mt td { padding:5px 4px; }
+    .pairs { grid-template-columns:1fr; }
+    .dhead { padding:12px; }
+    .panel, .about, section.m { padding-left:12px; padding-right:12px; }
+    .team { padding-left:12px; padding-right:12px; }
   }
 </style>
 </head>
@@ -83,8 +218,9 @@
 <header>
   <div class="top">
     <div>
-      <h1><span>★</span> Shiny Pokédex</h1>
-      <p class="sub">All 151, regular and shiny, moving the way they do in <a href="https://github.com/FedorSosnin/PokeKnomiGochi">PokeKnomiGochi</a>. Tap one to hear its cry and see all its views.</p>
+      <h1><span>★</span> KnomiDex</h1>
+      <p class="sub">All 151 of <a href="https://github.com/FedorSosnin/PokeKnomiGochi">PokeKnomiGochi</a>'s Pokémon, regular and shiny, moving the way they do in the game.
+      Tap one for its cry, its page and its moves; tap the ball when you have it; pick a few for their match-ups.</p>
     </div>
     <div class="ctl">
       <input type="search" id="q" placeholder="Name, number or type" aria-label="Find a Pokémon">
@@ -94,12 +230,22 @@
       <div class="seg" id="sorts" role="group" aria-label="Sort by">
         <button data-sort="num" aria-pressed="true">No.</button><button data-sort="type" aria-pressed="false">Type</button>
       </div>
+      <div class="seg" id="owns" role="group" aria-label="Show">
+        <button data-own="all" aria-pressed="true">All</button><button data-own="owned" aria-pressed="false">Have <small id="nhave">0</small></button><button data-own="missing" aria-pressed="false">Need <small id="nneed">151</small></button>
+      </div>
+      <button class="pickbtn" id="pickbtn" aria-pressed="false">Match-ups</button>
     </div>
   </div>
   <div class="views" id="views" role="group" aria-label="Which view"></div>
 </header>
 <main id="grid"></main>
 <footer>
+  <h2>What it says about them</h2>
+  <p>Each Pokémon's page says what its page in the game's Pokédex says, and the rest comes from the game too: its base
+  stats, when it evolves, the moves it learns, how hard they hit, and the type chart its battles use. So the match-ups here
+  are the game's. Its battles are simpler than Red and Blue's: each Pokémon has one type, and each move has one
+  number for its power, with Red and Blue's accuracy, hits in a row and turns spent charging folded in.</p>
+  <p><b>The balls</b> you tap are only in this browser, on this device: nothing is sent anywhere.</p>
   <h2>Where they come from</h2>
   <p>The sprites are the work of the <a href="https://github.com/PMDCollab/SpriteCollab">PMD Sprite Collaboration</a>'s
   artists, who share them under <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Each
@@ -123,6 +269,11 @@
   don't use them commercially. Pokémon and its names, designs and characters are © Nintendo, Game Freak and The Pokémon
   Company. This is an unofficial, non-commercial fan project, not affiliated with any of them.</p>
 </footer>
+<div class="tray hide" id="tray" role="region" aria-label="Picked for the match-ups">
+  <div class="tpicks" id="tpicks"></div>
+  <button class="go" id="tgo" disabled>See match-ups</button>
+  <button class="ghost" id="tdone">Done</button>
+</div>
 <dialog id="dlg" aria-labelledby="dname">
   <div class="dhead">
     <h2 id="dname"></h2><span class="type" id="dtype"></span>
@@ -132,14 +283,45 @@
     <button class="say" id="dsay">♪ Its cry</button>
     <button class="close" id="dclose" aria-label="Close">×</button>
   </div>
-  <div class="tiles" id="tiles"></div>
+  <div class="about" id="dabout">
+    <div>
+      <p class="fact" id="dfact"></p>
+      <ul class="facts" id="dfacts"></ul>
+    </div>
+    <dl class="stats" id="dstats"></dl>
+    <div class="acts">
+      <button class="tog r" id="downr" aria-pressed="false"></button>
+      <button class="tog s" id="downs" aria-pressed="false"></button>
+      <button class="tog" id="dpick" aria-pressed="false"></button>
+    </div>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="views" id="tab-views" aria-controls="p-views">Views</button>
+    <button class="tab" role="tab" data-tab="moves" id="tab-moves" aria-controls="p-moves">Moves</button>
+    <button class="tab" role="tab" data-tab="types" id="tab-types" aria-controls="p-types">Strong and weak</button>
+  </div>
+  <div class="panel" role="tabpanel" id="p-views" aria-labelledby="tab-views"><div class="tiles" id="tiles"></div></div>
+  <div class="panel" role="tabpanel" id="p-moves" aria-labelledby="tab-moves"></div>
+  <div class="panel" role="tabpanel" id="p-types" aria-labelledby="tab-types"></div>
   <div class="dfoot">
     <p id="dreg"></p><p id="dshi"></p>
     <p><a id="dlink" target="_blank" rel="noopener">Its original sprites on SpriteCollab</a></p>
   </div>
 </dialog>
+<dialog id="mdlg" aria-labelledby="mtitle">
+  <div class="dhead">
+    <h2 id="mtitle">Match-ups</h2>
+    <label class="lvl">Level <input type="range" id="mlvl" min="1" max="100" value="50"><output id="mlvlo" for="mlvl">50</output></label>
+    <button class="close" id="mclose" aria-label="Close">×</button>
+  </div>
+  <div class="team" id="mteam"></div>
+  <div id="mbody"></div>
+</dialog>
 <script>
 const MONS = /*DATA*/[];
+// the game's own tables (tools/dex.json, from dex.h, moves.h, dexfacts.h and battle.h): its types (TY_* order) and
+// their colours, the type chart (btlEffect(), x2: 0 none, 1 half, 2 normal, 4 double) and its moves ([name, type, power])
+const GAME = /*GAME*/{};
 // the views: [key, label, the pack's action]. Every Pokémon has these; -1 is the Pokédex entry's turn
 const VIEWS = [['idle', 'Idle', 0], ['turn', 'Turn', -1], ['walk', 'Walk', 2], ['back', 'Back', 18], ['sleep', 'Sleep', 3],
   ['hop', 'Hop', 8], ['attack', 'Attack', 6], ['hurt', 'Hurt', 5], ['battle', 'Battle', 19]];
@@ -152,8 +334,10 @@ const ACT = Object.fromEntries([...VIEWS, ...EXTRAS].map(([k, , a]) => [k, a]));
 const TURN = [12, 17, 1, 16, 13, 15, 2, 14];
 const ONCE = new Set(['attack', 'hurt', 'battle', 'backhurt']);  // these rest a moment before they go again
 const W = 144, H = 124, GROUND = 108;
+const PICK_MAX = 6;
 
-const state = { form: 'regular', view: 'idle', sort: 'num' };  // regular first (Fedor)
+const state = { form: 'regular', view: 'idle', sort: 'num', own: 'all', pick: false, tab: 'views', level: 50 };  // regular first (Fedor)
+const picks = [];  // indices into MONS, in the order picked
 const sheets = new Map();
 function sheet(m, shiny) {
   const key = m.id + (shiny ? '-shiny' : '');
@@ -161,6 +345,9 @@ function sheet(m, shiny) {
   if (!im) { im = new Image(); im.src = `img/${key}.png`; sheets.set(key, im); }
   return im;
 }
+const byNum = new Map(MONS.map((m, i) => [m.n, i]));
+const no = (n) => `#${String(n).padStart(3, '0')}`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 function actOf(meta, view, t) {  // [action, frame or null]
   if (view === 'turn') return TURN.every((a) => meta[a]) ? [TURN[Math.floor(t / 250) % 8], 0] : [0, null];
@@ -252,24 +439,92 @@ const watch = new IntersectionObserver((es) => es.forEach((e) => {
   if (e.isIntersecting) { size(e.target); live.add(e.target); } else live.delete(e.target);
 }), { rootMargin: '150px' });
 
+// ---- the game's rules, for the pages and the match-ups (battle.h) ----
+const tname = (t) => GAME.types[t];
+const tchip = (t) => `<span class="tc" style="background:${GAME.colors[t]}">${tname(t)}</span>`;
+const effect = (moveType, defType) => +GAME.chart[moveType][defType];  // btlEffect(): x2
+const XLABEL = { 0: '×0', 1: '×½', 2: '×1', 4: '×2' };
+const XWORD = { 0: 'no effect', 1: 'not very effective', 2: '', 4: 'super effective' };
+const xtag = (e) => `<span class="x x${e}">${XLABEL[e]}</span>`;
+// btlMovesFor(): the moves on its battle buttons at a level (its best of its own type and its best other one; one
+// when that's all it knows, Struggle before it knows any). Ditto fights with its foe's.
+function battleMoves(m, lvl, foe) {
+  if (!m.g.battle.length) return foe && foe.g.battle.length ? battleMoves(foe, lvl) : [0];
+  let cur = m.g.battle[0];
+  for (const b of m.g.battle) if (b[0] <= lvl) cur = b;
+  return cur.slice(1);
+}
+// how hard a move hits a Pokémon, by btlDamage()'s rules without the stats and level: its power, half again when
+// it's the attacker's own type, and the type chart's
+function hitOf(id, a, d) {
+  const [name, t, p] = GAME.moves[id];
+  const e = effect(t, d.g.type), own = t === a.g.type;
+  return { id, name, t, p, e, own, v: Math.round(p * (own ? 1.5 : 1) * e / 2) };
+}
+const hitsOn = (a, d, lvl) => [...new Set(battleMoves(a, lvl, d))].map((id) => hitOf(id, a, d)).sort((x, y) => y.v - x.v);
+
+// ---- what you have: the viewer's own, kept in their browser ----
+// { v: 1, mons: { "25": { regular: { owned: true }, shiny: { owned: true } } } }: a record per Pokémon and form, so
+// more can go in later (its stars, a nickname, what a save exported from the game says) without a new key
+const STORE = 'knomidex';
+let book = loadBook();
+function loadBook() {
+  try {
+    const b = JSON.parse(localStorage.getItem(STORE));
+    if (b && b.v === 1 && b.mons && typeof b.mons === 'object') return b;
+  } catch (e) { /* (none yet, or storage is off) */ }
+  return { v: 1, mons: {} };
+}
+function saveBook() { try { localStorage.setItem(STORE, JSON.stringify(book)); } catch (e) { /* (private mode) */ } }
+const owned = (n, form) => !!(book.mons[n] && book.mons[n][form] && book.mons[n][form].owned);
+function setOwned(n, form, on) {
+  const r = book.mons[n] || (book.mons[n] = {}), f = r[form] || (r[form] = {});
+  if (on) f.owned = true; else delete f.owned;
+  if (!Object.keys(f).length) delete r[form];
+  if (!Object.keys(r).length) delete book.mons[n];
+  saveBook();
+  marks();
+}
+// which you have, for the form the grid shows: side by side, either form counts
+const have = (n) => (state.form === 'both' ? owned(n, 'regular') || owned(n, 'shiny') : owned(n, state.form));
+const BALL = '<svg viewBox="0 0 22 22" aria-hidden="true"><path class="bt" d="M2 11a9 9 0 0 1 18 0z"/><path class="bb" d="M2 11a9 9 0 0 0 18 0z"/>'
+  + '<circle class="bo" cx="11" cy="11" r="9"/><path class="bl" d="M2 11h18"/><circle class="bc" cx="11" cy="11" r="2.8"/></svg>';
+
+// ---- the grid ----
 const grid = document.getElementById('grid');
+const empty = document.createElement('p');
+empty.className = 'empty hide';
 const cards = MONS.map((m, i) => {
+  const card = document.createElement('div');
+  card.className = 'card'; card.style.setProperty('--t', m.c);
+  card.dataset.q = `${m.n} ${m.name.toLowerCase()}`;
   const b = document.createElement('button');
-  b.className = 'card'; b.style.setProperty('--t', m.c);
-  b.dataset.q = `${m.n} ${m.name.toLowerCase()}`;
-  b.setAttribute('aria-label', `${m.name}, all its views`);
+  b.className = 'open';
+  b.setAttribute('aria-label', `${m.name}, its page`);
   const stage = document.createElement('div');
   stage.className = 'stage';
   const reg = canvas(i, false, m.name), shi = canvas(i, true, `Shiny ${m.name}`);
   stage.append(reg, shi);
   b.append(stage);
-  b.insertAdjacentHTML('beforeend', `<span class="name"><span class="num">#${String(m.n).padStart(3, '0')}</span> ${m.name}</span>`);
-  b.addEventListener("click", () => openMon(i));
-  grid.append(b);
-  b.canvases = [reg, shi];
-  b.i = i;
-  return b;
+  b.insertAdjacentHTML('beforeend', `<span class="name"><span class="num">${no(m.n)}</span> ${m.name}</span>`);
+  b.addEventListener('click', () => (state.pick ? togglePick(i) : openMon(i)));
+  card.append(b);
+  for (const form of ['regular', 'shiny']) {
+    const o = document.createElement('button');
+    o.className = `own ${form[0]}`;
+    o.innerHTML = BALL;
+    o.title = form === 'shiny' ? 'Have its shiny?' : 'Have it?';
+    o.setAttribute('aria-label', `I have ${form === 'shiny' ? 'shiny ' : ''}${m.name}`);
+    o.addEventListener('click', () => setOwned(m.n, form, !owned(m.n, form)));
+    card.append(o);
+  }
+  grid.append(card);
+  card.canvases = [reg, shi];
+  card.balls = card.querySelectorAll('.own');
+  card.i = i;
+  return card;
 });
+grid.append(empty);
 function regard() {  // which canvases the grid shows
   for (const b of cards) {
     const [reg, shi] = b.canvases;
@@ -281,6 +536,18 @@ function regard() {  // which canvases the grid shows
     if (!b.classList.contains('hide')) shown.forEach((c) => watch.observe(c));
   }
 }
+function marks() {  // the balls, the counts, and what the filter leaves
+  for (const b of cards) {
+    const n = MONS[b.i].n;
+    b.balls[0].setAttribute('aria-pressed', String(owned(n, 'regular')));
+    b.balls[1].setAttribute('aria-pressed', String(owned(n, 'shiny')));
+  }
+  const got = MONS.filter((m) => have(m.n)).length;
+  document.getElementById('nhave').textContent = got;
+  document.getElementById('nneed').textContent = MONS.length - got;
+  if (dlg.open) fillOwn();
+  filter();
+}
 
 const views = document.getElementById('views');
 for (const [k, label] of VIEWS) {
@@ -289,7 +556,7 @@ for (const [k, label] of VIEWS) {
   b.addEventListener('click', () => { state.view = k; sync(); });
   views.append(b);
 }
-document.querySelectorAll('#forms button').forEach((b) => b.addEventListener('click', () => { state.form = b.dataset.form; sync(); regard(); }));
+document.querySelectorAll('#forms button').forEach((b) => b.addEventListener('click', () => { state.form = b.dataset.form; sync(); marks(); }));
 // by type: each type under its own heading, in the order the Pokédex first meets them, by number within each
 const TYPES = [...new Set(MONS.map((m) => m.type))];
 const heads = new Map(TYPES.map((t) => {
@@ -305,9 +572,10 @@ function arrange() {
     heads.forEach((h) => h.remove());
     grid.append(...cards);
   }
+  grid.append(empty);
   count();
 }
-function count() {  // each heading's count, of the ones the search leaves
+function count() {  // each heading's count, of the ones the search and the filter leave
   for (const [t, h] of heads) {
     const n = cards.filter((b) => MONS[b.i].type === t && !b.classList.contains('hide')).length;
     h.innerHTML = `${t} <small>${n}</small>`;
@@ -315,25 +583,72 @@ function count() {  // each heading's count, of the ones the search leaves
   }
 }
 document.querySelectorAll('#sorts button').forEach((b) => b.addEventListener('click', () => { state.sort = b.dataset.sort; sync(); arrange(); }));
+document.querySelectorAll('#owns button').forEach((b) => b.addEventListener('click', () => { state.own = b.dataset.own; sync(); filter(); }));
 const q = document.getElementById('q');
-q.addEventListener('input', () => {
+function filter() {  // the search and the have/need filter
   const v = q.value.trim().toLowerCase().replace(/^#0*/, '');
+  let shown = 0;
   for (const b of cards) {
     const [num, name] = b.dataset.q.split(' ');
-    b.classList.toggle('hide', v !== '' && !(name.includes(v) || num === v || MONS[b.i].type === v));
+    const m = MONS[b.i];
+    const hit = v === '' || name.includes(v) || num === v || m.type === v;
+    const ok = state.own === 'all' || (state.own === 'owned') === have(m.n);
+    b.classList.toggle('hide', !(hit && ok));
+    if (hit && ok) shown++;
   }
+  empty.textContent = state.own === 'owned' && !v ? 'None yet: tap the ball on a Pokémon you have.'
+    : state.own === 'missing' && !v ? 'You have them all!' : 'No Pokémon like that.';
+  empty.classList.toggle('hide', shown > 0);
   count();
   regard();
-});
+}
+q.addEventListener('input', filter);
 function sync() {
-  document.body.className = state.form;
+  document.body.className = state.form + (state.pick ? ' picking' : '');
   document.querySelectorAll('#forms button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.form === state.form)));
   document.querySelectorAll('#sorts button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.sort === state.sort)));
+  document.querySelectorAll('#owns button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.own === state.own)));
   views.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
-  history.replaceState(null, '', `#${state.form}/${state.view}${state.sort === 'type' ? '/type' : ''}`);
+  // #form/view[/type][/owned or /missing][/vs=25-7-4@50]: the match-ups' address only while they're open
+  const vs = mdlg.open && picks.length ? `/vs=${picks.map((i) => MONS[i].n).join('-')}@${state.level}` : '';
+  history.replaceState(null, '', `#${state.form}/${state.view}${state.sort === 'type' ? '/type' : ''}${state.own !== 'all' ? '/' + state.own : ''}${vs}`);
 }
 
-// a Pokémon's own page: every view it has
+// ---- picking some for the match-ups ----
+const tray = document.getElementById('tray'), tpicks = document.getElementById('tpicks'), pickbtn = document.getElementById('pickbtn');
+function setPicking(on) {
+  state.pick = on;
+  pickbtn.setAttribute('aria-pressed', String(on));
+  tray.classList.toggle('hide', !on);
+  sync();
+  drawPicks();
+}
+function togglePick(i, keep) {
+  const at = picks.indexOf(i);
+  if (at >= 0) { if (!keep) picks.splice(at, 1); } else if (picks.length < PICK_MAX) picks.push(i);
+  else { tpicks.querySelector('.hint')?.remove(); tpicks.insertAdjacentHTML('afterbegin', `<span class="hint">${PICK_MAX} at most</span>`); return; }
+  drawPicks();
+}
+function drawPicks() {
+  cards.forEach((b) => { const k = picks.indexOf(b.i); b.classList.toggle('picked', k >= 0); b.dataset.pick = k + 1; });
+  tpicks.innerHTML = picks.length ? '' : '<span class="hint">Tap the Pokémon to compare, up to six.</span>';
+  for (const i of picks) {
+    const m = MONS[i], t = document.createElement('button');
+    t.className = 'tpick'; t.style.setProperty('--t', m.c);
+    t.innerHTML = `${esc(m.name)}<span aria-hidden="true">×</span>`;
+    t.setAttribute('aria-label', `Take ${m.name} out`);
+    t.addEventListener('click', () => togglePick(i));
+    tpicks.append(t);
+  }
+  document.getElementById('tgo').disabled = picks.length < 2;
+  if (mdlg.open) fillMatch();
+  if (dlg.open) fillOwn();
+}
+pickbtn.addEventListener('click', () => setPicking(!state.pick));
+document.getElementById('tdone').addEventListener('click', () => setPicking(false));
+document.getElementById('tgo').addEventListener('click', () => openMatch());
+
+// ---- a Pokémon's own page: what the game's Pokédex says, its stats, its moves, its views ----
 const dlg = document.getElementById('dlg'), tiles = document.getElementById('tiles');
 let dlgMon = 0, dlgShiny = false, dlgCanvases = [];
 function fillDialog() {
@@ -353,8 +668,100 @@ function fillDialog() {
     dlgCanvases.push(c);
   }
   document.querySelectorAll('#dforms button').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.form === 'shiny') === dlgShiny)));
-  requestAnimationFrame(() => dlgCanvases.forEach((c) => { size(c); live.add(c); }));
+  if (state.tab === 'views') requestAnimationFrame(() => dlgCanvases.forEach((c) => { size(c); live.add(c); }));
 }
+const monLink = (n) => { const m = MONS[byNum.get(n)]; return `<button class="link" data-n="${n}">${esc(m.name)}</button>`; };
+const STATS = [['HP', 0], ['Attack', 1], ['Defense', 2], ['Speed', 3]];
+function fillAbout() {
+  const m = MONS[dlgMon], g = m.g;
+  document.getElementById('dfact').textContent = g.fact;
+  const li = [];
+  const from = MONS.find((o) => o.g.evo.some(([to]) => to === m.n));
+  if (from) li.push(`Evolves from ${monLink(from.n)} at <b>level ${from.g.evo[0][1]}</b>`);
+  if (g.evo.length > 1) li.push(`Evolves into ${g.evo.map(([to]) => monLink(to)).join(', ').replace(/, ([^,]*)$/, ' or $1')} at <b>level ${g.evo[0][1]}</b>, whichever it likes`);
+  else if (g.evo.length) li.push(`Evolves into ${monLink(g.evo[0][0])} at <b>level ${g.evo[0][1]}</b>`);
+  else li.push('Its final form');
+  li.push(['Only by evolving', 'Hatches from an egg', 'Hatches from a <b>rare</b> egg', 'Hatches from a <b>legendary</b> egg'][g.rarity]
+    + (g.min > 1 ? `; met from level ${g.min}` : ''));
+  document.getElementById('dfacts').innerHTML = li.map((s) => `<li>${s}</li>`).join('');
+  document.getElementById('dstats').style.setProperty('--t', m.c);
+  document.getElementById('dstats').innerHTML = STATS.map(([k, j]) =>
+    `<dt>${k}</dt><dd>${g.stats[j]}</dd><dd class="bar"><i style="width:${Math.min(100, g.stats[j] / 1.6)}%"></i></dd>`).join('');
+  fillOwn();
+}
+function fillOwn() {
+  const m = MONS[dlgMon];
+  const r = document.getElementById('downr'), s = document.getElementById('downs'), p = document.getElementById('dpick');
+  r.setAttribute('aria-pressed', String(owned(m.n, 'regular')));
+  s.setAttribute('aria-pressed', String(owned(m.n, 'shiny')));
+  r.innerHTML = `${BALL} ${owned(m.n, 'regular') ? 'I have it' : 'Have it?'}`;
+  s.innerHTML = `${BALL} ${owned(m.n, 'shiny') ? 'I have its shiny' : 'Have its shiny?'}`;
+  const on = picks.includes(dlgMon);
+  p.setAttribute('aria-pressed', String(on));
+  p.textContent = on ? '✓ In the match-ups' : '+ Add to match-ups';
+}
+document.getElementById('downr').addEventListener('click', () => { const n = MONS[dlgMon].n; setOwned(n, 'regular', !owned(n, 'regular')); });
+document.getElementById('downs').addEventListener('click', () => { const n = MONS[dlgMon].n; setOwned(n, 'shiny', !owned(n, 'shiny')); });
+document.getElementById('dpick').addEventListener('click', () => {
+  if (!state.pick) setPicking(true);
+  togglePick(dlgMon);
+});
+// the levels a move is on its battle buttons: "16-42", "from 43", or none (a stronger one kept its button)
+function onButtons(g, id) {
+  const spans = [];
+  g.battle.forEach((b, k) => {
+    if (!b.slice(1).includes(id)) return;
+    const to = k + 1 < g.battle.length ? g.battle[k + 1][0] - 1 : 100;
+    const last = spans[spans.length - 1];
+    if (last && last[1] === b[0] - 1) last[1] = to; else spans.push([b[0], to]);
+  });
+  return spans.map(([a, b]) => (b === 100 ? `from ${a}` : a === b ? `${a}` : `${a}–${b}`)).join(', ');
+}
+function fillMoves() {
+  const m = MONS[dlgMon], g = m.g, el = document.getElementById('p-moves');
+  if (m.n === 132) {
+    el.innerHTML = '<p class="note">It has no moves of its own: in a battle it turns into its foe and fights with its foe\'s moves.</p>';
+    return;
+  }
+  let rows = '';
+  const struggle = onButtons(g, 0);
+  if (struggle) rows += `<tr class="never"><td class="r">–</td><td>${GAME.moves[0][0]} <span class="tin">${tchip(GAME.moves[0][1])}</span></td><td class="tcol">${tchip(GAME.moves[0][1])}</td><td class="r">${GAME.moves[0][2]}</td><td>${struggle}</td></tr>`;
+  for (const [lvl, id] of g.learn) {
+    const [name, t, p] = GAME.moves[id], on = onButtons(g, id), mine = t === g.type;
+    rows += `<tr class="${mine ? 'mine' : ''}${on ? '' : ' never'}"><td class="r">${lvl}</td><td>${name} <span class="tin">${tchip(t)}</span>${mine ? ' <span class="tag" title="Its own type: half as strong again">own type</span>' : ''}</td>`
+      + `<td class="tcol">${tchip(t)}</td><td class="r">${p}</td><td>${on || '<span title="A stronger move it already knows keeps its button">never</span>'}</td></tr>`;
+  }
+  el.innerHTML = `<p class="note">Every move it learns as it grows, at the level it learns it (level 1: from the start).
+    In a battle it has two buttons: its strongest move of its own type, and its strongest other one. A move only takes
+    a button from a weaker one, so some never get one.${struggle ? ' Until it knows a move it fights with Struggle.' : ''}</p>
+    <table class="mt"><thead><tr><th class="r">Level</th><th>Move</th><th class="tcol">Type</th><th class="r">Power</th><th>On its buttons</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function fillTypes() {
+  const m = MONS[dlgMon], g = m.g, el = document.getElementById('p-types');
+  const T = GAME.types.map((_, t) => t);
+  const list = (ts) => ts.map(tchip).join(' ');
+  const row = (e, ts, what) => (ts.length ? `<p>${xtag(e)} ${what} ${list(ts)}</p>` : '');
+  const out = [4, 1, 0].map((e) => row(e, T.filter((t) => effect(g.type, t) === e), 'on')).join('');
+  const inn = [4, 1, 0].map((e) => row(e, T.filter((t) => effect(t, g.type) === e), 'from')).join('');
+  el.innerHTML = `<p class="note">By the type chart the game's battles use. A move of the attacker's own type hits half as hard again.</p>
+    <div class="lists"><div><h4>Its ${tname(g.type)} moves hit</h4>${out || '<p>Everything the same</p>'}</div>
+    <div><h4>It takes</h4>${inn || '<p>The same from everything</p>'}</div></div>
+    <p style="margin-top:12px"><button class="ghost" id="dcompare">Compare it with others</button></p>`;
+  document.getElementById('dcompare').addEventListener('click', () => { dlg.close(); setPicking(true); togglePick(dlgMon, true); });
+}
+function showTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('#dlg .tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+  for (const p of ['views', 'moves', 'types']) document.getElementById(`p-${p}`).classList.toggle('hide', p !== tab);
+  dlgCanvases.forEach((c) => live.delete(c));
+  if (tab === 'views') requestAnimationFrame(() => dlgCanvases.forEach((c) => { size(c); live.add(c); }));
+}
+document.querySelectorAll('#dlg .tab').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+dlg.addEventListener('click', (e) => {
+  const l = e.target.closest('.link');
+  if (l) openMon(byNum.get(+l.dataset.n));
+});
+
 // its cry, as in the game (src/cry.h; the same notes: tools/voices.json), played the way CryPlayer plays them: in
 // steps, 60 a second, each its pitch (swept, or trilled), its volumes and its pulse width; two pulse waves, the second
 // a near unison or a harmony, and noise under them (the short loop, metallic, for some)
@@ -419,14 +826,19 @@ function openMon(i) {
   const m = MONS[i];
   say(m);
   dlgMon = i; dlgShiny = state.form === 'shiny';
-  document.getElementById('dname').textContent = `#${String(m.n).padStart(3, '0')} ${m.name}`;
+  document.getElementById('dname').textContent = `${no(m.n)} ${m.name}`;
   const ty = document.getElementById('dtype');
   ty.textContent = m.type; ty.style.background = m.c;
   document.getElementById('dreg').textContent = `Regular sprite by ${m.cr[0]}.`;
   document.getElementById('dshi').textContent = `Shiny sprite by ${m.cr[1]}.`;
   document.getElementById('dlink').href = `https://sprites.pmdcollab.org/#/${String(m.n).padStart(4, '0')}`;
-  dlg.showModal();
+  if (!dlg.open) dlg.showModal();
+  dlg.scrollTop = 0;
+  fillAbout();
+  fillMoves();
+  fillTypes();
   fillDialog();
+  showTab(state.tab);
 }
 document.querySelectorAll('#dforms button').forEach((b) => b.addEventListener('click', () => { dlgShiny = b.dataset.form === 'shiny'; fillDialog(); }));
 document.getElementById('dclose').addEventListener('click', () => dlg.close());
@@ -435,14 +847,117 @@ tiles.addEventListener('click', (e) => { if (e.target.closest('.tile')) say(MONS
 dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
 dlg.addEventListener('close', () => { dlgCanvases.forEach((c) => live.delete(c)); dlgCanvases = []; });
 
-const [hf, hv, hs] = location.hash.slice(1).split('/');
+// ---- the match-ups: the picked ones against each other, both ways, by the game's rules ----
+const mdlg = document.getElementById('mdlg'), mlvl = document.getElementById('mlvl'), mlvlo = document.getElementById('mlvlo');
+let mCanvases = [];
+function openMatch() {
+  if (picks.length < 2) return;
+  if (!mdlg.open) mdlg.showModal();
+  mdlg.scrollTop = 0;
+  fillMatch();
+  sync();
+}
+function fillMatch() {
+  if (picks.length < 1) { mdlg.close(); return; }
+  const L = state.level, ms = picks.map((i) => MONS[i]), shiny = state.form === 'shiny';
+  mlvl.value = L; mlvlo.textContent = L;
+  // the team, moving
+  const team = document.getElementById('mteam');
+  mCanvases.forEach((c) => live.delete(c));
+  mCanvases = [];
+  team.textContent = '';
+  picks.forEach((i) => {
+    const m = MONS[i], d = document.createElement('div');
+    d.className = 'mon'; d.style.setProperty('--t', m.c);
+    const c = canvas(i, shiny, `${shiny ? 'Shiny ' : ''}${m.name}`, 'idle');
+    c.addEventListener('click', () => openMon(i));
+    d.append(c);
+    d.insertAdjacentHTML('beforeend', `<b>${esc(m.name)}</b>${tchip(m.g.type)}<button class="rm" aria-label="Take ${esc(m.name)} out">×</button>`);
+    d.querySelector('.rm').addEventListener('click', () => { togglePick(i); if (picks.length < 2) mdlg.close(); sync(); });
+    team.append(d);
+    mCanvases.push(c);
+  });
+  if (picks.length < PICK_MAX) {
+    const a = document.createElement('button');
+    a.className = 'add'; a.textContent = '+ Add';
+    a.addEventListener('click', () => { mdlg.close(); setPicking(true); });
+    team.append(a);
+  }
+  requestAnimationFrame(() => mCanvases.forEach((c) => { size(c); live.add(c); }));
+
+  let html = '';
+  // who hits whom: each one's hardest hit on each other one (three or more)
+  if (ms.length > 2) {
+    let rows = '';
+    for (const a of ms) {
+      rows += `<tr><th style="--t:${a.c}"><span class="who">${esc(a.name)}</span></th>`;
+      for (const d of ms) {
+        if (a === d) { rows += '<td class="self">–</td>'; continue; }
+        const h = hitsOn(a, d, L)[0];
+        rows += `<td title="${esc(a.name)}'s ${h.name} on ${esc(d.name)}: ${h.v}">${xtag(h.e)}<small>${h.name} ${h.v}</small></td>`;
+      }
+      rows += '</tr>';
+    }
+    html += `<section class="m"><h3>Who hits whom</h3><p class="note">Each one's hardest hit on each of the others along the top, of the two moves it has at level ${L}: how well it works, the move, and how hard it hits.</p>
+      <div class="scroll"><table class="grid"><thead><tr><th class="corner">hits →</th>${ms.map((d) => `<th title="${esc(d.name)}"><span class="nm">${esc(d.name)}</span></th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  }
+  // each pair, both ways
+  const side = (a, d) => {
+    const hs = hitsOn(a, d, L);
+    const dittoNote = a.n === 132 ? ' (its foe\'s, as Ditto)' : '';
+    return `<div class="side" style="--t:${a.c}"><div><span class="who">${esc(a.name)}</span> on ${esc(d.name)}${dittoNote}</div><ul>`
+      + hs.map((h) => `<li><span class="mv">${h.name} ${tchip(h.t)}</span><span class="why">power ${h.p}${h.own ? ' · own type ×1.5' : ''}${XWORD[h.e] ? ' · ' + XWORD[h.e] : ''}</span>`
+        + `<span class="hit">${xtag(h.e)} ${h.v}</span></li>`).join('') + '</ul></div>';
+  };
+  let pairs = '';
+  for (let x = 0; x < ms.length; x++) {
+    for (let y = x + 1; y < ms.length; y++) {
+      const a = ms[x], b = ms[y], ha = hitsOn(a, b, L)[0].v, hb = hitsOn(b, a, L)[0].v;
+      const sa = a.g.stats[3], sb = b.g.stats[3];
+      const harder = ha === hb ? 'Hits as hard as each other' : `Hits harder: <b>${esc((ha > hb ? a : b).name)}</b> (${Math.max(ha, hb)} to ${Math.min(ha, hb)})`;
+      const faster = sa === sb ? 'as fast as each other' : `faster: <b>${esc((sa > sb ? a : b).name)}</b> (speed ${Math.max(sa, sb)} to ${Math.min(sa, sb)})`;
+      pairs += `<div class="pair"><h4>${esc(a.name)} and ${esc(b.name)}</h4>${side(a, b)}${side(b, a)}<p class="verdict">${harder}; ${faster}.</p></div>`;
+    }
+  }
+  html += `<section class="m"><h3>${ms.length > 2 ? 'Each pair' : 'Head to head'}, both ways</h3><p class="note">The two moves on each one's battle buttons at level ${L},
+    the harder hit first: its power, half again for its own type, then the type chart's. Who's faster hits first.</p><div class="pairs">${pairs}</div></section>`;
+  // weak spots: what each type's moves do to each of them
+  let rows = '';
+  GAME.types.forEach((_, t) => {
+    const es = ms.map((d) => effect(t, d.g.type));
+    rows += `<tr><th>${tchip(t)}</th>${es.map((e) => `<td>${e === 2 ? '<span class="x x2">·</span>' : xtag(e)}</td>`).join('')}</tr>`;
+  });
+  html += `<section class="m"><h3>What hurts them</h3><p class="note">What a move of each type does to each of them.</p>
+    <div class="scroll"><table class="grid"><thead><tr><th class="corner">move ↓</th>${ms.map((d) => `<th title="${esc(d.name)}"><span class="nm">${esc(d.name)}</span></th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  document.getElementById('mbody').innerHTML = html + '<div style="height:12px"></div>';
+}
+mlvl.addEventListener('input', () => { state.level = +mlvl.value; fillMatch(); sync(); });
+document.getElementById('mclose').addEventListener('click', () => mdlg.close());
+mdlg.addEventListener('click', (e) => { if (e.target === mdlg) mdlg.close(); });
+mdlg.addEventListener('close', () => { mCanvases.forEach((c) => live.delete(c)); mCanvases = []; sync(); });
+
+// the address: #form/view[/type][/owned or /missing][/vs=25-7-4@50] (older ones, #form/view[/type], still work)
+const [hf, hv, ...rest] = location.hash.slice(1).split('/');
 if (['shiny', 'regular', 'both'].includes(hf)) state.form = hf;
 if (VIEWS.some(([k]) => k === hv)) state.view = hv;
-if (hs === 'type') state.sort = 'type';
+let openVs = false;
+for (const r of rest) {
+  if (r === 'type') state.sort = 'type';
+  if (r === 'owned' || r === 'missing') state.own = r;
+  const v = /^vs=([\d-]+)(?:@(\d+))?$/.exec(r);
+  if (v) {
+    for (const n of v[1].split('-')) if (byNum.has(+n) && !picks.includes(byNum.get(+n)) && picks.length < PICK_MAX) picks.push(byNum.get(+n));
+    if (v[2]) state.level = Math.min(100, Math.max(1, +v[2]));
+    openVs = picks.length >= 2;
+  }
+}
 sync();
 arrange();
-regard();
+marks();
+if (picks.length) setPicking(true);
+if (openVs) openMatch();
 addEventListener('resize', () => live.forEach(size));
+addEventListener('storage', (e) => { if (e.key === STORE) { book = loadBook(); marks(); } });  // (another tab ticked one)
 
 let last = 0;
 function tick(now) {

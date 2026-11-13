@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The sprite gallery, published with the installer at https://fedorsosnin.github.io/PokeKnomiGochi/sprites/
+"""The KnomiDex (the sprite gallery), published with the installer at https://fedorsosnin.github.io/PokeKnomiGochi/sprites/
 (.github/workflows/pages.yml builds it there on every deploy; nothing it makes is kept in git).
 
 All 151 Pokemon, regular and shiny, in every view the game has: standing, turning round (the Pokedex entry's
@@ -9,6 +9,12 @@ some have (eating, posing, nodding, sitting, a deep breath). It reads the packs 
 each frame on its own feet (sdmon.cpp's anchors, Ivysaur's legs and Magikarp's nap included), frame times as packed,
 and a shiny's four gold sparkles (drawSparkles()). A tap on a Pokemon plays its cry, as the game
 plays it (src/cry.h): the pieces are tools/voices.json, which `make -C host voices` writes.
+
+Each Pokemon's page also says what the game's Pokedex says about it (its fact), its base stats, how it evolves, every
+move it learns with the game's power for it and when it's on its battle buttons, and what it's strong and weak
+against; several picked together are compared (match-ups). All of that is the game's own tables and battle rules
+(dex.h, moves.h, dexfacts.h, battle.h), as tools/dex.json, which `make -C host dex` writes (host/dex_json.h; the
+host tests check it's up to date). The owned marks are the viewer's own, kept in their browser.
 
   <out>/index.html            the page (tools/sprite_gallery.html, with the data put in)
   <out>/img/NNN-name.png      each form's frames, one row per view (indexed PNG; the page cuts them up)
@@ -36,6 +42,7 @@ MONS = os.path.join(HERE, 'sdcard', 'mons')
 CACHE = os.path.join(HERE, 'pmd_cache')
 PAGE = os.path.join(HERE, 'sprite_gallery.html')  # the page, which this fills in
 VOICES = os.path.join(HERE, 'voices.json')         # each one's cry (make -C host voices)
+DEX = os.path.join(HERE, 'dex.json')               # the game's Pokedex, moves and type chart (make -C host dex)
 COLLAB = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master'
 WALKL, WALKR, SLEEP, WALKD = 1, 2, 3, 12
 # the room a card gives a sprite, in CSS px (the page's canvases): what it fits a Pokemon's standing view into
@@ -177,18 +184,26 @@ def main():
             os.remove(os.path.join(img, old))
 
     voices = json.load(open(VOICES, encoding='utf-8')) if os.path.exists(VOICES) else {}
+    dex = json.load(open(DEX, encoding='utf-8'))
+    types = [t.lower() for t in dex['types']]
     mons = []
     for num, slug, name, typ, *_ in dex_data.DEX:
+        game = dex['mons'][str(num)]
+        if types[game['type']] != typ:
+            sys.exit(f'{num} {name}: tools/dex.json says {types[game["type"]]}, dex_data.py {typ} (make -C host dex)')
         base = f'{num:03d}-{slug}'
         reg, (sw, sh) = form(num, os.path.join(MONS, f'p{num:03d}.bin'), os.path.join(img, f'{base}.png'))
         shi, _ = form(num, os.path.join(MONS, f'ps{num:03d}.bin'), os.path.join(img, f'{base}-shiny.png'))
         fit = min(FIT_W / max(sw, 1), FIT_H / max(sh, 1))
         scale = 3 if fit >= 3 else 2 if fit >= 2 else round(fit, 2)  # whole pixels when it fits
         mons.append({'n': num, 'id': base, 'name': name, 'type': typ, 'c': dex_data.TYPE_ACCENTS.get(typ, '#888'),
-                     's': scale, 'cr': list(who[num]), 'f': [reg, shi], 'v': voices.get(str(num), [])})
+                     's': scale, 'cr': list(who[num]), 'f': [reg, shi], 'v': voices.get(str(num), []), 'g': game})
 
     data = json.dumps(mons, separators=(',', ':'))
-    page = open(PAGE, encoding='utf-8').read().replace('/*DATA*/[]', data.replace('</', '<\\/'))
+    tables = json.dumps({'types': types, 'colors': [dex_data.TYPE_ACCENTS[t] for t in types], 'chart': dex['chart'],
+                         'moves': dex['moves']}, separators=(',', ':'))
+    page = open(PAGE, encoding='utf-8').read()
+    page = page.replace('/*DATA*/[]', data.replace('</', '<\\/')).replace('/*GAME*/{}', tables.replace('</', '<\\/'))
     open(os.path.join(out, 'index.html'), 'w', encoding='utf-8').write(page)
     size = sum(os.path.getsize(os.path.join(img, f)) for f in os.listdir(img))
     print(f'{os.path.relpath(out, ROOT)}: {len(mons)} Pokemon, {len(os.listdir(img))} sheets ({size // 1024} KB), '

@@ -30,6 +30,7 @@
 #include "music.h"
 #include "cry.h"
 #include "voice_json.h"
+#include "dex_json.h"
 #include <Preferences.h>
 
 uint8_t hostMusicWanted();  // host_audio.cpp: the track the game wants now (V2's music; 0 with V1)
@@ -1193,7 +1194,7 @@ static void testGame() {
           for (int i = 0; i < a.n; i++) ms += a.note[i].frames * 1000 / CRY_FPS;
           CHECK(a.n >= 2 && ms > 200 && ms < 1600);  // two notes or more, under a second and a half or so
         }
-      {  // the Shiny Pokedex page plays what the game plays: tools/voices.json is up to date (make -C host voices)
+      {  // the KnomiDex page plays what the game plays: tools/voices.json is up to date (make -C host voices)
         std::vector<uint8_t> f = readFile(std::string(getcwd(nullptr, 0)) + "/../tools/voices.json");
         CHECK(std::string(f.begin(), f.end()) == cryVoicesJson());
       }
@@ -1225,6 +1226,18 @@ static void testGame() {
   removeDir(saveSub);
   rmdir((save + "/a").c_str());
   rmdir(save.c_str());
+}
+
+// the KnomiDex page says what the game says: tools/dex.json is the game's Pokedex, moves and type chart as they
+// are now (make -C host dex), and it reads them right
+static void testDexPage() {
+  std::vector<uint8_t> f = readFile(std::string(getcwd(nullptr, 0)) + "/../tools/dex.json");
+  std::string json = dexPageJson();
+  CHECK(std::string(f.begin(), f.end()) == json);
+  CHECK(json.find("\"25\":{\"type\":4,") != std::string::npos);  // Pikachu is electric
+  CHECK(btlEffect(TY_ELECTRIC, TY_GROUND) == 0 && btlEffect(TY_WATER, TY_FIRE) == 4);  // (the chart's digits: x2)
+  CHECK(json.find("\"132\":{\"type\":0,") != std::string::npos);
+  CHECK(json.find("\"learn\":[],\"battle\":[]}") != std::string::npos);  // Ditto copies its foe's moves
 }
 
 // the CRT screen (host_crt.h): its curved glass maps the middle to the middle, the rim past the picture (the tube's
@@ -1282,6 +1295,7 @@ int main() {
   testAudio();
   testClock();
   testGame();
+  testDexPage();
   printf("host layer: %d checks, %d failures\n", gChecks, gFails);
   return gFails ? 1 : 0;
 }

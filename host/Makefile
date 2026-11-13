@@ -25,7 +25,7 @@ UNIT      := $(BUILD)/sketch_unit.cpp
 OBJS      := $(patsubst %.cpp,$(BUILD)/%.o,$(LAYER_SRC) $(notdir $(GAME_SRC))) $(BUILD)/sketch_unit.o
 HEADERS   := $(wildcard *.h shim/*.h shim/driver/*.h *.inc $(ROOT)/src/*.h)
 
-.PHONY: all test clean music voices
+.PHONY: all test clean music voices dex
 all: $(LIB)
 
 $(LIB): $(OBJS)
@@ -56,13 +56,21 @@ music: $(BUILD)/music_wav
 	@mkdir -p $(ROOT)/build/music
 	$(BUILD)/music_wav $(ROOT)/build/music $(ONLY)
 
-# every Pokemon's cry for the Shiny Pokedex page (tools/make_sprite_gallery.py): make voices
+# every Pokemon's cry for the KnomiDex page (tools/make_sprite_gallery.py): make voices
 voices: $(BUILD)/music_wav
 	$(BUILD)/music_wav --json $(ROOT)/tools/voices.json
 
 $(BUILD)/music_wav: music_wav.cpp voice_json.h $(ROOT)/src/music.h $(ROOT)/src/music_synth.h $(ROOT)/src/music_data.h $(ROOT)/src/cry.h
 	@mkdir -p $(BUILD)
 	$(CXX) $(ALLFLAGS) -o $@ music_wav.cpp
+
+# the game's Pokedex, moves and type chart for the KnomiDex page (tools/make_sprite_gallery.py): make dex
+dex: $(BUILD)/dex_json
+	$(BUILD)/dex_json $(ROOT)/tools/dex.json
+
+$(BUILD)/dex_json: dex_json.cpp dex_json.h $(ROOT)/src/dex.h $(ROOT)/src/moves.h $(ROOT)/src/battle.h $(ROOT)/src/dexfacts.h
+	@mkdir -p $(BUILD)
+	$(CXX) $(ALLFLAGS) -o $@ dex_json.cpp
 
 clean:
 	rm -rf $(BUILD)
