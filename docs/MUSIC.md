@@ -1,7 +1,7 @@
 # Music (V2: the Mac, Windows and the web)
 
-Background music for every screen: the home, the menus, Travel, Knomi Tower, a battle theme for each zone, the
-legends, the tower's guardians, a buddy, the six minigames, evolving and a goodbye. All of it is original, written
+Background music for every screen: the home, the menus, Travel and each of its zones, Knomi Tower, a battle theme
+for each zone, the legends, the tower's guardians, a buddy, the six minigames, evolving and a goodbye. All of it is original, written
 for this game as chiptune in the same square-wave family as the effects. No tune comes from any other game.
 
 The Knomi has no speaker, so it gets none of it: no music code and no songs go into its firmware (`HAS_MUSIC` is 0),
@@ -20,7 +20,8 @@ it's left for later.
 | Home from dusk to dawn, the pet awake | Night: Home's tune, slower, on a bell |
 | The pet asleep | nothing |
 | Card, Pokédex, trophies, settings, buddies, games menu, trade | Menu |
-| Knomi Island and the zones' grids | Travel |
+| Knomi Island | Travel |
+| In a zone (its grid and its entries) | The zone's own: Forest, Beach, Cave, Mansion or Field, calmer than its battle |
 | Knomi Tower (outside, picking a team, between floors) | Knomi Tower |
 | A battle | Its zone's theme: Forest, Beach, Cave, Mansion or Field. A wild one from home or the island uses the zone its Pokémon lives in |
 | A legendary Pokémon, the tower's Legend | Legendary Battle |
@@ -33,16 +34,19 @@ it's left for later.
 | Evolving | Evolution, once, under the evolve effect |
 | A goodbye | Goodbye |
 
-Leaving the home, the menus, Travel or the tower and coming back within 90 seconds picks the song up where it was.
+Leaving the home, the menus, Travel, a zone or the tower and coming back within 90 seconds picks the song up where it
+was.
 Otherwise a song starts on its first beat.
 
 ## The switches
 
-- **SOUND** (the settings page, Mute Sound in the Mac and Windows menus, the web's Mute) is the master switch. Off
-  means silence, music included.
-- **Music** has its own row on the settings page under Sound, saved as `mus`, on by default. The Mac and Windows
-  menus have a **Music** item and the web page a **Music** button: they all work the same switch. With it off, the
-  effects still play.
+- **Sound** and **Music** each have a row on the settings page: a speaker that turns it on and off, and three
+  rising bars for Low, Medium and High (Fedor: sliders or level choices). Sound's is everything, music included;
+  Music's is the music's share under it. High is how they always played, and the default. Off, the bars stay in
+  grey at the level it comes back at. Saved as `snd` and `sndv`, `mus` and `musv`.
+- **Mute Sound** in the Mac and Windows menus and the web's **Mute** turn Sound off and on. The menus' **Music**
+  submenu (Off, Low, Medium, High) and the web's **Music** button (a step down each click) set the music's.
+- With the music off, the effects still play. With Sound off, nothing does.
 - A hidden window or tab fades the music out until it's shown again.
 
 ## The sound

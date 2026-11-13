@@ -30,7 +30,19 @@ static float gDuck = 1.0f;  // the music's level under the effects
 #define DUCK_LEVEL 0.45f    // ...while one plays
 #define DUCK_IN_MS 4.0f     // how fast it gets out of the way (a time constant)
 #define DUCK_OUT_MS 120.0f  // ...and comes back
+// the levels, Low, Medium and High (1..3), kept apart from on and off, so switching back on comes back at the same
+// one: SOUND's is everything (saved as sndv), the music's its share under it (musv). High is how they always played
+static const float LEVEL_GAIN[4] = { 0.0f, 0.3f, 0.55f, 1.0f };
+static std::atomic<uint8_t> gSndLv{3}, gMusLv{3};
+static float gSndGain = 1.0f, gMusGain = 1.0f;  // (the audio thread's, eased toward the levels: no click)
+#define LEVEL_EASE_MS 25.0f
 
+static void saveLevel(const char *key, uint8_t v) {
+  Preferences p;
+  p.begin(SAVE_NS, false);
+  p.putUChar(key, v);
+  p.end();
+}
 void musicWant(uint8_t track) { gMusicWant.store(track, std::memory_order_relaxed); }
 bool musicEnabled() { return gMusicOn; }
 void musicSetEnabled(bool on) {
@@ -40,14 +52,30 @@ void musicSetEnabled(bool on) {
   p.putBool("mus", on);
   p.end();
 }
+uint8_t soundVolume() { return gSndLv; }
+void soundSetVolume(uint8_t v) {
+  gSndLv = v < 1 ? 1 : v > 3 ? 3 : v;
+  saveLevel("sndv", gSndLv);
+  if (!gOn) audioSetEnabled(true);
+}
+uint8_t musicVolume() { return gMusLv; }
+void musicSetVolume(uint8_t v) {
+  gMusLv = v < 1 ? 1 : v > 3 ? 3 : v;
+  saveLevel("musv", gMusLv);
+  if (!gMusicOn) musicSetEnabled(true);
+}
 bool hostMusicEnabled(void) { return gMusicOn; }
 void hostSetMusicEnabled(bool on) { musicSetEnabled(on); }
+int hostMusicVolume(void) { return gMusLv; }
+void hostSetMusicVolume(int v) { musicSetVolume((uint8_t)v); }
 void hostMusicHidden(bool hidden) { gMusicHidden = hidden; }
 uint8_t hostMusicWanted() { return gMusicWant; }  // (for the tests)
 #else
 uint8_t hostMusicWanted() { return 0; }
 bool hostMusicEnabled(void) { return false; }
 void hostSetMusicEnabled(bool) {}
+int hostMusicVolume(void) { return 0; }
+void hostSetMusicVolume(int) {}
 void hostMusicHidden(bool) {}
 #endif
 
@@ -57,6 +85,11 @@ void audioBegin() {
   gOn = p.getBool("snd", true);
 #if UI_V2
   gMusicOn = p.getBool("mus", true);
+  uint8_t sv = p.getUChar("sndv", 3), mv = p.getUChar("musv", 3);
+  gSndLv = sv >= 1 && sv <= 3 ? sv : 3;
+  gMusLv = mv >= 1 && mv <= 3 ? mv : 3;
+  gSndGain = LEVEL_GAIN[gSndLv];
+  gMusGain = LEVEL_GAIN[gMusLv];
   gMusic.begin(SAMPLE_RATE);
 #endif
   p.end();
@@ -117,14 +150,18 @@ static void startNote() {
 
 #if UI_V2
 // an effect's sample with the music added under it (playing: an effect sounds, so the music ducks)
+// at SOUND's level, the music at its own under that
 static inline int16_t withMusic(int16_t s, bool playing) {
   static const float duckIn = 1.0f - expf(-1000.0f / (DUCK_IN_MS * SAMPLE_RATE));
   static const float duckOut = 1.0f - expf(-1000.0f / (DUCK_OUT_MS * SAMPLE_RATE));
+  static const float ease = 1.0f - expf(-1000.0f / (LEVEL_EASE_MS * SAMPLE_RATE));
   float target = playing ? DUCK_LEVEL : 1.0f;
   gDuck += (target - gDuck) * (target < gDuck ? duckIn : duckOut);
+  gSndGain += (LEVEL_GAIN[gSndLv.load(std::memory_order_relaxed)] - gSndGain) * ease;
+  gMusGain += (LEVEL_GAIN[gMusLv.load(std::memory_order_relaxed)] - gMusGain) * ease;
   float m = 0;
-  gMusic.render(&m, 1, gDuck);
-  int32_t v = s + (int32_t)lrintf(m * 32767.0f);
+  gMusic.render(&m, 1, gDuck * gMusGain);
+  int32_t v = (int32_t)lrintf((s + m * 32767.0f) * gSndGain);
   return (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
 }
 #endif

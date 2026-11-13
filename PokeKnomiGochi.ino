@@ -2379,7 +2379,8 @@ static uint32_t screenKey() {
 #endif
     h = mixKey(h, audioEnabled());
 #if HAS_MUSIC
-    h = mixKey(h, musicEnabled());  // V2: the settings page's Music switch
+    h = mixKey(h, musicEnabled());  // V2: the settings page's Music row, and both rows' levels
+    h = mixKey(h, soundVolume() * 4 + musicVolume());
 #endif
     h = mixKey(h, gLang);
   } else if (cardOpen) {

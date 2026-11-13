@@ -11,7 +11,7 @@ enum MusicTrack : uint8_t {
   MUS_HOME,    // the home by day
   MUS_NIGHT,   // ...in the evening and at night, the pet awake
   MUS_MENU,    // the card, the Pokedex, the trophies, settings, buddies, the games menu
-  MUS_TRAVEL,  // Knomi Island and the zones' grids
+  MUS_TRAVEL,  // Knomi Island (in a zone, the zone's own: MUS_ZONE_FOREST...)
   MUS_TOWER,   // Knomi Tower, outside and between its floors
   MUS_FOREST,  // a battle in each zone, in zones.h's order (MUS_FOREST + zone)
   MUS_BEACH,
@@ -30,6 +30,11 @@ enum MusicTrack : uint8_t {
   MUS_VOLLEY,
   MUS_EVOLVE,   // while it evolves
   MUS_GOODBYE,  // a goodbye
+  MUS_ZONE_FOREST,  // Travel: in a zone, its own (zones.h's order: MUS_ZONE_FOREST + zone)
+  MUS_ZONE_BEACH,
+  MUS_ZONE_CAVE,
+  MUS_ZONE_MANSION,
+  MUS_ZONE_FIELD,
   MUS_COUNT
 };
 
@@ -38,6 +43,12 @@ enum MusicTrack : uint8_t {
 void musicWant(uint8_t track);  // the track this screen wants: what plays follows it (host_audio.cpp)
 bool musicEnabled();            // the Music switch, saved as mus, on by default (SOUND off silences it too)
 void musicSetEnabled(bool on);
+// the levels on the settings page: 1 low, 2 medium, 3 high (the default, how they always played). SOUND's is all of it,
+// the music included (saved as sndv); the music's is its share under that (musv). Setting one switches it on
+uint8_t soundVolume();
+void soundSetVolume(uint8_t level);
+uint8_t musicVolume();
+void musicSetVolume(uint8_t level);
 #else
 #define HAS_MUSIC 0
 #endif

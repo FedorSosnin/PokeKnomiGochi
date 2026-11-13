@@ -7,7 +7,8 @@
 #   MUSIC n    plays track n whatever the screen (src/music.h: 1 Hello, 2 Home, 3 Night, 4 Menu, 5 Travel, 6 Tower,
 #              7-11 the Forest's, Beach's, Cave's, Mansion's and Field's battles, 12 Legend, 13 Tower battle,
 #              14 Buddy battle, 15 Victory, 16 Berry Drop, 17 PokeRun, 18 PikaSurf, 19 PokeDungeon, 20 Who's That?,
-#              21 Volley, 22 Evolution, 23 Goodbye); MUSIC alone gives the music back to the screens
+#              21 Volley, 22 Evolution, 23 Goodbye, 24-28 Travel in the Forest, Beach, Cave, Mansion and Field);
+#              MUSIC alone gives the music back to the screens
 #   ZONES, GAMES, DUNGEON, RUN, BATTLE, WILD 150, TOWER...   open the screens that have their own
 # Close it with its menu (the Poke Ball) or Cmd-Q.
 set -e

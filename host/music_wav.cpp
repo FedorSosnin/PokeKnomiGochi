@@ -12,17 +12,19 @@
 static const char *const TRACK_IDS[MUS_COUNT] = {
   "none", "hello", "home", "night", "menu", "travel", "tower", "forest", "beach", "cave", "mansion", "field",
   "legend", "tower_fight", "buddy", "victory", "berry", "run", "surf", "dungeon", "quiz", "volley", "evolve", "goodbye",
+  "zone_forest", "zone_beach", "zone_cave", "zone_mansion", "zone_field",
 };
 
 // where each plays (music.h)
 static const char *const TRACK_WHERE[MUS_COUNT] = {
   "", "Choosing a starter, picking an egg", "Home, by day (fades out after 2 minutes untouched)",
   "Home, dusk to dawn, the pet awake: the same tune, slower", "The card, the Pokedex, trophies, settings, buddies, the games menu",
-  "Knomi Island and the zones' grids", "Knomi Tower, outside and between floors", "A battle in the Forest",
+  "Knomi Island", "Knomi Tower, outside and between floors", "A battle in the Forest",
   "A battle at the Beach", "A battle in the Cave", "A battle in the Mansion", "A battle in the Field",
   "A legendary Pokemon, and the tower's Legend", "A tower floor's guardian", "A battle with a buddy",
   "A battle won, a catch: once", "Berry Drop", "PokeRun", "PikaSurf", "PokeDungeon", "Who's That? and Showdown",
-  "Poke Ball Volley", "While it evolves: once", "A goodbye",
+  "Poke Ball Volley", "While it evolves: once", "A goodbye", "Travel: in the Forest", "Travel: at the Beach",
+  "Travel: in the Cave", "Travel: in the Mansion", "Travel: in the Field",
 };
 
 static void put32(FILE *f, uint32_t v) { fwrite(&v, 4, 1, f); }

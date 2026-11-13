@@ -136,7 +136,8 @@ class MusicPlayer {
   Kept kept_[MUS_COUNT];
 
   static bool resumable(uint8_t t) {
-    return t == MUS_HOME || t == MUS_NIGHT || t == MUS_MENU || t == MUS_TRAVEL || t == MUS_TOWER || t == MUS_HELLO;
+    return t == MUS_HOME || t == MUS_NIGHT || t == MUS_MENU || t == MUS_TRAVEL || t == MUS_TOWER || t == MUS_HELLO ||
+           (t >= MUS_ZONE_FOREST && t <= MUS_ZONE_FIELD);
   }
 
   double spt() const { return rate_ * 60.0 / (MUSIC_SONGS[st_.track - 1].bpm * MS_TICKS_PER_BEAT); }

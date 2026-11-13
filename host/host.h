@@ -54,6 +54,9 @@ void hostSetSoundEnabled(bool on);
 // nothing with V1, which has none
 bool hostMusicEnabled(void);
 void hostSetMusicEnabled(bool on);
+// ...its level: 1 low, 2 medium, 3 high (setting one turns the music on). 0 and nothing with V1
+int hostMusicVolume(void);
+void hostSetMusicVolume(int level);
 // The window or the tab is hidden: the music fades out until it's shown again (the effects still play)
 void hostMusicHidden(bool hidden);
 

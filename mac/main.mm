@@ -602,10 +602,18 @@ static NSCursor *fingerCursor(bool pressed) {
   NSMenuItem *mute = [menu addItemWithTitle:@"Mute Sound" action:@selector(toggleMute:) keyEquivalent:@""];
   mute.target = self;
   mute.state = hostSoundEnabled() ? NSControlStateValueOff : NSControlStateValueOn;
-#if UI_V2  // V2's music: the same setting as the Music switch on the settings page
-  NSMenuItem *music = [menu addItemWithTitle:@"Music" action:@selector(toggleMusic:) keyEquivalent:@""];
-  music.target = self;
-  music.state = hostMusicEnabled() ? NSControlStateValueOn : NSControlStateValueOff;
+#if UI_V2  // V2's music: the same setting as the Music row on the settings page, off or its level
+  NSMenuItem *music = [menu addItemWithTitle:@"Music" action:nil keyEquivalent:@""];
+  NSMenu *musicLevels = [[NSMenu alloc] init];
+  NSArray *levelNames = @[ @"Off", @"Low", @"Medium", @"High" ];
+  for (int i = 0; i < 4; i++) {
+    NSMenuItem *it = [musicLevels addItemWithTitle:levelNames[i] action:@selector(pickMusic:) keyEquivalent:@""];
+    it.target = self;
+    it.tag = i;
+    bool on = i == 0 ? !hostMusicEnabled() : hostMusicEnabled() && hostMusicVolume() == i;
+    it.state = on ? NSControlStateValueOn : NSControlStateValueOff;
+  }
+  music.submenu = musicLevels;
 #endif
   NSString *upd = gUpdating     ? @"Updating…"
                   : !gNewVersion ? @"Check for Updates…"
@@ -630,7 +638,10 @@ static NSCursor *fingerCursor(bool pressed) {
 }
 
 - (void)toggleMute:(id)sender { hostSetSoundEnabled(!hostSoundEnabled()); }
-- (void)toggleMusic:(id)sender { hostSetMusicEnabled(!hostMusicEnabled()); }
+- (void)pickMusic:(NSMenuItem *)item {
+  if (item.tag == 0) hostSetMusicEnabled(false);
+  else hostSetMusicVolume((int)item.tag);
+}
 - (void)toggleCrt:(id)sender {
   gCrt = !gCrt;
   Preferences p;

@@ -68,7 +68,7 @@
   <button id="size" type="button">Size: Large</button>
   <button id="crtBtn" type="button" hidden>CRT: On</button>
   <button id="sound" type="button">Sound on</button>
-  <button id="music" type="button" hidden>Music: On</button>
+  <button id="music" type="button" hidden>Music: High</button>
   <button id="auto" type="button">Auto-update: On</button>
   <button id="vibe" type="button" hidden>Vibration: On</button>
   <button id="export" type="button">Export save</button>
@@ -275,16 +275,18 @@ soundBtn.addEventListener('click', () => {
   startAudio();
 });
 
-// ---- V2's music: the same setting as the Music switch on the settings page (a V1 build has none: no button). A
-// hidden tab's music fades out until it's back ----
+// ---- V2's music: the same setting as the Music row on the settings page, each click a step down: High, Medium,
+// Low, Off, then High again (a V1 build has none: no button). A hidden tab's music fades out until it's back ----
 const musicBtn = document.getElementById('music');
+const MUSIC_LEVELS = ['Off', 'Low', 'Medium', 'High'];
 function updateMusicButton() {
-  const on = Module._webMusicOn();
-  musicBtn.hidden = on < 0;
-  musicBtn.textContent = 'Music: ' + (on > 0 ? 'On' : 'Off');
+  const level = Module._webMusicLevel();
+  musicBtn.hidden = level < 0;
+  musicBtn.textContent = 'Music: ' + (MUSIC_LEVELS[level] || 'Off');
 }
 musicBtn.addEventListener('click', () => {
-  Module._webSetMusic(Module._webMusicOn() > 0 ? 0 : 1);
+  const level = Module._webMusicLevel();
+  Module._webSetMusicLevel(level > 0 ? level - 1 : 3);
   updateMusicButton();
   startAudio();
 });

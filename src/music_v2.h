@@ -46,6 +46,7 @@ static uint8_t v2MusicPick(uint32_t now) {
       cardOpen)
     return MUS_MENU;
   if (zoneScreen == ZS_TOWER) return v2MusicTower();
+  if (zoneScreen == ZS_ZONE && zoneCur < ZONE_COUNT) return (uint8_t)(MUS_ZONE_FOREST + zoneCur);  // (Fedor: "each travel biome needs its own track too")
   if (zoneScreen) return MUS_TRAVEL;
   if (pet.ceremony) return MUS_GOODBYE;
   if (pet.evolving()) return MUS_EVOLVE;

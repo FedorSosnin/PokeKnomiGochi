@@ -931,7 +931,7 @@ static void testGame() {
         clockPage = 0;
         runTicks(300);
         bool snd = audioEnabled();
-        tapAt(328, 232);  // the Sound row's switch
+        tapAt(218, 208);  // the Sound row's speaker (a computer's: on and off, then its level's bars)
         CHECK(audioEnabled() != snd);
         audioSetEnabled(snd);
         Lang was = gLang;
@@ -1065,6 +1065,13 @@ static void testGame() {
     hostSerialPush("ZONES");
     runTicks(200);
     CHECK(hostMusicWanted() == MUS_TRAVEL);
+    {  // in a zone, the zone's own (Fedor: "each travel biome needs its own track too")
+      extern uint8_t zoneCur;
+      zoneCur = 1;
+      zoneScreen = ZS_ZONE;
+      runTicks(100);
+      CHECK(hostMusicWanted() == MUS_ZONE_BEACH);
+    }
     zoneScreen = ZS_NONE;
     hostSerialPush("WILD 129");
     runTicks(300);
@@ -1102,6 +1109,44 @@ static void testGame() {
     hostAudioRender(pcm.data(), HOST_AUDIO_RATE * 2);
     CHECK(!anySound(HOST_AUDIO_RATE / 10));
     hostMusicHidden(false);
+    // the levels: SOUND's is everything, the music's its share under it; setting one switches it on
+    auto rms = [&](int n) {
+      hostAudioRender(pcm.data(), n);
+      double e = 0;
+      for (int i = 0; i < n; i++) e += (double)pcm[i] * pcm[i];
+      return sqrt(e / n);
+    };
+    auto tapPeak = [&]() {
+      sfxPlay(SFX_TAP);
+      hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 5);
+      int pk = 0;
+      for (int i = 0; i < HOST_AUDIO_RATE / 5; i++) pk = std::max(pk, abs((int)pcm[i]));
+      return pk;
+    };
+    CHECK(soundVolume() == 3 && musicVolume() == 3);  // High: how they always played
+    musicSetEnabled(false);
+    hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 4);
+    CHECK(tapPeak() == 5000);
+    soundSetVolume(1);
+    hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 10);  // (it eases over a few ms)
+    int low = tapPeak();
+    CHECK(low > 1300 && low < 1700);  // Low: 0.3
+    soundSetVolume(3);
+    hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 10);
+    audioSetEnabled(false);
+    soundSetVolume(2);  // a level switches SOUND back on
+    CHECK(audioEnabled() && hostSoundEnabled() && soundVolume() == 2);
+    soundSetVolume(3);
+    musicSetVolume(3);  // ...and the music
+    CHECK(musicEnabled() && hostMusicVolume() == 3);
+    hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 2);
+    double high = rms(HOST_AUDIO_RATE);
+    hostSetMusicVolume(1);  // the Mac's Music menu
+    CHECK(musicVolume() == 1);
+    hostAudioRender(pcm.data(), HOST_AUDIO_RATE / 10);
+    double quiet = rms(HOST_AUDIO_RATE);
+    CHECK(high > 0 && quiet < high * 0.5 && quiet > high * 0.1);
+    musicSetVolume(3);
     hostSerialPush("MUSIC");
     runTicks(100);
     CHECK(hostMusicWanted() != 17);

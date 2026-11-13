@@ -475,6 +475,86 @@ s.section('A', 8, 'F | C/E | Dm | Bb | F/C | Bb | Gm7 | C7', """
 s.form([], ['A'])
 
 
+# ------------------------------------------------------------------ Travel: each zone's own, calmer than its battle
+# (Fedor: "each travel biome needs its own track too"), in the old handhelds' voices as the home is
+# the Forest: a flute over the picked chords, a lilt
+s = add(song('ZONE_FOREST', 'Forest', 108, key=('G', 'major'), insts=('flute', 'gbpick', 'gbwave'), vols=(13, 8, 10, 8),
+             bass_lo=38))
+ZF_DR = '16: . . S . . . S . . . S . . . S S'
+s.section('I', 2, 'G | D7', None, HOME_PICK, '8: R . 5 . O . 5 .', [ZF_DR] * 2)
+s.section('A', 8, 'G | Em | C | D | G | Em | Am7 D7 | G', """
+  o5 d4 g8 a8 b4. a8 | g4 e4 b2 | c4 e8 g8 o6 c4. o5 b8 | a2. r4 |
+  b4 o6 d8 c8 o5 b4. a8 | g4 b8 g8 e4. g8 | a4 o6 c8 o5 a8 f+4 d4 | g2. r4 |""",
+          HOME_PICK, '8: R . 5 . O . 5 .', [ZF_DR])
+s.section('B', 8, 'C | D | Bm | Em | Am7 | D | C D | G', """
+  o5 e4. f+8 g4 e4 | f+4. g8 a4 f+4 | b4. a8 f+4 d4 | e2 g4 b4 |
+  o6 c4. o5 b8 a4 e4 | f+4 a4 o6 d4. c8 | o5 g4 e4 a4 f+4 | g2. r4 |""",
+          'thirds', '8: R . 5 . O . 5 .', [ZF_DR], insts=('flute', 'gbharm', 'gbwave'), vols=(13, 7, 10, 8))
+s.form(['I'], ['A', 'B'])
+
+# the Beach: a steel drum's swing, lazier than the battle's
+s = add(song('ZONE_BEACH', 'Beach', 104, key=('C', 'major'), insts=('bell25', 'gbpick', 'gbwave'), vols=(14, 8, 10, 8),
+             bass_lo=38))
+ZB_DR = '12: k . S . . S k . S . . S'
+s.section('I', 2, 'C | G7', None, SWING_H, SWING_B, [ZB_DR] * 2)
+s.section('A', 8, 'C | Am | Dm7 | G7 | C | Am | F G7 | C', """
+  o5 e6 g12 o6 c6 o5 g12 e4 g4 | a6 g12 e6 c12 a4 r4 | f6 a12 o6 c6 o5 a12 f4 d4 | g4 b6 a12 g4 r4 |
+  o6 c6 o5 b12 o6 c6 e12 g4 e4 | c6 o5 a12 e6 a12 o6 c4 o5 a4 | a6 f12 c6 f12 g6 b12 o6 d6 o5 b12 | o6 c2. r4 |""",
+          SWING_H, SWING_B, [ZB_DR])
+s.section('B', 8, 'F | C | Dm7 | G7 | Em7 | A7 | Dm7 G7 | C', """
+  o5 a4 o6 c6 o5 a12 f4 a4 | g4 e6 c12 e4 g4 | f6 e12 d6 f12 a4 o6 c4 | o5 b2 g4 r4 |
+  g6 b12 o6 d6 o5 b12 g4 e4 | c+4 e6 g12 a4 e4 | f4 a4 g4 b4 | o6 c2. r4 |""",
+          'thirds', SWING_B, [ZB_DR], insts=('bell25', 'gbharm', 'gbwave'), vols=(14, 7, 10, 8))
+s.form(['I'], ['A', 'B'])
+
+# the Cave: drops in the dark, each answered by its echo
+s = add(song('ZONE_CAVE', 'Cave', 92, key=('A', 'harmonic'), insts=('bell25', 'bell25', 'gbwave'), vols=(14, 6, 10, 8),
+             bass_lo=33))
+ZC_DR = '16: . . . . . . r . . . . . . . . .'
+ZC_FILL = '16: . . . . . . r . . . t . . . t .'
+s.section('I', 2, 'Am | Am', None, None, '8: R . . . O . . .', [ZC_DR, ZC_FILL])
+s.section('A', 8, 'Am | F | Dm | E | Am | F | Dm | E7', """
+  o5 e4 r8 a8 o6 c4 r4 | o5 a4 r8 f8 c4 r4 | d4 r8 f8 a4 g8 f8 | e2. r4 |
+  a4 r8 o6 c8 e4 r4 | d4 c8 o5 a8 f4 r4 | f4 a4 d4 f4 | g+2 r2 |""",
+          'echo 18', '8: R . . . O . . .', [ZC_DR] * 7 + [ZC_FILL])
+s.section('B', 8, 'F | G | Em | Am | Dm | E | F E | E7', """
+  o5 c4 r8 f8 a4 r4 | b4 r8 g8 d4 r4 | e4 r8 g8 b4 r4 | a2 e2 |
+  f4 r8 a8 o6 d4 r4 | o5 g+4 r8 b8 e4 r4 | a4 f4 g+4 e4 | d2 r2 |""",
+          'echo 18', '8: R . . . O . . .', [ZC_DR] * 7 + [ZC_FILL])
+s.form(['I'], ['A', 'B'])
+
+# the Mansion: a slow music box, a little out of tune with itself
+s = add(song('ZONE_MANSION', 'Mansion', 120, meter=3, key=('D', 'harmonic'), insts=('bell', 'soft', 'gbwave'),
+             vols=(14, 6, 10, 0), bass_lo=38))
+ZM_A = """
+  o5 d4 f4 a4 | b-2 g4 | a4 o6 c+4 e4 | d2. | f4 d4 o5 b-4 | o6 d4 o5 b-4 g4 | e4 g4 b-4 | a2. |"""
+ZM_CA = 'Dm | Gm | A7 | Dm | Bb | Gm | Edim7 | A7'
+s.section('I', 2, 'Dm | A7', None, '4: . x x', '4: R . .', None)
+s.section('A', 8, ZM_CA, ZM_A, '4: . x x', '4: R . .', None)
+s.section('B', 8, 'Gm | Dm | Bb | A7 | Gm | Dm | Edim7 | A7', """
+  o5 g4 b-4 o6 d4 | f2 d4 | d4 c8 o5 b-8 f4 | e2 c+4 | d4 g4 b-4 | a2 f4 | g4 b-4 o6 c+4 | o5 a2. |""",
+          '4: . x x', '4: R . .', None)
+s.section('A2', 8, ZM_CA, ZM_A, 'sixths', '4: R . .', None, insts=('bell', 'bell25', 'gbwave'), vols=(14, 6, 10, 0))
+s.form(['I'], ['A', 'B', 'A2', 'B'])
+
+# the Field: out in the open, the old handhelds' route
+s = add(song('ZONE_FIELD', 'Field', 124, key=('C', 'major'), insts=('gblead', 'gbpick', 'gbwave'), vols=(13, 8, 10, 7),
+             bass_lo=38))
+ZFI_B = '8: R O R O 5 O R A'
+ZFI_A = """
+  o5 g4 e8 g8 o6 c4 d4 | e4 d8 c8 o5 b4 g4 | a4 o6 c8 e8 e4 c4 | c2 o5 a4 r4 |
+  g4. a8 g8 e8 c8 e8 | d4 g8 b8 o6 d4 o5 b4 | a4 f4 g4 b4 | o6 c2. r4 |"""
+ZFI_CA = 'C | G/B | Am | F | C | G | F G | C'
+s.section('I', 2, 'C | G7', None, STAB8, ZFI_B, [POP, POP_FILL])
+s.section('A', 8, ZFI_CA, ZFI_A, STAB8, ZFI_B, [POP] * 7 + [POP_FILL])
+s.section('B', 8, 'F | G | Em | Am | F | G | Dm7 | G7', """
+  o5 a4. g8 f4 c4 | d4. e8 g4 b4 | b4. a8 g4 e4 | a2 e4 c4 |
+  f4 a8 o6 c8 f4 c4 | d4 o5 b8 g8 d4 g4 | a4 f4 d4 f4 | g4 b4 o6 d4 f4 |""",
+          'thirds', '4: R 5 O 5', [POP] * 7 + [POP_FILL], insts=('gblead', 'gbharm', 'gbwave'), vols=(13, 7, 10, 7))
+s.section('A2', 8, ZFI_CA, ZFI_A, 'thirds', ZFI_B, [POP] * 7 + [POP_FILL], insts=('gblead', 'gbharm', 'gbwave'),
+          vols=(13, 7, 10, 7))
+s.form(['I'], ['A', 'B', 'A2', 'B'])
+
 # ------------------------------------------------------------------ how loud each plays
 # Measured (each voice's RMS: host/music_wav.cpp prints the mix's) so they all sit about 8 dB under the effects: the
 # home and the menus at -24.5 dBFS, the battles and the games at -24, the night and the goodbye softer, the jingles
@@ -485,6 +565,7 @@ GAINS = {
     'LEGEND': 0.78, 'TOWER_FIGHT': 0.79, 'BUDDY': 1.02, 'VICTORY': 0.80,
     'BERRY': 1.24, 'RUN': 0.88, 'SURF': 0.91, 'DUNGEON': 1.29, 'QUIZ': 1.41, 'VOLLEY': 0.89,
     'EVOLVE': 0.90, 'GOODBYE': 0.86,
+    'ZONE_FOREST': 0.95, 'ZONE_BEACH': 1.10, 'ZONE_CAVE': 1.55, 'ZONE_MANSION': 1.50, 'ZONE_FIELD': 0.84,
 }
 
 
