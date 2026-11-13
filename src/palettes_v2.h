@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-// PokeKnomiGochi V2 scene palettes (RGB565, with the #rrggbb they came from).
+// Catch 151 V2 scene palettes (RGB565, with the #rrggbb they came from).
 // Sky: three flat bands top -> mix(top,bot,0.5) -> bot, split at y 124 and 196, two checker rows at each seam.
 // Hills: far / mid / near fills; the top row of each hill is mixed toward white by `lit`, the next row checkered at lit/2.
 // Field, Forest, Beach use the meadow dusk/night shifts: dusk mixes hills 20-32% toward #f0a060, night uses meadow_night.

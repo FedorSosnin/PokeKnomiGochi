@@ -1,5 +1,5 @@
 #pragma once
-// PokeKnomiGochi V2 scenery sprites. Drawn by the V2 scenes at 3x or 4x (see layout_v2.h).
+// Catch 151 V2 scenery sprites. Drawn by the V2 scenes at 3x or 4x (see layout_v2.h).
 // Two kinds:
 //  * ROLE sprites use digits, recoloured per zone and time of day from palettes_v2.h:
 //      '1' outline  '2' light  '3' mid  '4' dark  '5' trunk     ('.' is transparent)

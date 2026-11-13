@@ -19,7 +19,7 @@ void audioSetIdle(bool) {}
 #include "sfx_notes.h"
 
 // ---------------------------------------------------------------------------
-// PokeKnomiGochi audio: ES8311 codec (DAC -> PA amplifier -> speaker) over I2S.
+// Catch 151 audio: ES8311 codec (DAC -> PA amplifier -> speaker) over I2S.
 // ES8311 init ported from Espressif's official driver (esp-bsp), fixed to
 // MCLK=4.096MHz (256*fs), 16kHz, 16-bit, I2S slave. The effects are square
 // tones (Game Boy style) synthesized in a separate task so as not to

@@ -1,6 +1,7 @@
 #!/bin/zsh
-# Regenerates mac/AppIcon.icns from a real frame of the game, rendered without a window and with a
-# throwaway save. Only needed when the look changes; the build uses the committed .icns.
+# The icon before Catch 151 (up to 2.1.4): mac/AppIcon.icns from a real frame of the game, rendered without a window
+# and with a throwaway save. Since 2.2.0 the apps' icons are Catch 151's (tools/assets/brand/catch151-icon-*.png,
+# made by tools/brand_assets.py); running this would put the old one back.
 set -e
 cd "${0:A:h}/.."
 make -C host -j8 >/dev/null

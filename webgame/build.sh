@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Builds PokeWebGochi into web/play/ (published with the web installers by GitHub Pages):
+# Builds Catch 151 for Web into web/play/ (published with the web installers by GitHub Pages):
 # the game compiled to WebAssembly with the host layer, the Knomi's compressed sprite pack
 # (1.2 MB instead of the 40 MB folder) and the CJK fonts. Needs Emscripten (brew install emscripten).
 #   webgame/build.sh

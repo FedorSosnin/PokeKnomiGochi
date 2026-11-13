@@ -18,6 +18,7 @@ static char newVer[16] = "", spritesSha[65] = "";
 static uint32_t spritesSize = 0;
 static bool fwNewer = false, spritesStale = false;
 static uint8_t buf[4096];  // one flash sector: sprite reads, writes and the held-back header
+static const char *gBase = OTA_BASE_URL;  // the site update.json last came from: the files come from the same one
 
 // The buddy relay's TLS connection closed while an update talks to the site: two at once don't
 // fit in memory (1.22 on a Knomi: 111 KB free before the relay, 66 KB after, http -1)
@@ -78,20 +79,28 @@ bool otaCheck(const char *current) {
   RelayHold hold;
   NetworkClientSecure client;
   client.setCACert(OTA_ROOTS);
-  HTTPClient http;
-  http.setTimeout(8000);
   String body;
   int code = -1;
-  if (http.begin(client, OTA_BASE_URL "update.json")) {
-    code = http.GET();
-    if (code == 200) body = http.getString();
-    http.end();
+  // Catch 151's site first, then the old one (ota.h); redirects followed, in case a site moves again
+  static const char *const BASES[2] = { OTA_BASE_URL, OTA_BASE_URL_OLD };
+  for (int b = 0; b < 2 && code != 200; b++) {
+    HTTPClient http;
+    http.setTimeout(8000);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    if (http.begin(client, String(BASES[b]) + "update.json")) {
+      code = http.GET();
+      if (code == 200) {
+        body = http.getString();
+        gBase = BASES[b];
+      }
+      http.end();
+    }
   }
   char sz[16];
   if (code != 200 || !otaJsonField(body.c_str(), "version", newVer, sizeof(newVer)) ||
       !otaJsonField(body.c_str(), "sprites_size", sz, sizeof(sz)) ||
       !otaJsonField(body.c_str(), "sprites_sha256", spritesSha, sizeof(spritesSha))) {
-    Serial.printf("ota: couldn't read update.json (http %d)\n", code);
+    Serial.printf("ota: couldn't read update.json from either site (http %d)\n", code);
     state = OTA_FAILED;
     return false;
   }
@@ -113,7 +122,8 @@ static bool writeSprites(OtaProgressCb cb, uint8_t from, uint8_t to) {
   client.setCACert(OTA_ROOTS);
   HTTPClient http;
   http.setTimeout(15000);
-  if (!http.begin(client, OTA_BASE_URL "firmware/sprites.bin")) return false;
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  if (!http.begin(client, String(gBase) + "firmware/sprites.bin")) return false;
   bool ok = false;
   if (http.GET() == 200 && (uint32_t)http.getSize() == spritesSize) {
     uint32_t span = (spritesSize + 4095) & ~4095UL;
@@ -180,10 +190,11 @@ bool otaInstall(OtaProgressCb cb) {
     gFrom = 0;
     gTo = both ? 70 : 100;
     httpUpdate.rebootOnUpdate(false);
+    httpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     httpUpdate.onProgress([](int cur, int total) {
       if (gCb && total > 0) gCb(gFrom + (uint32_t)(gTo - gFrom) * cur / total);
     });
-    t_httpUpdate_return r = httpUpdate.update(client, OTA_BASE_URL "firmware/firmware.bin");
+    t_httpUpdate_return r = httpUpdate.update(client, String(gBase) + "firmware/firmware.bin");
     if (r != HTTP_UPDATE_OK) {
       Serial.printf("ota: firmware FAILED: %s\n", httpUpdate.getLastErrorString().c_str());
       state = OTA_FAILED;

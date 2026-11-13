@@ -1,6 +1,6 @@
 # Waveshare ESP32-S3-Touch-AMOLED-1.75
 
-PokeKnomiGochi is made for the BTT Knomi V2, but the code also builds for the Waveshare
+Catch 151 is made for the BTT Knomi V2, but the code also builds for the Waveshare
 ESP32-S3-Touch-AMOLED-1.75: a bigger round screen (466×466 AMOLED) with a microSD slot, a battery connector, a
 real-time clock and a speaker output. There's no web installer for it yet, and this build hasn't been tried on
 the board itself, so treat it as a work in progress.

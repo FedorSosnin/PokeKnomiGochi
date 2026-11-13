@@ -7,7 +7,10 @@
 // Wi-Fi updates: the pure parts (tested on the PC). The Knomi reads update.json from the web
 // installer's site, written by tools/build_knomi_web.sh:
 //   {"version": "1.19", "sprites_size": 1290000, "sprites_sha256": "ab12..."}
-#define OTA_BASE_URL "https://fedorsosnin.github.io/PokeKnomiGochi/"
+// Catch 151's own site (2.2.0 on); if it doesn't answer, the old one, which keeps a frozen copy of 2.2.0 for the Knomis
+// that hadn't moved yet when the repo was renamed (Fedor: "Catch151 is the new game name")
+#define OTA_BASE_URL "https://fedorsosnin.github.io/Catch151/"
+#define OTA_BASE_URL_OLD "https://fedorsosnin.github.io/PokeKnomiGochi/"
 #define OTA_CHECK_EVERY_MS (24UL * 60 * 60 * 1000)  // the automatic check: once a day
 #define OTA_FIRST_CHECK_MS (2UL * 60 * 1000)        // and the first, 2 minutes after boot
 #define OTA_CHECK_V2_MS (60UL * 60 * 1000)           // V2: every hour, so a release made overnight is in by morning

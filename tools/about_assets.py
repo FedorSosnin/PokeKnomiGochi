@@ -15,7 +15,7 @@ import os
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 N = 72  # (96 until the game had a logo of its own: Fedor, "the 3DPrintSOS coin a bit smaller and our new logo larger")
-LINKS = (('GITHUB', 'https://github.com/FedorSosnin/PokeKnomiGochi'), ('YOUTUBE', 'https://youtube.com/3dprintsos'))
+LINKS = (('GITHUB', 'https://github.com/FedorSosnin/Catch151'), ('YOUTUBE', 'https://youtube.com/3dprintsos'))
 PAL = [
     (0x1E, 0x2A, 0x6D),  # navy: the middle and the letters' outlines
     (0x14, 0x1A, 0x48),  # navy, dark

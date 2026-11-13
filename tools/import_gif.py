@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Animated sprite (GIF) importer for PokeKnomiGochi.
+"""Animated sprite (GIF) importer for Catch 151.
 
 Converts animated GIFs into 48x48 frames ready for the game: a crop that is
 stable across frames, frame reduction to keyframes, scaling, binary alpha and

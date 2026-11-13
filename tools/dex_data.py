@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Single source of gen 1 Pokedex data for PokeKnomiGochi.
+"""Single source of gen 1 Pokedex data for Catch 151.
 
 Each entry: (num, slug, display_name, type, evolves_to, level)
 - slug: lowercase species name (internal identifier)

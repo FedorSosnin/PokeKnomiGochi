@@ -1,0 +1,16 @@
+# Catch 151's address for the buddy relay (2.2.0 on): a second Worker, catch151-relay, running the same code
+# (src/index.js) with the old Worker's lobby, so copies on either address meet. Its LOBBY binding points at the
+# Lobby class of pokeknomigochi-relay (script_name); it declares no migrations, so it never makes a lobby of its own.
+# Deploy: cd relay && wrangler deploy -c wrangler-catch151.toml. The old wrangler.toml stays exactly as it is:
+# renaming that one would start a second, empty lobby.
+name = "catch151-relay"
+main = "src/catch151.js"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "Lobby"
+script_name = "pokeknomigochi-relay"
+
+[observability]
+enabled = false  # nothing about players is logged

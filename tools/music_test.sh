@@ -1,5 +1,5 @@
 #!/bin/zsh
-# The music's test copy of PokeMacGochi, apart from the real app: its own save folder, its own buddy port (it never
+# The music's test copy of Catch 151 for Mac, apart from the real app: its own save folder, its own buddy port (it never
 # visits the real pets), and another bundle id. It opens on the home with a Charizard awake, so the home's music plays
 # (by day Home, from dusk to dawn Night). The test state isn't saved (NOSAVE): each launch starts the same.
 #   tools/music_test.sh [n]     n: start on track n (2: Home by day, whatever the hour)

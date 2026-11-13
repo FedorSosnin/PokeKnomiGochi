@@ -1,6 +1,6 @@
 #pragma once
 #include <stdint.h>
-// PokeKnomiGochi V2 home layout, on the 466x466 canvas (centre 233,233, visible radius 231).
+// Catch 151 V2 home layout, on the 466x466 canvas (centre 233,233, visible radius 231).
 // Angles are in degrees, 0 = right, clockwise (screen y goes down).
 
 #define V2_GRID 4                 // one 8-bit pixel of scenery = 4 canvas px = 2 Knomi px

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PokeKnomiGochi's background music (V2, on a computer and the web): every song, written for this game.
+"""Catch 151's background music (V2, on a computer and the web): every song, written for this game.
 
   python3 tools/music/songs.py           writes src/music_data.h, and prints what in the songs doesn't fit
   python3 tools/music/songs.py --check   only checks that src/music_data.h is up to date

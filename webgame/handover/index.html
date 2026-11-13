@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catch 151</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #ddd; font: 16px/1.5 system-ui, sans-serif; }
+  main { display: grid; place-content: center; height: 100%; text-align: center; padding: 0 16px; }
+  a { color: #f2c94c; }
+</style>
+</head>
+<body>
+<main>
+  <p id="m">PokeWebGochi is now <b>Catch 151</b>, at <a id="to" href="https://catch151.3dprintsos.com/">catch151.3dprintsos.com</a>.<br>Bringing your Pokémon along…</p>
+</main>
+<script>
+// pokewebgochi.3dprintsos.com after the rename (Fedor: "current players on web should all go to the new catch151
+// links"): a browser keeps a site's save per address, so this page reads the pet this address kept (Emscripten's
+// IndexedDB: database "/save", store FILE_DATA, keys "/save/<file>") and the page's settings (pwg-*), and goes to the
+// new address with them after #carry= (never sent to any server). The new game takes them only into an empty save.
+'use strict';
+const NEW = 'https://catch151.3dprintsos.com/';
+const FILES = ['pokeknomigochi.prefs', 'buddy.prefs'];
+let gone = false;
+function go(carry) {
+  if (gone) return;
+  gone = true;
+  location.replace(NEW + (carry ? '#carry=' + encodeURIComponent(JSON.stringify(carry)) : ''));
+}
+setTimeout(() => go(null), 4000);  // whatever happens, on to the new address
+try {
+  const req = indexedDB.open('/save');
+  req.onupgradeneeded = (e) => e.target.transaction.abort();  // no save here: don't make an empty database
+  req.onerror = () => go(null);
+  req.onsuccess = () => {
+    const db = req.result;
+    if (!db.objectStoreNames.contains('FILE_DATA')) { db.close(); go(null); return; }
+    const files = {};
+    const tx = db.transaction('FILE_DATA', 'readonly');
+    for (const name of FILES) {
+      const get = tx.objectStore('FILE_DATA').get('/save/' + name);
+      get.onsuccess = () => {
+        const v = get.result;
+        if (v && v.contents) files[name] = new TextDecoder().decode(v.contents);
+      };
+    }
+    tx.oncomplete = () => {
+      db.close();
+      const ls = {};
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('pwg-')) ls[k] = localStorage.getItem(k);
+        }
+      } catch (e) {}
+      go(files[FILES[0]] ? { v: 1, files, ls } : null);
+    };
+    tx.onerror = () => { db.close(); go(null); };
+  };
+} catch (e) {
+  go(null);
+}
+</script>
+</body>
+</html>

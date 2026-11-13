@@ -1,4 +1,4 @@
-# How PokeKnomiGochi works
+# How Catch 151 works
 
 Everything your Pokémon needs, what each action does, and how to fill the Pokédex.
 

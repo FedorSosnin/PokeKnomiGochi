@@ -2,18 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>PokeMacGochi</string>
-  <key>CFBundleDisplayName</key><string>PokeMacGochi</string>
+  <key>CFBundleName</key><string>Catch 151</string>
+  <key>CFBundleDisplayName</key><string>Catch 151</string>
   <key>CFBundleIdentifier</key><string>tv.dsrp.pokemacgochi</string>
   <key>CFBundleExecutable</key><string>PokeMacGochi</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleVersion</key><string>50</string>
-  <key>CFBundleShortVersionString</key><string>2.1.4</string>
+  <key>CFBundleVersion</key><string>51</string>
+  <key>CFBundleShortVersionString</key><string>2.2.0</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>NSHumanReadableCopyright</key><string>Fedor Sosnin. Personal, non-commercial.</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
-  <key>NSLocalNetworkUsageDescription</key><string>PokeMacGochi looks for PokeKnomiGochis and other PokeMacGochis on your Wi-Fi so your Pokémon can visit, battle and trade.</string>
+  <key>NSLocalNetworkUsageDescription</key><string>Catch 151 looks for other Catch 151 games on your Wi-Fi (Knomis, Macs, PCs) so your Pokémon can visit, battle and trade.</string>
 </dict>
 </plist>

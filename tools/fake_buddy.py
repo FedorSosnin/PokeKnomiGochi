@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A fake PokeKnomiGochi on this wifi, to test the buddy feature with a single board.
+"""A fake Catch 151 on this wifi, to test the buddy feature with a single board.
 
   python3 tools/fake_buddy.py                       says hello and accepts whatever it is asked
   python3 tools/fake_buddy.py --invite battle       also invites to battle

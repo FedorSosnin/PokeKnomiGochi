@@ -72,7 +72,7 @@ void hostSetOpenUrl(HostOpenUrl fn);
 
 // Buddy relay (relay/ on Cloudflare): the front end keeps a WebSocket to HOST_RELAY_URL, adding
 // "?v4=<its public IPv4>" when it can learn it, and passes things through on the game's thread.
-#define HOST_RELAY_URL "wss://pokeknomigochi-relay.fedor-dd0.workers.dev/ws"
+#define HOST_RELAY_URL "wss://catch151-relay.fedor-dd0.workers.dev/ws"  // (src/buddy.h: the same lobby as the old one)
 #define HOST_RELAY_V4_URL "https://api4.ipify.org"  // answers with the IPv4 alone, over IPv4 only
 typedef void (*HostRelaySend)(const uint8_t *data, int len);
 void hostRelayConnected(HostRelaySend send);  // connected (how to send), or NULL when it drops
@@ -84,7 +84,7 @@ void hostRelayReceived(const uint8_t *data, int len);  // a binary message from 
 // true once per request), fetch HOST_TIME_URL (a HEAD request, past any cache) and pass its Date header
 // to hostNetTime() as seconds since 1970 UTC, or 0 if it failed. The browser asks its own site instead.
 // Until an answer comes, the game counts no time away from before it started.
-#define HOST_TIME_URL "https://pokewebgochi.3dprintsos.com/"
+#define HOST_TIME_URL "https://catch151.3dprintsos.com/"
 bool hostNetTimeWanted(void);
 void hostNetTime(uint32_t utc);
 

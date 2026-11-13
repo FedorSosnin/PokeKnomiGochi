@@ -1,4 +1,4 @@
-// PokeWinGochi: the game's round window on a Windows desktop, what mac/main.mm is on a Mac.
+// Catch 151 for Windows: the game's round window on a Windows desktop, what mac/main.mm is on a Mac.
 // Only the window; the game and everything else live in host/ (see host/host.h).
 #define _WIN32_WINNT 0x0A00  // Windows 10 and up
 #define NOMINMAX
@@ -34,11 +34,14 @@
 #include "version.h"
 #include "src/update_key.h"  // checks the updates' signature
 
-#define APP_NAME "PokeWinGochi"
-#define APP_NAME_W L"PokeWinGochi"
+// the name everyone sees (Catch 151 since 2.2.0), and the one the save, the pictures' folder, the update's files and
+// the window's class keep from before (PokeWinGochi): copies out there find their save and update under it
+#define APP_NAME_W L"Catch 151"
+#define APP_STORAGE "PokeWinGochi"
+#define APP_STORAGE_W L"PokeWinGochi"
 // About box
 #define AUTHOR_EMAIL "fedor@3dprintsos.com"
-#define GITHUB_URL L"https://github.com/FedorSosnin/PokeKnomiGochi"
+#define GITHUB_URL L"https://github.com/FedorSosnin/Catch151"
 #define YOUTUBE_URL L"https://youtube.com/3dprintsos"
 #define TICK_MS 16  // 60 a second: the game wants 50 or more
 // The Pokeball frame around the screen, in points (1/96 inch, scaled with the display). Only the frame
@@ -75,7 +78,7 @@ static std::vector<uint8_t> gCrtBuf;  // that image, the screen's own size (RGBA
 // no SmartScreen warning after the first install. When it can't (an older release, a folder it can't
 // write to), the menu offers the download as before.
 #define GITHUB_API_HOST L"api.github.com"
-#define RELEASES_PATH L"/repos/FedorSosnin/PokeKnomiGochi/releases?per_page=30"
+#define RELEASES_PATH L"/repos/FedorSosnin/Catch151/releases?per_page=30"
 #define RELEASE_TAG "win-v"
 #define RELEASE_ASSET "PokeWinGochi.exe"
 #define RELEASE_SIG RELEASE_ASSET ".sig"
@@ -191,7 +194,7 @@ static bool writeResource(int id, const std::string &path) {
 }
 
 static std::string unpackResources() {
-  std::string dir = knownFolder(FOLDERID_LocalAppData) + "/" APP_NAME "/res";
+  std::string dir = knownFolder(FOLDERID_LocalAppData) + "/" APP_STORAGE "/res";
   SHCreateDirectoryExW(NULL, winPath(dir + "/fonts").c_str(), NULL);
   bool ok = writeResource(IDR_SPRITES, dir + "/sprites.tpkz") &&
             writeResource(IDR_FONT_JA, dir + "/fonts/unifont_t_japanese3.u8g2") &&
@@ -202,7 +205,7 @@ static std::string unpackResources() {
 
 // ---- HTTPS (WinHTTP): one GET, the body as a string ----
 static HINTERNET httpSession() {
-  static HINTERNET s = WinHttpOpen(APP_NAME_W L"/" L"" APP_VERSION, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
+  static HINTERNET s = WinHttpOpen(L"Catch151/" L"" APP_VERSION, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,
                                    WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
   return s;
 }
@@ -891,7 +894,7 @@ static HRESULT CALLBACK aboutLink(HWND, UINT msg, WPARAM, LPARAM lp, LONG_PTR) {
 static void showAbout() {
   std::wstring text = L"Version " + wide(APP_VERSION) +
                       L"\n\nBy <a href=\"mailto:" AUTHOR_EMAIL L"\">" AUTHOR_EMAIL L"</a>"
-                      L"\n<a href=\"" GITHUB_URL L"\">PokeKnomiGochi on GitHub</a>"
+                      L"\n<a href=\"" GITHUB_URL L"\">Catch 151 on GitHub</a>"
                       L"\n<a href=\"" YOUTUBE_URL L"\">YouTube channel</a>"
                       L"\n\nSprites from PMDCollab (CC BY-NC). "
                       L"Pokémon © Nintendo / Game Freak / The Pokémon Company.";
@@ -987,7 +990,7 @@ static void checkForUpdates(bool asked) {
         std::string v = tag.substr(strlen(RELEASE_TAG));
         if (!res->version.empty() && compareVersions(v, res->version) <= 0) continue;
         res->version = v;
-        res->url = wide("https://github.com/FedorSosnin/PokeKnomiGochi/releases/tag/" + tag);
+        res->url = wide("https://github.com/FedorSosnin/Catch151/releases/tag/" + tag);
         res->exe.clear();
         res->sig.clear();
         const std::string dl = "\"browser_download_url\":\"";
@@ -1064,7 +1067,7 @@ static void installUpdate() {
     std::wstring *out = new std::wstring;
     if (httpGetUrl(sigUrl, sig) && httpGetUrl(exeUrl, exe) && exe.size() > 4096 && exe[0] == 'M' && exe[1] == 'Z') {
       if (updateSignatureOK(exe, sig)) {
-        std::wstring fresh = besideExe(L"" APP_NAME_W L".new.exe");
+        std::wstring fresh = besideExe(L"" APP_STORAGE_W L".new.exe");
         HANDLE f = CreateFileW(fresh.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
         DWORD wrote = 0;
         bool ok = f != INVALID_HANDLE_VALUE && WriteFile(f, exe.data(), (DWORD)exe.size(), &wrote, NULL) && wrote == exe.size();
@@ -1099,7 +1102,7 @@ static void updateFailed(const std::wstring &why) {
 // the new .exe is beside this one: save, swap the two, start it and quit
 static void swapInUpdate(const std::wstring &fresh) {
   hostFlushSave();  // the pet first
-  std::wstring cur = exePath(), old = besideExe(L"" APP_NAME_W L".old.exe");
+  std::wstring cur = exePath(), old = besideExe(L"" APP_STORAGE_W L".old.exe");
   DeleteFileW(old.c_str());
   if (!MoveFileExW(cur.c_str(), old.c_str(), MOVEFILE_REPLACE_EXISTING)) {
     DeleteFileW(fresh.c_str());
@@ -1576,8 +1579,8 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
   gInst = inst;
   // after an update: the old .exe, renamed out of the way while it ran (it may still be closing)
   std::thread([] {
-    for (int i = 0; i < 20 && GetFileAttributesW(besideExe(L"" APP_NAME_W L".old.exe").c_str()) != INVALID_FILE_ATTRIBUTES; i++) {
-      DeleteFileW(besideExe(L"" APP_NAME_W L".old.exe").c_str());
+    for (int i = 0; i < 20 && GetFileAttributesW(besideExe(L"" APP_STORAGE_W L".old.exe").c_str()) != INVALID_FILE_ATTRIBUTES; i++) {
+      DeleteFileW(besideExe(L"" APP_STORAGE_W L".old.exe").c_str());
       Sleep(500);
     }
   }).detach();
@@ -1592,11 +1595,11 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
 
   const char *env = getenv("POKEMACGOCHI_SAVE_DIR");
   gOwnSave = env == NULL;
-  std::string saveDir = env ? env : knownFolder(FOLDERID_RoamingAppData) + "/" APP_NAME;
+  std::string saveDir = env ? env : knownFolder(FOLDERID_RoamingAppData) + "/" APP_STORAGE;
   for (char &c : saveDir)
     if (c == '\\') c = '/';
   if (!lockSave(saveDir)) {
-    fprintf(stderr, APP_NAME " is already open\n");
+    fprintf(stderr, "Catch 151 is already open\n");
     if (gOwnSave)  // opened again by hand: say where the running one is instead of doing nothing
       MessageBoxW(NULL,
                   L"It's the round window on your desktop. If it is hidden, use the Poké Ball icon in the "
@@ -1616,12 +1619,12 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
   wc.hInstance = inst;
   wc.hIcon = LoadIconW(inst, MAKEINTRESOURCEW(IDI_APP));
   wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-  wc.lpszClassName = APP_NAME_W;
+  wc.lpszClassName = APP_STORAGE_W;
   RegisterClassExW(&wc);
   RECT rest = initialRest(gSize);
   int pad = (int)lround(RING_PAD * gScale);
   // floating above other windows, outside the taskbar (the notification-area icon finds it)
-  gWnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, APP_NAME_W, APP_NAME_W, WS_POPUP,
+  gWnd = CreateWindowExW(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, APP_STORAGE_W, APP_NAME_W, WS_POPUP,
                          rest.left - pad, rest.top - pad, 1, 1, NULL, NULL, inst, NULL);
   WNDCLASSEXW sc = {sizeof(sc)};  // the drop shadow's window: clicks go through it (WS_EX_TRANSPARENT), never active
   sc.lpfnWndProc = DefWindowProcW;

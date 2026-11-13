@@ -949,7 +949,7 @@ static void testGame() {
         CHECK(clockOpen && clockPage == 1);
         hostSetOpenUrl([](const char *u) { opened = u; });
         tapAt(164, 340);  // GITHUB
-        CHECK(opened == "https://github.com/FedorSosnin/PokeKnomiGochi");
+        CHECK(opened == "https://github.com/FedorSosnin/Catch151");
         tapAt(302, 340);  // YOUTUBE
         CHECK(opened == "https://youtube.com/3dprintsos");
         hostSetOpenUrl(nullptr);

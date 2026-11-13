@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-// Buddy: another PokeKnomiGochi on the same wifi. UDP messages with a fixed format and rules without
+// Buddy: another Catch 151 on the same wifi. UDP messages with a fixed format and rules without
 // hardware (test/test_buddy.cpp); the radio lives in buddy_net.cpp. Nothing that arrives over the
 // network is taken as good: everything is validated before use. Only the species, level,
 // nickname and Pokedex of the pet travel.
@@ -23,7 +23,9 @@
 #define SD_GUEST 2
 // The relay (relay/ on Cloudflare): lets browsers, which can't use these Wi-Fi messages, meet
 // everyone else. The same messages travel over one WebSocket; see relay/src/index.js.
-#define BUDDY_RELAY_HOST "pokeknomigochi-relay.fedor-dd0.workers.dev"
+// Catch 151's relay (2.2.0 on): a second Worker sharing the old one's lobby (relay/wrangler-catch151.toml), so copies
+// on either address meet
+#define BUDDY_RELAY_HOST "catch151-relay.fedor-dd0.workers.dev"
 #define BUDDY_RELAY_PATH "/ws"
 #define BUDDY_RELAY_PING_MS 45000UL  // keeps a quiet connection open (the relay answers "pong")
 

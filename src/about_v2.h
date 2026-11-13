@@ -357,7 +357,7 @@ static void v2AboutQrDraw() {
   v2Panel(CX - 150, 58, CX + 150, y0 + w + 56, 12);
   setSize(2);
   gfx->setTextColor(UI_INK);
-  const char *title = yt ? "YouTube: 3D Print SOS" : "GitHub: PokeKnomiGochi";
+  const char *title = yt ? "YouTube: 3D Print SOS" : "GitHub: Catch 151";
   setCur(centerX(title, 2), 74);
   printT(title);
   for (int r = 0; r < n; r++)

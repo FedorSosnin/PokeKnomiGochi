@@ -1,4 +1,4 @@
-// PokeMacGochi: the game's round window on a Mac desktop. Only the window; the game
+// Catch 151 for Mac: the game's round window on a Mac desktop. Only the window; the game
 // and everything else live in host/ (see host/host.h).
 #import <AppKit/AppKit.h>
 #import <AudioToolbox/AudioToolbox.h>
@@ -14,10 +14,14 @@
 #include "shim/Preferences.h"  // the save folder's storage, as the game uses it
 #include "../src/update_key.h"        // checks the updates' signature
 
-#define APP_NAME "PokeMacGochi"
+// the name everyone sees (Catch 151 since 2.2.0), and the one the save folder, the program inside the app and the
+// update's files keep from before (PokeMacGochi): copies out there find their save and update under it
+#define APP_NAME "Catch 151"
+#define APP_STORAGE "PokeMacGochi"
+#define APP_BUNDLE "Catch 151.app"  // what the app renames itself to when it installs an update (see swapInUpdate)
 // About box
 #define AUTHOR_EMAIL "fedor@3dprintsos.com"
-#define GITHUB_URL "https://github.com/FedorSosnin/PokeKnomiGochi"
+#define GITHUB_URL "https://github.com/FedorSosnin/Catch151"
 #define YOUTUBE_URL "https://youtube.com/3dprintsos"
 #define TICK_S (1.0 / 60.0)
 // The Pokeball frame around the screen, in points. Only the frame drags the window: the screen is all
@@ -49,7 +53,7 @@ static bool gCrt = true;    // the CRT screen (host_crt.h), saved as "crt"
 // new one. Downloaded by the app and not by a browser, it isn't quarantined: no Gatekeeper warning
 // after the first install. When it can't (an older release, an app it can't write, running from the
 // DMG), the menu offers the download as before.
-#define RELEASES_API "https://api.github.com/repos/FedorSosnin/PokeKnomiGochi/releases?per_page=30"
+#define RELEASES_API "https://api.github.com/repos/FedorSosnin/Catch151/releases?per_page=30"
 #define UPDATE_EVERY_S (60 * 60)  // GitHub answers 60 an hour from one address
 #define UPDATE_POLL_S (10 * 60)
 static NSDate *gUpdateAnswered = nil;  // when GitHub last answered an update check
@@ -665,7 +669,7 @@ static NSAttributedString *aboutLine(NSString *label, NSString *text, NSString *
 - (void)showAbout:(id)sender {
   NSMutableAttributedString *credits = [[NSMutableAttributedString alloc] init];
   [credits appendAttributedString:aboutLine(@"By ", @AUTHOR_EMAIL, @"mailto:" AUTHOR_EMAIL)];
-  [credits appendAttributedString:aboutLine(@"", @"PokeKnomiGochi on GitHub", @GITHUB_URL)];
+  [credits appendAttributedString:aboutLine(@"", @"Catch 151 on GitHub", @GITHUB_URL)];
   if (strlen(YOUTUBE_URL)) [credits appendAttributedString:aboutLine(@"", @"YouTube channel", @YOUTUBE_URL)];
   [credits appendAttributedString:[[NSAttributedString alloc]
                                       initWithString:@"\nSprites from PMDCollab (CC BY-NC). "
@@ -895,7 +899,7 @@ static NSRect initialFrame(bool ownSave) {
   // POKEMACGOCHI_UPDATE_API: another release list, for testing the update on a local server
   NSString *api = NSProcessInfo.processInfo.environment[@"POKEMACGOCHI_UPDATE_API"] ?: @RELEASES_API;
   NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:api]];
-  [req setValue:@APP_NAME forHTTPHeaderField:@"User-Agent"];
+  [req setValue:@"Catch151" forHTTPHeaderField:@"User-Agent"];
   [req setValue:@"application/vnd.github+json" forHTTPHeaderField:@"Accept"];
   req.timeoutInterval = 15;
   if (asked) req.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
@@ -916,7 +920,8 @@ static NSRect initialFrame(bool ownSave) {
         for (NSDictionary *a in r[@"assets"]) {
           if (![a isKindOfClass:NSDictionary.class] || ![a[@"browser_download_url"] isKindOfClass:NSString.class]) continue;
           NSURL *u = [NSURL URLWithString:a[@"browser_download_url"]];
-          if ([a[@"name"] isEqual:@"PokeMacGochi.dmg"]) url = u;
+          // the DMG for people: Catch151.dmg from 2.2.0 on, PokeMacGochi.dmg before
+          if ([a[@"name"] isEqual:@"Catch151.dmg"] || ([a[@"name"] isEqual:@"PokeMacGochi.dmg"] && ![url.lastPathComponent isEqual:@"Catch151.dmg"])) url = u;
           if ([a[@"name"] isEqual:@UPDATE_ZIP]) zip = u;
           if ([a[@"name"] isEqual:@UPDATE_ZIP ".sig"]) sig = u;
         }
@@ -982,7 +987,11 @@ static NSRect initialFrame(bool ownSave) {
           NSTask *unzip = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/ditto"
                                                    arguments:@[ @"-x", @"-k", zipFile.path, tmp.path ]];
           [unzip waitUntilExit];
-          fresh = [tmp URLByAppendingPathComponent:appURL.lastPathComponent];
+          // whichever app the zip holds (it keeps PokeMacGochi.app for the copies out there that look for that name;
+          // this one can be called anything)
+          fresh = nil;
+          for (NSURL *f in [NSFileManager.defaultManager contentsOfDirectoryAtURL:tmp includingPropertiesForKeys:nil options:0 error:nil])
+            if ([f.pathExtension isEqual:@"app"]) fresh = f;
           NSDictionary *info = [NSDictionary dictionaryWithContentsOfURL:[fresh URLByAppendingPathComponent:@"Contents/Info.plist"]];
           if (unzip.terminationStatus != 0 || ![info[@"CFBundleShortVersionString"] isEqual:version] ||
               ![info[@"CFBundleIdentifier"] isEqual:NSBundle.mainBundle.bundleIdentifier])
@@ -1007,13 +1016,22 @@ static NSRect initialFrame(bool ownSave) {
     [self updateFailed:@"The new app couldn't be put in place of this one."];
     return;
   }
+  // the new name: an app still called PokeMacGochi.app (or anything else) becomes Catch 151.app where it is, unless
+  // something already has that name there (Fedor: "Catch151 is the new game name. We need to change it everywhere")
+  NSURL *placed = now ?: appURL;
+  if (![placed.lastPathComponent isEqual:@APP_BUNDLE]) {
+    NSURL *renamed = [placed.URLByDeletingLastPathComponent URLByAppendingPathComponent:@APP_BUNDLE];
+    if (![NSFileManager.defaultManager fileExistsAtPath:renamed.path] &&
+        [NSFileManager.defaultManager moveItemAtURL:placed toURL:renamed error:nil])
+      now = renamed;
+  }
   fprintf(stderr, "update: installed, reopening\n");
   // reopen once this one has quit (the save is locked while it runs). A test copy (its own save, from
   // POKEMACGOCHI_SAVE_DIR) starts its program directly so it keeps that save; the real app goes through open
   NSString *path = (now ?: appURL).path;
   NSString *wait = [NSString stringWithFormat:@"while kill -0 %d 2>/dev/null; do sleep 0.2; done; ", getpid()];
   NSString *cmd = gOwnSave ? [wait stringByAppendingString:@"exec /usr/bin/open \"$0\""]
-                           : [wait stringByAppendingString:@"exec \"$0/Contents/MacOS/" APP_NAME "\" \"$@\""];
+                           : [wait stringByAppendingString:@"exec \"$0/Contents/MacOS/" APP_STORAGE "\" \"$@\""];
   NSMutableArray *args = [NSMutableArray arrayWithObjects:@"-c", cmd, path, nil];
   if (!gOwnSave)
     for (char **a = gArgv + 1; *a; a++) [args addObject:@(*a)];
@@ -1179,7 +1197,7 @@ int main(int argc, char **argv) {
     gOwnSave = saveDir == nil;
     if (!saveDir) {
       NSString *support = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES)[0];
-      saveDir = [support stringByAppendingPathComponent:@APP_NAME];
+      saveDir = [support stringByAppendingPathComponent:@APP_STORAGE];
     }
     if (!lockSave(saveDir)) {
       fprintf(stderr, APP_NAME " is already open\n");

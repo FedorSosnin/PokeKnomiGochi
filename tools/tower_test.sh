@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Knomi Tower's test copy of PokeMacGochi, apart from the real app: its own save folder, its own buddy port (it never
+# Knomi Tower's test copy of Catch 151 for Mac, apart from the real app: its own save folder, its own buddy port (it never
 # visits the real pets), no auto-update, and another bundle id. It opens on Travel with a Pokemon ready to climb.
 #   tools/tower_test.sh [strong|new|master]     strong: a stacked Lv 100 Charizard (DEF 25) and 3-star friends (the default)
 #                                        new: a Lv 15 Charmander with a few friends, to see where a new team stops

@@ -1,4 +1,4 @@
-// PokeWinGochi.exe's resources: the icon, the manifest, the file properties, and the game's
+// Catch 151 for Windows's resources (the file is still PokeWinGochi.exe for the updates): the icon, the manifest, the file properties, and the game's
 // files (main.cpp writes them out to %LOCALAPPDATA%\PokeWinGochi\res at launch): one .exe is the app.
 #include <windows.h>
 #include "version.h"
@@ -22,12 +22,12 @@ BEGIN
     BLOCK "040904B0"
     BEGIN
       VALUE "CompanyName", "Fedor Sosnin"
-      VALUE "FileDescription", "PokeWinGochi"
+      VALUE "FileDescription", "Catch 151"
       VALUE "FileVersion", APP_VERSION
       VALUE "InternalName", "PokeWinGochi"
       VALUE "LegalCopyright", "Fedor Sosnin. Personal, non-commercial."
       VALUE "OriginalFilename", "PokeWinGochi.exe"
-      VALUE "ProductName", "PokeWinGochi"
+      VALUE "ProductName", "Catch 151"
       VALUE "ProductVersion", APP_VERSION
     END
   END

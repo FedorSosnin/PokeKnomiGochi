@@ -1,4 +1,4 @@
-// The buddy relay: lets PokeWebGochi in a browser (which can't send the Knomi's local Wi-Fi
+// The buddy relay: lets Catch 151 in a browser (which can't send the Knomi's local Wi-Fi
 // messages) meet Knomis, Macs and other browsers on the same home network.
 //
 // It only passes along the game's own buddy messages (65 bytes, "PKG1", see buddy.h) between
@@ -53,7 +53,7 @@ export default {
       }
       return res;
     }
-    return new Response('PokeKnomiGochi buddy relay. See https://github.com/FedorSosnin/PokeKnomiGochi\n', {
+    return new Response('Catch 151 buddy relay. See https://github.com/FedorSosnin/Catch151\n', {
       headers: { 'content-type': 'text/plain' },
     });
   },

@@ -39,7 +39,7 @@ The anchor starts as the system clock and moves to a time server as soon as the 
 
 ```bash
 mac/build_app.sh     # build/mac/PokeMacGochi.app
-mac/build_dmg.sh     # build/mac/PokeMacGochi.dmg, for a release
+mac/build_dmg.sh     # build/mac/Catch151.dmg (Catch 151.app inside), for a release
 mac/make_icon.sh     # regenerates mac/AppIcon.icns from a frame of the game (throwaway save)
 ```
 
@@ -59,7 +59,7 @@ make -C host test
 
 ## Using the app
 
-The save lives in `~/Library/Application Support/PokeMacGochi`, separate from any board. A second copy of the app refuses to open on the same save.
+The save lives in `~/Library/Application Support/PokeMacGochi` (the game's old name: copies out there find their save under it), separate from any board. A second copy of the app refuses to open on the same save.
 
 | Input | Does |
 |---|---|

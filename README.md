@@ -1,24 +1,26 @@
-# PokeKnomiGochi
+# Catch 151
+
+<p align="center"><img src="tools/assets/brand/catch151-large@3x.png" width="363" alt="Catch 151"></p>
 
 <p align="center">
-  <a href="https://fedorsosnin.github.io/PokeKnomiGochi/"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Ffedorsosnin.github.io%2FPokeKnomiGochi%2Fupdate.json&query=%24.version&label=Knomi%20V2&prefix=install%20v&color=e8742a&cacheSeconds=3600" alt="Install on the Knomi V2 from your browser"></a>
-  <a href="https://github.com/FedorSosnin/PokeKnomiGochi/releases/latest/download/PokeMacGochi.dmg"><img src="https://img.shields.io/badge/download-Mac-6e6e73?logo=apple&logoColor=white" alt="Download PokeMacGochi for the Mac"></a>
-  <a href="https://github.com/FedorSosnin/PokeKnomiGochi/releases?q=win-v&expanded=true"><img src="https://img.shields.io/badge/download-Windows%20PC-0078d4" alt="Download PokeWinGochi for Windows"></a>
-  <a href="https://pokewebgochi.3dprintsos.com"><img src="https://img.shields.io/badge/play-in%20your%20browser-de2121" alt="Play PokeWebGochi in your browser"></a>
-  <a href="https://fedorsosnin.github.io/PokeKnomiGochi/sprites/"><img src="https://img.shields.io/badge/online-Catch_151_Dex-d4a017" alt="The online Catch 151 Dex"></a>
-  <a href="relay/README.md"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=2ea043&cacheSeconds=300" alt="Live players right now"></a>
+  <a href="https://fedorsosnin.github.io/Catch151/"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Ffedorsosnin.github.io%2FCatch151%2Fupdate.json&query=%24.version&label=Knomi%20V2&prefix=install%20v&color=e8742a&cacheSeconds=3600" alt="Install on the Knomi V2 from your browser"></a>
+  <a href="https://github.com/FedorSosnin/Catch151/releases/latest/download/Catch151.dmg"><img src="https://img.shields.io/badge/download-Mac-6e6e73?logo=apple&logoColor=white" alt="Download Catch 151 for Mac"></a>
+  <a href="https://github.com/FedorSosnin/Catch151/releases?q=win-v&expanded=true"><img src="https://img.shields.io/badge/download-Windows%20PC-0078d4" alt="Download Catch 151 for Windows"></a>
+  <a href="https://catch151.3dprintsos.com"><img src="https://img.shields.io/badge/play-in%20your%20browser-de2121" alt="Play Catch 151 in your browser"></a>
+  <a href="https://fedorsosnin.github.io/Catch151/sprites/"><img src="https://img.shields.io/badge/online-Catch_151_Dex-d4a017" alt="The online Catch 151 Dex"></a>
+  <a href="relay/README.md"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcatch151-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=2ea043&cacheSeconds=300" alt="Live players right now"></a>
 </p>
 
-A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made for 3D printers, and for your Mac, your Windows PC and your browser. Raise any of the original 151 as it walks through its own pixel world, battle and catch wild Pokémon, climb Knomi Tower, fill your [Pokédex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/), and play mini games by tapping and tilting.
+**Catch 151** (until 2.2.0 called PokeKnomiGochi) is a Pokémon game for the **BTT Knomi V2**, the little round screen made for 3D printers, and for your Mac, your Windows PC and your browser. Raise any of the original 151 as it walks through its own pixel world, battle and catch wild Pokémon, climb Knomi Tower, fill your [Pokédex](https://fedorsosnin.github.io/Catch151/sprites/), and play mini games by tapping and tilting.
 
 | | |
 |:--:|:--:|
-| <img src="docs/images/v2/crt-cave.webp" width="404" alt="PokeMacGochi with its CRT screen, in its Poké Ball ring: Moltres flying through the Cave as the ground slides by, with Pikachu visiting"> | <img src="docs/images/v2/knomi-gameboys.gif" width="360" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, on a desk beside two Game Boys: Gengar walking past the haunted Mansion"> |
+| <img src="docs/images/v2/crt-cave.webp" width="404" alt="Catch 151 for Mac with its CRT screen, in its Poké Ball ring: Moltres flying through the Cave as the ground slides by, with Pikachu visiting"> | <img src="docs/images/v2/knomi-gameboys.gif" width="360" alt="Catch 151 on a BTT Knomi V2 in its 3D-printed Poké Ball case, on a desk beside two Game Boys: Gengar walking past the haunted Mansion"> |
 | **On your computer**<br><sub>Mac, Windows and the browser, with the CRT screen</sub> | **On the Knomi V2**<br><sub>its real round screen, in a 3D-printed Poké Ball</sub> |
 
-**No Knomi? [Play it in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#pokemacgochi-mac) or the [Windows app](#pokewingochi-windows). **CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look.
+**No Knomi? [Play it in your browser](https://catch151.3dprintsos.com)** on a computer, phone or tablet, or get the [Mac app](#catch-151-for-mac) or the [Windows app](#catch-151-for-windows). **CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look.
 
-**[Catch 151 Dex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/)**: all 151, regular and shiny, in every view the game has (standing, turning, walking, from behind, asleep, attacking and more), sorted by number or type, each credited to its artists. Each one's page says what the game's Pokédex says about it, with its stats and every move it learns; pick a few to see their match-ups, and tick the ones you have.
+**[Catch 151 Dex](https://fedorsosnin.github.io/Catch151/sprites/)**: all 151, regular and shiny, in every view the game has (standing, turning, walking, from behind, asleep, attacking and more), sorted by number or type, each credited to its artists. Each one's page says what the game's Pokédex says about it, with its stats and every move it learns; pick a few to see their match-ups, and tick the ones you have.
 
 ## What's in it
 
@@ -36,7 +38,7 @@ A Pokémon virtual pet for the **BTT Knomi V2**, the little round screen made fo
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **The Repel.** Ten minutes of mini games earn a Repel. Spray it from the backpack and weaker wild Pokémon stay away for 3 minutes, so the ones you're hunting turn up.
 
-<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Fill the Pokédex.** All 151, with their shiny forms, each caught with 1 to 3 stars. Every entry turns round to show its Pokémon from all sides. **[View the Pokédex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/)**: all of them, regular and shiny, in every view.
+<img src="docs/images/v2/pokeball.png" width="18" alt=""> **Fill the Pokédex.** All 151, with their shiny forms, each caught with 1 to 3 stars. Every entry turns round to show its Pokémon from all sides. **[View the Pokédex](https://fedorsosnin.github.io/Catch151/sprites/)**: all of them, regular and shiny, in every view.
 
 <img src="docs/images/v2/pokeball.png" width="18" alt=""> **Travel Knomi Island.** Five zones on a round island that's alive: foam runs round the coast, the pines sway and the Mansion's windows light up and go dark. See what's still missing in each, then follow the pier out to Knomi Tower.
 
@@ -139,7 +141,7 @@ You need a BTT Knomi V2, a USB-C data cable, and Chrome or Edge on a computer.
 Don't have a Knomi yet? **[Get the BIGTREETECH Knomi V2](https://www.awin1.com/pclick.php?p=43148197656&a=2034499&m=95665)**. This is an affiliate link from [deals.3dprintsos.com](https://deals.3dprintsos.com): buying through it supports this project at no extra cost to you.
 
 1. Plug in the Knomi.
-2. Open the **[web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)** and click **Install**.
+2. Open the **[web installer](https://fedorsosnin.github.io/Catch151/)** and click **Install**.
 3. Pick the USB serial port and wait a few minutes.
 
 **Updating later:** run the installer again and leave **Erase device** unticked. That keeps your Pokémon and your Wi-Fi.
@@ -292,7 +294,7 @@ Tap the **handheld** icon, on the left, for the mini games: cartridges on a Game
 
 ### Buddies
 
-If another PokeKnomiGochi joins the same Wi-Fi network, its Pokémon comes over and walks beside yours, and a round Party Boost button (two balloons and **+2**) appears in the sky to the right of yours. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
+If another Catch 151 joins the same Wi-Fi network, its Pokémon comes over and walks beside yours, and a round Party Boost button (two balloons and **+2**) appears in the sky to the right of yours. Up to 4 buddies can visit at once. Whenever buddies or a daily visitor are around, yours stands in the middle and a size bigger than the rest, so you can always tell which one is yours, even among Pokémon of the same species; the others stand at the sides. Tap a buddy's Pokémon to open the buddy menu for it, and swipe left or right there to switch buddies. Having a buddy earns the **First buddy** medal, and a full party of 5 Pokémon on screen earns **Party of 5**.
 
 - **Battle:** a friendly match where each of you picks your own moves. It makes your Pokémon happy, with no training gained and no energy lost.
 - **Trade:** each of you picks a Pokémon from your Pokédex, and a green dot marks ones your buddy doesn't have yet. Once you both confirm, you swap: the one you gave leaves your Pokédex. A shiny is its own square, so you can trade it and keep the regular one. Your own partner can't be traded, so with only one Pokémon, Trade is greyed out. Changed your mind? The **✕** backs out at any point before the swap, and nothing changes hands.
@@ -314,7 +316,7 @@ It's the same boost however many friends are around. Tap the Party Boost button 
 |:---:|:---:|:---:|
 | **Who's here, and the boost** | **A buddy's stats, then swipe to play** | **The visitor, and its candy** |
 
-To find each other, PokeKnomiGochis share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac version (PokeMacGochi), the Windows version (PokeWinGochi) and the browser version (PokeWebGochi), in any mix.
+To find each other, Catch 151 games share their Pokémon's species, level and nickname and their Pokédex with other devices on the same network. Buddies work between Knomis, the Mac and Windows apps and the browser version, in any mix.
 
 ### Daily visitor
 
@@ -338,7 +340,7 @@ Once it's on Wi-Fi, the Knomi looks for a new version two minutes after it start
 
 <p align="center"><img src="docs/images/v2/settings.png" alt="The settings page: Change Wi-Fi, Check for update, and the Auto-update switch, on" width="240"></p>
 
-On version 1.30 or older, **Update** could fail while buddies were connected through the internet relay: the two secure connections didn't fit in memory together. If yours says "Update failed", install 1.31 or newer once with the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/) and a USB cable, without ticking "Erase device". It keeps your Pokémon, and from then on updates over Wi-Fi work.
+On version 1.30 or older, **Update** could fail while buddies were connected through the internet relay: the two secure connections didn't fit in memory together. If yours says "Update failed", install 1.31 or newer once with the [web installer](https://fedorsosnin.github.io/Catch151/) and a USB cable, without ticking "Erase device". It keeps your Pokémon, and from then on updates over Wi-Fi work.
 
 ## 3D-printed case
 
@@ -369,10 +371,10 @@ esptool --port YOUR_PORT read-flash 0 ALL knomi-backup.bin
 
 ## Build it yourself
 
-The project builds with [arduino-cli](https://arduino.github.io/arduino-cli/) and ESP32 core 3.3.10. The folder has to be called `PokeKnomiGochi`, because Arduino requires the folder to match the sketch name.
+The project builds with [arduino-cli](https://arduino.github.io/arduino-cli/) and ESP32 core 3.3.10. The folder has to be called `PokeKnomiGochi` (the game's first name, still the sketch's), because Arduino requires the folder to match the sketch name: the clone below names it so.
 
 ```bash
-git clone https://github.com/FedorSosnin/PokeKnomiGochi.git
+git clone https://github.com/FedorSosnin/Catch151.git PokeKnomiGochi
 ```
 
 ```bash
@@ -423,13 +425,13 @@ The code also builds for the Waveshare ESP32-S3-Touch-AMOLED-1.75, a bigger roun
 | [`docs/`](docs) | How it all works, the charts and the screenshots |
 | [`print/`](print) | The 3D-printed case |
 
-## PokeWebGochi (browser)
+## Catch 151 for Web
 
-**[Play in your browser](https://pokewebgochi.3dprintsos.com)** on a computer, phone or tablet: the same game in a Poké Ball ring on a black page, with the CRT screen. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.
+**[Play in your browser](https://catch151.3dprintsos.com)** on a computer, phone or tablet: the same game in a Poké Ball ring on a black page, with the CRT screen. Nothing to install. On a phone, **Add to Home Screen** makes it a full-screen app.
 
 | | |
 |:--:|:--:|
-| <img src="docs/images/v2/web-desktop.webp" alt="PokeWebGochi in a computer's browser, with the CRT screen: Charmeleon in the Field on a sunny morning, the controls above and the buttons below" width="520"> | <img src="docs/images/v2/web-phone.webp" alt="PokeWebGochi on a phone, with the CRT screen: the same Charmeleon, with Enable tilt and Vibration among the buttons" width="175"> |
+| <img src="docs/images/v2/web-desktop.webp" alt="Catch 151 for Web in a computer's browser, with the CRT screen: Charmeleon in the Field on a sunny morning, the controls above and the buttons below" width="520"> | <img src="docs/images/v2/web-phone.webp" alt="Catch 151 for Web on a phone, with the CRT screen: the same Charmeleon, with Enable tilt and Vibration among the buttons" width="175"> |
 | **On a computer** | **On a phone** |
 
 - **Saves:** it saves in the browser by itself. Clearing the browser's data erases it, so use **Export save** now and then for a backup file, and **Import save** to bring a Pokémon back or move it to another browser. Coming from V1, your Pokémon comes along by itself, and V1's save stays as it was.
@@ -442,43 +444,43 @@ The code also builds for the Waveshare ESP32-S3-Touch-AMOLED-1.75, a bigger roun
 
 To build it yourself, run `webgame/build.sh` (needs [Emscripten](https://emscripten.org)); `tools/publish_web.sh` publishes it. The relay's code is in [relay/](relay/).
 
-## PokeMacGochi (Mac)
+## Catch 151 for Mac
 
 The same game as a round window on your Mac desktop, in a Poké Ball ring with a soft shadow under it. It has no Dock icon; it lives in the menu bar. It needs an Apple silicon Mac (M1 or later) with macOS 12 Monterey or newer.
 
-1. Download `PokeMacGochi.dmg` from the [latest release](https://github.com/FedorSosnin/PokeKnomiGochi/releases), open it and drag **PokeMacGochi** to **Applications**.
+1. Download `Catch151.dmg` from the [latest release](https://github.com/FedorSosnin/Catch151/releases), open it and drag **Catch 151** to **Applications**. (Had PokeMacGochi? It updates itself to Catch 151 and keeps your pet.)
 2. Open it once. macOS warns that it can't check the app, because it isn't signed by an Apple developer account. Click **Done**.
-3. Go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to PokeMacGochi. After that it opens normally.
+3. Go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to Catch 151. After that it opens normally.
 
-   Or, in Terminal: `xattr -dr com.apple.quarantine /Applications/PokeMacGochi.app`
+   Or, in Terminal: `xattr -dr com.apple.quarantine "/Applications/Catch 151.app"`
 
 **Controls:** click, hold and swipe like a touch screen. The left and right arrows tilt, for Berry Drop and throwing Poké Balls, and all four arrows walk in PokeDungeon. Space is the Knomi's button, for a wild battle; on a catch, the left and right arrows choose a ball and Space or the up arrow throws it. Drag the red and white ring to move the window: it grows when the mouse is over it, so it's easy to grab, and the screen inside is only for touching, with the mouse as a finger. Right-click it, or click the Poké Ball in the menu bar, for About, Size, CRT Screen, Mute Sound, Music (Off, Low, Medium or High), Check for Updates, Update Automatically and Quit.
 
 **Size and CRT Screen:** it opens Large, with the CRT screen on. **Size** makes it Medium or Small, sharp at every size, and **CRT Screen** turns the effect off for the Knomi's own look.
 
-Your pet, the sound, music and CRT settings, and the window's size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi`, separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
+Your pet, the sound, music and CRT settings, and the window's size and place are saved on the Mac in `~/Library/Application Support/PokeMacGochi` (the folder keeps the game's old name), separate from any Knomi. Only one copy runs on that save at a time: opening it again just tells you it's already open.
 
-**Updates:** PokeMacGochi checks for a new version 10 seconds after it opens and then every hour, counting the time the Mac sleeps, so a version out overnight is there by morning. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and reopens on it. Turned off, it tells you once when one is out. From 1.30 on it updates itself, like the Knomi: click **Update** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and reopens on it a few seconds later. Your pet stays, since it's saved outside the app. Older versions get the new DMG instead: quit PokeMacGochi, open the DMG and drag it into Applications, choosing **Replace**.
+**Updates:** Catch 151 checks for a new version 10 seconds after it opens and then every hour, counting the time the Mac sleeps, so a version out overnight is there by morning. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and reopens on it. Turned off, it tells you once when one is out. From 1.30 on it updates itself, like the Knomi: click **Update** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and reopens on it a few seconds later. Your pet stays, since it's saved outside the app. Older versions get the new DMG instead: quit the app, open the DMG and drag it into Applications, choosing **Replace**.
 
-**Buddies:** a Knomi or another PokeMacGochi on the same Wi-Fi shows up as a buddy, just like between two Knomis. The first time, macOS asks whether PokeMacGochi may find devices on your local network: click **Allow**. If you clicked **Don't Allow**, turn PokeMacGochi on in **System Settings → Privacy & Security → Local Network** and reopen it.
+**Buddies:** a Knomi or another Mac on the same Wi-Fi shows up as a buddy, just like between two Knomis. The first time, macOS asks whether Catch 151 may find devices on your local network: click **Allow**. If you clicked **Don't Allow**, turn Catch 151 on in **System Settings → Privacy & Security → Local Network** and reopen it.
 
 To build it yourself, run `mac/build_dmg.sh` (needs Xcode's Command Line Tools). [host/README.md](host/README.md) explains how it works.
 
-## PokeWinGochi (Windows)
+## Catch 151 for Windows
 
 The same game as a round window on your Windows desktop, in a Poké Ball ring with a soft shadow under it, for Windows 10 and 11. It's one file with nothing to install, it has no taskbar button, and it lives in the taskbar's notification area (the icons by the clock).
 
-1. Download `PokeWinGochi.exe` from the [latest Windows release](https://github.com/FedorSosnin/PokeKnomiGochi/releases) and put it somewhere you'll keep it, like your Desktop or Documents.
+1. Download `Catch151.exe` from the [latest Windows release](https://github.com/FedorSosnin/Catch151/releases) and put it somewhere you'll keep it, like your Desktop or Documents.
 2. Open it. Windows warns that it **protected your PC**, because the app isn't signed by a paid developer certificate. Click **More info**, then **Run anyway**. After that it opens normally.
-3. The first time, Windows Firewall may ask whether PokeWinGochi can use your network. Allow it on **private networks**, so buddies on your Wi-Fi can find you.
+3. The first time, Windows Firewall may ask whether Catch 151 can use your network. Allow it on **private networks**, so buddies on your Wi-Fi can find you.
 
 **Controls:** the same as the Mac app. Click, hold and swipe like a touch screen; the left and right arrows tilt, all four arrows walk in PokeDungeon, and Space is the Knomi's button; on a catch, the left and right arrows choose a ball and Space or the up arrow throws it. Drag the ring to move the window: it grows when the mouse is over it, and the screen inside is only for touching. Right-click it, or click the Poké Ball by the clock, for About, Size, CRT Screen, Mute Sound, Music (Off, Low, Medium or High), Check for Updates, Update Automatically and Quit. To start it with Windows, put a shortcut to it in the Startup folder (press Win+R and type `shell:startup`).
 
 It opens Large, with the CRT screen, like the Mac app: **Size** and **CRT Screen** in its menu change them.
 
-Your pet, the sound, music and CRT settings, and the window's size and place are saved in `%APPDATA%\PokeWinGochi`, separate from the app; the game's pictures are unpacked to `%LOCALAPPDATA%\PokeWinGochi`. Only one copy runs on that save at a time.
+Your pet, the sound, music and CRT settings, and the window's size and place are saved in `%APPDATA%\PokeWinGochi` (the folder keeps the game's old name), separate from the app; the game's pictures are unpacked to `%LOCALAPPDATA%\PokeWinGochi`. Only one copy runs on that save at a time.
 
-**Updates:** it checks for a new version when it opens and then every hour, counting the time the PC sleeps. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and starts again on it. Turned off, it tells you once when one is out. From 1.13 on it updates itself, like the Knomi: click **Yes** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and starts again on it a few seconds later. Your pet stays. On older versions, quit PokeWinGochi, download the new `PokeWinGochi.exe` and put it in place of the old one.
+**Updates:** it checks for a new version when it opens and then every hour, counting the time the PC sleeps. With **Update Automatically** checked in its menu (on unless you turn it off), it installs the new version by itself once nobody has touched it for a minute on the home screen, and starts again on it. Turned off, it tells you once when one is out. From 1.13 on it updates itself, like the Knomi: click **Yes** (or **Update to Version …** in its menu) and it downloads the new version, checks its signature, and starts again on it a few seconds later. Your pet stays. On older versions, quit the app, download the new `Catch151.exe` and put it in place of the old one.
 
 **Tilt and controllers:** a controller's left stick tilts smoothly (for Berry Drop and aiming Poké Balls), and the stick or D-pad walks in PokeDungeon: the built-in one of a handheld PC like the ROG Ally, or an Xbox controller. If Windows has a motion sensor, as many tablets do, tilting the device tilts the game, like on a phone; **Tilt with the Device** in the menu turns that off. On a ROG Ally, set the gyro to act as the left joystick in Armoury Crate, and tilting the Ally tilts the game. The controller and the sensor only count while PokeWinGochi is the active window.
 
@@ -491,7 +493,7 @@ To build it yourself, run `windows/build.sh` on a Mac or Linux with [llvm-mingw]
 ## Credits and license
 
 - **Sprites:** the community artists of [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), under CC BY-NC 4.0.
-- **Each sprite's artists**, and what the game changed and added: the [Catch 151 Dex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/).
+- **Each sprite's artists**, and what the game changed and added: the [Catch 151 Dex](https://fedorsosnin.github.io/Catch151/sprites/).
 - **Full list:** [`CREDITS.md`](CREDITS.md).
 
 The source code is [MIT licensed](LICENSE). The sprites and Pokémon names are not covered by that license and are for **personal, non-commercial use only**. The 3D-printed case is a remix shared under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/); see [`CREDITS.md`](CREDITS.md).
@@ -500,4 +502,4 @@ This is an unofficial fan project, not affiliated with or endorsed by Nintendo, 
 
 ## Thank you
 
-Thank you to [Quique Tortosa](https://github.com/socquique), whose [TamaPoke](https://github.com/socquique/TamaPoke) inspired this game. PokeKnomiGochi began from his original code, which is why his name is in the [license](LICENSE).
+Thank you to [Quique Tortosa](https://github.com/socquique), whose [TamaPoke](https://github.com/socquique/TamaPoke) inspired this game. Catch 151 (first called PokeKnomiGochi) began from his original code, which is why his name is in the [license](LICENSE).

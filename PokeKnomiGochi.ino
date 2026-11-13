@@ -61,7 +61,7 @@
 
 // Firmware version. Bump this number on every release (and manifest.json for
 // the web installer). Shown on the settings screen and over serial at boot.
-#define FW_VERSION "2.1.4"
+#define FW_VERSION "2.2.0"
 
 // the settings page: Wi-Fi, then updates (check / install, and the auto-update switch under it)
 #define SET_WIFI_BTN_Y 178  // change the Wi-Fi
@@ -571,7 +571,7 @@ void setup() {
 #ifndef BOARD_KNOMI_V2  // the Knomi sends serial through a CH340 (UART0): it never blocks
   Serial.setTxTimeoutMs(0);
 #endif
-  Serial.printf("PokeKnomiGochi fw v%s\n", FW_VERSION);
+  Serial.printf("Catch 151 fw v%s\n", FW_VERSION);
 #if UI_V2
   saveMigrate();  // V2: a save from before the rename is carried over first (savename.h)
 #endif

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PokeKnomiGochi sprite workshop.
+"""Catch 151 sprite workshop.
 
 The 32x32 sprites are BUILT from primitives (ellipses with automatic shading
 on the lower-right edge, automatic silhouette outline) plus pixel-level

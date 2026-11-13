@@ -1,12 +1,12 @@
-# PokeWebGochi
+# Catch 151 for Web
 
-[![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fpokeknomigochi-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](https://pokewebgochi.3dprintsos.com)
+[![Live players](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcatch151-relay.fedor-dd0.workers.dev%2Fstats&query=%24.online&label=live%20players&color=de2121&cacheSeconds=300)](https://catch151.3dprintsos.com)
 
 **A Pokémon virtual pet in your browser.** Raise one of the original 151, battle and catch wild Pokémon, climb Knomi Tower, fill your Pokédex, play mini games and meet your buddies. Free, with nothing to install.
 
-### [▶ Play now at pokewebgochi.3dprintsos.com](https://pokewebgochi.3dprintsos.com)
+### [▶ Play now at catch151.3dprintsos.com](https://catch151.3dprintsos.com)
 
-<p align="center"><img src="images/web-desktop.webp" alt="PokeWebGochi in a browser, with the CRT screen: Charmeleon in the Field on a sunny morning, inside a Poké Ball ring" width="760"></p>
+<p align="center"><img src="images/web-desktop.webp" alt="Catch 151 in a browser, with the CRT screen: Charmeleon in the Field on a sunny morning, inside a Poké Ball ring" width="760"></p>
 
 **CRT effect:** each scanline a soft beam, a warm glow, a slightly curved glass for that nostalgia look. The **CRT** button under the game turns it off, and **Size** makes the screen smaller.
 
@@ -29,9 +29,9 @@
 
 ## On your phone
 
-<img src="images/web-phone.webp" alt="PokeWebGochi on a phone, with the CRT screen" width="260" align="right">
+<img src="images/web-phone.webp" alt="Catch 151 on a phone, with the CRT screen" width="260" align="right">
 
-Open [pokewebgochi.3dprintsos.com](https://pokewebgochi.3dprintsos.com) and tap **Share → Add to Home Screen** (iPhone) or **Install app** (Android). It gets its own icon and opens full screen, like an app.
+Open [catch151.3dprintsos.com](https://catch151.3dprintsos.com) and tap **Share → Add to Home Screen** (iPhone) or **Install app** (Android). It gets its own icon and opens full screen, like an app.
 
 Tap, hold and swipe the screen, and tilt your phone to aim a Poké Ball. iPhones ask once whether the page may use motion. On Android, the phone buzzes softly with taps, meals, medals and catches; the **Vibration** button under the screen turns it off.
 
@@ -56,7 +56,7 @@ Each one stops at 100. The **Training** page on your Pokémon's card shows how f
 
 ## Moves
 
-Your Pokémon fights with two moves: on the right the strongest of its own type, on the left the strongest of any other type. They are the attacks its species learns in Pokémon Red and Blue, up to its level, and it gains a level every hour, asleep or awake. Only levels teach moves, not training or wins. When a stronger one takes over a button, the next wild battle opens with **Learned …!** A Charmander starts with Scratch, learns Ember at level 9, Slash at 30 and Flamethrower at 38. The [moves chart](https://github.com/FedorSosnin/PokeKnomiGochi/blob/main/docs/MOVES.md) has each move's power and every Pokémon's moves and the level it evolves at.
+Your Pokémon fights with two moves: on the right the strongest of its own type, on the left the strongest of any other type. They are the attacks its species learns in Pokémon Red and Blue, up to its level, and it gains a level every hour, asleep or awake. Only levels teach moves, not training or wins. When a stronger one takes over a button, the next wild battle opens with **Learned …!** A Charmander starts with Scratch, learns Ember at level 9, Slash at 30 and Flamethrower at 38. The [moves chart](https://github.com/FedorSosnin/Catch151/blob/main/docs/MOVES.md) has each move's power and every Pokémon's moves and the level it evolves at.
 
 ## Your save
 
@@ -70,25 +70,25 @@ Anyone else playing on the same home Wi-Fi shows up on your screen: up to four a
 |:---:|:---:|
 | **Party Boost** | **Tap a friend for its stats** |
 
-You meet players of the browser version, the [Mac and Windows apps](https://github.com/FedorSosnin/PokeKnomiGochi/releases) and the [BTT Knomi](https://github.com/FedorSosnin/PokeKnomiGochi) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
+You meet players of the browser version, the [Mac and Windows apps](https://github.com/FedorSosnin/Catch151/releases) and the [BTT Knomi](https://github.com/FedorSosnin/Catch151) handheld alike. Only your Pokémon's species, level, nickname and Pokédex are shared, and only with devices on your network.
 
 ## Want a real one?
 
-<p align="center"><img src="images/knomi-gameboys.gif" alt="PokeKnomiGochi on a BTT Knomi V2 in its 3D-printed Poké Ball case, beside two Game Boys: Gengar walking past the haunted Mansion" width="720"></p>
+<p align="center"><img src="images/knomi-gameboys.gif" alt="Catch 151 on a BTT Knomi V2 in its 3D-printed Poké Ball case, beside two Game Boys: Gengar walking past the haunted Mansion" width="720"></p>
 
-<p align="center"><img src="images/knomi-in-hand.jpg" alt="PokeKnomiGochi running on a BTT Knomi V2 in a 3D-printed Poké Ball case" width="360"> <img src="images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, showing the starter screen" width="360"></p>
+<p align="center"><img src="images/knomi-in-hand.jpg" alt="Catch 151 running on a BTT Knomi V2 in a 3D-printed Poké Ball case" width="360"> <img src="images/knomi-on-desk.jpg" alt="The Knomi in its Poké Ball case on a desk, showing the starter screen" width="360"></p>
 
 The same game runs on the **BIGTREETECH Knomi V2**, a little round touchscreen made for 3D printers. Put it in a 3D-printed Poké Ball case and you have a pocket tamagotchi that tilts, buzzes and meets the browser, Mac and Windows players as buddies.
 
 1. **Get a Knomi V2:** [BIGTREETECH Knomi V2](https://www.awin1.com/pclick.php?p=43148197656&a=2034499&m=95665). This is an affiliate link from [deals.3dprintsos.com](https://deals.3dprintsos.com): buying through it supports this project at no extra cost to you.
-2. **Install the game** from your browser with the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/) (Chrome or Edge, a USB-C data cable). After that it updates itself over Wi-Fi.
-3. **Print the case:** download [`PokeKnomiGochi-case.3mf`](https://github.com/FedorSosnin/PokeKnomiGochi/raw/main/print/PokeKnomiGochi-case.3mf), ready to print in red, white and black. It's a remix of [Knomi V2 Creality K1 wall holder / table stand](https://www.printables.com/model/850244-knomi-v2-creality-k1-wall-holder-table-stand) by [Nastra](https://www.printables.com/@Nastra_283431), with a new button and rounded back, shared under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): free to print and remix with credit, not to sell.
+2. **Install the game** from your browser with the [web installer](https://fedorsosnin.github.io/Catch151/) (Chrome or Edge, a USB-C data cable). After that it updates itself over Wi-Fi.
+3. **Print the case:** download [`PokeKnomiGochi-case.3mf`](https://github.com/FedorSosnin/Catch151/raw/main/print/PokeKnomiGochi-case.3mf), ready to print in red, white and black. It's a remix of [Knomi V2 Creality K1 wall holder / table stand](https://www.printables.com/model/850244-knomi-v2-creality-k1-wall-holder-table-stand) by [Nastra](https://www.printables.com/@Nastra_283431), with a new button and rounded back, shared under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): free to print and remix with credit, not to sell.
 
-More in the [PokeKnomiGochi README](https://github.com/FedorSosnin/PokeKnomiGochi#3d-printed-case).
+More in the [Catch 151 README](https://github.com/FedorSosnin/Catch151#3d-printed-case).
 
 ## Also on Mac and Windows
 
-**PokeMacGochi** and **PokeWinGochi** are the same game as a small round window on your Mac or Windows desktop: [download them](https://github.com/FedorSosnin/PokeKnomiGochi/releases). Everything starts from [**PokeKnomiGochi**](https://github.com/FedorSosnin/PokeKnomiGochi).
+**Catch 151 for Mac** and **for Windows** are the same game as a small round window on your Mac or Windows desktop: [download them](https://github.com/FedorSosnin/Catch151/releases). Everything starts from [**Catch 151**](https://github.com/FedorSosnin/Catch151).
 
 ## Credits
 
@@ -96,4 +96,4 @@ Sprites from [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab) under
 
 Made by [Fedor](mailto:fedor@3dprintsos.com) · [YouTube](https://youtube.com/3dprintsos)
 
-*These are built files. The source and how to build them are in [FedorSosnin/PokeKnomiGochi](https://github.com/FedorSosnin/PokeKnomiGochi) (`webgame/`), which updates this repository with `tools/publish_web.sh`.*
+*These are built files. The source and how to build them are in [FedorSosnin/Catch151](https://github.com/FedorSosnin/Catch151) (`webgame/`), which updates this repository with `tools/publish_web.sh`.*

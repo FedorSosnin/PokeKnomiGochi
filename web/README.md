@@ -1,4 +1,4 @@
-# PokeKnomiGochi web installer
+# Catch 151 for Knomi: the web installer
 
 `web/knomi/` is the Knomi's web installer: a page that flashes the game from Chrome or Edge with
 [ESP Web Tools](https://esphome.github.io/esp-web-tools/), with no Arduino or drivers. Knomis also download their
@@ -16,7 +16,7 @@ kept here: the deploy builds it from the packs with `tools/make_sprite_gallery.p
 `tools/sprite_gallery.html`; a tap on a Pokémon plays its voice, from `tools/voices.json`, which `make -C host voices`
 writes). To see it locally, `python3 tools/make_sprite_gallery.py` (it needs Pillow) and serve `build/sprites/`.
 
-`web/play/` holds the last PokeWebGochi build (`webgame/build.sh`), which `tools/publish_web.sh` publishes to its
+`web/play/` holds the last Catch 151 for Web build (`webgame/build.sh`), which `tools/publish_web.sh` publishes to its
 own site.
 
 ## Rebuild
@@ -34,7 +34,7 @@ cd web/knomi && python3 -m http.server 8000
 
 ## Deploy (GitHub Pages)
 
-`.github/workflows/pages.yml` publishes `web/knomi/` at https://fedorsosnin.github.io/PokeKnomiGochi/, and the Shiny
+`.github/workflows/pages.yml` publishes `web/knomi/` at https://fedorsosnin.github.io/Catch151/, and the Shiny
 Pokédex at `/sprites/`, on every push to `main` that touches `web/`, the packs or the gallery's two files.
 
 ## Limitations

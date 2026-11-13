@@ -1,4 +1,4 @@
-// PokeWebGochi: the browser front end of the host layer (host/host.h), like mac/main.mm is
+// Catch 151 for Web: the browser front end of the host layer (host/host.h), like mac/main.mm is
 // the Mac one. The page (shell.html) owns the canvas, the input and the sound; this file
 // starts the game once the saved files are back from IndexedDB and exposes what the page calls.
 #include <emscripten.h>

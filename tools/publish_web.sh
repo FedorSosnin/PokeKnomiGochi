@@ -1,13 +1,14 @@
 #!/bin/zsh
-# Publishes PokeWebGochi (web/play/, built by webgame/build.sh) to its own GitHub Pages site,
-# https://pokewebgochi.3dprintsos.com (repo FedorSosnin/PokeWebGochi). The game lives at that one
-# address only: a browser keeps saves per site, so a second address would mean a second pet.
+# Publishes Catch 151 for Web (web/play/, built by webgame/build.sh) to its own GitHub Pages site,
+# https://catch151.3dprintsos.com (repo FedorSosnin/Catch151-Web). The game lives at that one
+# address only: a browser keeps saves per site, so a second address would mean a second pet. Its old
+# address, pokewebgochi.3dprintsos.com, hands each pet over to this one (tools/publish_web_handover.sh).
 #   tools/publish_web.sh
 set -e
 cd "${0:A:h}/.."
-REPO=FedorSosnin/PokeWebGochi
-DOMAIN=pokewebgochi.3dprintsos.com
-SITE=build/pokewebgochi-site
+REPO=FedorSosnin/Catch151-Web
+DOMAIN=catch151.3dprintsos.com
+SITE=build/catch151-web-site
 GIT=(git -c credential.helper= -c 'credential.helper=!gh auth git-credential')
 
 [[ -f web/play/index.html ]] || { echo "build it first: webgame/build.sh"; exit 1; }
@@ -33,6 +34,6 @@ touch $SITE/.nojekyll
 $GIT -C $SITE add -A
 if $GIT -C $SITE diff --cached --quiet; then echo "nothing new to publish"; exit 0; fi
 VER=$(sed -n 's/^#define FW_VERSION "\(.*\)"/\1/p' PokeKnomiGochi.ino)
-$GIT -C $SITE commit -q -m "PokeWebGochi $VER ($(cat web/play/version.json | tr -d '\n'))"
+$GIT -C $SITE commit -q -m "Catch 151 for Web $VER ($(cat web/play/version.json | tr -d '\n'))"
 $GIT -C $SITE push -q origin HEAD:main
 echo "published $VER to https://$DOMAIN"

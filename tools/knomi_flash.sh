@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Builds PokeKnomiGochi for the BTT Knomi V2 and flashes it (firmware + sprites) over USB.
+# Builds Catch 151 for the BTT Knomi V2 and flashes it (firmware + sprites) over USB.
 # Does not erase the NVS: keeps the save game and the wifi stored by the previous firmware.
 #   tools/knomi_flash.sh [port]          build and flash
 #   tools/knomi_flash.sh --build-only

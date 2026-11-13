@@ -84,7 +84,7 @@ static void relayConnect() {
   }
   rc->printf("GET " BUDDY_RELAY_PATH " HTTP/1.1\r\nHost: " BUDDY_RELAY_HOST "\r\nUpgrade: websocket\r\n"
              "Connection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n"
-             "User-Agent: PokeKnomiGochi/2\r\n\r\n", key);  // /2: steps aside for Wi-Fi updates (1.31 on)
+             "User-Agent: Catch151/2\r\n\r\n", key);  // /2: steps aside for Wi-Fi updates (1.31 on)
   rc->setTimeout(4000);
   String status = rc->readStringUntil('\n');
   if (!status.startsWith("HTTP/1.1 101")) {

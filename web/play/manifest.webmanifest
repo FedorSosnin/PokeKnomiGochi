@@ -1,6 +1,6 @@
 {
-  "name": "PokeWebGochi",
-  "short_name": "PokeWebGochi",
+  "name": "Catch 151",
+  "short_name": "Catch 151",
   "description": "A Pokémon virtual pet in your browser: raise it, battle, catch, and play with buddies.",
   "start_url": "./",
   "scope": "./",

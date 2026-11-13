@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The Catch 151 Dex (the sprite gallery), published with the installer at
-https://fedorsosnin.github.io/PokeKnomiGochi/sprites/ (.github/workflows/pages.yml builds it there on every deploy;
+https://fedorsosnin.github.io/Catch151/sprites/ (.github/workflows/pages.yml builds it there on every deploy;
 nothing it makes is kept in git).
 
 All 151 Pokemon, regular and shiny, in every view the game has: standing, turning round (the Pokedex entry's

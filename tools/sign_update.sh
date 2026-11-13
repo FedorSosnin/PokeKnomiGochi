@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Signs the Mac and Windows apps for their in-app updates: builds build/mac/PokeMacGochi.zip from the
+# Signs Catch 151 for Mac and Windows for their in-app updates (the files keep their old names for the copies out there): builds build/mac/PokeMacGochi.zip from the
 # app, then writes PokeMacGochi.zip.sig and PokeWinGochi.exe.sig (ECDSA P-256 over SHA-256, DER),
 # and checks both against the public key in update_key.h. Upload the zip and both .sig files with the
 # release, next to the DMG and the .exe.

@@ -3,15 +3,19 @@
 All notable changes to the firmware. Versions match the number shown at the
 **About** page (the last page of **Settings** in the hold menu) and `web/knomi/manifest.json`.
 
-Updating from the [web installer](https://fedorsosnin.github.io/PokeKnomiGochi/)
+Updating from the [web installer](https://fedorsosnin.github.io/Catch151/)
 **without** ticking "Erase device" keeps your Pokémon.
 
-## [Unreleased]
+## [2.2.0] - 2026-11-13
 
-- **Pokémon cries (Mac, Windows and the web):** each Pokémon has its own cry, buzzy, sweeping and warbling, in the style of the old handhelds. Small, quick Pokémon cry higher and faster, and big ones lower and longer. Rocky ones growl and watery ones warble. Your Pokémon cries when you pet it and after a battle it wins. Tapping one in the Pokédex plays its cry, in the Shiny Pokédex online too.
-
-- **Music on the Mac, Windows and the web:** original chiptune for every screen, in the same square-wave style as the sound effects. There's a theme for the home (softer from dusk to dawn), the menus, Travel and Knomi Tower. Each zone has its own battle music, and legends, the tower's guardians and buddies each have theirs. Each mini game has its own tune, and evolving and goodbyes get one too. A short fanfare plays for a win or a catch. The home's music fades out after two minutes untouched and comes back on your next tap, and there's no music while your Pokémon sleeps. Each zone in Travel has its own tune too, calmer than its battle music. The home's tune is in the style of the old handhelds' towns.
-- **Sound and music levels (Mac, Windows and the web):** on the settings page, **Sound** and **Music** each have a slider with four notches, from 0 (off) to 3. Sound sets everything, music included, and Music sets the music under it. There's also a **Music** menu in the Mac and Windows apps and a **Music** button under the web game. The Knomi has no speaker, so nothing changes there.
+- **The game is now Catch 151** (it was PokeKnomiGochi). The apps are **Catch 151 for Knomi, Mac, Windows and Web**, with a new pixel-art logo and icon: on the About page, atop the web page, and as the apps' icons. The online Pokédex is the **Catch 151 Dex**.
+- **Everything moves over by itself, and your Pokémon comes along:**
+  - **Knomi:** it updates from the game's new address (and the old one still answers, so no Knomi is left behind). The web installer is at the new address too.
+  - **Mac:** the app renames itself to **Catch 151** the next time it updates, and keeps your pet. A fresh download is Catch 151 from the start.
+  - **Windows:** the app is called Catch 151 and keeps your pet.
+  - **Web:** the game is at [catch151.3dprintsos.com](https://catch151.3dprintsos.com). Opening the old address takes your Pokémon to the new one by itself, once (it never replaces a Pokémon already there). On a phone where you added it to the Home Screen, open the old address in the browser once, then add the new one.
+  - **Buddies:** old and new versions still meet: the relay answers at both addresses with one lobby.
+- **About page:** the Catch 151 logo, the version, and the GitHub and YouTube buttons.
 
 ## [2.1.4] - 2026-11-13
 

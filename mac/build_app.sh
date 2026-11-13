@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Builds PokeMacGochi.app in build/mac/. It only needs Xcode's Command Line Tools and python3.
+# Builds Catch 151 for Mac in build/mac/PokeMacGochi.app (the folder keeps the old name: the update zip carries it under that name for the copies out there; the DMG names it Catch 151.app). It only needs Xcode's Command Line Tools and python3.
 #   mac/build_app.sh           builds
 #   mac/build_app.sh --open    and opens it
 set -e

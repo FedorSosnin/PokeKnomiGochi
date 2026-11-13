@@ -1,6 +1,6 @@
 # Credits
 
-PokeKnomiGochi is a **non-commercial, personal-use** project. It does not sell or
+Catch 151 (first called PokeKnomiGochi) is a **non-commercial, personal-use** project. It does not sell or
 commercially redistribute any copyrighted material. Pokémon and all related
 names, designs and characters are trademarks and © of **Nintendo / Game Freak /
 The Pokémon Company**.
@@ -20,8 +20,8 @@ credit is in the original repository's
 [tracker.json](https://github.com/PMDCollab/SpriteCollab/blob/master/tracker.json).
 Huge thanks to that whole community for an enormous amount of work.
 
-The [Catch 151 Dex](https://fedorsosnin.github.io/PokeKnomiGochi/sprites/) shows every sprite the game uses, regular and shiny, with the artists who made each
-one, and says what PokeKnomiGochi changed (16-bit colours, a slower pace, only some views kept, each frame on its
+The [Catch 151 Dex](https://fedorsosnin.github.io/Catch151/sprites/) shows every sprite the game uses, regular and shiny, with the artists who made each
+one, and says what Catch 151 changed (16-bit colours, a slower pace, only some views kept, each frame on its
 own feet, a few placed by hand) and what it added (the Pokédex's turn, the shiny sparkles and the shadows). It's
 built from the packs by `tools/make_sprite_gallery.py`.
 

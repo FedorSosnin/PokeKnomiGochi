@@ -126,9 +126,9 @@ int main(int argc, char **argv) {
   snprintf(page, sizeof(page), "%s/index.html", dir);
   FILE *html = only ? nullptr : fopen(page, "w");
   if (html)
-    fprintf(html, "<!doctype html><meta charset=utf-8><title>PokeKnomiGochi music</title>\n"
+    fprintf(html, "<!doctype html><meta charset=utf-8><title>Catch 151 music</title>\n"
                   "<style>body{font:15px system-ui;margin:24px;background:#16141f;color:#eee}td{padding:6px 10px}"
-                  "td:first-child{color:#9a96b4}audio{height:32px}</style>\n<h2>PokeKnomiGochi music</h2>\n"
+                  "td:first-child{color:#9a96b4}audio{height:32px}</style>\n<h2>Catch 151 music</h2>\n"
                   "<p>Each song's intro and its loop twice, as the game plays it.</p><table>\n");
   for (int t = 1; t < MUS_COUNT; t++) {
     if (only && !strstr(TRACK_IDS[t], only)) continue;
